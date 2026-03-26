@@ -182,6 +182,22 @@ export default function HomeScreen() {
           <Text style={styles.heroSubtitle}>Curated for you</Text>
         </View>
 
+        {/* Style Profile Quick Access */}
+        <TouchableOpacity
+          style={styles.styleProfileButton}
+          onPress={() => navigation.navigate('StyleProfileBuilder')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.styleProfileIcon}>
+            <Text style={styles.styleProfileIconText}>✨</Text>
+          </View>
+          <View style={styles.styleProfileContent}>
+            <Text style={styles.styleProfileTitle}>Your Style Profile</Text>
+            <Text style={styles.styleProfileSubtitle}>Build or update your preferences</Text>
+          </View>
+          <Text style={styles.styleProfileArrow}>→</Text>
+        </TouchableOpacity>
+
         {/* Three Trending Modules */}
         <Animated.View style={{ opacity: fadeAnim }}>
           {trendingModules.map((module, index) => {
@@ -443,5 +459,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#DED7CF',
     marginVertical: 8,
     marginHorizontal: 20,
+  },
+  styleProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#2B1F1A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  styleProfileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F4F1ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  styleProfileIconText: {
+    fontSize: 24,
+  },
+  styleProfileContent: {
+    flex: 1,
+  },
+  styleProfileTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#161616',
+    marginBottom: 2,
+  },
+  styleProfileSubtitle: {
+    fontSize: 14,
+    color: '#5E5A55',
+  },
+  styleProfileArrow: {
+    fontSize: 20,
+    color: '#2B1F1A',
+    fontWeight: '600',
   },
 });

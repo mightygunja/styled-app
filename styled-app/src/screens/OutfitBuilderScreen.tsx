@@ -28,9 +28,18 @@ export default function OutfitBuilderScreen() {
 
   const [sourceItem, setSourceItem] = useState<ClosetItem | null>(null);
   const [suggestedItems, setSuggestedItems] = useState<ClosetItem[]>([]);
+  const [allItems, setAllItems] = useState<ClosetItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<ClosetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+
+  const occasions = [
+    { id: 'casual', label: 'Casual', icon: '👕' },
+    { id: 'work', label: 'Work', icon: '💼' },
+    { id: 'formal', label: 'Formal', icon: '🎩' },
+    { id: 'athletic', label: 'Athletic', icon: '⚡' },
+  ];
 
   useEffect(() => {
     if (sourceItemId) {
@@ -43,15 +52,19 @@ export default function OutfitBuilderScreen() {
   const loadAllItems = async () => {
     try {
       setLoading(true);
+      console.log('OutfitBuilder: Loading all closet items...');
       
       // Get all closet items to choose from
       const allItemsResponse = await closetAPI.getItems(MOCK_USER_ID);
-      const allItems = allItemsResponse.data;
+      const items = allItemsResponse.data;
       
-      setSuggestedItems(allItems);
+      console.log(`OutfitBuilder: Loaded ${items.length} closet items`);
+      
+      setAllItems(items);
+      setSuggestedItems(items);
     } catch (error) {
-      console.error('Error loading closet items:', error);
-      Alert.alert('Error', 'Failed to load closet items');
+      console.error('OutfitBuilder: Error loading closet items:', error);
+      Alert.alert('Error', 'Failed to load closet items. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -60,6 +73,11 @@ export default function OutfitBuilderScreen() {
   const loadOutfitSuggestions = async () => {
     try {
       setLoading(true);
+      
+      if (!sourceItemId) {
+        loadAllItems();
+        return;
+      }
       
       // Get the source item
       const itemResponse = await closetAPI.getItemById(sourceItemId);
@@ -74,6 +92,7 @@ export default function OutfitBuilderScreen() {
       // Apply outfit pairing rules
       const suggestions = getOutfitPairings(sourceItem, allItems);
       
+      setAllItems(allItems);
       setSuggestedItems(suggestions);
     } catch (error) {
       console.error('Error loading outfit suggestions:', error);
@@ -208,6 +227,32 @@ export default function OutfitBuilderScreen() {
     return selectedItems.some(i => i.id === itemId);
   };
 
+  const filterByOccasion = (occasion: string | null) => {
+    setSelectedOccasion(occasion);
+    
+    if (!occasion) {
+      // Show all items if no occasion selected
+      if (sourceItem) {
+        const suggestions = getOutfitPairings(sourceItem, allItems);
+        setSuggestedItems(suggestions);
+      } else {
+        setSuggestedItems(allItems);
+      }
+      console.log(`OutfitBuilder: Showing all ${allItems.length} items`);
+      return;
+    }
+
+    // Filter items by occasion
+    const itemsToFilter = sourceItem ? getOutfitPairings(sourceItem, allItems) : allItems;
+    const filtered = itemsToFilter.filter(item => {
+      const itemOccasion = item.occasion?.toLowerCase();
+      return itemOccasion === occasion.toLowerCase();
+    });
+    
+    console.log(`OutfitBuilder: Filtered to ${filtered.length} items for occasion: ${occasion}`);
+    setSuggestedItems(filtered);
+  };
+
   const handleSaveOutfit = () => {
     if (selectedItems.length === 0) {
       Alert.alert('No items selected', 'Please select at least one item to create an outfit.');
@@ -281,6 +326,41 @@ export default function OutfitBuilderScreen() {
           </View>
         )}
 
+        {/* Occasion Filter */}
+        <View style={styles.section}>
+          <Text style={styles.filterTitle}>Filter by Occasion</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.occasionFilters}>
+              <TouchableOpacity
+                style={[styles.occasionButton, !selectedOccasion && styles.occasionButtonActive]}
+                onPress={() => filterByOccasion(null)}
+              >
+                <Text style={[styles.occasionButtonText, !selectedOccasion && styles.occasionButtonTextActive]}>
+                  All
+                </Text>
+              </TouchableOpacity>
+              {occasions.map(occasion => (
+                <TouchableOpacity
+                  key={occasion.id}
+                  style={[
+                    styles.occasionButton,
+                    selectedOccasion === occasion.id && styles.occasionButtonActive
+                  ]}
+                  onPress={() => filterByOccasion(occasion.id)}
+                >
+                  <Text style={styles.occasionIcon}>{occasion.icon}</Text>
+                  <Text style={[
+                    styles.occasionButtonText,
+                    selectedOccasion === occasion.id && styles.occasionButtonTextActive
+                  ]}>
+                    {occasion.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+
         {/* Suggested Items */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{sourceItem ? 'Suggested Pairings' : 'Your Closet'}</Text>
@@ -291,7 +371,11 @@ export default function OutfitBuilderScreen() {
           {suggestedItems.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
-                No suggestions available. Try adding more items to your closet!
+                {selectedOccasion 
+                  ? `No items found for ${selectedOccasion}. Try selecting "All" or add items with this occasion to your closet.`
+                  : allItems.length === 0
+                    ? 'No items in your closet yet. Add some items to get started!'
+                    : 'No matching items found. Try adjusting your filters.'}
               </Text>
             </View>
           ) : (
@@ -504,5 +588,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#161616',
+  },
+  occasionFilters: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 4,
+  },
+  occasionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F4F1ED',
+    borderWidth: 2,
+    borderColor: '#DED7CF',
+    gap: 6,
+  },
+  occasionButtonActive: {
+    backgroundColor: '#2B1F1A',
+    borderColor: '#2B1F1A',
+  },
+  occasionIcon: {
+    fontSize: 16,
+  },
+  occasionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#161616',
+  },
+  occasionButtonTextActive: {
+    color: '#F1ECE7',
   },
 });

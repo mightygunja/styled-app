@@ -65,6 +65,7 @@ export interface ClosetItem {
   color: string;
   brand?: string;
   season: Season[];
+  occasion?: string;
   tags: string[];
   wornCount: number;
   lastWornDate?: string;

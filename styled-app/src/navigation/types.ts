@@ -79,11 +79,12 @@ export type RootStackParamList = {
   Settings: undefined;
   Onboarding: undefined;
   Favorites: undefined;
-  OutfitBuilder: { sourceItemId: string };
+  OutfitBuilder: { sourceItemId?: string };
   OutfitPlanner: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;
+  StyleProfileBuilder: undefined;
   Login: undefined;
   Signup: undefined;
 };

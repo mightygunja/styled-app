@@ -76,6 +76,7 @@ import EmailCampaignsScreen from '../screens/EmailCampaignsScreen';
 import QuickAccessScreen from '../screens/QuickAccessScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
 import ColorPaletteScreen from '../screens/ColorPaletteScreen';
+import StyleProfileBuilderScreen from '../screens/StyleProfileBuilderScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { useAuth } from '../contexts/AuthContext';
@@ -431,6 +432,10 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Recommendations" 
           component={RecommendationsScreen}
+        />
+        <Stack.Screen 
+          name="StyleProfileBuilder" 
+          component={StyleProfileBuilderScreen}
         />
           </>
         ) : (

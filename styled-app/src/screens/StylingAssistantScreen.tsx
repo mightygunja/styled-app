@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { stylingAssistantService, ChatMessage } from '../services/stylingAssistantService';
@@ -38,6 +38,36 @@ export default function StylingAssistantScreen() {
   const [closetItems, setClosetItems] = useState<Item[]>([]);
   const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
   const { toast, showToast, hideToast } = useToast();
+
+  // Guard: Check for StyleDNA on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      checkStyleDNA();
+    }, [])
+  );
+
+  const checkStyleDNA = async () => {
+    try {
+      // TODO: Replace with actual user profile service call
+      // const user = await userProfileService.getCurrentUser();
+      // if (!user.styleDNA) {
+      //   navigation.navigate('OnboardingWelcome');
+      //   return;
+      // }
+      
+      // For now, check if user has completed onboarding
+      // This is a placeholder - replace with actual user.styleDNA check
+      const hasStyleDNA = false; // TODO: Get from user profile
+      
+      if (!hasStyleDNA) {
+        // Redirect to onboarding - no paywall
+        // navigation.navigate('OnboardingWelcome');
+        console.log('StyleDNA missing - would redirect to onboarding');
+      }
+    } catch (error) {
+      console.error('Error checking StyleDNA:', error);
+    }
+  };
 
   useEffect(() => {
     loadData();
