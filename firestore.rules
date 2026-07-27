@@ -1,0 +1,178 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isResourceOwner() {
+      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    function isCreatingOwnResource() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Users collection - doc id == uid
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Saved outfits - owned by userId field
+    match /outfits/{outfitId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Shopping list items - owned by userId field
+    match /shoppingListItems/{itemId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // AI stylist chat messages - owned by userId field
+    match /chatMessages/{messageId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Closet items - owned by userId field
+    match /closetItems/{itemId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Looks - shared catalog content, read-only for clients
+    match /looks/{lookId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /lookItems/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Shoppable items - shared catalog content, read-only for clients
+    match /items/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /palettes/{paletteId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Favorite looks - owned by userId field
+    match /favoriteLooks/{favoriteId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+      allow update: if isResourceOwner();
+    }
+
+    // ==================== SOCIAL FEED ====================
+
+    // Posts - authored by userId, publicly readable to signed-in users
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Likes - visible to all signed-in users, only the liker can create/remove their like
+    match /postLikes/{likeId} {
+      allow read: if isAuthenticated();
+      allow create: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+      allow update: if false;
+    }
+
+    // Comments - visible to all signed-in users, only the author can edit/remove
+    match /postComments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Saved posts - private to the saving user
+    match /savedPosts/{savedId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+      allow update: if false;
+    }
+
+    // Post collections - private to the owning user
+    match /postCollections/{collectionId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Feed preferences - doc id == uid
+    match /feedPreferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Public user profiles - doc id == uid
+    match /userProfiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Follows - visible to signed-in users, only the follower can create/remove their own follow edge
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Notifications - readable/manageable only by the recipient; any signed-in user's
+    // action (like, comment, follow) can create a notification for someone else
+    match /notifications/{notificationId} {
+      allow read: if isResourceOwner();
+      allow create: if isAuthenticated();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Notification settings - doc id == uid
+    match /notificationSettings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Conversations - only participants can read/write
+    match /conversations/{conversationId} {
+      allow read, update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
+    }
+
+    // Messages - only participants of the parent conversation can read; only the sender can write
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() &&
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants;
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid &&
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)).data.participants;
+      allow update, delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+    }
+
+    // User interactions (analytics/recommendation signals) - private to the user
+    match /userInteractions/{interactionId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+  }
+}

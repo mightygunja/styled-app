@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Closet item images - TEMPORARY: Open for testing without auth
+    match /closet/{userId}/{allPaths=**} {
+      allow read, write: if true; // TEMPORARY: Allow all access for testing
+      // TODO: Restrict after adding Firebase Authentication:
+      // allow read: if request.auth != null;
+      // allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Public images (looks, palettes, etc)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // TEMPORARY: Allow for testing
+    }
+  }
+}
