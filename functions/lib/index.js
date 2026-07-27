@@ -336,8 +336,8 @@ Guidelines:
 - Keep replies tight: under 100 words for outfit recommendations, under 60 for quick questions.
 
 Respond with a JSON object shaped exactly like: {"reply": string, "itemIds": string[]}.
-- "reply" is your conversational message to show the user (do not mention IDs or JSON in it).
-- "itemIds" lists every real closet item id you recommended in "reply" (from the inventory above only). Use an empty array if you didn't recommend specific owned items (e.g. general advice, greetings, shopping suggestions).`;
+- "reply" is your conversational message to show the user. Refer to items by name only (e.g. "the camel coat", "your black boots") - NEVER include an item's id, database key, or any bracketed/parenthetical code in "reply", under any circumstance.
+- "itemIds" is the ONLY place item ids belong: list every real closet item id you recommended in "reply" (from the inventory above only). Use an empty array if you didn't recommend specific owned items (e.g. general advice, greetings, shopping suggestions).`;
         const messages = [
             { role: 'system', content: systemPrompt },
             ...history.slice(-6).map((h) => ({ role: h.role, content: h.content })),

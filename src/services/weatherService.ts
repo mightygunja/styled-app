@@ -11,6 +11,7 @@ import { WeatherCondition } from './recommendationEngine';
 export interface CurrentWeather {
   condition: WeatherCondition;
   temperature: number;
+  city?: string;
 }
 
 const FALLBACK_WEATHER: CurrentWeather = { condition: 'sunny', temperature: 72 };
@@ -36,7 +37,7 @@ export async function getCurrentWeather(): Promise<CurrentWeather> {
     if (!geoRes.ok) return FALLBACK_WEATHER;
     const geo = await geoRes.json();
 
-    const { latitude, longitude } = geo;
+    const { latitude, longitude, city } = geo;
     if (typeof latitude !== 'number' || typeof longitude !== 'number') return FALLBACK_WEATHER;
 
     const weatherController = new AbortController();
@@ -55,7 +56,7 @@ export async function getCurrentWeather(): Promise<CurrentWeather> {
       return FALLBACK_WEATHER;
     }
 
-    return { condition: mapWeatherCode(code, temperature), temperature };
+    return { condition: mapWeatherCode(code, temperature), temperature, city: typeof city === 'string' ? city : undefined };
   } catch (error) {
     console.log('Could not fetch real weather, using fallback', error);
     return FALLBACK_WEATHER;

@@ -80,9 +80,13 @@ import QuickAccessScreen from '../screens/QuickAccessScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
 import ColorPaletteScreen from '../screens/ColorPaletteScreen';
 import StyleProfileBuilderScreen from '../screens/StyleProfileBuilderScreen';
+import StyleDNAScreen from '../screens/StyleDNAScreen';
+import AccountScreen from '../screens/AccountScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { useAuth } from '../contexts/AuthContext';
+import { colors, fonts } from '../theme/designSystem';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -90,26 +94,27 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 function MainTabs() {
   const screenOptions = {
     headerShown: false,
-    tabBarActiveTintColor: '#161616',
-    tabBarInactiveTintColor: '#7B665A',
+    tabBarActiveTintColor: colors.ink,
+    tabBarInactiveTintColor: colors.tobacco,
     tabBarStyle: {
       borderTopWidth: 1,
-      borderTopColor: '#DED7CF',
+      borderTopColor: colors.hair,
       paddingTop: 8,
       paddingBottom: 20,
       height: 85,
-      backgroundColor: '#F4F1ED',
+      backgroundColor: colors.bone,
     },
     tabBarLabelStyle: {
-      fontSize: 11,
-      fontWeight: '600' as '600',
+      fontSize: 10,
+      fontFamily: fonts.sansMedium,
+      letterSpacing: 0.6,
       marginTop: 4,
     },
     tabBarIconStyle: {
       marginTop: 4,
     },
   };
-  
+
   return (
     <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
@@ -118,7 +123,7 @@ function MainTabs() {
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 24, color, fontWeight: focused ? '400' : '300' }}>⌂</Text>
+            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>⌂</Text>
           ),
         }}
       />
@@ -128,27 +133,37 @@ function MainTabs() {
         options={{
           tabBarLabel: 'Closet',
           tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 24, color, fontWeight: focused ? '400' : '300' }}>⊞</Text>
+            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>⊞</Text>
           ),
         }}
       />
       <Tab.Screen
-        name="Shopping"
-        component={ShoppingAssistantScreen}
+        name="StyleDNA"
+        component={StyleDNAScreen}
         options={{
-          tabBarLabel: 'Shopping',
+          tabBarLabel: 'Style',
           tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 24, color, fontWeight: focused ? '400' : '300' }}>⊕</Text>
+            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>✦</Text>
           ),
         }}
       />
       <Tab.Screen
-        name="StylingAssistant"
+        name="StylistChat"
         component={StylingAssistantScreen}
         options={{
-          tabBarLabel: 'AI Stylist',
+          tabBarLabel: 'Chat',
           tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 24, color, fontWeight: focused ? '400' : '300' }}>◐</Text>
+            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>◐</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Account"
+        component={AccountScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>◉</Text>
           ),
         }}
       />
@@ -156,13 +171,18 @@ function MainTabs() {
   );
 }
 
+// Set true only for local testing to bypass the login gate. Must stay false in
+// anything committed/shipped - also see DEV_FORCE_USER_ID in firebaseApi.ts and
+// devSkipAuthChecks() in firestore.rules, which need to be reverted together.
+const DEV_SKIP_AUTH = false;
+
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, isNewUser } = useAuth();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F1ED' }}>
-        <ActivityIndicator size="large" color="#2B1F1A" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bone }}>
+        <ActivityIndicator size="large" color={colors.ink} />
       </View>
     );
   }
@@ -176,7 +196,9 @@ export default function AppNavigator() {
           animationDuration: 300,
         }}
       >
-        {user ? (
+        {user && isNewUser ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : user || DEV_SKIP_AUTH ? (
           // Authenticated screens
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />

@@ -106,8 +106,6 @@ class AIStyleService {
    * Analyze user's closet and generate style profile
    */
   async analyzeStyle(items: Item[]): Promise<StyleProfile> {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate AI processing
-
     const dominantStyles = this.analyzeStyleCategories(items);
     const colorPalette = this.analyzeColors(items);
     const brandPreferences = this.analyzeBrands(items);

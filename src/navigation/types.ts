@@ -92,8 +92,9 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Closet: undefined;
-  Shopping: undefined;
-  StylingAssistant: undefined;
+  StyleDNA: undefined;
+  StylistChat: undefined;
+  Account: undefined;
 };
 
 declare global {

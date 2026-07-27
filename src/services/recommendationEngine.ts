@@ -75,8 +75,6 @@ class RecommendationEngine {
     styleProfile: StyleProfile,
     context: RecommendationContext
   ): Promise<OutfitRecommendation[]> {
-    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate AI processing
-
     const recommendations: OutfitRecommendation[] = [];
 
     // Generate multiple recommendations

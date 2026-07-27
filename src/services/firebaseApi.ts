@@ -3,10 +3,16 @@ import { functions, auth } from '../config/firebase';
 import { closetService, looksService, palettesService, shopMyClosetService } from './firestore';
 import { uploadImageToFirebase } from './firebaseStorage';
 
+// Set to a uid only for local testing (paired with DEV_SKIP_AUTH in AppNavigator.tsx)
+// to force every screen to read a specific seeded account's data regardless of the
+// real Firebase session. Must stay null in anything committed/shipped.
+const DEV_FORCE_USER_ID: string | null = null;
+
 // The real signed-in user's uid. Auth is required before the main app is reachable
 // (see AppNavigator), so auth.currentUser is always set here in practice; the
 // 'anonymous' fallback only guards against a theoretical race on cold start.
 export function getCurrentUserId(): string {
+  if (DEV_FORCE_USER_ID) return DEV_FORCE_USER_ID;
   return auth.currentUser?.uid || 'anonymous';
 }
 

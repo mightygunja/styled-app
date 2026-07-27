@@ -10,37 +10,50 @@ import {
   SafeAreaView,
   Modal,
   Image,
-  Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Look } from '../types';
-import { lookAPI, closetAPI, paletteAPI, getCurrentUserId } from '../services/api';
+import { Item } from '../types';
+import { closetAPI, getCurrentUserId } from '../services/api';
+import { outfitsService } from '../services/firestore';
+import { aiStyleService, StyleProfile } from '../services/aiStyleService';
+import { getStyleDNA } from '../services/styleDNA';
+import { recommendationEngine, OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
+import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
+import Chip from '../components/Chip';
+import Button from '../components/Button';
 import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
 import { quickAccessService, QuickAccessItem } from '../services/quickAccessService';
 import { useAuth } from '../contexts/AuthContext';
-
-const { width } = Dimensions.get('window');
-
-const FALLBACK_IMAGES = {
-  outfits: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80',
-  closet: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&q=80',
-  colors: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80',
-};
-
-interface TrendingModule {
-  id: string;
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-  type: 'outfits' | 'closet' | 'colors';
-}
+import { colors, fonts, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const OCCASION_OPTIONS: { label: string; value: OccasionType }[] = [
+  { label: 'Work', value: 'work' },
+  { label: 'Date', value: 'date' },
+  { label: 'Weekend', value: 'casual' },
+  { label: 'Travel', value: 'travel' },
+  { label: 'Event', value: 'party' },
+];
+
+function weatherLine(weather: CurrentWeather): string {
+  const place = weather.city ? ` in ${weather.city}` : '';
+  const temp = `${weather.temperature}°`;
+  const moodByCondition: Record<CurrentWeather['condition'], string> = {
+    sunny: 'a day made for light layers and clear colour',
+    cloudy: 'a day made for wool and quiet colour',
+    rainy: 'a day for weatherproof layers and a strong umbrella',
+    snowy: 'a day for your warmest coat',
+    cold: 'a day made for wool and warm layers',
+    hot: 'a day made for breathable fabrics',
+  };
+  return `${temp}${place} — ${moodByCondition[weather.condition]}.`;
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -49,108 +62,67 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [quickAccessItems, setQuickAccessItems] = useState<QuickAccessItem[]>([]);
-  const [trendingModules, setTrendingModules] = useState<TrendingModule[]>([]);
+  const [occasion, setOccasion] = useState<OccasionType>('work');
+  const [weather, setWeather] = useState<CurrentWeather>({ condition: 'sunny', temperature: 72 });
+  const [archetype, setArchetype] = useState<string>('Quiet Luxe');
+  const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
+  const [lookIndex, setLookIndex] = useState(0);
+  const [switchingOccasion, setSwitchingOccasion] = useState(false);
   const { toast, showToast, hideToast } = useToast();
-  
-  // Animation values
+
+  // Cached across occasion switches so re-picking a chip doesn't refetch weather/closet
+  // or re-run style analysis - only recommendation generation (a pure local computation).
+  const closetItemsRef = useRef<Item[]>([]);
+  const styleProfileRef = useRef<StyleProfile | null>(null);
+  const weatherRef = useRef<CurrentWeather>({ condition: 'sunny', temperature: 72 });
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const fetchTrendingData = async () => {
+  const loadDressMeToday = async (occasionValue: OccasionType) => {
     try {
-      const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-      const currentSeason = getCurrentSeason();
+      const [weatherResult, itemsResponse] = await Promise.all([
+        getCurrentWeather(),
+        closetAPI.getItems(getCurrentUserId()),
+      ]);
+      setWeather(weatherResult);
+      weatherRef.current = weatherResult;
 
-      // 1. "Trending This Month" - a real look from the seeded looks collection
-      let outfitsImage = FALLBACK_IMAGES.outfits;
-      let outfitsSubtitle = `${currentMonth}'s most popular ${currentSeason.toLowerCase()} looks`;
-      try {
-        const looksResponse = await lookAPI.getAll({ occasion: 'work', limit: 1 });
-        const topLook: Look | undefined = looksResponse.data?.[0];
-        if (topLook?.imageUrl) {
-          outfitsImage = topLook.imageUrl;
-          outfitsSubtitle = topLook.title || outfitsSubtitle;
-        }
-      } catch (err) {
-        console.log('Could not load trending look, using fallback', err);
-      }
+      const items: Item[] = (itemsResponse.data || []).map((item: any) => ({
+        id: item.id,
+        name: item.name || 'Item',
+        imageUrl: item.imageUrl,
+        category: item.category,
+        color: item.color,
+        brand: item.brand,
+        price: item.price || 0,
+        wornCount: item.wornCount,
+        lastWornDate: item.lastWornDate,
+        purchaseDate: item.purchaseDate,
+        createdAt: item.createdAt,
+        tags: item.tags,
+        seasons: item.seasons,
+        style: item.style,
+      }));
+      closetItemsRef.current = items;
 
-      // 2. "Your Best Looks" - the user's own most-worn/most-recent closet item
-      let closetImage = FALLBACK_IMAGES.closet;
-      let closetSubtitle = 'Personalized picks from your closet';
-      try {
-        const closetResponse = await closetAPI.getItems(getCurrentUserId());
-        const items = closetResponse.data || [];
-        if (items.length > 0) {
-          const bestItem = [...items].sort((a: any, b: any) => (b.wornCount || 0) - (a.wornCount || 0))[0];
-          closetImage = bestItem.imageUrl || closetImage;
-          closetSubtitle = `${items.length} item${items.length === 1 ? '' : 's'} in your closet`;
-        } else {
-          closetSubtitle = 'Add items to see your best looks';
-        }
-      } catch (err) {
-        console.log('Could not load closet items, using fallback', err);
-      }
+      const styleProfile = await aiStyleService.analyzeStyle(items);
+      styleProfileRef.current = styleProfile;
+      setArchetype(getStyleDNA(styleProfile).archetype);
 
-      // 3. "Colors & Patterns" - the currently active trend palette
-      let colorsImage = FALLBACK_IMAGES.colors;
-      let colorsSubtitle = `${currentMonth}'s trending palette`;
-      try {
-        const paletteResponse = await paletteAPI.getActive();
-        const activePalette = paletteResponse.data?.[0];
-        if (activePalette) {
-          colorsImage = activePalette.imageUrl || colorsImage;
-          colorsSubtitle = activePalette.name
-            ? `Featuring "${activePalette.name}"`
-            : colorsSubtitle;
-        }
-      } catch (err) {
-        console.log('Could not load active palette, using fallback', err);
-      }
+      const recs = await recommendationEngine.generateRecommendations(items, styleProfile, {
+        occasion: occasionValue,
+        weather: weatherResult,
+      });
+      setRecommendations(recs);
+      setLookIndex(0);
 
-      const modules: TrendingModule[] = [
-        {
-          id: '1',
-          title: 'Trending This Month',
-          subtitle: outfitsSubtitle,
-          imageUrl: outfitsImage,
-          type: 'outfits',
-        },
-        {
-          id: '2',
-          title: 'Your Best Looks',
-          subtitle: closetSubtitle,
-          imageUrl: closetImage,
-          type: 'closet',
-        },
-        {
-          id: '3',
-          title: 'Colors & Patterns',
-          subtitle: colorsSubtitle,
-          imageUrl: colorsImage,
-          type: 'colors',
-        },
-      ];
-
-      setTrendingModules(modules);
-
-      // Animate in after loading
-      if (!refreshing) {
-        fadeIn(fadeAnim, 300).start();
-      }
+      if (!refreshing) fadeIn(fadeAnim, 300).start();
     } catch (error) {
-      console.error('Error fetching trending data:', error);
+      console.error('Error loading Dress Me Today:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const getCurrentSeason = () => {
-    const month = new Date().getMonth();
-    if (month >= 2 && month <= 4) return 'Spring';
-    if (month >= 5 && month <= 7) return 'Summer';
-    if (month >= 8 && month <= 10) return 'Fall';
-    return 'Winter';
   };
 
   const fetchQuickAccess = async () => {
@@ -163,11 +135,11 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchTrendingData();
+    loadDressMeToday(occasion);
     fetchQuickAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refresh quick access when screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchQuickAccess();
@@ -177,16 +149,52 @@ export default function HomeScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchTrendingData();
+    loadDressMeToday(occasion);
   };
 
-  const handleModulePress = (module: TrendingModule) => {
-    if (module.type === 'outfits') {
-      navigation.navigate('Recommendations' as any);
-    } else if (module.type === 'closet') {
-      navigation.navigate('Closet' as any);
-    } else if (module.type === 'colors') {
-      navigation.navigate('ColorPalette' as any);
+  const handleOccasionPress = async (value: OccasionType) => {
+    setOccasion(value);
+    if (!styleProfileRef.current) {
+      // Cache not warm yet (e.g. tapped mid-initial-load) - fall back to a full load.
+      setLoading(true);
+      loadDressMeToday(value);
+      return;
+    }
+    setSwitchingOccasion(true);
+    try {
+      const recs = await recommendationEngine.generateRecommendations(
+        closetItemsRef.current,
+        styleProfileRef.current,
+        { occasion: value, weather: weatherRef.current }
+      );
+      setRecommendations(recs);
+      setLookIndex(0);
+    } catch (error) {
+      console.error('Error switching occasion:', error);
+    } finally {
+      setSwitchingOccasion(false);
+    }
+  };
+
+  const handleSwap = () => {
+    if (recommendations.length === 0) return;
+    setLookIndex((lookIndex + 1) % recommendations.length);
+  };
+
+  const handleSave = async () => {
+    const look = recommendations[lookIndex];
+    if (!look) return;
+    try {
+      await outfitsService.create(
+        getCurrentUserId(),
+        look.items.map(item => item.id),
+        look.occasion,
+        look.title
+      );
+      showToast('Look saved!', 'success');
+    } catch (error) {
+      console.error('Error saving look:', error);
+      showToast('Failed to save look', 'error');
     }
   };
 
@@ -199,19 +207,24 @@ export default function HomeScreen() {
     setMenuVisible(false);
     try {
       await signOut();
-      // Navigation back to Login happens automatically via AppNavigator's auth state watch
     } catch (error) {
       console.error('Error signing out:', error);
       showToast('Failed to sign out', 'error');
     }
   };
 
+  const firstName = (user?.displayName || 'there').split(' ')[0];
+  const today = new Date();
+  const dateLabel = today
+    .toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })
+    .toUpperCase();
+  const look = recommendations[lookIndex];
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -219,98 +232,126 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Hamburger Menu */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(true)}
-        >
+        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(true)}>
           <View style={styles.hamburger}>
             <View style={styles.hamburgerLine} />
             <View style={styles.hamburgerLine} />
             <View style={styles.hamburgerLine} />
           </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Styled</Text>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => navigation.navigate('SocialFeed')}
-        >
+        <Text style={styles.headerTitle}>STYLED</Text>
+        <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
           <Text style={styles.socialIcon}>◎</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={Boolean(refreshing)} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={Boolean(refreshing)} onRefresh={handleRefresh} />}
       >
-        {/* Hero Section */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Discover</Text>
-          <Text style={styles.heroSubtitle}>Curated for you</Text>
-        </View>
-
-        {/* Style Profile Quick Access */}
-        <TouchableOpacity
-          style={styles.styleProfileButton}
-          onPress={() => navigation.navigate('StyleProfileBuilder')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.styleProfileIcon}>
-            <Text style={styles.styleProfileIconText}>✨</Text>
-          </View>
-          <View style={styles.styleProfileContent}>
-            <Text style={styles.styleProfileTitle}>Your Style Profile</Text>
-            <Text style={styles.styleProfileSubtitle}>Build or update your preferences</Text>
-          </View>
-          <Text style={styles.styleProfileArrow}>→</Text>
-        </TouchableOpacity>
-
-        {/* Three Trending Modules */}
         <Animated.View style={{ opacity: fadeAnim }}>
-          {trendingModules.map((module, index) => {
-            const overlayColors: Record<TrendingModule['type'], string> = {
-              outfits: '#2B1F1A',
-              closet: '#7B665A',
-              colors: '#0F2419',
-            };
-
-            return (
+          <View style={styles.hero}>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.dateLabel}>{dateLabel}</Text>
               <TouchableOpacity
-                key={module.id}
-                style={[styles.module, index === trendingModules.length - 1 && styles.moduleLastChild]}
-                onPress={() => handleModulePress(module)}
-                activeOpacity={0.9}
+                style={styles.archetypePill}
+                onPress={() => navigation.navigate('StyleProfileBuilder')}
               >
-                <Image
-                  source={{ uri: module.imageUrl }}
-                  style={styles.moduleImage}
-                  resizeMode="cover"
-                />
-                <View style={[styles.moduleOverlay, { backgroundColor: overlayColors[module.type] }]}>
-                  <Text style={styles.moduleTitle}>{module.title}</Text>
-                  <Text style={styles.moduleSubtitle}>{module.subtitle}</Text>
-                </View>
+                <View style={styles.archetypeDot} />
+                <Text style={styles.archetypePillText}>{archetype.toUpperCase()}</Text>
               </TouchableOpacity>
-            );
-          })}
+            </View>
+            <Text style={styles.heroTitle}>
+              Morning, <Text style={styles.heroTitleAccent}>{firstName}</Text>.
+            </Text>
+            <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>
+          </View>
+
+          <Text style={styles.sectionLabel}>DRESSING FOR</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow} contentContainerStyle={styles.chipRowContent}>
+            {OCCASION_OPTIONS.map(opt => (
+              <Chip
+                key={opt.value}
+                label={opt.label}
+                active={occasion === opt.value}
+                onPress={() => handleOccasionPress(opt.value)}
+                style={styles.chipSpacing}
+              />
+            ))}
+          </ScrollView>
+
+          <View style={styles.dressRow}>
+            <Text style={styles.sectionLabel}>DRESS ME TODAY</Text>
+            {switchingOccasion ? (
+              <ActivityIndicator size="small" color={colors.tobacco} />
+            ) : recommendations.length > 0 ? (
+              <Text style={styles.lookCounter}>
+                LOOK {String(lookIndex + 1).padStart(2, '0')} OF {String(recommendations.length).padStart(2, '0')}
+              </Text>
+            ) : null}
+          </View>
+
+          {!look ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
+              </Text>
+              <Button
+                title="Add closet items"
+                variant="primary"
+                onPress={() => navigation.navigate('Closet' as any)}
+                style={{ marginTop: 16 }}
+              />
+            </View>
+          ) : (
+            <>
+              <View style={styles.lookCard}>
+                {look.items[0]?.imageUrl && (
+                  <Image source={{ uri: look.items[0].imageUrl }} style={styles.heroImage} resizeMode="cover" />
+                )}
+                <View style={styles.thumbRow}>
+                  {look.items.slice(0, 4).map(item => {
+                    const costPerWear = item.price && item.wornCount
+                      ? (item.price / (item.wornCount + 1)).toFixed(2)
+                      : item.price?.toFixed(2);
+                    return (
+                      <View key={item.id} style={styles.thumbCard}>
+                        {item.imageUrl ? (
+                          <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.thumbImage, styles.thumbPlaceholder]}>
+                            <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
+                          </View>
+                        )}
+                        <View style={styles.thumbMeta}>
+                          <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
+                          {costPerWear && <Text style={styles.thumbPrice}>${costPerWear}</Text>}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.noteCard}>
+                <Text style={styles.noteQuote}>
+                  {look.reasoning[0] || look.description}
+                </Text>
+                <Text style={styles.noteLabel}>STYLIST NOTE</Text>
+              </View>
+
+              <View style={styles.actionRow}>
+                <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+                <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
+              </View>
+            </>
+          )}
         </Animated.View>
       </ScrollView>
 
-      {/* Hamburger Menu Modal */}
-      <Modal
-        visible={menuVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity 
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
+      <Modal visible={menuVisible} animationType="slide" transparent onRequestClose={() => setMenuVisible(false)}>
+        <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuContainer}>
             <View style={styles.menuHeader}>
               <View>
@@ -327,12 +368,8 @@ export default function HomeScreen() {
             </View>
 
             <ScrollView style={styles.menuItems}>
-              {quickAccessItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.menuItem}
-                  onPress={() => handleMenuItemPress(item.route)}
-                >
+              {quickAccessItems.map(item => (
+                <TouchableOpacity key={item.id} style={styles.menuItem} onPress={() => handleMenuItemPress(item.route)}>
                   <Text style={styles.menuItemIcon}>{item.icon}</Text>
                   <Text style={styles.menuItemText}>{item.title}</Text>
                 </TouchableOpacity>
@@ -340,10 +377,7 @@ export default function HomeScreen() {
 
               <View style={styles.menuDivider} />
 
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleMenuItemPress('QuickAccess')}
-              >
+              <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('QuickAccess')}>
                 <Text style={styles.menuItemIcon}>◎</Text>
                 <Text style={styles.menuItemText}>Manage Menu</Text>
               </TouchableOpacity>
@@ -356,13 +390,8 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-      
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }
@@ -370,7 +399,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: colors.bone,
   },
   header: {
     flexDirection: 'row',
@@ -379,8 +408,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
-    backgroundColor: '#F4F1ED',
+    borderBottomColor: colors.hair,
+    backgroundColor: colors.bone,
   },
   menuButton: {
     width: 40,
@@ -396,97 +425,191 @@ const styles = StyleSheet.create({
   hamburgerLine: {
     width: 24,
     height: 2,
-    backgroundColor: '#161616',
-    borderRadius: 2,
+    backgroundColor: colors.ink,
   },
   socialIcon: {
     fontSize: 22,
-    color: '#161616',
+    color: colors.ink,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#161616',
-    letterSpacing: 0.5,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
+    color: colors.ink,
+    letterSpacing: 2.4,
   },
   content: {
     paddingBottom: 40,
-  },
-  hero: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 24,
-  },
-  heroTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#161616',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 17,
-    color: '#5E5A55',
-    fontWeight: '400',
-  },
-  module: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#EEE9E3',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  moduleLastChild: {
-    marginBottom: 0,
-  },
-  moduleImage: {
-    width: '100%',
-    height: 240,
-  },
-  moduleOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-  },
-  moduleTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#F1ECE7',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  moduleSubtitle: {
-    fontSize: 15,
-    color: '#F1ECE7',
-    opacity: 0.90,
-    fontWeight: '400',
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingText: {
+  hero: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dateLabel: {
+    ...textType.eyebrow,
+  },
+  archetypePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.white,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  archetypeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.camel,
+    marginRight: 6,
+  },
+  archetypePillText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.ink,
+  },
+  heroTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 32,
+    color: colors.ink,
+    marginBottom: 8,
+  },
+  heroTitleAccent: {
+    fontFamily: fonts.serifItalic,
+    color: colors.camel,
+  },
+  heroSubtitle: {
+    ...textType.body,
+    color: colors.inkMuted,
+  },
+  sectionLabel: {
+    ...textType.eyebrow,
+    paddingHorizontal: 20,
+  },
+  chipRow: {
+    marginTop: 12,
+  },
+  chipRowContent: {
+    paddingHorizontal: 20,
+  },
+  chipSpacing: {
+    marginRight: 8,
+  },
+  dressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 28,
+    paddingHorizontal: 20,
+  },
+  lookCounter: {
+    ...textType.eyebrow,
+  },
+  lookCard: {
+    marginHorizontal: 20,
     marginTop: 16,
-    fontSize: 17,
-    color: '#5E5A55',
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+  },
+  heroImage: {
+    width: '100%',
+    height: 320,
+    backgroundColor: colors.paper,
+  },
+  thumbRow: {
+    flexDirection: 'row',
+    padding: 12,
+  },
+  thumbCard: {
+    flex: 1,
+    marginRight: 8,
+  },
+  thumbImage: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: colors.paper,
+  },
+  thumbPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbPlaceholderText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 12,
+    color: colors.tobacco,
+    textTransform: 'capitalize',
+  },
+  thumbMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  thumbName: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.ink,
+    flex: 1,
+  },
+  thumbPrice: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.tobacco,
+  },
+  noteCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingLeft: 16,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.camel,
+  },
+  noteQuote: {
+    ...textType.pullQuote,
+    color: colors.ink,
+  },
+  noteLabel: {
+    ...textType.eyebrow,
+    marginTop: 8,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  emptyCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+  },
+  emptyText: {
+    ...textType.body,
+    color: colors.inkMuted,
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(28, 28, 28, 0.5)',
     justifyContent: 'flex-end',
   },
   menuContainer: {
-    backgroundColor: '#EEE9E3',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: colors.bone,
     paddingBottom: 40,
     maxHeight: '80%',
   },
@@ -497,16 +620,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: colors.hair,
   },
   menuHeaderTitle: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontWeight: '600',
-    color: '#161616',
+    color: colors.ink,
   },
   menuHeaderSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 13,
-    color: '#7B665A',
+    color: colors.tobacco,
     marginTop: 2,
     maxWidth: 220,
   },
@@ -515,7 +639,7 @@ const styles = StyleSheet.create({
   },
   menuClose: {
     fontSize: 28,
-    color: '#2B1F1A',
+    color: colors.ink,
     fontWeight: '300',
   },
   menuItems: {
@@ -531,64 +655,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginRight: 16,
     width: 32,
-    color: '#2B1F1A',
+    color: colors.ink,
     textAlign: 'center',
   },
   menuItemText: {
+    fontFamily: fonts.sans,
     fontSize: 17,
-    color: '#161616',
-    fontWeight: '400',
+    color: colors.ink,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#DED7CF',
+    backgroundColor: colors.hair,
     marginVertical: 8,
     marginHorizontal: 20,
-  },
-  styleProfileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#2B1F1A',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  styleProfileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F4F1ED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  styleProfileIconText: {
-    fontSize: 24,
-  },
-  styleProfileContent: {
-    flex: 1,
-  },
-  styleProfileTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#161616',
-    marginBottom: 2,
-  },
-  styleProfileSubtitle: {
-    fontSize: 14,
-    color: '#5E5A55',
-  },
-  styleProfileArrow: {
-    fontSize: 20,
-    color: '#2B1F1A',
-    fontWeight: '600',
   },
 });

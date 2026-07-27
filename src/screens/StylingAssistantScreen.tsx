@@ -24,6 +24,7 @@ import { StyleDNA } from '../models/styleDNA';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts, type as textType } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 120) / 3;
@@ -217,14 +218,8 @@ export default function StylingAssistantScreen() {
 
     return (
       <View key={message.id} style={[styles.messageContainer, isUser && styles.userMessageContainer]}>
-        {!isUser && (
-          <View style={styles.assistantAvatar}>
-            <Text style={styles.assistantAvatarText}>AI</Text>
-          </View>
-        )}
-
         <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-          <Text style={[styles.messageText, isUser && styles.userMessageText]}>
+          <Text style={[styles.messageText, isUser && styles.userMessageText, !isUser && styles.assistantMessageText]}>
             {message.content}
           </Text>
 
@@ -259,12 +254,6 @@ export default function StylingAssistantScreen() {
             {formatTime(message.timestamp)}
           </Text>
         </View>
-
-        {isUser && (
-          <View style={styles.userAvatar}>
-            <Text style={styles.userAvatarText}>You</Text>
-          </View>
-        )}
       </View>
     );
   };
@@ -289,18 +278,21 @@ export default function StylingAssistantScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>S</Text>
+          </View>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>AI Stylist</Text>
+            <Text style={styles.headerTitle}>Your stylist</Text>
             {weather ? (
               <Text style={styles.headerSubtitle}>
-                {WEATHER_ICON[weather.condition]} {weather.temperature}°F · Knows your closet
+                ONLINE · {weather.temperature}° · WARM &amp; DIRECT
               </Text>
             ) : (
-              <Text style={styles.headerSubtitle}>Knows your closet</Text>
+              <Text style={styles.headerSubtitle}>ONLINE · WARM &amp; DIRECT</Text>
             )}
           </View>
           <TouchableOpacity onPress={handleClearChat}>
-            <Text style={styles.clearButton}>Clear</Text>
+            <Text style={styles.clearButton}>CLEAR</Text>
           </TouchableOpacity>
         </View>
 
@@ -308,7 +300,7 @@ export default function StylingAssistantScreen() {
         {styleDNA ? (
           <View style={styles.contextStrip}>
             <Text style={styles.contextStripText} numberOfLines={1}>
-              🎯 Personalizing with your Style DNA
+              Personalizing with your Style DNA
               {styleDNA.styleArchetypes.length > 0 ? `: ${styleDNA.styleArchetypes.slice(0, 2).join(', ')}` : ''}
               {' '}+ live weather + time of day
             </Text>
@@ -319,7 +311,7 @@ export default function StylingAssistantScreen() {
             onPress={() => navigation.navigate('StyleProfileBuilder')}
           >
             <Text style={styles.contextStripPromptText}>
-              ✨ Build your Style Profile for even sharper picks →
+              Build your Style DNA for sharper picks →
             </Text>
           </TouchableOpacity>
         )}
@@ -330,7 +322,7 @@ export default function StylingAssistantScreen() {
             style={styles.outfitCardHeader}
             onPress={() => setOutfitPickerOpen(prev => !prev)}
           >
-            <Text style={styles.outfitCardTitle}>✨ Get My Outfit</Text>
+            <Text style={styles.outfitCardTitle}>GET MY OUTFIT</Text>
             <Text style={styles.outfitCardChevron}>{outfitPickerOpen ? '︿' : '﹀'}</Text>
           </TouchableOpacity>
 
@@ -385,9 +377,6 @@ export default function StylingAssistantScreen() {
 
           {sending && (
             <View style={styles.typingIndicator}>
-              <View style={styles.assistantAvatar}>
-                <Text style={styles.assistantAvatarText}>AI</Text>
-              </View>
               <View style={styles.typingBubble}>
                 <View style={styles.typingDots}>
                   <View style={styles.typingDot} />
@@ -454,7 +443,7 @@ export default function StylingAssistantScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -464,89 +453,104 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingBottom: 12,
-    backgroundColor: '#ffffff',
+    paddingBottom: 16,
+    backgroundColor: colors.bone,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.sand,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerAvatarText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 18,
+    color: colors.tobacco,
   },
   headerCenter: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.ink,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: '#64748b',
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: colors.tobacco,
     marginTop: 2,
   },
   clearButton: {
-    fontSize: 14,
-    color: '#ef4444',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: colors.inkMuted,
   },
   contextStrip: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.paper,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#bbf7d0',
+    borderBottomColor: colors.hair,
   },
   contextStripText: {
-    fontSize: 12,
-    color: '#166534',
-    fontWeight: '500',
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.tobacco,
   },
   contextStripPrompt: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.paper,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#fecaca',
+    borderBottomColor: colors.hair,
   },
   contextStripPromptText: {
-    fontSize: 12,
-    color: '#b91c1c',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 11,
+    color: colors.ink,
   },
   outfitCard: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#fed7aa',
+    borderBottomColor: colors.hair,
   },
   outfitCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   outfitCardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#9a3412',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: colors.ink,
   },
   outfitCardChevron: {
     fontSize: 14,
-    color: '#9a3412',
+    color: colors.inkMuted,
   },
   outfitCardBody: {
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
   pickerLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#9a3412',
+    ...textType.eyebrow,
     marginBottom: 8,
     marginTop: 8,
   },
@@ -557,35 +561,35 @@ const styles = StyleSheet.create({
   },
   pickerChip: {
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#fed7aa',
+    borderColor: colors.hair,
   },
   pickerChipActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   pickerChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9a3412',
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.ink,
   },
   pickerChipTextActive: {
-    color: '#ffffff',
+    color: colors.bone,
   },
   getOutfitButton: {
     marginTop: 16,
-    backgroundColor: '#ef4444',
-    paddingVertical: 12,
-    borderRadius: 12,
+    backgroundColor: colors.ink,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   getOutfitButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.bone,
+    fontSize: 11,
+    letterSpacing: 1.4,
   },
   messagesContainer: {
     flex: 1,
@@ -595,71 +599,43 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   messageContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-end',
+    marginBottom: 12,
+    alignItems: 'flex-start',
   },
   userMessageContainer: {
-    flexDirection: 'row-reverse',
-  },
-  assistantAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ef4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  assistantAvatarText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  userAvatarText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    alignItems: 'flex-end',
   },
   messageBubble: {
-    maxWidth: '78%',
-    padding: 12,
-    borderRadius: 16,
+    maxWidth: '82%',
+    padding: 14,
   },
   assistantBubble: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderBottomLeftRadius: 4,
+    backgroundColor: colors.paper,
   },
   userBubble: {
-    backgroundColor: '#ef4444',
-    borderBottomRightRadius: 4,
+    backgroundColor: colors.ink,
   },
   messageText: {
+    fontFamily: fonts.sans,
     fontSize: 15,
-    color: '#0f172a',
-    lineHeight: 22,
+    color: colors.ink,
+    lineHeight: 21,
+  },
+  assistantMessageText: {
+    fontFamily: fonts.serifItalic,
   },
   userMessageText: {
-    color: '#ffffff',
+    fontFamily: fonts.sans,
+    color: colors.bone,
   },
   messageTime: {
-    fontSize: 11,
-    color: '#94a3b8',
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.inkFaint,
     marginTop: 6,
   },
   userMessageTime: {
-    color: '#fecaca',
+    color: 'rgba(253,251,250,0.6)',
   },
   outfitContainer: {
     flexDirection: 'row',
@@ -667,71 +643,65 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.hair,
   },
   outfitItemImage: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.sand,
     marginBottom: 4,
   },
   outfitItemName: {
-    fontSize: 11,
-    color: '#64748b',
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.inkMuted,
     textAlign: 'center',
     width: ITEM_SIZE,
   },
   saveOutfitButton: {
     marginTop: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#fef2f2',
+    paddingVertical: 10,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: colors.hair,
     alignItems: 'center',
   },
   saveOutfitButtonSaved: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
+    backgroundColor: colors.sand,
+    borderColor: colors.sand,
   },
   saveOutfitText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: colors.ink,
   },
   saveOutfitTextSaved: {
-    color: '#16a34a',
+    color: colors.tobacco,
   },
   typingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   typingBubble: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
+    backgroundColor: colors.paper,
     padding: 16,
-    marginLeft: 8,
   },
   typingDots: {
     flexDirection: 'row',
     gap: 6,
   },
   typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#cbd5e1',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.tobacco,
   },
   suggestionsScroll: {
     maxHeight: 50,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
+    borderTopColor: colors.hair,
+    backgroundColor: colors.bone,
   },
   suggestionsContainer: {
     padding: 12,
@@ -740,46 +710,46 @@ const styles = StyleSheet.create({
   suggestionChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   suggestionText: {
-    fontSize: 13,
-    color: '#475569',
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.ink,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     gap: 8,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-    borderRadius: 20,
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    fontFamily: fonts.sans,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.inkFaint,
   },
   sendButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.bone,
+    fontSize: 12,
+    letterSpacing: 1,
   },
 });

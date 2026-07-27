@@ -16,6 +16,23 @@ import { StyleDNA } from '../models/styleDNA';
 
 const chatWithStylistFn = httpsCallable(functions, 'chatWithStylist');
 
+// Defense-in-depth: the model is instructed never to mention item IDs, but strip any
+// literal occurrences of the IDs it actually recommended in case it slips one in
+// (e.g. "the blazer (abc123)"), plus the stray punctuation that'd leave behind.
+function stripItemIdsFromReply(text: string, itemIds: string[]): string {
+  let cleaned = text;
+  for (const id of itemIds) {
+    if (!id) continue;
+    cleaned = cleaned.split(id).join('');
+  }
+  return cleaned
+    .replace(/\(\s*\)/g, '')
+    .replace(/\[\s*\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.!?])/g, '$1')
+    .trim();
+}
+
 export interface StylingContext {
   weather?: { condition: string; temperature: number };
   occasion?: string;
@@ -149,6 +166,7 @@ class StylingAssistantService {
       const data = aiResult.data as { success: boolean; reply: string; itemIds: string[] };
       replyText = data.reply;
       itemIds = data.itemIds || [];
+      replyText = stripItemIdsFromReply(replyText, itemIds);
     }
 
     const referencedItems = itemIds

@@ -7,6 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface ButtonProps {
   title: string;
@@ -53,14 +54,12 @@ export default function Button({
       style={buttonStyles}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' ? '#ffffff' : '#ef4444'}
-        />
+        <ActivityIndicator color={variant === 'primary' ? colors.bone : colors.ink} />
       ) : (
-        <Text style={textStyles}>{title}</Text>
+        <Text style={textStyles}>{title.toUpperCase()}</Text>
       )}
     </TouchableOpacity>
   );
@@ -68,71 +67,75 @@ export default function Button({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 8,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   fullWidth: {
     width: '100%',
   },
   // Variants
   primary: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   secondary: {
-    backgroundColor: '#64748b',
+    backgroundColor: colors.camel,
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: colors.hair,
   },
   ghost: {
     backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   // Sizes
   smallButton: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
   },
   mediumButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
   },
   largeButton: {
-    paddingVertical: 16,
+    paddingVertical: 17,
     paddingHorizontal: 32,
   },
   // Text styles
   text: {
+    fontFamily: fonts.sansSemiBold,
     fontWeight: '600',
+    letterSpacing: 1.8,
   },
   primaryText: {
-    color: '#ffffff',
+    color: colors.bone,
   },
   secondaryText: {
-    color: '#ffffff',
+    color: colors.ink,
   },
   outlineText: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   ghostText: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   disabledText: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   smallText: {
-    fontSize: 14,
+    fontSize: 9,
   },
   mediumText: {
-    fontSize: 16,
+    fontSize: 10,
   },
   largeText: {
-    fontSize: 18,
+    fontSize: 11,
   },
 });

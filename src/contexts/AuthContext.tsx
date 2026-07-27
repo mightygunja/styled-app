@@ -10,12 +10,15 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
+  getAdditionalUserInfo,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isNewUser: boolean;
+  clearIsNewUser: () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -44,6 +47,8 @@ function ensureGoogleConfigured() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const clearIsNewUser = () => setIsNewUser(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -70,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.user) {
         await updateProfile(result.user, { displayName });
       }
+      setIsNewUser(true);
     } catch (error: any) {
       throw new Error(error.message);
     }
@@ -95,7 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const credential = GoogleAuthProvider.credential(idToken);
-      await signInWithCredential(auth, credential);
+      const result = await signInWithCredential(auth, credential);
+      if (getAdditionalUserInfo(result)?.isNewUser) {
+        setIsNewUser(true);
+      }
     } catch (error: any) {
       if (error?.code === 'SIGN_IN_CANCELLED' || error?.code === -5) {
         return; // user closed the picker - not an error worth surfacing
@@ -142,6 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const result = await signInWithCredential(auth, firebaseCredential);
+      if (getAdditionalUserInfo(result)?.isNewUser) {
+        setIsNewUser(true);
+      }
 
       // Apple only sends the user's name on the very first sign-in - capture it then.
       const fullName = appleCredential.fullName;
@@ -170,6 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    isNewUser,
+    clearIsNewUser,
     signIn,
     signUp,
     signInWithGoogle,
