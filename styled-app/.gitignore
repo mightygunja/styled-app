@@ -2,12 +2,9 @@
 
 # dependencies
 node_modules/
-.pnp
-.pnp.js
 
 # Expo
 .expo/
-.expo-shared/
 dist/
 web-build/
 expo-env.d.ts
@@ -24,32 +21,16 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# Testing
-coverage/
-
-# Production
-build/
-
 # debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-lerna-debug.log*
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# macOS / Windows
+# macOS
 .DS_Store
-Thumbs.db
 *.pem
 
 # local env files
-.env
 .env*.local
 
 # typescript
