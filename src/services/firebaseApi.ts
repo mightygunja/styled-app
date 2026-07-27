@@ -3,10 +3,11 @@ import { functions, auth } from '../config/firebase';
 import { closetService, looksService, palettesService, shopMyClosetService } from './firestore';
 import { uploadImageToFirebase } from './firebaseStorage';
 
-// Set to a uid only for local testing (paired with DEV_SKIP_AUTH in AppNavigator.tsx)
-// to force every screen to read a specific seeded account's data regardless of the
-// real Firebase session. Must stay null in anything committed/shipped.
-const DEV_FORCE_USER_ID: string | null = null;
+// TESTFLIGHT DEMO BUILD: forces every screen to read the seeded mock-user-123
+// account, paired with DEV_SKIP_AUTH in AppNavigator.tsx. Revert to null (and revert
+// DEV_SKIP_AUTH + devSkipAuthChecks() in firestore.rules) before any build meant for
+// real users.
+const DEV_FORCE_USER_ID: string | null = 'mock-user-123';
 
 // The real signed-in user's uid. Auth is required before the main app is reachable
 // (see AppNavigator), so auth.currentUser is always set here in practice; the

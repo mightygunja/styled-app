@@ -14,11 +14,14 @@
     "scheme": "styledapp",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.styled.app",
-      "usesAppleSignIn": true
+      "bundleIdentifier": "com.adilgunja.styledapp",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.styled.app",
+      "package": "com.adilgunja.styledapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -36,6 +39,12 @@
         }
       ],
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3978f432-8f64-4a56-b8b5-b483c2e83cde"
+      }
+    },
+    "owner": "adilgunja"
   }
 }

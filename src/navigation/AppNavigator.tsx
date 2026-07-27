@@ -171,10 +171,11 @@ function MainTabs() {
   );
 }
 
-// Set true only for local testing to bypass the login gate. Must stay false in
-// anything committed/shipped - also see DEV_FORCE_USER_ID in firebaseApi.ts and
-// devSkipAuthChecks() in firestore.rules, which need to be reverted together.
-const DEV_SKIP_AUTH = false;
+// TESTFLIGHT DEMO BUILD: bypasses the login gate so every install lands straight in
+// the seeded mock-user-123 account. Also see DEV_FORCE_USER_ID in firebaseApi.ts and
+// devSkipAuthChecks() in firestore.rules - all three must move together. Revert all
+// three (and redeploy firestore.rules) before any build meant for real users.
+const DEV_SKIP_AUTH = true;
 
 export default function AppNavigator() {
   const { user, loading, isNewUser } = useAuth();

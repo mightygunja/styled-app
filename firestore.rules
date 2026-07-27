@@ -1,12 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Set to true only when DEV_SKIP_AUTH is on in the app (AppNavigator.tsx) for
-    // local testing with no real Firebase Auth session - short-circuits every owner
-    // check below. Must stay false in anything committed/shipped; redeploy after
-    // changing (npx firebase deploy --only firestore:rules).
+    // TESTFLIGHT DEMO BUILD: matches DEV_SKIP_AUTH in AppNavigator.tsx (no real
+    // Firebase Auth session in this build) - short-circuits every owner check below.
+    // Revert to false before any build meant for real users, and redeploy
+    // (npx firebase deploy --only firestore:rules).
     function devSkipAuthChecks() {
-      return false;
+      return true;
     }
 
     function isAuthenticated() {
