@@ -2,11 +2,11 @@
  * Outfit Generation Service
  * 
  * Safe and trustworthy outfit generator that uses normalized ClosetItem data
- * and StyleDNA preferences to create cohesive, personalized outfit suggestions.
+ * and PersonalStyleProfile preferences to create cohesive, personalized outfit suggestions.
  */
 
 import { ClosetItem, ClothingCategory, Season, getCurrentSeason, hasFormalityMatch, hasColorHarmony, canLayer, isSeasonallyAppropriate } from '../models/closetItem';
-import { StyleDNA, DEFAULT_STYLE_DNA } from '../models/styleDNA';
+import { PersonalStyleProfile, DEFAULT_PERSONAL_STYLE_PROFILE } from '../models/personalStyleProfile';
 
 /**
  * Represents a complete outfit suggestion
@@ -14,7 +14,7 @@ import { StyleDNA, DEFAULT_STYLE_DNA } from '../models/styleDNA';
 export interface Outfit {
   id: string;
   items: ClosetItem[];
-  score: number;  // 0-100, how well this outfit matches user's StyleDNA
+  score: number;  // 0-100, how well this outfit matches user's PersonalStyleProfile
   occasion: string;  // e.g., "work", "casual", "date"
   reason: string;  // Human-readable explanation of why this outfit works
 }
@@ -49,14 +49,14 @@ const SILHOUETTE_COMPATIBILITY: Record<string, string[]> = {
  * Select best items from sparse closet for a single outfit
  * Focuses on creating one strong outfit rather than multiple weak ones
  */
-function selectBestItems(closet: ClosetItem[], styleDNA: StyleDNA): {
+function selectBestItems(closet: ClosetItem[], styleProfile: PersonalStyleProfile): {
   items: ClosetItem[];
   occasion: string;
 } {
   // Prioritize items that match user's style archetypes
   const scoredItems = closet.map(item => ({
     item,
-    score: calculateItemScore(item, styleDNA),
+    score: calculateItemScore(item, styleProfile),
   })).sort((a, b) => b.score - a.score);
 
   const selectedItems: ClosetItem[] = [];
@@ -84,28 +84,28 @@ function selectBestItems(closet: ClosetItem[], styleDNA: StyleDNA): {
 }
 
 /**
- * Calculate how well an item matches user's StyleDNA
+ * Calculate how well an item matches user's PersonalStyleProfile
  */
-function calculateItemScore(item: ClosetItem, styleDNA: StyleDNA): number {
+function calculateItemScore(item: ClosetItem, styleProfile: PersonalStyleProfile): number {
   let score = 50; // Base score
 
   // Boost score if item matches style archetypes
   const itemDescriptors = [...(item.tags || []), ...item.silhouettes];
-  const matchesArchetype = styleDNA.styleArchetypes.some(archetype =>
+  const matchesArchetype = styleProfile.styleArchetypes.some(archetype =>
     itemDescriptors.some(desc => desc.toLowerCase().includes(archetype.toLowerCase()))
   );
   if (matchesArchetype) score += 20;
 
   // Boost score if item is in color comfort zone
   const inColorZone = item.colors.some(color =>
-    [...styleDNA.colorProfile.primary, ...styleDNA.colorProfile.secondary].some(preferred =>
+    [...styleProfile.colorProfile.primary, ...styleProfile.colorProfile.secondary].some(preferred =>
       color.toLowerCase().includes(preferred.toLowerCase())
     )
   );
   if (inColorZone) score += 15;
 
   // Penalize if item matches avoid rules
-  const matchesAvoidRule = styleDNA.avoidRules.some(rule =>
+  const matchesAvoidRule = styleProfile.avoidRules.some(rule =>
     itemDescriptors.some(desc => desc.toLowerCase().includes(rule.toLowerCase()))
   );
   if (matchesAvoidRule) score -= 30;
@@ -147,13 +147,13 @@ function haveSilhouetteCompatibility(item1: ClosetItem, item2: ClosetItem): bool
 }
 
 /**
- * Checks if item colors are within user's comfort zone (StyleDNA color profile)
+ * Checks if item colors are within user's comfort zone (PersonalStyleProfile color profile)
  */
-function isInColorComfortZone(item: ClosetItem, styleDNA: StyleDNA): boolean {
+function isInColorComfortZone(item: ClosetItem, styleProfile: PersonalStyleProfile): boolean {
   const allPreferredColors = [
-    ...styleDNA.colorProfile.primary,
-    ...styleDNA.colorProfile.secondary,
-    ...styleDNA.colorProfile.stretch,
+    ...styleProfile.colorProfile.primary,
+    ...styleProfile.colorProfile.secondary,
+    ...styleProfile.colorProfile.stretch,
   ];
 
   // Check if any of the item's colors match user's preferred colors
@@ -166,22 +166,22 @@ function isInColorComfortZone(item: ClosetItem, styleDNA: StyleDNA): boolean {
 }
 
 /**
- * Generates outfit suggestions from user's closet using StyleDNA preferences
+ * Generates outfit suggestions from user's closet using PersonalStyleProfile preferences
  * 
  * SAFE & TRUSTWORTHY:
- * - Works even if styleDNA is undefined (uses sensible defaults)
+ * - Works even if styleProfile is undefined (uses sensible defaults)
  * - Never crashes on incomplete data (defensive programming)
  * - Always returns valid outfits (even if just basic combinations)
  * - Scores outfits so best suggestions appear first
  * 
  * @param closet - Array of normalized ClosetItem objects
- * @param styleDNA - User's style preferences (optional, uses defaults if undefined)
+ * @param styleProfile - User's style preferences (optional, uses defaults if undefined)
  * @param options - Optional configuration for outfit generation
  * @returns Array of Outfit suggestions, sorted by score (best first)
  */
 export function generateOutfits(
   closet: ClosetItem[],
-  styleDNA?: StyleDNA,
+  styleProfile?: PersonalStyleProfile,
   options: GenerateOutfitsOptions = {}
 ): Outfit[] {
   // Defensive: Handle empty or invalid closet
@@ -189,15 +189,15 @@ export function generateOutfits(
     return [];
   }
 
-  // Temporary fallback: Use default StyleDNA if undefined
+  // Temporary fallback: Use default PersonalStyleProfile if undefined
   // This ensures the function works even without user's style profile
-  const userStyleDNA = styleDNA || DEFAULT_STYLE_DNA;
+  const userStyleProfile = styleProfile || DEFAULT_PERSONAL_STYLE_PROFILE;
 
   // SPARSE CLOSET FALLBACK
   // If closet is sparse, return a single confidence-building outfit
   const { isClosetSparse } = require('./closetAnalysis');
   if (isClosetSparse(closet)) {
-    const bestOutfit = selectBestItems(closet, userStyleDNA);
+    const bestOutfit = selectBestItems(closet, userStyleProfile);
     if (bestOutfit.items.length >= 2) {
       return [{
         id: `sparse-outfit-${Date.now()}`,
@@ -239,7 +239,7 @@ export function generateOutfits(
 
   // Strategy 1: Generate dress-based outfits
   dresses.forEach(dress => {
-    const outfit = buildDressOutfit(dress, shoes, outerwear, accessories, userStyleDNA, occasion);
+    const outfit = buildDressOutfit(dress, shoes, outerwear, accessories, userStyleProfile, occasion);
     if (outfit) {
       outfits.push(outfit);
     }
@@ -252,13 +252,13 @@ export function generateOutfits(
       const formalityAligned = hasFormalityMatch(top, bottom, 2);  // Stricter tolerance
       const colorsHarmonize = hasColorHarmony(top, bottom);
       const silhouettesCompatible = haveSilhouetteCompatibility(top, bottom);
-      const topInComfortZone = isInColorComfortZone(top, userStyleDNA);
-      const bottomInComfortZone = isInColorComfortZone(bottom, userStyleDNA);
+      const topInComfortZone = isInColorComfortZone(top, userStyleProfile);
+      const bottomInComfortZone = isInColorComfortZone(bottom, userStyleProfile);
       
       // Only create outfit if all rules pass
       if (formalityAligned && colorsHarmonize && silhouettesCompatible && 
           (topInComfortZone || bottomInComfortZone)) {
-        const outfit = buildTopBottomOutfit(top, bottom, shoes, outerwear, accessories, userStyleDNA, occasion);
+        const outfit = buildTopBottomOutfit(top, bottom, shoes, outerwear, accessories, userStyleProfile, occasion);
         if (outfit) {
           outfits.push(outfit);
         }
@@ -281,7 +281,7 @@ function buildDressOutfit(
   shoes: ClosetItem[],
   outerwear: ClosetItem[],
   accessories: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   occasion?: string
 ): Outfit | null {
   const items: ClosetItem[] = [dress];
@@ -290,7 +290,7 @@ function buildDressOutfit(
   const compatibleShoes = shoes.filter(shoe => {
     const formalityMatch = hasFormalityMatch(dress, shoe, 2);  // Stricter tolerance
     const colorMatch = hasColorHarmony(dress, shoe);
-    const inComfortZone = isInColorComfortZone(shoe, styleDNA);
+    const inComfortZone = isInColorComfortZone(shoe, styleProfile);
     return formalityMatch && colorMatch && inComfortZone;
   });
   
@@ -328,7 +328,7 @@ function buildDressOutfit(
   if (dress.formality >= 6 && accessories.length > 0) {
     const compatibleAccessories = accessories.filter(acc => {
       const formalityMatch = hasFormalityMatch(dress, acc, 2);
-      const inComfortZone = isInColorComfortZone(acc, styleDNA);
+      const inComfortZone = isInColorComfortZone(acc, styleProfile);
       return formalityMatch && inComfortZone;
     });
     
@@ -344,9 +344,9 @@ function buildDressOutfit(
   }
 
   // Score the outfit
-  const score = scoreOutfit(items, styleDNA, occasion);
+  const score = scoreOutfit(items, styleProfile, occasion);
   const outfitOccasion = determineOccasion(items, occasion);
-  const reason = generateOutfitReason(items, styleDNA, outfitOccasion);
+  const reason = generateOutfitReason(items, styleProfile, outfitOccasion);
 
   // Deterministic ID generation (no randomness)
   const itemIds = items.map(i => i.id).sort().join('-');
@@ -370,7 +370,7 @@ function buildTopBottomOutfit(
   shoes: ClosetItem[],
   outerwear: ClosetItem[],
   accessories: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   occasion?: string
 ): Outfit | null {
   const items: ClosetItem[] = [top, bottom];
@@ -380,7 +380,7 @@ function buildTopBottomOutfit(
   const compatibleShoes = shoes.filter(shoe => {
     const formalityMatch = Math.abs(shoe.formality - avgFormality) <= 2;  // Stricter
     const colorMatch = hasColorHarmony(shoe, top) || hasColorHarmony(shoe, bottom);
-    const inComfortZone = isInColorComfortZone(shoe, styleDNA);
+    const inComfortZone = isInColorComfortZone(shoe, styleProfile);
     return formalityMatch && colorMatch && inComfortZone;
   });
   
@@ -419,7 +419,7 @@ function buildTopBottomOutfit(
   if (avgFormality >= 6 && accessories.length > 0) {
     const compatibleAccessories = accessories.filter(acc => {
       const formalityMatch = Math.abs(acc.formality - avgFormality) <= 2;
-      const inComfortZone = isInColorComfortZone(acc, styleDNA);
+      const inComfortZone = isInColorComfortZone(acc, styleProfile);
       return formalityMatch && inComfortZone;
     });
     
@@ -435,9 +435,9 @@ function buildTopBottomOutfit(
   }
 
   // Score the outfit
-  const score = scoreOutfit(items, styleDNA, occasion);
+  const score = scoreOutfit(items, styleProfile, occasion);
   const outfitOccasion = determineOccasion(items, occasion);
-  const reason = generateOutfitReason(items, styleDNA, outfitOccasion);
+  const reason = generateOutfitReason(items, styleProfile, outfitOccasion);
 
   // Deterministic ID generation (no randomness)
   const itemIds = items.map(i => i.id).sort().join('-');
@@ -453,18 +453,18 @@ function buildTopBottomOutfit(
 }
 
 /**
- * Scores an outfit based on StyleDNA preferences (0-100)
+ * Scores an outfit based on PersonalStyleProfile preferences (0-100)
  */
-function scoreOutfit(items: ClosetItem[], styleDNA: StyleDNA, occasion?: string): number {
+function scoreOutfit(items: ClosetItem[], styleProfile: PersonalStyleProfile, occasion?: string): number {
   let score = 50; // Start at middle
 
-  // Color matching with StyleDNA
+  // Color matching with PersonalStyleProfile
   const outfitColors = items.flatMap(item => item.colors);
   const matchingPrimaryColors = outfitColors.filter(c =>
-    styleDNA.colorProfile.primary.includes(c)
+    styleProfile.colorProfile.primary.includes(c)
   );
   const matchingSecondaryColors = outfitColors.filter(c =>
-    styleDNA.colorProfile.secondary.includes(c)
+    styleProfile.colorProfile.secondary.includes(c)
   );
   
   score += matchingPrimaryColors.length * 5;
@@ -474,11 +474,11 @@ function scoreOutfit(items: ClosetItem[], styleDNA: StyleDNA, occasion?: string)
   const avgFormality = items.reduce((sum, item) => sum + item.formality, 0) / items.length;
   
   if (occasion === 'work' || avgFormality >= 7) {
-    score += styleDNA.lifestyleWeights.work * 20;
+    score += styleProfile.lifestyleWeights.work * 20;
   } else if (occasion === 'date' || occasion === 'social') {
-    score += styleDNA.lifestyleWeights.social * 20;
+    score += styleProfile.lifestyleWeights.social * 20;
   } else {
-    score += styleDNA.lifestyleWeights.casual * 20;
+    score += styleProfile.lifestyleWeights.casual * 20;
   }
 
   // Silhouette matching with style archetypes
@@ -486,17 +486,17 @@ function scoreOutfit(items: ClosetItem[], styleDNA: StyleDNA, occasion?: string)
   const hasRelaxed = outfitSilhouettes.includes('relaxed');
   const hasTailored = outfitSilhouettes.includes('tailored');
   
-  if (styleDNA.styleArchetypes.includes('minimal') || styleDNA.styleArchetypes.includes('classic')) {
+  if (styleProfile.styleArchetypes.includes('minimal') || styleProfile.styleArchetypes.includes('classic')) {
     if (hasTailored) score += 10;
   }
-  if (styleDNA.styleArchetypes.includes('relaxed') || styleDNA.styleArchetypes.includes('bohemian')) {
+  if (styleProfile.styleArchetypes.includes('relaxed') || styleProfile.styleArchetypes.includes('bohemian')) {
     if (hasRelaxed) score += 10;
   }
 
   // Avoid rules penalty
   const itemTags = items.flatMap(item => item.tags || []);
   const hasAvoidedStyle = itemTags.some(tag =>
-    styleDNA.avoidRules.some(rule => tag.toLowerCase().includes(rule))
+    styleProfile.avoidRules.some(rule => tag.toLowerCase().includes(rule))
   );
   if (hasAvoidedStyle) {
     score -= 30;
@@ -522,22 +522,22 @@ function determineOccasion(items: ClosetItem[], requestedOccasion?: string): str
 
 /**
  * Generates a human-readable explanation for why the outfit works
- * References user's StyleDNA preferences, not trends
+ * References user's PersonalStyleProfile preferences, not trends
  */
-function generateOutfitReason(items: ClosetItem[], styleDNA: StyleDNA, occasion: string): string {
+function generateOutfitReason(items: ClosetItem[], styleProfile: PersonalStyleProfile, occasion: string): string {
   const reasons: string[] = [];
 
-  // Reference user's color preferences (StyleDNA)
+  // Reference user's color preferences (PersonalStyleProfile)
   const colors = items.flatMap(item => item.colors);
   const uniqueColors = [...new Set(colors)];
   
   const matchingPrimaryColors = colors.filter(c => 
-    styleDNA.colorProfile.primary.some(pref => 
+    styleProfile.colorProfile.primary.some(pref => 
       c.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(c.toLowerCase())
     )
   );
   const matchingSecondaryColors = colors.filter(c => 
-    styleDNA.colorProfile.secondary.some(pref => 
+    styleProfile.colorProfile.secondary.some(pref => 
       c.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(c.toLowerCase())
     )
   );
@@ -555,21 +555,21 @@ function generateOutfitReason(items: ClosetItem[], styleDNA: StyleDNA, occasion:
   const avgFormality = items.reduce((sum, item) => sum + item.formality, 0) / items.length;
   
   if (occasion === 'work' || avgFormality >= 7) {
-    const workWeight = Math.round(styleDNA.lifestyleWeights.work * 100);
+    const workWeight = Math.round(styleProfile.lifestyleWeights.work * 100);
     if (workWeight >= 30) {
       reasons.push(`Aligns with your ${workWeight}% work wardrobe needs`);
     } else {
       reasons.push('Professional look for work settings');
     }
   } else if (occasion === 'social' || (avgFormality >= 5 && avgFormality < 7)) {
-    const socialWeight = Math.round(styleDNA.lifestyleWeights.social * 100);
+    const socialWeight = Math.round(styleProfile.lifestyleWeights.social * 100);
     if (socialWeight >= 20) {
       reasons.push(`Fits your ${socialWeight}% social lifestyle`);
     } else {
       reasons.push('Polished yet approachable for social occasions');
     }
   } else {
-    const casualWeight = Math.round(styleDNA.lifestyleWeights.casual * 100);
+    const casualWeight = Math.round(styleProfile.lifestyleWeights.casual * 100);
     if (casualWeight >= 30) {
       reasons.push(`Matches your ${casualWeight}% casual wardrobe preference`);
     } else {
@@ -584,15 +584,15 @@ function generateOutfitReason(items: ClosetItem[], styleDNA: StyleDNA, occasion:
   const hasFitted = silhouettes.includes('fitted');
   const hasOversized = silhouettes.includes('oversized');
   
-  if (styleDNA.styleArchetypes.includes('minimal') || styleDNA.styleArchetypes.includes('classic')) {
+  if (styleProfile.styleArchetypes.includes('minimal') || styleProfile.styleArchetypes.includes('classic')) {
     if (hasTailored || hasFitted) {
       reasons.push('Clean lines match your minimal/classic style');
     }
-  } else if (styleDNA.styleArchetypes.includes('relaxed') || styleDNA.styleArchetypes.includes('bohemian')) {
+  } else if (styleProfile.styleArchetypes.includes('relaxed') || styleProfile.styleArchetypes.includes('bohemian')) {
     if (hasRelaxed || hasOversized) {
       reasons.push('Relaxed fit aligns with your preferred style');
     }
-  } else if (styleDNA.styleArchetypes.includes('polished') || styleDNA.styleArchetypes.includes('edgy')) {
+  } else if (styleProfile.styleArchetypes.includes('polished') || styleProfile.styleArchetypes.includes('edgy')) {
     if (hasTailored && hasRelaxed) {
       reasons.push('Balanced silhouettes create your signature polished look');
     }
@@ -607,18 +607,18 @@ function generateOutfitReason(items: ClosetItem[], styleDNA: StyleDNA, occasion:
 
   // Reference avoid rules (if applicable)
   const itemTags = items.flatMap(item => item.tags || []);
-  const avoidsRespected = styleDNA.avoidRules.length > 0 && 
-    !itemTags.some(tag => styleDNA.avoidRules.some(rule => tag.toLowerCase().includes(rule)));
+  const avoidsRespected = styleProfile.avoidRules.length > 0 && 
+    !itemTags.some(tag => styleProfile.avoidRules.some(rule => tag.toLowerCase().includes(rule)));
   
-  if (avoidsRespected && styleDNA.avoidRules.length > 0) {
+  if (avoidsRespected && styleProfile.avoidRules.length > 0) {
     reasons.push('Respects your style preferences');
   }
 
   // Guidance level personalization
-  if (styleDNA.guidanceLevel === 'directive' && reasons.length > 0) {
+  if (styleProfile.guidanceLevel === 'directive' && reasons.length > 0) {
     // For directive users, be more specific
     return reasons.slice(0, 3).join('. ') + '.';
-  } else if (styleDNA.guidanceLevel === 'inspiration' && reasons.length > 0) {
+  } else if (styleProfile.guidanceLevel === 'inspiration' && reasons.length > 0) {
     // For inspiration users, be more open-ended
     return reasons.slice(0, 2).join('. ') + '. Try it and see how you feel.';
   } else {

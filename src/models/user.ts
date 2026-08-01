@@ -1,10 +1,10 @@
 /**
  * User Model
  * 
- * Core user entity with StyleDNA integration for personalized styling
+ * Core user entity with PersonalStyleProfile integration for personalized styling
  */
 
-import { StyleDNA } from './styleDNA';
+import { PersonalStyleProfile } from './personalStyleProfile';
 
 export type SubscriptionTier = "free" | "plus" | "premium";
 
@@ -15,17 +15,17 @@ export interface User {
   profileImageUrl?: string;
   
   /**
-   * StyleDNA belongs on the User, not individual outfits.
+   * PersonalStyleProfile belongs on the User, not individual outfits.
    * 
    * Rationale:
-   * - StyleDNA represents the user's inherent style preferences, lifestyle needs,
+   * - PersonalStyleProfile represents the user's inherent style preferences, lifestyle needs,
    *   and aesthetic identity - it's about WHO they are, not WHAT they wear.
    * - It's used to filter, score, and recommend items/outfits that match the user.
-   * - Outfits are ephemeral combinations; StyleDNA is the persistent profile
+   * - Outfits are ephemeral combinations; PersonalStyleProfile is the persistent profile
    *   that guides all styling decisions across the entire wardrobe.
    * - A single user has one evolving style identity, but creates many outfits.
    */
-  styleDNA?: StyleDNA;
+  styleProfile?: PersonalStyleProfile;
   
   subscriptionTier: SubscriptionTier;
   createdAt?: string;
@@ -51,7 +51,7 @@ export const SUBSCRIPTION_FEATURES = {
     features: [
       "Unlimited closet items",
       "Advanced AI styling assistant",
-      "Style DNA profile",
+      "Style profile",
       "Color analysis",
       "Outfit planning",
     ],
@@ -78,10 +78,10 @@ export const SUBSCRIPTION_FEATURES = {
  */
 export function hasFeatureAccess(
   user: User,
-  feature: 'styleDNA' | 'advancedAI' | 'personalStylist' | 'analytics'
+  feature: 'styleProfile' | 'advancedAI' | 'personalStylist' | 'analytics'
 ): boolean {
   switch (feature) {
-    case 'styleDNA':
+    case 'styleProfile':
       return user.subscriptionTier === 'plus' || user.subscriptionTier === 'premium';
     case 'advancedAI':
       return user.subscriptionTier === 'plus' || user.subscriptionTier === 'premium';
@@ -95,50 +95,50 @@ export function hasFeatureAccess(
 }
 
 /**
- * Check if user has completed their Style DNA profile
+ * Check if user has completed their style profile
  */
-export function hasCompletedStyleDNA(user: User): boolean {
-  if (!user.styleDNA) return false;
+export function hasCompletedStyleProfile(user: User): boolean {
+  if (!user.styleProfile) return false;
   
   return (
-    user.styleDNA.styleArchetypes.length > 0 &&
-    user.styleDNA.colorProfile.primary.length > 0 &&
-    user.styleDNA.lifestyleWeights.work +
-    user.styleDNA.lifestyleWeights.casual +
-    user.styleDNA.lifestyleWeights.social +
-    user.styleDNA.lifestyleWeights.travel === 1.0
+    user.styleProfile.styleArchetypes.length > 0 &&
+    user.styleProfile.colorProfile.primary.length > 0 &&
+    user.styleProfile.lifestyleWeights.work +
+    user.styleProfile.lifestyleWeights.casual +
+    user.styleProfile.lifestyleWeights.social +
+    user.styleProfile.lifestyleWeights.travel === 1.0
   );
 }
 
 /**
- * Calculate Style DNA completion percentage
+ * Calculate style profile completion percentage
  */
-export function getStyleDNACompletionPercentage(user: User): number {
-  if (!user.styleDNA) return 0;
+export function getStyleProfileCompletionPercentage(user: User): number {
+  if (!user.styleProfile) return 0;
   
   let completed = 0;
   let total = 5;
   
   // Check lifestyle weights
   const weightsSum = 
-    user.styleDNA.lifestyleWeights.work +
-    user.styleDNA.lifestyleWeights.casual +
-    user.styleDNA.lifestyleWeights.social +
-    user.styleDNA.lifestyleWeights.travel;
+    user.styleProfile.lifestyleWeights.work +
+    user.styleProfile.lifestyleWeights.casual +
+    user.styleProfile.lifestyleWeights.social +
+    user.styleProfile.lifestyleWeights.travel;
   
   if (Math.abs(weightsSum - 1.0) < 0.01) completed++;
   
   // Check style archetypes
-  if (user.styleDNA.styleArchetypes.length > 0) completed++;
+  if (user.styleProfile.styleArchetypes.length > 0) completed++;
   
   // Check color profile
-  if (user.styleDNA.colorProfile.primary.length > 0) completed++;
+  if (user.styleProfile.colorProfile.primary.length > 0) completed++;
   
   // Check guidance level
-  if (user.styleDNA.guidanceLevel) completed++;
+  if (user.styleProfile.guidanceLevel) completed++;
   
   // Check fit preferences (optional but counts)
-  if (user.styleDNA.fitPreferences.highlight || user.styleDNA.fitPreferences.downplay) {
+  if (user.styleProfile.fitPreferences.highlight || user.styleProfile.fitPreferences.downplay) {
     completed++;
   }
   

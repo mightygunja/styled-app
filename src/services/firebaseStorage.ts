@@ -5,20 +5,22 @@ import { storage } from '../config/firebase';
  * Upload image to Firebase Storage (React Native compatible)
  * @param base64Image - Base64 encoded image string (with or without data URL prefix)
  * @param userId - User ID for organizing storage
+ * @param folder - Storage folder to upload into (defaults to 'closet' for backward compatibility)
  * @returns Download URL of uploaded image
  */
 export async function uploadImageToFirebase(
   base64Image: string,
-  userId: string
+  userId: string,
+  folder: string = 'closet'
 ): Promise<string> {
   try {
     // Generate unique filename
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(7);
     const filename = `${timestamp}_${randomId}.jpg`;
-    
+
     // Create storage reference
-    const storageRef = ref(storage, `closet/${userId}/${filename}`);
+    const storageRef = ref(storage, `${folder}/${userId}/${filename}`);
     
     // Convert base64 to blob for React Native
     // Remove data URL prefix if present

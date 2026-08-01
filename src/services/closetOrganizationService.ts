@@ -7,6 +7,20 @@
 
 import { Item } from '../types';
 
+/**
+ * Optional style-profile signals used to make capsule selection personal
+ * instead of purely neutral-color/wear-count driven. Every field is optional
+ * so the builder still works for users who haven't completed a color or
+ * body & fit analysis yet.
+ */
+export interface CapsuleProfileContext {
+  recommendedColors?: string[];   // from ColorAnalysisResult.palette
+  colorsToAvoid?: string[];       // from ColorAnalysisResult.colorsToAvoid
+  bodyMatchKeywords?: string[];   // from BODY_TYPE_GUIDES[bodyType].matchKeywords
+  styleArchetypes?: string[];
+  avoidRules?: string[];          // hard exclusion, same as everywhere else in the app
+}
+
 export type OrganizationMethod = 'color' | 'category' | 'season' | 'occasion' | 'frequency';
 export type DeclutterReason = 'unused' | 'duplicate' | 'poor-fit' | 'outdated' | 'damaged';
 
@@ -35,6 +49,16 @@ export interface DeclutterSuggestion {
   alternatives?: Item[];
 }
 
+export interface CapsuleOutfitPreview {
+  items: Item[];
+  label: string; // e.g. "Navy top + black trousers + white sneakers"
+}
+
+export interface CapsuleGap {
+  category: string;
+  message: string;
+}
+
 export interface CapsuleWardrobe {
   id: string;
   name: string;
@@ -43,6 +67,9 @@ export interface CapsuleWardrobe {
   outfitCombinations: number;
   essentialPieces: string[];
   colorPalette: string[];
+  outfitPreviews: CapsuleOutfitPreview[];
+  gaps: CapsuleGap[];
+  personalized: boolean; // true when built with at least one profile signal
 }
 
 export interface UsageAnalytics {
@@ -60,6 +87,26 @@ export interface OrganizationTip {
   tip: string;
   priority: 'high' | 'medium' | 'low';
   icon: string;
+}
+
+/**
+ * Flags core categories with zero items anywhere in the closet. Standalone
+ * export so the marketplace matching engine can reuse the same gap signal
+ * ("you have 0 shoes" -> boost shoe products) without duplicating it.
+ */
+export function findCapsuleGaps(allItems: Item[]): CapsuleGap[] {
+  const coreCategories: { key: string; label: string }[] = [
+    { key: 'tops', label: 'tops' },
+    { key: 'bottoms', label: 'bottoms' },
+    { key: 'shoes', label: 'shoes' },
+  ];
+
+  return coreCategories
+    .filter(c => !allItems.some(item => item.category === c.key))
+    .map(c => ({
+      category: c.key,
+      message: `You don't have any ${c.label} in your closet yet - add a few to complete a real capsule.`,
+    }));
 }
 
 class ClosetOrganizationService {
@@ -144,16 +191,23 @@ class ClosetOrganizationService {
    * Organize by category
    */
   private organizeByCategory(items: Item[]): OrganizationSection[] {
-    const categories = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories'];
+    const categories = [
+      { key: 'tops', label: 'Tops' },
+      { key: 'bottoms', label: 'Bottoms' },
+      { key: 'dresses', label: 'Dresses' },
+      { key: 'outerwear', label: 'Outerwear' },
+      { key: 'shoes', label: 'Shoes' },
+      { key: 'accessories', label: 'Accessories' },
+    ];
     const sections: OrganizationSection[] = [];
 
     categories.forEach((category, index) => {
-      const categoryItems = items.filter(item => item.category === category);
+      const categoryItems = items.filter(item => item.category === category.key);
 
       if (categoryItems.length > 0) {
         sections.push({
-          id: `category-${category}`,
-          name: category.charAt(0).toUpperCase() + category.slice(1),
+          id: `category-${category.key}`,
+          name: category.label,
           items: categoryItems,
           order: index,
         });
@@ -308,17 +362,30 @@ class ClosetOrganizationService {
   }
 
   /**
-   * Create capsule wardrobe
+   * Create capsule wardrobe. Optionally personalized against the user's color
+   * season, body/fit guidance, and style profile - StyleDNA's capsule content
+   * is generic; this one is built from what the user actually owns and, when
+   * available, what actually suits them.
    */
   async createCapsuleWardrobe(
     items: Item[],
     season: 'spring' | 'summer' | 'fall' | 'winter' | 'year-round',
-    pieceCount: number = 30
+    pieceCount: number = 30,
+    profile?: CapsuleProfileContext
   ): Promise<CapsuleWardrobe> {
     await new Promise(resolve => setTimeout(resolve, 900));
 
-    // Select versatile, neutral items
-    const selectedItems = this.selectCapsuleItems(items, pieceCount);
+    // Hard exclusion: items matching an explicit avoid-rule never enter the
+    // capsule, same treatment avoidRules gets everywhere else in the app.
+    const avoidRules = (profile?.avoidRules || []).map(r => r.toLowerCase());
+    const candidates = avoidRules.length === 0
+      ? items
+      : items.filter(item => {
+          const haystack = [item.color || '', item.style || '', ...(item.tags || [])].join(' ').toLowerCase();
+          return !avoidRules.some(rule => haystack.includes(rule));
+        });
+
+    const selectedItems = this.selectCapsuleItems(candidates, pieceCount, profile);
 
     // Calculate outfit combinations
     const tops = selectedItems.filter(i => i.category === 'tops').length;
@@ -331,7 +398,7 @@ class ClosetOrganizationService {
         const inCategory = selectedItems.filter(i => i.category === category);
         if (inCategory.length === 0) return null;
         const best = [...inCategory].sort(
-          (a, b) => this.calculateCapsuleScore(b) - this.calculateCapsuleScore(a)
+          (a, b) => this.calculateCapsuleScore(b, profile) - this.calculateCapsuleScore(a, profile)
         )[0];
         return [best.color, best.category].filter(Boolean).join(' ');
       })
@@ -355,17 +422,25 @@ class ClosetOrganizationService {
       outfitCombinations,
       essentialPieces,
       colorPalette,
+      outfitPreviews: this.buildOutfitPreviews(selectedItems),
+      gaps: this.findCapsuleGaps(items),
+      personalized: !!(profile && (
+        (profile.recommendedColors?.length ?? 0) > 0 ||
+        (profile.bodyMatchKeywords?.length ?? 0) > 0 ||
+        (profile.styleArchetypes?.length ?? 0) > 0 ||
+        avoidRules.length > 0
+      )),
     };
   }
 
   /**
    * Select items for capsule wardrobe
    */
-  private selectCapsuleItems(items: Item[], count: number): Item[] {
-    // Prioritize neutral colors and versatile categories
+  private selectCapsuleItems(items: Item[], count: number, profile?: CapsuleProfileContext): Item[] {
+    // Prioritize neutral colors, versatile categories, and (when available) fit/color/style match
     const scored = items.map(item => ({
       item,
-      score: this.calculateCapsuleScore(item),
+      score: this.calculateCapsuleScore(item, profile),
     }));
 
     scored.sort((a, b) => b.score - a.score);
@@ -374,9 +449,12 @@ class ClosetOrganizationService {
   }
 
   /**
-   * Calculate capsule wardrobe score
+   * Calculate capsule wardrobe score. Base score rewards neutral, versatile,
+   * proven (worn) pieces; profile signals - when present - add a personalized
+   * layer on top rather than replacing the base logic, so the builder still
+   * works well for users with no color/body analysis yet.
    */
-  private calculateCapsuleScore(item: Item): number {
+  private calculateCapsuleScore(item: Item, profile?: CapsuleProfileContext): number {
     let score = 0;
 
     // Neutral colors get higher scores
@@ -399,7 +477,70 @@ class ClosetOrganizationService {
     // Real signal: items already worn a lot have proven versatility
     score += Math.min(20, item.wornCount || 0);
 
+    if (profile) {
+      const itemColor = (item.color || '').toLowerCase();
+      const haystack = [item.style || '', ...(item.tags || [])].join(' ').toLowerCase();
+
+      if (profile.recommendedColors?.some(c => c.toLowerCase().includes(itemColor) || itemColor.includes(c.toLowerCase()))) {
+        score += 25; // fits their color season
+      }
+      if (profile.colorsToAvoid?.some(c => c.toLowerCase().includes(itemColor) || itemColor.includes(c.toLowerCase()))) {
+        score -= 25; // clashes with their color season
+      }
+      if (profile.bodyMatchKeywords?.some(kw => haystack.includes(kw.toLowerCase()))) {
+        score += 20; // cut/silhouette suits their body & fit type
+      }
+      if (profile.styleArchetypes?.some(a => haystack.includes(a.toLowerCase()))) {
+        score += 15; // matches their style archetypes
+      }
+    }
+
     return score;
+  }
+
+  /**
+   * Sample outfit previews from the capsule - bounded (max 3), not a full
+   * combinatorial expansion, so this stays instant even on a 40-piece capsule.
+   * Turns "24 outfit combinations" from an abstract number into something
+   * the user can actually picture.
+   */
+  private buildOutfitPreviews(selectedItems: Item[]): CapsuleOutfitPreview[] {
+    const tops = selectedItems.filter(i => i.category === 'tops').sort((a, b) => (b.wornCount || 0) - (a.wornCount || 0));
+    const bottoms = selectedItems.filter(i => i.category === 'bottoms').sort((a, b) => (b.wornCount || 0) - (a.wornCount || 0));
+    const shoes = selectedItems.filter(i => i.category === 'shoes');
+    const dresses = selectedItems.filter(i => i.category === 'dresses');
+
+    const previews: CapsuleOutfitPreview[] = [];
+    const maxPreviews = 3;
+
+    for (let i = 0; i < Math.min(tops.length, bottoms.length) && previews.length < maxPreviews; i++) {
+      const outfitItems = [tops[i], bottoms[i % bottoms.length]];
+      if (shoes[i % Math.max(1, shoes.length)] && shoes.length > 0) outfitItems.push(shoes[i % shoes.length]);
+      previews.push({
+        items: outfitItems,
+        label: outfitItems.map(it => [it.color, it.category].filter(Boolean).join(' ')).join(' + '),
+      });
+    }
+
+    for (const dress of dresses.slice(0, maxPreviews - previews.length)) {
+      const outfitItems = [dress];
+      if (shoes[0]) outfitItems.push(shoes[0]);
+      previews.push({
+        items: outfitItems,
+        label: outfitItems.map(it => [it.color, it.category].filter(Boolean).join(' ')).join(' + '),
+      });
+    }
+
+    return previews;
+  }
+
+  /**
+   * Flags core categories with zero items anywhere in the closet (not just
+   * the selection) - a real capsule needs bottoms and shoes to function, and
+   * StyleDNA's static guide content has no equivalent gap-awareness at all.
+   */
+  private findCapsuleGaps(allItems: Item[]): CapsuleGap[] {
+    return findCapsuleGaps(allItems);
   }
 
   /**

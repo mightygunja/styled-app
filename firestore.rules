@@ -1,12 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TESTFLIGHT DEMO BUILD: matches DEV_SKIP_AUTH in AppNavigator.tsx (no real
-    // Firebase Auth session in this build) - short-circuits every owner check below.
-    // Revert to false before any build meant for real users, and redeploy
-    // (npx firebase deploy --only firestore:rules).
+    // Set to true only when DEV_SKIP_AUTH is on in the app (AppNavigator.tsx) for
+    // local testing with no real Firebase Auth session - short-circuits every owner
+    // check below. Must stay false in anything committed/shipped; redeploy after
+    // changing (npx firebase deploy --only firestore:rules).
     function devSkipAuthChecks() {
-      return true;
+      return false;
     }
 
     function isAuthenticated() {
@@ -79,6 +79,26 @@ service cloud.firestore {
     match /palettes/{paletteId} {
       allow read: if isAuthenticated();
       allow write: if false;
+    }
+
+    // Stylists - shared catalog content, seeded via the seedStylists Cloud Function, read-only for clients
+    match /stylists/{stylistId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Stylist bookings - owned by userId field
+    match /stylistBookings/{bookingId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
+    }
+
+    // Stylist reviews - visible to all signed-in users, only the author can create/edit/remove their own
+    match /reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if isResourceOwner();
     }
 
     // Favorite looks - owned by userId field
@@ -181,6 +201,23 @@ service cloud.firestore {
       allow read: if isResourceOwner();
       allow create: if isCreatingOwnResource();
       allow update, delete: if isResourceOwner();
+    }
+
+    // ==================== SHOPPING MARKETPLACE ====================
+
+    // Wishlist - owned by userId field
+    match /wishlistItems/{wishlistId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+      allow update: if false;
+    }
+
+    // Affiliate click log (monetization analytics) - owned by userId field, append-only
+    match /affiliateClicks/{clickId} {
+      allow read: if isResourceOwner();
+      allow create: if isCreatingOwnResource();
+      allow update, delete: if false;
     }
   }
 }

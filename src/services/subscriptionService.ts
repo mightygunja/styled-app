@@ -118,7 +118,7 @@ class SubscriptionService {
       id: 'premium',
       tier: 'premium',
       name: 'Plus',
-      description: 'Unlimited closet, full Style DNA, fit intelligence',
+      description: 'Unlimited closet, full style profile, fit intelligence',
       price: {
         monthly: 9,
         yearly: 90,
@@ -126,7 +126,7 @@ class SubscriptionService {
       features: [
         'Unlimited closet items',
         'Unlimited outfits',
-        'Full Style DNA + trend translation',
+        'Full style profile + trend translation',
         'Body type & fit intelligence',
         'Closet Health Score',
         'Travel packing lists',

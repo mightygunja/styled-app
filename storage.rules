@@ -8,7 +8,31 @@ service firebase.storage {
       // allow read: if request.auth != null;
       // allow write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
+    // Personal color analysis selfies - TEMPORARY: Open for testing without auth
+    match /colorAnalysis/{userId}/{allPaths=**} {
+      allow read, write: if true; // TEMPORARY: Allow all access for testing
+      // TODO: Restrict after adding Firebase Authentication:
+      // allow read: if request.auth != null;
+      // allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Body & fit analysis photos - TEMPORARY: Open for testing without auth
+    match /bodyAnalysis/{userId}/{allPaths=**} {
+      allow read, write: if true; // TEMPORARY: Allow all access for testing
+      // TODO: Restrict after adding Firebase Authentication:
+      // allow read: if request.auth != null;
+      // allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // In-store snap-to-check photos - TEMPORARY: Open for testing without auth
+    match /storeCheck/{userId}/{allPaths=**} {
+      allow read, write: if true; // TEMPORARY: Allow all access for testing
+      // TODO: Restrict after adding Firebase Authentication:
+      // allow read: if request.auth != null;
+      // allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Public images (looks, palettes, etc)
     match /public/{allPaths=**} {
       allow read: if true;

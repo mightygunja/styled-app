@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, TextInput, Animated, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -140,33 +141,28 @@ export default function ClosetScreen() {
         )}
         <View style={styles.headerIconRow}>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ClosetAnalytics')}>
-            <Text style={styles.iconButtonText}>📊</Text>
+            <Ionicons name="stats-chart-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SmartOutfitBuilder')}>
-            <Text style={styles.iconButtonText}>✨</Text>
+            <Ionicons name="sparkles-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('AdvancedAnalytics')}>
-            <Text style={styles.iconButtonText}>📈</Text>
+            <Ionicons name="trending-up-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ClosetOrganization')}>
-            <Text style={styles.iconButtonText}>🗂️</Text>
+            <Ionicons name="folder-outline" size={17} color={colors.ink} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('InStoreCheck')}>
+            <Ionicons name="bag-handle-outline" size={17} color={colors.ink} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Shop')}>
+            <Ionicons name="storefront-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => setShowStats(!showStats)}>
-            <Text style={styles.iconButtonText}>{showStats ? '▲' : '▼'}</Text>
+            <Ionicons name={showStats ? 'chevron-up' : 'chevron-down'} size={17} color={colors.ink} />
           </TouchableOpacity>
         </View>
       </View>
-
-      {showStats && items.length > 0 && (
-        <ScrollView style={styles.statsContainer}>
-          <ClosetStats
-            totalItems={items.length}
-            itemsByCategory={itemsByCategory}
-            mostWornItems={mostWornItems}
-            leastWornItems={leastWornItems}
-          />
-        </ScrollView>
-      )}
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -211,55 +207,75 @@ export default function ClosetScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-      >
-        {loading ? (
+      {loading ? (
+        <ScrollView style={styles.content}>
           <ClosetGridSkeleton count={6} />
-        ) : filteredItems.length === 0 ? (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>
-              {selectedCategory === 'all' ? 'Your closet is empty' : `No ${selectedCategory} yet`}
-            </Text>
-            <Text style={styles.placeholderSubtext}>Tap + Add to add your first item</Text>
-          </View>
-        ) : (
-          <Animated.View style={[styles.grid, { opacity: fadeAnim }]}>
-            {filteredItems.map(item => {
-              const costPerWear = item.price
-                ? (item.price / Math.max(item.wornCount || 1, 1)).toFixed(2)
-                : undefined;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.gridItem}
-                  onPress={() => handleItemPress(item)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.gridImageWrap}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
-                    {item.wornCount > 0 && (
-                      <View style={styles.wornBadge}>
-                        <Text style={styles.wornBadgeText}>{item.wornCount}×</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.itemName} numberOfLines={1}>
-                    {item.brand || item.category}
+        </ScrollView>
+      ) : (
+        <Animated.FlatList
+          style={[styles.content, { opacity: fadeAnim }]}
+          data={filteredItems}
+          keyExtractor={(item: ClosetItem) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={styles.gridContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          ListHeaderComponent={
+            showStats && items.length > 0 ? (
+              <View style={styles.statsContainer}>
+                <ClosetStats
+                  totalItems={items.length}
+                  itemsByCategory={itemsByCategory}
+                  mostWornItems={mostWornItems}
+                  leastWornItems={leastWornItems}
+                />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>
+                {selectedCategory === 'all' ? 'Your closet is empty' : `No ${selectedCategory} yet`}
+              </Text>
+              <Text style={styles.placeholderSubtext}>Tap + Add to add your first item</Text>
+            </View>
+          }
+          renderItem={({ item }: { item: ClosetItem }) => {
+            const costPerWear = item.price
+              ? (item.price / Math.max(item.wornCount || 1, 1)).toFixed(2)
+              : undefined;
+            return (
+              <TouchableOpacity
+                style={styles.gridItem}
+                onPress={() => handleItemPress(item)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.gridImageWrap}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
+                  {item.wornCount > 0 && (
+                    <View style={styles.wornBadge}>
+                      <Text style={styles.wornBadgeText}>{item.wornCount}×</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.itemName} numberOfLines={1}>
+                  {item.brand || item.category}
+                </Text>
+                <View style={styles.itemMetaRow}>
+                  <Text style={styles.itemMeta} numberOfLines={1}>
+                    {item.category.toUpperCase()}
                   </Text>
-                  <View style={styles.itemMetaRow}>
-                    <Text style={styles.itemMeta} numberOfLines={1}>
-                      {item.category.toUpperCase()}
-                    </Text>
-                    {costPerWear && <Text style={styles.itemCostPerWear}>${costPerWear}/wear</Text>}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </Animated.View>
-        )}
-      </ScrollView>
+                  {costPerWear && <Text style={styles.itemCostPerWear}>${costPerWear}/wear</Text>}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
 
       <TouchableOpacity style={styles.fab} onPress={handleAddItem} activeOpacity={0.85}>
         <Text style={styles.fabText}>+</Text>
@@ -332,11 +348,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hair,
   },
-  iconButtonText: {
-    fontSize: 16,
-  },
   statsContainer: {
-    maxHeight: 400,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
@@ -430,14 +444,15 @@ const styles = StyleSheet.create({
     ...textType.meta,
     textAlign: 'center',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  gridContent: {
     padding: 16,
-    gap: 16,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   gridItem: {
-    width: '46%',
+    width: '48%',
   },
   gridImageWrap: {
     aspectRatio: 0.85,

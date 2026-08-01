@@ -14,8 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
-import { StyleDNA, STYLE_ARCHETYPES, DEFAULT_STYLE_DNA, normalizeLifestyleWeights } from '../models/styleDNA';
-import { styleDnaService } from '../services/firestore';
+import { PersonalStyleProfile, STYLE_ARCHETYPES, DEFAULT_PERSONAL_STYLE_PROFILE, normalizeLifestyleWeights } from '../models/personalStyleProfile';
+import { styleProfileService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -29,7 +29,7 @@ export default function StyleProfileBuilderScreen() {
   const { toast, showToast, hideToast } = useToast();
   
   const [currentStep, setCurrentStep] = useState<BuilderStep>('lifestyle');
-  const [styleDNA, setStyleDNA] = useState<StyleDNA>(DEFAULT_STYLE_DNA);
+  const [styleProfile, setStyleProfile] = useState<PersonalStyleProfile>(DEFAULT_PERSONAL_STYLE_PROFILE);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -47,9 +47,9 @@ export default function StyleProfileBuilderScreen() {
 
   const loadExistingProfile = async () => {
     try {
-      const existing = await styleDnaService.getStyleDNA(getCurrentUserId());
+      const existing = await styleProfileService.getStyleProfile(getCurrentUserId());
       if (existing) {
-        setStyleDNA(existing);
+        setStyleProfile(existing);
       }
     } catch (error) {
       console.error('Error loading style profile:', error);
@@ -62,41 +62,41 @@ export default function StyleProfileBuilderScreen() {
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  const updateLifestyleWeight = (key: keyof StyleDNA['lifestyleWeights'], value: number) => {
-    const newWeights = { ...styleDNA.lifestyleWeights, [key]: value };
-    setStyleDNA({
-      ...styleDNA,
+  const updateLifestyleWeight = (key: keyof PersonalStyleProfile['lifestyleWeights'], value: number) => {
+    const newWeights = { ...styleProfile.lifestyleWeights, [key]: value };
+    setStyleProfile({
+      ...styleProfile,
       lifestyleWeights: newWeights,
     });
   };
 
   const toggleArchetype = (archetype: string) => {
-    const archetypes = styleDNA.styleArchetypes.includes(archetype)
-      ? styleDNA.styleArchetypes.filter(a => a !== archetype)
-      : [...styleDNA.styleArchetypes, archetype];
+    const archetypes = styleProfile.styleArchetypes.includes(archetype)
+      ? styleProfile.styleArchetypes.filter(a => a !== archetype)
+      : [...styleProfile.styleArchetypes, archetype];
     
-    setStyleDNA({ ...styleDNA, styleArchetypes: archetypes });
+    setStyleProfile({ ...styleProfile, styleArchetypes: archetypes });
   };
 
   const addColor = (category: 'primary' | 'secondary' | 'stretch', color: string) => {
     if (!color.trim()) return;
     
-    const colors = [...styleDNA.colorProfile[category]];
+    const colors = [...styleProfile.colorProfile[category]];
     if (!colors.includes(color.toLowerCase())) {
       colors.push(color.toLowerCase());
-      setStyleDNA({
-        ...styleDNA,
-        colorProfile: { ...styleDNA.colorProfile, [category]: colors },
+      setStyleProfile({
+        ...styleProfile,
+        colorProfile: { ...styleProfile.colorProfile, [category]: colors },
       });
     }
   };
 
   const removeColor = (category: 'primary' | 'secondary' | 'stretch', color: string) => {
-    setStyleDNA({
-      ...styleDNA,
+    setStyleProfile({
+      ...styleProfile,
       colorProfile: {
-        ...styleDNA.colorProfile,
-        [category]: styleDNA.colorProfile[category].filter(c => c !== color),
+        ...styleProfile.colorProfile,
+        [category]: styleProfile.colorProfile[category].filter(c => c !== color),
       },
     });
   };
@@ -104,18 +104,18 @@ export default function StyleProfileBuilderScreen() {
   const addAvoidRule = (rule: string) => {
     if (!rule.trim()) return;
     
-    if (!styleDNA.avoidRules.includes(rule.toLowerCase())) {
-      setStyleDNA({
-        ...styleDNA,
-        avoidRules: [...styleDNA.avoidRules, rule.toLowerCase()],
+    if (!styleProfile.avoidRules.includes(rule.toLowerCase())) {
+      setStyleProfile({
+        ...styleProfile,
+        avoidRules: [...styleProfile.avoidRules, rule.toLowerCase()],
       });
     }
   };
 
   const removeAvoidRule = (rule: string) => {
-    setStyleDNA({
-      ...styleDNA,
-      avoidRules: styleDNA.avoidRules.filter(r => r !== rule),
+    setStyleProfile({
+      ...styleProfile,
+      avoidRules: styleProfile.avoidRules.filter(r => r !== rule),
     });
   };
 
@@ -135,14 +135,14 @@ export default function StyleProfileBuilderScreen() {
 
   const handleSave = async () => {
     // Normalize lifestyle weights before saving
-    const normalizedDNA = {
-      ...styleDNA,
-      lifestyleWeights: normalizeLifestyleWeights(styleDNA.lifestyleWeights),
+    const normalizedProfile = {
+      ...styleProfile,
+      lifestyleWeights: normalizeLifestyleWeights(styleProfile.lifestyleWeights),
     };
 
     try {
       setSaving(true);
-      await styleDnaService.saveStyleDNA(getCurrentUserId(), normalizedDNA);
+      await styleProfileService.saveStyleProfile(getCurrentUserId(), normalizedProfile);
       showToast('Style profile saved!', 'success');
       setTimeout(() => {
         navigation.goBack();
@@ -162,7 +162,7 @@ export default function StyleProfileBuilderScreen() {
         Adjust the sliders to show how you divide your clothing needs
       </Text>
 
-      {Object.entries(styleDNA.lifestyleWeights).map(([key, value]) => (
+      {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
         <View key={key} style={styles.sliderContainer}>
           <View style={styles.sliderHeader}>
             <Text style={styles.sliderLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
@@ -174,13 +174,13 @@ export default function StyleProfileBuilderScreen() {
           <View style={styles.sliderButtons}>
             <TouchableOpacity
               style={styles.sliderButton}
-              onPress={() => updateLifestyleWeight(key as keyof StyleDNA['lifestyleWeights'], Math.max(0, value - 0.05))}
+              onPress={() => updateLifestyleWeight(key as keyof PersonalStyleProfile['lifestyleWeights'], Math.max(0, value - 0.05))}
             >
               <Text style={styles.sliderButtonText}>−</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.sliderButton}
-              onPress={() => updateLifestyleWeight(key as keyof StyleDNA['lifestyleWeights'], Math.min(1, value + 0.05))}
+              onPress={() => updateLifestyleWeight(key as keyof PersonalStyleProfile['lifestyleWeights'], Math.min(1, value + 0.05))}
             >
               <Text style={styles.sliderButtonText}>+</Text>
             </TouchableOpacity>
@@ -197,7 +197,7 @@ export default function StyleProfileBuilderScreen() {
 
       <View style={styles.archetypeGrid}>
         {Object.entries(STYLE_ARCHETYPES).map(([key, archetype]) => {
-          const isSelected = styleDNA.styleArchetypes.includes(key);
+          const isSelected = styleProfile.styleArchetypes.includes(key);
           return (
             <TouchableOpacity
               key={key}
@@ -249,7 +249,7 @@ export default function StyleProfileBuilderScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.colorTags}>
-            {styleDNA.colorProfile.primary.map(color => (
+            {styleProfile.colorProfile.primary.map(color => (
               <TouchableOpacity
                 key={color}
                 style={styles.colorTag}
@@ -288,7 +288,7 @@ export default function StyleProfileBuilderScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.colorTags}>
-            {styleDNA.colorProfile.secondary.map(color => (
+            {styleProfile.colorProfile.secondary.map(color => (
               <TouchableOpacity
                 key={color}
                 style={styles.colorTag}
@@ -327,7 +327,7 @@ export default function StyleProfileBuilderScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.colorTags}>
-            {styleDNA.colorProfile.stretch.map(color => (
+            {styleProfile.colorProfile.stretch.map(color => (
               <TouchableOpacity
                 key={color}
                 style={styles.colorTag}
@@ -375,7 +375,7 @@ export default function StyleProfileBuilderScreen() {
         </View>
 
         <View style={styles.colorTags}>
-          {styleDNA.avoidRules.map(rule => (
+          {styleProfile.avoidRules.map(rule => (
             <TouchableOpacity
               key={rule}
               style={[styles.colorTag, styles.avoidTag]}
@@ -415,13 +415,13 @@ export default function StyleProfileBuilderScreen() {
       <TouchableOpacity
         style={[
           styles.guidanceOption,
-          styleDNA.guidanceLevel === 'inspiration' && styles.guidanceOptionSelected,
+          styleProfile.guidanceLevel === 'inspiration' && styles.guidanceOptionSelected,
         ]}
-        onPress={() => setStyleDNA({ ...styleDNA, guidanceLevel: 'inspiration' })}
+        onPress={() => setStyleProfile({ ...styleProfile, guidanceLevel: 'inspiration' })}
       >
         <Text style={[
           styles.guidanceTitle,
-          styleDNA.guidanceLevel === 'inspiration' && styles.guidanceTitleSelected,
+          styleProfile.guidanceLevel === 'inspiration' && styles.guidanceTitleSelected,
         ]}>
           Inspiration
         </Text>
@@ -433,13 +433,13 @@ export default function StyleProfileBuilderScreen() {
       <TouchableOpacity
         style={[
           styles.guidanceOption,
-          styleDNA.guidanceLevel === 'guided' && styles.guidanceOptionSelected,
+          styleProfile.guidanceLevel === 'guided' && styles.guidanceOptionSelected,
         ]}
-        onPress={() => setStyleDNA({ ...styleDNA, guidanceLevel: 'guided' })}
+        onPress={() => setStyleProfile({ ...styleProfile, guidanceLevel: 'guided' })}
       >
         <Text style={[
           styles.guidanceTitle,
-          styleDNA.guidanceLevel === 'guided' && styles.guidanceTitleSelected,
+          styleProfile.guidanceLevel === 'guided' && styles.guidanceTitleSelected,
         ]}>
           Guided
         </Text>
@@ -451,13 +451,13 @@ export default function StyleProfileBuilderScreen() {
       <TouchableOpacity
         style={[
           styles.guidanceOption,
-          styleDNA.guidanceLevel === 'directive' && styles.guidanceOptionSelected,
+          styleProfile.guidanceLevel === 'directive' && styles.guidanceOptionSelected,
         ]}
-        onPress={() => setStyleDNA({ ...styleDNA, guidanceLevel: 'directive' })}
+        onPress={() => setStyleProfile({ ...styleProfile, guidanceLevel: 'directive' })}
       >
         <Text style={[
           styles.guidanceTitle,
-          styleDNA.guidanceLevel === 'directive' && styles.guidanceTitleSelected,
+          styleProfile.guidanceLevel === 'directive' && styles.guidanceTitleSelected,
         ]}>
           Directive
         </Text>
@@ -475,7 +475,7 @@ export default function StyleProfileBuilderScreen() {
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Lifestyle Split</Text>
-        {Object.entries(styleDNA.lifestyleWeights).map(([key, value]) => (
+        {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
           <Text key={key} style={styles.reviewText}>
             {key.charAt(0).toUpperCase() + key.slice(1)}: {Math.round(value * 100)}%
           </Text>
@@ -484,17 +484,17 @@ export default function StyleProfileBuilderScreen() {
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Style Archetypes</Text>
-        <Text style={styles.reviewText}>{styleDNA.styleArchetypes.join(', ') || 'None selected'}</Text>
+        <Text style={styles.reviewText}>{styleProfile.styleArchetypes.join(', ') || 'None selected'}</Text>
       </View>
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Primary Colors</Text>
-        <Text style={styles.reviewText}>{styleDNA.colorProfile.primary.join(', ') || 'None added'}</Text>
+        <Text style={styles.reviewText}>{styleProfile.colorProfile.primary.join(', ') || 'None added'}</Text>
       </View>
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Guidance Level</Text>
-        <Text style={styles.reviewText}>{styleDNA.guidanceLevel}</Text>
+        <Text style={styles.reviewText}>{styleProfile.guidanceLevel}</Text>
       </View>
     </View>
   );

@@ -47,7 +47,7 @@ export async function getSubscriptionTier(): Promise<
  * @returns true if user has access, false otherwise
  */
 export async function hasFeatureAccess(
-  feature: 'unlimitedOutfits' | 'styleDNA' | 'stylistReview'
+  feature: 'unlimitedOutfits' | 'styleProfile' | 'stylistReview'
 ): Promise<boolean> {
   try {
     const tier = await getSubscriptionTier();

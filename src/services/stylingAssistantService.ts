@@ -12,7 +12,7 @@ import { functions } from '../config/firebase';
 import { Item } from '../types';
 import { StyleProfile } from './aiStyleService';
 import { chatService } from './firestore';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 
 const chatWithStylistFn = httpsCallable(functions, 'chatWithStylist');
 
@@ -37,7 +37,7 @@ export interface StylingContext {
   weather?: { condition: string; temperature: number };
   occasion?: string;
   mood?: string;
-  styleDNA?: StyleDNA | null;
+  styleProfile?: PersonalStyleProfile | null;
 }
 
 export type MessageRole = 'user' | 'assistant';
@@ -126,16 +126,16 @@ class StylingAssistantService {
     const timeOfDay = hour < 11 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
     const dayType = [0, 6].includes(now.getDay()) ? 'weekend' : 'weekday';
 
-    const styleDNA = context?.styleDNA;
-    const styleDNAPayload = styleDNA
+    const styleProfile = context?.styleProfile;
+    const styleProfilePayload = styleProfile
       ? {
-          styleArchetypes: styleDNA.styleArchetypes,
-          avoidRules: styleDNA.avoidRules,
-          preferredColors: [...styleDNA.colorProfile.primary, ...styleDNA.colorProfile.secondary],
-          stretchColors: styleDNA.colorProfile.stretch,
-          guidanceLevel: styleDNA.guidanceLevel,
-          fitHighlight: styleDNA.fitPreferences.highlight,
-          fitDownplay: styleDNA.fitPreferences.downplay,
+          styleArchetypes: styleProfile.styleArchetypes,
+          avoidRules: styleProfile.avoidRules,
+          preferredColors: [...styleProfile.colorProfile.primary, ...styleProfile.colorProfile.secondary],
+          stretchColors: styleProfile.colorProfile.stretch,
+          guidanceLevel: styleProfile.guidanceLevel,
+          fitHighlight: styleProfile.fitPreferences.highlight,
+          fitDownplay: styleProfile.fitPreferences.downplay,
         }
       : undefined;
 
@@ -148,7 +148,7 @@ class StylingAssistantService {
         weather: context?.weather,
         occasion: context?.occasion,
         mood: context?.mood,
-        styleDNA: styleDNAPayload,
+        styleProfile: styleProfilePayload,
         timeOfDay,
         dayType,
       }).catch(error => {

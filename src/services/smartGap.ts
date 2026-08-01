@@ -12,7 +12,7 @@
  */
 
 import { ClosetItem, ClothingCategory } from '../models/closetItem';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 
 export interface SmartGap {
   category: ClothingCategory;
@@ -29,7 +29,7 @@ export interface SmartGap {
  */
 export function analyzeSmartGap(
   closet: ClosetItem[],
-  styleDNA: StyleDNA
+  styleProfile: PersonalStyleProfile
 ): SmartGap | null {
   // Need at least 5 items to suggest gaps
   if (closet.length < 5) {
@@ -131,6 +131,6 @@ export function shouldShowSmartGap(
   }
 
   // Check if there's a gap
-  const gap = analyzeSmartGap(closet, {} as StyleDNA);
+  const gap = analyzeSmartGap(closet, {} as PersonalStyleProfile);
   return gap !== null;
 }

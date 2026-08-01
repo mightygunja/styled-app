@@ -33,7 +33,7 @@ export interface ClosetItem {
    * - Ensure neutral-based outfits don't clash
    * - Apply color theory rules (complementary, analogous, monochromatic)
    * - Score outfit cohesiveness based on color compatibility
-   * - Match against user's StyleDNA color preferences
+   * - Match against user's PersonalStyleProfile color preferences
    */
   colors: string[];
 
@@ -57,7 +57,7 @@ export interface ClosetItem {
    * - Filter items for occasion-specific outfits (casual vs formal events)
    * - Ensure visual coherence (no sneakers with suits)
    * - Score outfit appropriateness for different contexts
-   * - Align with user's lifestyle weights from StyleDNA
+   * - Align with user's lifestyle weights from PersonalStyleProfile
    */
   formality: number;
 
@@ -67,9 +67,9 @@ export interface ClosetItem {
    * Outfit generation uses this to:
    * - Balance proportions (fitted top with relaxed bottom, or vice versa)
    * - Match style aesthetics (all tailored vs all relaxed)
-   * - Align with user's StyleDNA archetypes
+   * - Align with user's PersonalStyleProfile archetypes
    * - Prevent unflattering combinations
-   * - Apply fit preference rules from StyleDNA
+   * - Apply fit preference rules from PersonalStyleProfile
    */
   silhouettes: string[];
 

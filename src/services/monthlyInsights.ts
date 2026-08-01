@@ -8,7 +8,7 @@
  */
 
 import { ClosetItem } from '../models/closetItem';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { OutfitHistoryEntry } from './outfitHistory';
 
 export interface MonthlyInsight {
@@ -27,7 +27,7 @@ export interface MonthlyInsight {
  */
 export function generateMonthlyInsight(
   closet: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   history: OutfitHistoryEntry[]
 ): MonthlyInsight | null {
   if (history.length < 5) {
@@ -39,7 +39,7 @@ export function generateMonthlyInsight(
   const wornItems = history.flatMap(entry => entry.outfit.items);
   
   // Color insights
-  const colorInsight = analyzeColorPatterns(wornItems, styleDNA);
+  const colorInsight = analyzeColorPatterns(wornItems, styleProfile);
   if (colorInsight) return colorInsight;
 
   // Silhouette insights
@@ -58,7 +58,7 @@ export function generateMonthlyInsight(
  */
 function analyzeColorPatterns(
   wornItems: ClosetItem[],
-  styleDNA: StyleDNA
+  styleProfile: PersonalStyleProfile
 ): MonthlyInsight | null {
   // Count neutral vs. color usage
   const neutrals = ['black', 'white', 'gray', 'beige', 'navy', 'brown'];
@@ -184,14 +184,14 @@ function analyzeStylingPatterns(
  */
 export function getAllPossibleInsights(
   closet: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   history: OutfitHistoryEntry[]
 ): MonthlyInsight[] {
   const insights: MonthlyInsight[] = [];
 
   const colorInsight = analyzeColorPatterns(
     history.flatMap(e => e.outfit.items),
-    styleDNA
+    styleProfile
   );
   if (colorInsight) insights.push(colorInsight);
 

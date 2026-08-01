@@ -174,7 +174,7 @@ export default function StyleAnalysisScreen() {
 
         {/* Dominant Styles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Style DNA</Text>
+          <Text style={styles.sectionTitle}>Your Style Profile</Text>
           {profile.dominantStyles.map((style, index) => (
             <View key={style.category} style={styles.styleCard}>
               <View style={styles.styleHeader}>

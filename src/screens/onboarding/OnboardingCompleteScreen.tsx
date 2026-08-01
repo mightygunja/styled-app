@@ -1,8 +1,8 @@
 /**
  * Onboarding Complete Screen
- * Final step: Validation, save StyleDNA, and transition to main app
+ * Final step: Validation, save PersonalStyleProfile, and transition to main app
  * 
- * Validates required fields, saves complete StyleDNA to user profile,
+ * Validates required fields, saves complete PersonalStyleProfile to user profile,
  * shows trust-emphasizing confirmation, and redirects to outfits screen.
  */
 
@@ -13,21 +13,21 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { validateStyleDNA } from '../../models/styleDNA';
+import { validatePersonalStyleProfile } from '../../models/personalStyleProfile';
 
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingComplete'>;
 
 export default function OnboardingCompleteScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { getCompletedStyleDNA, resetOnboarding } = useOnboarding();
+  const { getCompletedStyleProfile, resetOnboarding } = useOnboarding();
   
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    // Validate StyleDNA on mount
-    const completedStyleDNA = getCompletedStyleDNA();
-    const validation = validateStyleDNA(completedStyleDNA);
+    // Validate PersonalStyleProfile on mount
+    const completedStyleProfile = getCompletedStyleProfile();
+    const validation = validatePersonalStyleProfile(completedStyleProfile);
     
     if (!validation.valid) {
       setValidationErrors(validation.errors);
@@ -38,11 +38,11 @@ export default function OnboardingCompleteScreen() {
     setIsSaving(true);
 
     try {
-      // Get completed StyleDNA
-      const completedStyleDNA = getCompletedStyleDNA();
+      // Get completed PersonalStyleProfile
+      const completedStyleProfile = getCompletedStyleProfile();
       
       // Validate required fields
-      const validation = validateStyleDNA(completedStyleDNA);
+      const validation = validatePersonalStyleProfile(completedStyleProfile);
       
       if (!validation.valid) {
         Alert.alert(
@@ -55,8 +55,8 @@ export default function OnboardingCompleteScreen() {
       }
 
       // TODO: Save to user profile via API/service
-      // Example: await userProfileService.updateStyleDNA(completedStyleDNA);
-      console.log('Saving StyleDNA:', completedStyleDNA);
+      // Example: await userProfileService.updateStyleProfile(completedStyleProfile);
+      console.log('Saving PersonalStyleProfile:', completedStyleProfile);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -76,7 +76,7 @@ export default function OnboardingCompleteScreen() {
       console.log('Onboarding complete - redirect to outfits screen');
       
     } catch (error) {
-      console.error('Error saving StyleDNA:', error);
+      console.error('Error saving PersonalStyleProfile:', error);
       Alert.alert(
         'Save Failed',
         'We couldn\'t save your profile. Please try again.',

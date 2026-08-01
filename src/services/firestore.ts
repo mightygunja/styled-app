@@ -17,8 +17,9 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { ClosetItem, Look, TrendPalette } from '../types';
-import { StyleDNA } from '../models/styleDNA';
+import { ClosetItem, Look, TrendPalette, Stylist, StylingSession, StylistReview, SessionType } from '../types';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
+import { Product } from '../models/product';
 
 // ==================== CLOSET ITEMS ====================
 
@@ -269,30 +270,31 @@ export const shopMyClosetService = {
   },
 };
 
-// ==================== USER PROFILE / STYLE DNA ====================
+// ==================== USER PROFILE / STYLE PROFILE ====================
 
-export const styleDnaService = {
-  // Get a user's saved Style DNA profile (null if never saved)
-  getStyleDNA: async (userId: string): Promise<StyleDNA | null> => {
+export const styleProfileService = {
+  // Get a user's saved Style Profile (null if never saved). Reads the legacy
+  // `styleDNA` field as a fallback so profiles saved before the rename still load.
+  getStyleProfile: async (userId: string): Promise<PersonalStyleProfile | null> => {
     const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return null;
     const data = docSnap.data();
-    return (data.styleDNA as StyleDNA) || null;
+    return (data.styleProfile as PersonalStyleProfile) || (data.styleDNA as PersonalStyleProfile) || null;
   },
 
-  // Save/overwrite a user's Style DNA profile
-  saveStyleDNA: async (userId: string, styleDNA: StyleDNA): Promise<void> => {
+  // Save/overwrite a user's Style Profile
+  saveStyleProfile: async (userId: string, styleProfile: PersonalStyleProfile): Promise<void> => {
     const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       await updateDoc(docRef, {
-        styleDNA,
+        styleProfile,
         updatedAt: Timestamp.now(),
       });
     } else {
       await setDoc(docRef, {
-        styleDNA,
+        styleProfile,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
@@ -429,5 +431,259 @@ export const chatService = {
     const q = query(collection(db, 'chatMessages'), where('userId', '==', userId));
     const snapshot = await getDocs(q);
     await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)));
+  },
+};
+
+// ==================== STYLIST MARKETPLACE ====================
+
+// Catalog content, seeded server-side (see seedStylists Cloud Function) - read-only for clients, same pattern as looksService/palettesService.
+export const stylistsService = {
+  getAll: async (): Promise<Stylist[]> => {
+    const snapshot = await getDocs(collection(db, 'stylists'));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Stylist));
+  },
+
+  getById: async (stylistId: string): Promise<Stylist | null> => {
+    const docSnap = await getDoc(doc(db, 'stylists', stylistId));
+    if (!docSnap.exists()) return null;
+    return { id: docSnap.id, ...docSnap.data() } as Stylist;
+  },
+};
+
+export const stylistBookingsService = {
+  // Create a booking for the given user, resolving price from the stylist's real hourly rate
+  create: async (
+    userId: string,
+    stylistId: string,
+    sessionType: SessionType,
+    date: string,
+    time: string,
+    duration: number
+  ): Promise<StylingSession> => {
+    const stylist = await stylistsService.getById(stylistId);
+    const price = stylist ? stylist.hourlyRate * (duration / 60) : 0;
+
+    const sessionData = {
+      userId,
+      stylistId,
+      sessionType,
+      scheduledDate: `${date} ${time}`,
+      duration,
+      status: 'pending' as const,
+      price,
+      createdAt: Timestamp.now(),
+    };
+    const docRef = await addDoc(collection(db, 'stylistBookings'), sessionData);
+    return {
+      id: docRef.id,
+      ...sessionData,
+      stylist: stylist || undefined,
+      createdAt: sessionData.createdAt.toDate().toISOString(),
+    } as StylingSession;
+  },
+
+  // Get a user's sessions, most recent first, with each stylist's real profile attached
+  getForUser: async (userId: string): Promise<StylingSession[]> => {
+    const q = query(
+      collection(db, 'stylistBookings'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const sessions = snapshot.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+      } as StylingSession;
+    });
+
+    const stylistIds = Array.from(new Set(sessions.map(s => s.stylistId)));
+    const stylists = await Promise.all(stylistIds.map(id => stylistsService.getById(id)));
+    const stylistById = new Map(stylists.filter((s): s is Stylist => !!s).map(s => [s.id, s]));
+
+    return sessions.map(s => ({ ...s, stylist: stylistById.get(s.stylistId) }));
+  },
+};
+
+export const reviewsService = {
+  // Submit a review for a stylist, under the real authenticated user
+  submit: async (
+    userId: string,
+    userName: string,
+    stylistId: string,
+    sessionId: string,
+    sessionType: SessionType,
+    rating: number,
+    comment: string
+  ): Promise<StylistReview> => {
+    const reviewData = {
+      stylistId,
+      userId,
+      userName,
+      rating,
+      comment,
+      sessionType,
+      sessionId,
+      helpful: 0,
+      createdAt: Timestamp.now(),
+    };
+    const docRef = await addDoc(collection(db, 'reviews'), reviewData);
+    return {
+      id: docRef.id,
+      ...reviewData,
+      createdAt: reviewData.createdAt.toDate().toISOString(),
+    } as StylistReview;
+  },
+
+  // Get all reviews for a stylist, newest first
+  getForStylist: async (stylistId: string): Promise<StylistReview[]> => {
+    const q = query(
+      collection(db, 'reviews'),
+      where('stylistId', '==', stylistId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+      } as StylistReview;
+    });
+  },
+
+  // Get one user's review of one stylist, if they left one
+  getForUser: async (stylistId: string, userId: string): Promise<StylistReview | null> => {
+    const q = query(
+      collection(db, 'reviews'),
+      where('stylistId', '==', stylistId),
+      where('userId', '==', userId),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    const d = snapshot.docs[0];
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+    } as StylistReview;
+  },
+
+  markHelpful: async (reviewId: string): Promise<void> => {
+    await updateDoc(doc(db, 'reviews', reviewId), { helpful: increment(1) });
+  },
+
+  update: async (reviewId: string, rating: number, comment: string): Promise<void> => {
+    await updateDoc(doc(db, 'reviews', reviewId), { rating, comment });
+  },
+
+  delete: async (reviewId: string): Promise<void> => {
+    await deleteDoc(doc(db, 'reviews', reviewId));
+  },
+};
+
+// ==================== SHOPPING MARKETPLACE ====================
+
+export interface WishlistDoc {
+  id: string;
+  userId: string;
+  productId: string;
+  product: Product; // snapshot at save time - the live catalog isn't warehoused, so we keep what the user saw
+  addedAt: string;
+}
+
+export const wishlistService = {
+  getAll: async (userId: string): Promise<WishlistDoc[]> => {
+    const q = query(
+      collection(db, 'wishlistItems'),
+      where('userId', '==', userId),
+      orderBy('addedAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        addedAt: data.addedAt instanceof Timestamp ? data.addedAt.toDate().toISOString() : data.addedAt,
+      } as WishlistDoc;
+    });
+  },
+
+  isSaved: async (userId: string, productId: string): Promise<string | null> => {
+    const q = query(
+      collection(db, 'wishlistItems'),
+      where('userId', '==', userId),
+      where('productId', '==', productId),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.empty ? null : snapshot.docs[0].id;
+  },
+
+  add: async (userId: string, product: Product): Promise<string> => {
+    const docRef = await addDoc(collection(db, 'wishlistItems'), {
+      userId,
+      productId: product.id,
+      product,
+      addedAt: Timestamp.now(),
+    });
+    return docRef.id;
+  },
+
+  remove: async (wishlistDocId: string): Promise<void> => {
+    await deleteDoc(doc(db, 'wishlistItems', wishlistDocId));
+  },
+};
+
+export interface AffiliateClickDoc {
+  id: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  retailer: string;
+  price: number;
+  estimatedCommission: number;
+  clickedAt: string;
+}
+
+// Commission rate used for the earnings estimate shown in Advanced Analytics.
+// Real networks report actual confirmed commission on their own dashboard -
+// this is a passive, order-of-magnitude estimate, not a reconciled figure.
+const ESTIMATED_COMMISSION_RATE = 0.08;
+
+export const affiliateClicksService = {
+  record: async (userId: string, product: Product): Promise<void> => {
+    await addDoc(collection(db, 'affiliateClicks'), {
+      userId,
+      productId: product.id,
+      productName: product.name,
+      retailer: product.retailer,
+      price: product.price,
+      estimatedCommission: Math.round(product.price * ESTIMATED_COMMISSION_RATE * 100) / 100,
+      clickedAt: Timestamp.now(),
+    });
+  },
+
+  getForUser: async (userId: string): Promise<AffiliateClickDoc[]> => {
+    const q = query(
+      collection(db, 'affiliateClicks'),
+      where('userId', '==', userId),
+      orderBy('clickedAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        clickedAt: data.clickedAt instanceof Timestamp ? data.clickedAt.toDate().toISOString() : data.clickedAt,
+      } as AffiliateClickDoc;
+    });
   },
 };

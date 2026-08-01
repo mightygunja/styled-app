@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  TouchableOpacity,
   Text,
   StyleSheet,
   ActivityIndicator,
@@ -8,6 +7,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { colors, fonts } from '../theme/designSystem';
+import PressableScale from './PressableScale';
 
 interface ButtonProps {
   title: string;
@@ -50,18 +50,19 @@ export default function Button({
   ];
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={buttonStyles}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.8}
+      haptic={variant === 'primary' ? 'impact' : 'tap'}
+      scaleTo={0.97}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.bone : colors.ink} />
       ) : (
         <Text style={textStyles}>{title.toUpperCase()}</Text>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

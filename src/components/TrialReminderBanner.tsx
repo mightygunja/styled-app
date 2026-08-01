@@ -34,7 +34,7 @@ export default function TrialReminderBanner({
       {/* Primary copy - value-focused */}
       <Text style={styles.primaryCopy}>
         You're in your free trial.{'\n'}
-        Styled will keep refining outfits based on your Style DNA.
+        Styled will keep refining outfits based on your style profile.
       </Text>
 
       {/* Secondary copy - timeline + cancellation */}

@@ -12,11 +12,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { StyleDNA } from '../../models/styleDNA';
+import { PersonalStyleProfile } from '../../models/personalStyleProfile';
 
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingGuidance'>;
 
-type GuidanceLevel = StyleDNA['guidanceLevel'];
+type GuidanceLevel = PersonalStyleProfile['guidanceLevel'];
 
 interface GuidanceOption {
   level: GuidanceLevel;
@@ -48,10 +48,10 @@ const GUIDANCE_OPTIONS: GuidanceOption[] = [
 
 export default function OnboardingGuidanceScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { partialStyleDNA, updateGuidanceLevel } = useOnboarding();
+  const { partialStyleProfile, updateGuidanceLevel } = useOnboarding();
 
   const [selectedLevel, setSelectedLevel] = useState<GuidanceLevel>(
-    partialStyleDNA.guidanceLevel || 'guided'
+    partialStyleProfile.guidanceLevel || 'guided'
   );
 
   const handleNext = () => {

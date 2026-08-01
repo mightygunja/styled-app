@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { subscriptionService, SubscriptionPlan, UserSubscription } from '../services/subscriptionService';
+import { affiliateClicksService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -18,15 +19,21 @@ export default function AccountScreen() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marketplaceStats, setMarketplaceStats] = useState<{ clicks: number; estimatedCommission: number } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [sub, allPlans] = await Promise.all([
+      const [sub, allPlans, clicks] = await Promise.all([
         subscriptionService.getUserSubscription(getCurrentUserId()),
         subscriptionService.getPlans(),
+        affiliateClicksService.getForUser(getCurrentUserId()),
       ]);
       setSubscription(sub);
       setPlans(allPlans);
+      setMarketplaceStats({
+        clicks: clicks.length,
+        estimatedCommission: clicks.reduce((sum, c) => sum + c.estimatedCommission, 0),
+      });
     } catch (error) {
       console.error('Error loading account:', error);
     } finally {
@@ -120,7 +127,7 @@ export default function AccountScreen() {
         <View style={styles.prefsCard}>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StyleProfileBuilder')}>
             <View>
-              <Text style={styles.prefTitle}>Style DNA quiz</Text>
+              <Text style={styles.prefTitle}>Style profile quiz</Text>
               <Text style={styles.prefSubtitle}>RETAKE · QUARTERLY</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
@@ -139,6 +146,55 @@ export default function AccountScreen() {
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel}>STYLIST MARKETPLACE</Text>
+        <View style={styles.prefsCard}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistMarketplace')}>
+            <View>
+              <Text style={styles.prefTitle}>Book a stylist</Text>
+              <Text style={styles.prefSubtitle}>BROWSE · SPECIALTIES · RATES</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('MySessions')}>
+            <View>
+              <Text style={styles.prefTitle}>My sessions</Text>
+              <Text style={styles.prefSubtitle}>UPCOMING · PAST</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel}>SHOPPING</Text>
+        <View style={styles.prefsCard}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Shop')}>
+            <View>
+              <Text style={styles.prefTitle}>Shop your matches</Text>
+              <Text style={styles.prefSubtitle}>MATCHED TO YOUR PROFILE</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.prefRow, !(marketplaceStats && marketplaceStats.clicks > 0) && styles.prefRowLast]}
+            onPress={() => navigation.navigate('Wishlist')}
+          >
+            <View>
+              <Text style={styles.prefTitle}>Saved items</Text>
+              <Text style={styles.prefSubtitle}>YOUR WISHLIST</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          {marketplaceStats && marketplaceStats.clicks > 0 && (
+            <View style={[styles.prefRow, styles.prefRowLast]}>
+              <View>
+                <Text style={styles.prefTitle}>Your shopping activity</Text>
+                <Text style={styles.prefSubtitle}>
+                  {marketplaceStats.clicks} {marketplaceStats.clicks === 1 ? 'CLICK' : 'CLICKS'} · ~${marketplaceStats.estimatedCommission.toFixed(2)} EARNED FOR STYLED
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

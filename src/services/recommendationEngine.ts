@@ -20,6 +20,20 @@ export type OccasionType =
 
 export type WeatherCondition = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'cold' | 'hot';
 
+// Keyword signal for how well an item's style/tags/category fit a given occasion.
+// Matched against item.style + item.tags + item.category, so items with no such
+// data just fall back to the other scoring signals rather than being excluded.
+const OCCASION_KEYWORDS: Record<OccasionType, RegExp> = {
+  work: /formal|business|professional|blazer|button|trouser|slack|loafer|oxford|structured/,
+  casual: /casual|everyday|relaxed|denim|jean|sneaker|tee|hoodie/,
+  formal: /formal|suit|gown|tuxedo|evening|cocktail/,
+  date: /chic|elegant|dress|heel|silk|romantic|date/,
+  workout: /athletic|sport|gym|active|yoga|running|legging/,
+  party: /party|sequin|glam|statement|going.?out|sparkle/,
+  travel: /travel|comfortable|layer|versatile|packable|neutral/,
+  outdoor: /outdoor|hiking|weatherproof|jacket|utility/,
+};
+
 export interface OutfitRecommendation {
   id: string;
   title: string;
@@ -125,7 +139,7 @@ class RecommendationEngine {
 
     const outfitItems = [top, bottom, shoes, outerwear].filter(Boolean) as Item[];
 
-    if (outfitItems.length < 3) return null;
+    if (outfitItems.length < 2) return null;
 
     const reasoning = [
       `Matches your ${dominantStyle} style (${styleProfile.dominantStyles[0]?.percentage}% of wardrobe)`,
@@ -135,6 +149,8 @@ class RecommendationEngine {
     if (weather) {
       reasoning.push(`Suitable for ${weather.condition} weather at ${weather.temperature}°F`);
     }
+
+    const missingPieces = this.describeMissingPieces({ shoes });
 
     const weatherSuitable = weather ? this.checkWeatherSuitability(outfitItems, weather) : true;
     const styleMatch = this.calculateStyleMatch(outfitItems, dominantStyle);
@@ -149,6 +165,7 @@ class RecommendationEngine {
       reasoning,
       weatherSuitable,
       styleMatch,
+      missingPieces,
       tags: [dominantStyle, occasion, 'recommended'],
     };
   }
@@ -172,7 +189,7 @@ class RecommendationEngine {
 
     const outfitItems = [top, bottom, shoes, outerwear].filter(Boolean) as Item[];
 
-    if (outfitItems.length < 3) return null;
+    if (outfitItems.length < 2) return null;
 
     const reasoning = [
       `Optimized for ${weather.condition} weather`,
@@ -186,6 +203,7 @@ class RecommendationEngine {
       reasoning.push('Lightweight and breathable');
     }
 
+    const missingPieces = this.describeMissingPieces({ shoes });
     const styleMatch = this.calculateStyleMatch(outfitItems, 'casual');
 
     return {
@@ -198,6 +216,7 @@ class RecommendationEngine {
       reasoning,
       weatherSuitable: true,
       styleMatch,
+      missingPieces,
       tags: ['weather-optimized', occasion, weather.condition],
     };
   }
@@ -217,8 +236,9 @@ class RecommendationEngine {
 
     const outfitItems = [top, bottom, shoes].filter(Boolean) as Item[];
 
-    if (outfitItems.length < 3) return null;
+    if (outfitItems.length < 2) return null;
 
+    const missingPieces = this.describeMissingPieces({ shoes });
     const styleMatch = this.calculateStyleMatch(outfitItems, 'streetwear');
 
     return {
@@ -234,6 +254,7 @@ class RecommendationEngine {
       ],
       weatherSuitable: true,
       styleMatch,
+      missingPieces,
       tags: ['recent', occasion],
     };
   }
@@ -255,8 +276,9 @@ class RecommendationEngine {
 
     const outfitItems = [top, bottom, shoes].filter(Boolean) as Item[];
 
-    if (outfitItems.length < 3) return null;
+    if (outfitItems.length < 2) return null;
 
+    const missingPieces = this.describeMissingPieces({ shoes });
     const styleMatch = this.calculateStyleMatch(outfitItems, 'minimalist');
 
     return {
@@ -273,8 +295,19 @@ class RecommendationEngine {
       ],
       weatherSuitable: true,
       styleMatch,
+      missingPieces,
       tags: ['color-coordinated', occasion, dominantColor],
     };
+  }
+
+  /**
+   * Surface which category the closet had nothing to offer for, so the UI can
+   * prompt "add shoes" instead of silently showing a top+bottom-only look.
+   */
+  private describeMissingPieces(pieces: { shoes?: Item }): string[] | undefined {
+    const missing: string[] = [];
+    if (!pieces.shoes) missing.push('shoes');
+    return missing.length > 0 ? missing : undefined;
   }
 
   /**
@@ -350,6 +383,15 @@ class RecommendationEngine {
 
       if (criteria.preferredColor && item.color?.toLowerCase() === criteria.preferredColor.toLowerCase()) {
         score += 20;
+      }
+
+      if (criteria.occasion) {
+        const haystack = [item.style || '', ...(item.tags || []), item.category]
+          .join(' ')
+          .toLowerCase();
+        if (OCCASION_KEYWORDS[criteria.occasion].test(haystack)) {
+          score += 25;
+        }
       }
 
       if (criteria.trending) {

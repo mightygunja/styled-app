@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
+import { getCurrentUserId } from '../services/api';
 import { StylingSession } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -30,38 +32,8 @@ export default function MySessionsScreen() {
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const data = await stylistAPI.getUserSessions('current-user');
-      
-      // Add mock session for testing
-      const mockSession: StylingSession = {
-        id: 'test-session-1',
-        userId: 'current-user',
-        stylistId: 'stylist-1',
-        stylist: {
-          id: 'stylist-1',
-          name: 'Emma Rodriguez',
-          bio: 'Celebrity stylist',
-          profileImageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-          specialties: ['Professional Styling'],
-          hourlyRate: 150,
-          rating: 4.9,
-          reviewCount: 127,
-          availability: [],
-          yearsExperience: 12,
-          portfolio: [],
-          sessionTypes: ['closet-audit'],
-          isVerified: true,
-        },
-        sessionType: 'closet-audit',
-        scheduledDate: new Date().toISOString(),
-        duration: 60,
-        status: 'completed',
-        price: 150,
-        meetingLink: 'https://styled.app/call/test',
-        createdAt: new Date().toISOString(),
-      };
-      
-      setSessions([mockSession, ...data]);
+      const data = await stylistAPI.getUserSessions(getCurrentUserId());
+      setSessions(data);
     } catch (error) {
       console.error('Error loading sessions:', error);
     } finally {
@@ -158,17 +130,17 @@ export default function MySessionsScreen() {
                 {/* Session Details */}
                 <View style={styles.sessionDetails}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>📅</Text>
+                    <Ionicons name="calendar-outline" size={16} color="#64748b" style={styles.detailIcon} />
                     <Text style={styles.detailText}>
                       {new Date(session.scheduledDate).toLocaleDateString()}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>⏱️</Text>
+                    <Ionicons name="time-outline" size={16} color="#64748b" style={styles.detailIcon} />
                     <Text style={styles.detailText}>{session.duration} minutes</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>💰</Text>
+                    <Ionicons name="cash-outline" size={16} color="#64748b" style={styles.detailIcon} />
                     <Text style={styles.detailText}>${session.price}</Text>
                   </View>
                 </View>

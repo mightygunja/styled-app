@@ -87,7 +87,7 @@ export function SubscriptionProvider({ children, userId = 'mock-user' }: Subscri
     // Map feature names to feature flag keys
     const featureMap: Record<string, keyof import('../config/features').FeatureFlags> = {
       'unlimitedOutfits': 'unlimitedOutfits',
-      'styleDNA': 'styleDNAAccess',
+      'styleProfile': 'styleProfileAccess',
       'analytics': 'advancedAnalysis',
       'aiAssistant': 'aiStylingAssistant',
     };

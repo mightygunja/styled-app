@@ -18,9 +18,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { stylingAssistantService, ChatMessage } from '../services/stylingAssistantService';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { outfitsService, styleDnaService } from '../services/firestore';
+import { outfitsService, styleProfileService } from '../services/firestore';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -56,7 +56,7 @@ export default function StylingAssistantScreen() {
   const [closetItems, setClosetItems] = useState<Item[]>([]);
   const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
-  const [styleDNA, setStyleDNA] = useState<StyleDNA | null>(null);
+  const [styleProfile, setStyleProfile] = useState<PersonalStyleProfile | null>(null);
   const [outfitPickerOpen, setOutfitPickerOpen] = useState(false);
   const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -65,9 +65,9 @@ export default function StylingAssistantScreen() {
 
   useEffect(() => {
     loadData();
-    // Weather and Style DNA load independently and don't block the chat becoming usable
+    // Weather and style profile load independently and don't block the chat becoming usable
     getCurrentWeather().then(setWeather);
-    styleDnaService.getStyleDNA(getCurrentUserId()).then(setStyleDNA).catch(() => setStyleDNA(null));
+    styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => setStyleProfile(null));
   }, []);
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function StylingAssistantScreen() {
     setSending(true);
 
     try {
-      // Weather and Style DNA are always sent as ambient context - the AI factors them
+      // Weather and style profile are always sent as ambient context - the AI factors them
       // into every answer, not just explicit outfit requests.
       const { assistantMessage } = await stylingAssistantService.sendMessage(
         getCurrentUserId(),
@@ -152,7 +152,7 @@ export default function StylingAssistantScreen() {
           occasion: context?.occasion,
           mood: context?.mood,
           weather: weather || undefined,
-          styleDNA,
+          styleProfile,
         }
       );
       setMessages(prev => [...prev, assistantMessage]);
@@ -297,11 +297,11 @@ export default function StylingAssistantScreen() {
         </View>
 
         {/* Personalization context strip */}
-        {styleDNA ? (
+        {styleProfile ? (
           <View style={styles.contextStrip}>
             <Text style={styles.contextStripText} numberOfLines={1}>
-              Personalizing with your Style DNA
-              {styleDNA.styleArchetypes.length > 0 ? `: ${styleDNA.styleArchetypes.slice(0, 2).join(', ')}` : ''}
+              Personalizing with your style profile
+              {styleProfile.styleArchetypes.length > 0 ? `: ${styleProfile.styleArchetypes.slice(0, 2).join(', ')}` : ''}
               {' '}+ live weather + time of day
             </Text>
           </View>
@@ -311,7 +311,7 @@ export default function StylingAssistantScreen() {
             onPress={() => navigation.navigate('StyleProfileBuilder')}
           >
             <Text style={styles.contextStripPromptText}>
-              Build your Style DNA for sharper picks →
+              Build your style profile for sharper picks →
             </Text>
           </TouchableOpacity>
         )}
@@ -698,18 +698,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tobacco,
   },
   suggestionsScroll: {
-    maxHeight: 50,
+    maxHeight: 68,
     borderTopWidth: 1,
     borderTopColor: colors.hair,
     backgroundColor: colors.bone,
   },
   suggestionsContainer: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     gap: 8,
+    alignItems: 'center',
   },
   suggestionChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -717,6 +719,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontFamily: fonts.sans,
     fontSize: 12,
+    lineHeight: 16,
     color: colors.ink,
   },
   inputContainer: {

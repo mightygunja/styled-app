@@ -44,13 +44,13 @@ const COLOR_OPTIONS: ColorOption[] = [
 
 export default function OnboardingColorsScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { partialStyleDNA, updateColorProfile } = useOnboarding();
+  const { partialStyleProfile, updateColorProfile } = useOnboarding();
 
   const [activeCategory, setActiveCategory] = useState<ColorCategory>('primary');
   const [selectedColors, setSelectedColors] = useState({
-    primary: new Set(partialStyleDNA.colorProfile?.primary || []),
-    secondary: new Set(partialStyleDNA.colorProfile?.secondary || []),
-    stretch: new Set(partialStyleDNA.colorProfile?.stretch || []),
+    primary: new Set(partialStyleProfile.colorProfile?.primary || []),
+    secondary: new Set(partialStyleProfile.colorProfile?.secondary || []),
+    stretch: new Set(partialStyleProfile.colorProfile?.stretch || []),
   });
 
   const toggleColor = (colorName: string) => {

@@ -23,7 +23,7 @@ export const SUBSCRIPTION_TIERS = {
       'Digital closet (up to 30 items)',
       '3 outfit suggestions/week',
       'Basic gap detection',
-      'Style DNA quiz',
+      'Style profile quiz',
     ],
     looksPerWeek: 3,
   },
@@ -33,7 +33,7 @@ export const SUBSCRIPTION_TIERS = {
     price: 9,
     features: [
       'Unlimited closet, unlimited outfits',
-      'Full Style DNA + trend translation',
+      'Full style profile + trend translation',
       'Closet Health Score',
       'Body & fit intelligence',
       'Travel packing lists',

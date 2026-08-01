@@ -11,7 +11,7 @@
  */
 
 import { ClosetItem, getCurrentSeason } from '../models/closetItem';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { generateOutfits, Outfit } from './generateOutfits';
 
 export interface TodayContext {
@@ -44,7 +44,7 @@ export function getTodayContext(): TodayContext {
  */
 export function styleMeToday(
   closet: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   context?: TodayContext
 ): Outfit | null {
   const todayContext = context || getTodayContext();
@@ -53,7 +53,7 @@ export function styleMeToday(
   const occasion = todayContext.isWeekday ? 'work' : 'casual';
   
   // Generate outfits for today
-  const outfits = generateOutfits(closet, styleDNA, {
+  const outfits = generateOutfits(closet, styleProfile, {
     occasion,
     season: getCurrentSeason(),
     maxOutfits: 1, // Only need one
@@ -69,7 +69,7 @@ export function styleMeToday(
  */
 export function getWeatherAwareOutfit(
   closet: ClosetItem[],
-  styleDNA: StyleDNA,
+  styleProfile: PersonalStyleProfile,
   temperature: number
 ): Outfit | null {
   const context = getTodayContext();
@@ -102,7 +102,7 @@ export function getWeatherAwareOutfit(
   });
 
   // Generate outfit from weather-appropriate items
-  const outfits = generateOutfits(weatherAppropriate, styleDNA, {
+  const outfits = generateOutfits(weatherAppropriate, styleProfile, {
     occasion: context.isWeekday ? 'work' : 'casual',
     season: getCurrentSeason(),
     maxOutfits: 1,

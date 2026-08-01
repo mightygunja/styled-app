@@ -9,7 +9,8 @@ import {
   closetAPI as firebaseClosetAPI,
   lookAPI as firebaseLookAPI,
   paletteAPI as firebasePaletteAPI,
-  getCurrentUserId as firebaseGetCurrentUserId
+  getCurrentUserId as firebaseGetCurrentUserId,
+  getCurrentUserName as firebaseGetCurrentUserName
 } from './firebaseApi';
 
 export interface ClosetItem {
@@ -227,3 +228,4 @@ export { firebaseClosetAPI as closetAPI };
 export { firebaseLookAPI as lookAPI };
 export { firebasePaletteAPI as paletteAPI };
 export { firebaseGetCurrentUserId as getCurrentUserId };
+export { firebaseGetCurrentUserName as getCurrentUserName };

@@ -1,6 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { Text, StyleSheet, ViewStyle } from 'react-native';
 import { colors, fonts } from '../theme/designSystem';
+import PressableScale from './PressableScale';
 
 interface ChipProps {
   label: string;
@@ -11,14 +12,15 @@ interface ChipProps {
 
 export default function Chip({ label, active = false, onPress, style }: ChipProps) {
   return (
-    <TouchableOpacity
+    <PressableScale
       style={[styles.chip, active && styles.chipActive, style]}
       onPress={onPress}
-      activeOpacity={0.75}
       disabled={!onPress}
+      haptic="select"
+      scaleTo={0.94}
     >
       <Text style={[styles.label, active && styles.labelActive]}>{label.toUpperCase()}</Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

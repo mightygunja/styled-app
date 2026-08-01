@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "styled-app",
-    "slug": "styled-app",
+    "slug": "styled-app-tf",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -35,16 +35,28 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID"
+          "iosUrlScheme": "com.googleusercontent.apps.910996223766-6v0a0qq7saqc14grvnusgsr9fe99lodg"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "AppCheckCore", "modular_headers": true },
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ]
     ],
+    "owner": "adilgunja",
     "extra": {
       "eas": {
-        "projectId": "3978f432-8f64-4a56-b8b5-b483c2e83cde"
+        "projectId": "f6625af5-1743-449a-b00d-1f183756548c"
       }
-    },
-    "owner": "adilgunja"
+    }
   }
 }

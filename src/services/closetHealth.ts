@@ -8,12 +8,12 @@
  */
 
 import { ClosetItem } from '../models/closetItem';
-import { StyleDNA } from '../models/styleDNA';
+import { PersonalStyleProfile } from '../models/personalStyleProfile';
 
 export interface ClosetHealthScore {
   overall: number; // 0-100
   versatility: number; // How many outfit combinations possible
-  styleAlignment: number; // How well items match StyleDNA
+  styleAlignment: number; // How well items match PersonalStyleProfile
   colorHarmony: number; // How well colors work together
   gapAnalysis: string[]; // Strategic gaps (if any)
 }
@@ -30,7 +30,7 @@ export interface ClosetHealthInsight {
  */
 export function calculateClosetHealth(
   closet: ClosetItem[],
-  styleDNA: StyleDNA
+  styleProfile: PersonalStyleProfile
 ): ClosetHealthScore {
   // Versatility: How many outfit combinations are possible
   const versatility = Math.min(100, (closet.length * 3)); // Rough estimate
@@ -38,7 +38,7 @@ export function calculateClosetHealth(
   // Style alignment: How many items match user's style archetypes
   const matchingItems = closet.filter(item => {
     const itemTags = item.tags || [];
-    return styleDNA.styleArchetypes.some(archetype =>
+    return styleProfile.styleArchetypes.some(archetype =>
       itemTags.some(tag => tag.toLowerCase().includes(archetype.toLowerCase()))
     );
   });
@@ -49,7 +49,7 @@ export function calculateClosetHealth(
   // Color harmony: How many items are in user's color palette
   const colorMatchingItems = closet.filter(item =>
     item.colors.some(color =>
-      [...styleDNA.colorProfile.primary, ...styleDNA.colorProfile.secondary].some(
+      [...styleProfile.colorProfile.primary, ...styleProfile.colorProfile.secondary].some(
         preferred => color.toLowerCase().includes(preferred.toLowerCase())
       )
     )
@@ -89,9 +89,9 @@ export function calculateClosetHealth(
  */
 export function getClosetHealthInsights(
   closet: ClosetItem[],
-  styleDNA: StyleDNA
+  styleProfile: PersonalStyleProfile
 ): ClosetHealthInsight[] {
-  const health = calculateClosetHealth(closet, styleDNA);
+  const health = calculateClosetHealth(closet, styleProfile);
   const insights: ClosetHealthInsight[] = [];
 
   // Always start with positive framing

@@ -1,6 +1,6 @@
 /**
  * Onboarding Welcome Screen
- * First step in StyleDNA onboarding flow
+ * First step in the style profile onboarding flow
  */
 
 import React from 'react';
@@ -22,7 +22,7 @@ export default function OnboardingWelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Style DNA</Text>
+        <Text style={styles.title}>Welcome to Your Style Profile</Text>
         <Text style={styles.subtitle}>
           Let's build your personalized style profile in a few simple steps
         </Text>

@@ -1,29 +1,29 @@
 /**
  * Onboarding Context
  * 
- * Manages partial StyleDNA state during onboarding flow.
+ * Manages partial PersonalStyleProfile state during onboarding flow.
  * Data is persisted across steps but not submitted until completion.
  */
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { StyleDNA, DEFAULT_STYLE_DNA } from '../models/styleDNA';
+import { PersonalStyleProfile, DEFAULT_PERSONAL_STYLE_PROFILE } from '../models/personalStyleProfile';
 
 interface OnboardingContextType {
-  partialStyleDNA: Partial<StyleDNA>;
-  updateLifestyleWeights: (weights: StyleDNA['lifestyleWeights']) => void;
+  partialStyleProfile: Partial<PersonalStyleProfile>;
+  updateLifestyleWeights: (weights: PersonalStyleProfile['lifestyleWeights']) => void;
   updateStyleArchetypes: (archetypes: string[]) => void;
-  updateColorProfile: (colorProfile: StyleDNA['colorProfile']) => void;
+  updateColorProfile: (colorProfile: PersonalStyleProfile['colorProfile']) => void;
   updateAvoidRules: (avoidRules: string[]) => void;
-  updateGuidanceLevel: (guidanceLevel: StyleDNA['guidanceLevel']) => void;
+  updateGuidanceLevel: (guidanceLevel: PersonalStyleProfile['guidanceLevel']) => void;
   resetOnboarding: () => void;
-  getCompletedStyleDNA: () => StyleDNA;
+  getCompletedStyleProfile: () => PersonalStyleProfile;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [partialStyleDNA, setPartialStyleDNA] = useState<Partial<StyleDNA>>({
-    lifestyleWeights: DEFAULT_STYLE_DNA.lifestyleWeights,
+  const [partialStyleProfile, setPartialStyleProfile] = useState<Partial<PersonalStyleProfile>>({
+    lifestyleWeights: DEFAULT_PERSONAL_STYLE_PROFILE.lifestyleWeights,
     styleArchetypes: [],
     avoidRules: [],
     colorProfile: {
@@ -35,44 +35,44 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     guidanceLevel: 'guided',
   });
 
-  const updateLifestyleWeights = (weights: StyleDNA['lifestyleWeights']) => {
-    setPartialStyleDNA(prev => ({
+  const updateLifestyleWeights = (weights: PersonalStyleProfile['lifestyleWeights']) => {
+    setPartialStyleProfile(prev => ({
       ...prev,
       lifestyleWeights: weights,
     }));
   };
 
   const updateStyleArchetypes = (archetypes: string[]) => {
-    setPartialStyleDNA(prev => ({
+    setPartialStyleProfile(prev => ({
       ...prev,
       styleArchetypes: archetypes,
     }));
   };
 
-  const updateColorProfile = (colorProfile: StyleDNA['colorProfile']) => {
-    setPartialStyleDNA(prev => ({
+  const updateColorProfile = (colorProfile: PersonalStyleProfile['colorProfile']) => {
+    setPartialStyleProfile(prev => ({
       ...prev,
       colorProfile,
     }));
   };
 
   const updateAvoidRules = (avoidRules: string[]) => {
-    setPartialStyleDNA(prev => ({
+    setPartialStyleProfile(prev => ({
       ...prev,
       avoidRules,
     }));
   };
 
-  const updateGuidanceLevel = (guidanceLevel: StyleDNA['guidanceLevel']) => {
-    setPartialStyleDNA(prev => ({
+  const updateGuidanceLevel = (guidanceLevel: PersonalStyleProfile['guidanceLevel']) => {
+    setPartialStyleProfile(prev => ({
       ...prev,
       guidanceLevel,
     }));
   };
 
   const resetOnboarding = () => {
-    setPartialStyleDNA({
-      lifestyleWeights: DEFAULT_STYLE_DNA.lifestyleWeights,
+    setPartialStyleProfile({
+      lifestyleWeights: DEFAULT_PERSONAL_STYLE_PROFILE.lifestyleWeights,
       styleArchetypes: [],
       avoidRules: [],
       colorProfile: {
@@ -85,24 +85,24 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const getCompletedStyleDNA = (): StyleDNA => {
+  const getCompletedStyleProfile = (): PersonalStyleProfile => {
     return {
-      ...DEFAULT_STYLE_DNA,
-      ...partialStyleDNA,
-    } as StyleDNA;
+      ...DEFAULT_PERSONAL_STYLE_PROFILE,
+      ...partialStyleProfile,
+    } as PersonalStyleProfile;
   };
 
   return (
     <OnboardingContext.Provider
       value={{
-        partialStyleDNA,
+        partialStyleProfile,
         updateLifestyleWeights,
         updateStyleArchetypes,
         updateColorProfile,
         updateAvoidRules,
         updateGuidanceLevel,
         resetOnboarding,
-        getCompletedStyleDNA,
+        getCompletedStyleProfile,
       }}
     >
       {children}

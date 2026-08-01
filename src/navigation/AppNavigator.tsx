@@ -80,7 +80,13 @@ import QuickAccessScreen from '../screens/QuickAccessScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
 import ColorPaletteScreen from '../screens/ColorPaletteScreen';
 import StyleProfileBuilderScreen from '../screens/StyleProfileBuilderScreen';
-import StyleDNAScreen from '../screens/StyleDNAScreen';
+import ColorAnalysisScreen from '../screens/ColorAnalysisScreen';
+import BodyAnalysisScreen from '../screens/BodyAnalysisScreen';
+import InStoreCheckScreen from '../screens/InStoreCheckScreen';
+import ShopScreen from '../screens/ShopScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
+import WishlistScreen from '../screens/WishlistScreen';
+import StyleProfileScreen from '../screens/StyleProfileScreen';
 import AccountScreen from '../screens/AccountScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -138,8 +144,8 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="StyleDNA"
-        component={StyleDNAScreen}
+        name="StyleProfile"
+        component={StyleProfileScreen}
         options={{
           tabBarLabel: 'Style',
           tabBarIcon: ({ color, focused }) => (
@@ -171,11 +177,10 @@ function MainTabs() {
   );
 }
 
-// TESTFLIGHT DEMO BUILD: bypasses the login gate so every install lands straight in
-// the seeded mock-user-123 account. Also see DEV_FORCE_USER_ID in firebaseApi.ts and
-// devSkipAuthChecks() in firestore.rules - all three must move together. Revert all
-// three (and redeploy firestore.rules) before any build meant for real users.
-const DEV_SKIP_AUTH = true;
+// Set true only for local testing to bypass the login gate. Must stay false in
+// anything committed/shipped - also see DEV_FORCE_USER_ID in firebaseApi.ts and
+// devSkipAuthChecks() in firestore.rules, which need to be reverted together.
+const DEV_SKIP_AUTH = false;
 
 export default function AppNavigator() {
   const { user, loading, isNewUser } = useAuth();
@@ -472,9 +477,33 @@ export default function AppNavigator() {
           name="Recommendations" 
           component={RecommendationsScreen}
         />
-        <Stack.Screen 
-          name="StyleProfileBuilder" 
+        <Stack.Screen
+          name="StyleProfileBuilder"
           component={StyleProfileBuilderScreen}
+        />
+        <Stack.Screen
+          name="ColorAnalysis"
+          component={ColorAnalysisScreen}
+        />
+        <Stack.Screen
+          name="BodyAnalysis"
+          component={BodyAnalysisScreen}
+        />
+        <Stack.Screen
+          name="InStoreCheck"
+          component={InStoreCheckScreen}
+        />
+        <Stack.Screen
+          name="Shop"
+          component={ShopScreen}
+        />
+        <Stack.Screen
+          name="ProductDetail"
+          component={ProductDetailScreen}
+        />
+        <Stack.Screen
+          name="Wishlist"
+          component={WishlistScreen}
         />
           </>
         ) : (

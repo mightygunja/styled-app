@@ -2,12 +2,13 @@ import { httpsCallable } from 'firebase/functions';
 import { functions, auth } from '../config/firebase';
 import { closetService, looksService, palettesService, shopMyClosetService } from './firestore';
 import { uploadImageToFirebase } from './firebaseStorage';
+import { ColorAnalysisResult, BodyType, PersonalStyleProfile, BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
+import { StoreCheckResult } from '../models/storeCheck';
 
-// TESTFLIGHT DEMO BUILD: forces every screen to read the seeded mock-user-123
-// account, paired with DEV_SKIP_AUTH in AppNavigator.tsx. Revert to null (and revert
-// DEV_SKIP_AUTH + devSkipAuthChecks() in firestore.rules) before any build meant for
-// real users.
-const DEV_FORCE_USER_ID: string | null = 'mock-user-123';
+// Set to a uid only for local testing (paired with DEV_SKIP_AUTH in AppNavigator.tsx)
+// to force every screen to read a specific seeded account's data regardless of the
+// real Firebase session. Must stay null in anything committed/shipped.
+const DEV_FORCE_USER_ID: string | null = null;
 
 // The real signed-in user's uid. Auth is required before the main app is reachable
 // (see AppNavigator), so auth.currentUser is always set here in practice; the
@@ -17,12 +18,20 @@ export function getCurrentUserId(): string {
   return auth.currentUser?.uid || 'anonymous';
 }
 
+// Display name for the signed-in user, for attributing content they create (reviews, posts, etc).
+export function getCurrentUserName(): string {
+  return auth.currentUser?.displayName || 'You';
+}
+
 // ==================== CLOUD FUNCTIONS ====================
 
 const classifyGarmentImageFn = httpsCallable(functions, 'classifyGarmentImage');
 const generateImageEmbeddingFn = httpsCallable(functions, 'generateImageEmbedding');
 const findSimilarItemsFn = httpsCallable(functions, 'findSimilarItems');
 const shopMyClosetFn = httpsCallable(functions, 'shopMyCloset');
+const analyzeColorSeasonFn = httpsCallable(functions, 'analyzeColorSeason');
+const analyzeBodyTypeFn = httpsCallable(functions, 'analyzeBodyType');
+const analyzeStoreItemFn = httpsCallable(functions, 'analyzeStoreItem');
 
 // ==================== CLOSET API ====================
 
@@ -219,6 +228,76 @@ export const paletteAPI = {
   getLooks: async (paletteId: string) => {
     const looks = await palettesService.getLooks(paletteId);
     return { success: true, data: looks };
+  },
+};
+
+// ==================== PERSONAL COLOR ANALYSIS API ====================
+
+export const colorAnalysisAPI = {
+  // Uploads a selfie and runs AI seasonal color analysis (12-season method)
+  analyze: async (imageBase64: string, userId: string): Promise<ColorAnalysisResult> => {
+    const imageUrl = await uploadImageToFirebase(imageBase64, userId, 'colorAnalysis');
+    const result = await analyzeColorSeasonFn({ imageUrl });
+    return (result.data as any).data as ColorAnalysisResult;
+  },
+};
+
+// ==================== BODY & FIT ANALYSIS API ====================
+
+export interface PhotoBodyEstimate {
+  bodyType: BodyType;
+  confidence: 'high' | 'medium' | 'low';
+  reasoning: string;
+  agreesWithQuiz: boolean | null;
+}
+
+export const bodyAnalysisAPI = {
+  // Uploads a full-length photo and runs an AI body-type estimate. Pass the
+  // quiz-derived type (if any) so the model gives an independent read and the
+  // result can surface agreement/disagreement instead of silently overwriting it.
+  analyzePhoto: async (
+    imageBase64: string,
+    userId: string,
+    quizBodyType?: BodyType
+  ): Promise<PhotoBodyEstimate> => {
+    const imageUrl = await uploadImageToFirebase(imageBase64, userId, 'bodyAnalysis');
+    const result = await analyzeBodyTypeFn({ imageUrl, quizBodyType });
+    return (result.data as any).data as PhotoBodyEstimate;
+  },
+};
+
+// ==================== IN-STORE SNAP-TO-CHECK API ====================
+
+export const storeCheckAPI = {
+  // Uploads a photo of an item you're considering buying and returns a
+  // buy/maybe/skip verdict grounded in the user's color season, body/fit
+  // guidance, style archetypes, and avoid rules (whatever they've completed -
+  // any missing piece is judged as unknown rather than guessed).
+  analyze: async (
+    imageBase64: string,
+    userId: string,
+    profile: PersonalStyleProfile | null
+  ): Promise<StoreCheckResult> => {
+    const imageUrl = await uploadImageToFirebase(imageBase64, userId, 'storeCheck');
+
+    const bodyGuide = profile?.bodyAnalysis ? BODY_TYPE_GUIDES[profile.bodyAnalysis.bodyType] : null;
+
+    const profilePayload = profile
+      ? {
+          colorSeason: profile.colorAnalysis?.season,
+          recommendedColors: profile.colorAnalysis?.palette.map(s => s.name),
+          colorsToAvoid: profile.colorAnalysis?.colorsToAvoid.map(s => s.name),
+          bodyType: bodyGuide?.label,
+          bodyHighlight: profile.bodyAnalysis?.highlight,
+          bodyDownplay: profile.bodyAnalysis?.downplay,
+          bodyRecommendedSilhouettes: profile.bodyAnalysis?.recommendedSilhouettes,
+          styleArchetypes: profile.styleArchetypes,
+          avoidRules: profile.avoidRules,
+        }
+      : undefined;
+
+    const result = await analyzeStoreItemFn({ imageUrl, profile: profilePayload });
+    return (result.data as any).data as StoreCheckResult;
   },
 };
 

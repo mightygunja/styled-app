@@ -1,6 +1,6 @@
 // Navigation type definitions
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { Occasion } from '../types';
+import { Occasion, ItemCategory } from '../types';
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
@@ -85,6 +85,12 @@ export type RootStackParamList = {
   ClosetAnalytics: undefined;
   Recommendations: undefined;
   StyleProfileBuilder: undefined;
+  ColorAnalysis: undefined;
+  BodyAnalysis: undefined;
+  InStoreCheck: undefined;
+  Shop: { category?: ItemCategory; matchedOnly?: boolean } | undefined;
+  ProductDetail: { productId: string };
+  Wishlist: undefined;
   Login: undefined;
   Signup: undefined;
 };
@@ -92,7 +98,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Closet: undefined;
-  StyleDNA: undefined;
+  StyleProfile: undefined;
   StylistChat: undefined;
   Account: undefined;
 };

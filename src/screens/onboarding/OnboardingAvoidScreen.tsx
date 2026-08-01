@@ -3,7 +3,7 @@
  * Step 5: Avoid rules
  * 
  * Captures what user prefers not to wear with friendly, non-judgmental language.
- * Avoid-rules are stored explicitly in partial StyleDNA state.
+ * Avoid-rules are stored explicitly in partial PersonalStyleProfile state.
  */
 
 import React, { useState } from 'react';
@@ -30,11 +30,11 @@ const COMMON_AVOID_OPTIONS = [
 
 export default function OnboardingAvoidScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { partialStyleDNA, updateAvoidRules } = useOnboarding();
+  const { partialStyleProfile, updateAvoidRules } = useOnboarding();
 
   // Initialize from existing partial state
   const [selectedAvoidRules, setSelectedAvoidRules] = useState<Set<string>>(
-    new Set(partialStyleDNA.avoidRules || [])
+    new Set(partialStyleProfile.avoidRules || [])
   );
   const [customRule, setCustomRule] = useState('');
 

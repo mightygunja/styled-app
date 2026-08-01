@@ -12,6 +12,8 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -19,7 +21,7 @@ import { Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
-import { getStyleDNA } from '../services/styleDNA';
+import { getStyleVoice } from '../services/styleVoice';
 import { recommendationEngine, OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
@@ -107,7 +109,7 @@ export default function HomeScreen() {
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
       styleProfileRef.current = styleProfile;
-      setArchetype(getStyleDNA(styleProfile).archetype);
+      setArchetype(getStyleVoice(styleProfile).archetype);
 
       const recs = await recommendationEngine.generateRecommendations(items, styleProfile, {
         occasion: occasionValue,
@@ -241,9 +243,14 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>STYLED</Text>
-        <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
-          <Text style={styles.socialIcon}>◎</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRightRow}>
+          <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
+            <Ionicons name="bag-outline" size={20} color={colors.ink} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
+            <Text style={styles.socialIcon}>◎</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -341,6 +348,14 @@ export default function HomeScreen() {
                 <Text style={styles.noteLabel}>STYLIST NOTE</Text>
               </View>
 
+              {look.missingPieces && look.missingPieces.length > 0 && (
+                <View style={styles.gapCard}>
+                  <Text style={styles.gapText}>
+                    This look is missing {look.missingPieces.join(' and ')} — add some to your closet to complete it.
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.actionRow}>
                 <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
                 <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
@@ -351,7 +366,9 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Modal visible={menuVisible} animationType="slide" transparent onRequestClose={() => setMenuVisible(false)}>
-        <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
+        <View style={styles.menuOverlay}>
+          <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setMenuVisible(false)} />
           <View style={styles.menuContainer}>
             <View style={styles.menuHeader}>
               <View>
@@ -388,7 +405,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
@@ -416,6 +433,9 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerRightRow: {
+    flexDirection: 'row',
   },
   hamburger: {
     width: 24,
@@ -586,6 +606,16 @@ const styles = StyleSheet.create({
     ...textType.eyebrow,
     marginTop: 8,
   },
+  gapCard: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.sand,
+  },
+  gapText: {
+    ...textType.meta,
+    color: colors.tobacco,
+  },
   actionRow: {
     flexDirection: 'row',
     marginHorizontal: 20,
@@ -605,7 +635,6 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(28, 28, 28, 0.5)',
     justifyContent: 'flex-end',
   },
   menuContainer: {

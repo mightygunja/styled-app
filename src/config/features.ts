@@ -17,13 +17,13 @@ export type SubscriptionTier = 'free' | 'plus' | 'premium';
  */
 export const FEATURES = {
   unlimitedOutfits: ["plus", "premium"] as const,
-  styleDNA: ["plus", "premium"] as const,
+  styleProfile: ["plus", "premium"] as const,
   stylistReview: ["premium"] as const,
 } as const;
 
 export interface FeatureFlags {
   unlimitedOutfits: boolean;
-  styleDNAAccess: boolean;
+  styleProfileAccess: boolean;
   advancedAnalysis: boolean;
   aiStylingAssistant: boolean;
   personalStylistAccess: boolean;
@@ -53,7 +53,7 @@ export const TIER_PRICING: Record<SubscriptionTier, number | null> = {
 export const TIER_FEATURES: Record<SubscriptionTier, FeatureFlags> = {
   free: {
     unlimitedOutfits: false,        // Limited to 3 outfits
-    styleDNAAccess: false,           // No StyleDNA profile
+    styleProfileAccess: false,           // No PersonalStyleProfile profile
     advancedAnalysis: false,         // No analytics
     aiStylingAssistant: false,       // Limited AI recommendations
     personalStylistAccess: false,    // No human stylist
@@ -61,7 +61,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, FeatureFlags> = {
   },
   plus: {
     unlimitedOutfits: true,          // Unlimited outfit generation
-    styleDNAAccess: true,            // Full StyleDNA profile
+    styleProfileAccess: true,            // Full PersonalStyleProfile profile
     advancedAnalysis: true,          // Closet analytics
     aiStylingAssistant: true,        // Full AI styling
     personalStylistAccess: false,    // No human stylist
@@ -69,7 +69,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, FeatureFlags> = {
   },
   premium: {
     unlimitedOutfits: true,          // Unlimited outfit generation
-    styleDNAAccess: true,            // Full StyleDNA profile
+    styleProfileAccess: true,            // Full PersonalStyleProfile profile
     advancedAnalysis: true,          // Advanced analytics
     aiStylingAssistant: true,        // Full AI styling
     personalStylistAccess: true,     // Human stylist consultations

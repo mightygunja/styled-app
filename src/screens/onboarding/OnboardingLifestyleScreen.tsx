@@ -3,7 +3,7 @@
  * Step 2: Lifestyle weights configuration
  * 
  * Uses tap-based multi-select to set lifestyle distribution.
- * Persists to partial StyleDNA state without submitting.
+ * Persists to partial PersonalStyleProfile state without submitting.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { normalizeLifestyleWeights } from '../../models/styleDNA';
+import { normalizeLifestyleWeights } from '../../models/personalStyleProfile';
 
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingLifestyle'>;
 
@@ -55,12 +55,12 @@ const LIFESTYLE_OPTIONS: LifestyleOption[] = [
 
 export default function OnboardingLifestyleScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { partialStyleDNA, updateLifestyleWeights } = useOnboarding();
+  const { partialStyleProfile, updateLifestyleWeights } = useOnboarding();
 
   // Initialize from existing partial state
   const [selectedCategories, setSelectedCategories] = useState<Set<LifestyleCategory>>(
     new Set(
-      Object.entries(partialStyleDNA.lifestyleWeights || {})
+      Object.entries(partialStyleProfile.lifestyleWeights || {})
         .filter(([_, value]) => value > 0)
         .map(([key]) => key as LifestyleCategory)
     )

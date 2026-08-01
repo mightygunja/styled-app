@@ -19,10 +19,13 @@ import {
   OrganizationPlan,
   DeclutterSuggestion,
   CapsuleWardrobe,
+  CapsuleProfileContext,
   OrganizationMethod,
   OrganizationTip,
 } from '../services/closetOrganizationService';
 import { closetAPI, getCurrentUserId } from '../services/api';
+import { styleProfileService } from '../services/firestore';
+import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -97,11 +100,30 @@ export default function ClosetOrganizationScreen() {
       const suggestions = await closetOrganizationService.getDeclutterSuggestions(closetItems);
       setDeclutterSuggestions(suggestions);
 
-      // Get capsule wardrobe
+      // Get capsule wardrobe, personalized with color/body/style profile data when available
+      let profileContext: CapsuleProfileContext | undefined;
+      try {
+        const savedProfile = await styleProfileService.getStyleProfile(getCurrentUserId());
+        if (savedProfile) {
+          const bodyGuide = savedProfile.bodyAnalysis ? BODY_TYPE_GUIDES[savedProfile.bodyAnalysis.bodyType] : null;
+          profileContext = {
+            recommendedColors: savedProfile.colorAnalysis?.palette.map(s => s.name),
+            colorsToAvoid: savedProfile.colorAnalysis?.colorsToAvoid.map(s => s.name),
+            bodyMatchKeywords: bodyGuide?.matchKeywords,
+            styleArchetypes: savedProfile.styleArchetypes,
+            avoidRules: savedProfile.avoidRules,
+          };
+        }
+      } catch (profileError) {
+        console.error('Error loading style profile for capsule:', profileError);
+        // Non-critical - the capsule builder works fine without profile context
+      }
+
       const capsule = await closetOrganizationService.createCapsuleWardrobe(
         closetItems,
         'year-round',
-        30
+        30,
+        profileContext
       );
       setCapsuleWardrobe(capsule);
 
@@ -350,6 +372,25 @@ export default function ClosetOrganizationScreen() {
             <Text style={styles.capsuleSubtitle}>
               {capsuleWardrobe.items.length} pieces • {capsuleWardrobe.outfitCombinations} outfit combinations
             </Text>
+            {capsuleWardrobe.personalized && (
+              <View style={styles.personalizedBadge}>
+                <Text style={styles.personalizedBadgeText}>✨ Personalized to your style profile</Text>
+              </View>
+            )}
+
+            {capsuleWardrobe.gaps.length > 0 && (
+              <View style={styles.gapsBox}>
+                {capsuleWardrobe.gaps.map((gap, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => navigation.navigate('Shop', { category: gap.category as any })}
+                  >
+                    <Text style={styles.gapText}>⚠️ {gap.message}</Text>
+                    <Text style={styles.gapShopLink}>Shop {gap.category} →</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <View style={styles.capsuleStats}>
               <View style={styles.capsuleStat}>
@@ -374,6 +415,18 @@ export default function ClosetOrganizationScreen() {
                 </View>
               ))}
             </View>
+
+            {capsuleWardrobe.outfitPreviews.length > 0 && (
+              <View style={styles.capsuleEssentials}>
+                <Text style={styles.capsuleEssentialsTitle}>Try These First</Text>
+                {capsuleWardrobe.outfitPreviews.map((preview, index) => (
+                  <View key={index} style={styles.essentialItem}>
+                    <Text style={styles.essentialBullet}>→</Text>
+                    <Text style={styles.essentialText}>{preview.label}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={styles.capsuleItems}>
               <Text style={styles.capsuleItemsTitle}>Your Capsule Items</Text>
@@ -767,6 +820,36 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#e2e8f0',
+  },
+  personalizedBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#eef2ff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  personalizedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4338ca',
+  },
+  gapsBox: {
+    marginTop: 16,
+    backgroundColor: '#fff7ed',
+    borderRadius: 12,
+    padding: 14,
+  },
+  gapText: {
+    fontSize: 13,
+    color: '#9a3412',
+    marginBottom: 2,
+  },
+  gapShopLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9a3412',
+    marginBottom: 8,
   },
   capsuleEssentials: {
     backgroundColor: '#f8fafc',

@@ -1,7 +1,7 @@
 /**
  * Onboarding Navigator
  * 
- * Linear progression flow for StyleDNA onboarding.
+ * Linear progression flow for style profile onboarding.
  * Users cannot skip steps - must complete in order.
  */
 

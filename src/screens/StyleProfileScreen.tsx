@@ -5,8 +5,10 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
-import { getStyleDNA, StyleDNAResult } from '../services/styleDNA';
+import { getStyleVoice, StyleVoiceResult } from '../services/styleVoice';
 import { closetAPI, getCurrentUserId } from '../services/api';
+import { styleProfileService } from '../services/firestore';
+import { ColorAnalysisResult, BodyAnalysisResult, BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Button from '../components/Button';
 import { colors, fonts, type as textType } from '../theme/designSystem';
@@ -21,13 +23,27 @@ const currentSeason = () => {
   return 'Winter';
 };
 
-export default function StyleDNAScreen() {
+export default function StyleProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [profile, setProfile] = useState<StyleProfile | null>(null);
-  const [dna, setDna] = useState<StyleDNAResult | null>(null);
+  const [voice, setVoice] = useState<StyleVoiceResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [colorAnalysis, setColorAnalysis] = useState<ColorAnalysisResult | null>(null);
+  const [bodyAnalysis, setBodyAnalysis] = useState<BodyAnalysisResult | null>(null);
 
-  const loadDNA = useCallback(async () => {
+  // Loaded independently of the wardrobe-derived voice below, so a failure here
+  // never blocks the rest of the screen from rendering.
+  const loadColorAnalysis = useCallback(async () => {
+    try {
+      const saved = await styleProfileService.getStyleProfile(getCurrentUserId());
+      setColorAnalysis(saved?.colorAnalysis || null);
+      setBodyAnalysis(saved?.bodyAnalysis || null);
+    } catch (error) {
+      console.error('Error loading color/body analysis:', error);
+    }
+  }, []);
+
+  const loadStyleProfile = useCallback(async () => {
     try {
       const response = await closetAPI.getItems(getCurrentUserId());
       const items: Item[] = response.data.map((item: any) => ({
@@ -46,9 +62,9 @@ export default function StyleDNAScreen() {
       }));
       const analysis = await aiStyleService.analyzeStyle(items);
       setProfile(analysis);
-      setDna(getStyleDNA(analysis));
+      setVoice(getStyleVoice(analysis));
     } catch (error) {
-      console.error('Error loading Style DNA:', error);
+      console.error('Error loading style profile:', error);
     } finally {
       setLoading(false);
     }
@@ -56,11 +72,12 @@ export default function StyleDNAScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadDNA();
-    }, [loadDNA])
+      loadStyleProfile();
+      loadColorAnalysis();
+    }, [loadStyleProfile, loadColorAnalysis])
   );
 
-  if (loading || !profile || !dna) {
+  if (loading || !profile || !voice) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -75,9 +92,9 @@ export default function StyleDNAScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>STYLE DNA · {currentSeason().toUpperCase()} EDITION</Text>
-        <Text style={styles.archetype}>{dna.archetype}</Text>
-        <Text style={styles.description}>{dna.description}</Text>
+        <Text style={styles.eyebrow}>STYLE PROFILE · {currentSeason().toUpperCase()} EDITION</Text>
+        <Text style={styles.archetype}>{voice.archetype}</Text>
+        <Text style={styles.description}>{voice.description}</Text>
 
         <Text style={styles.sectionLabel}>YOUR PALETTE</Text>
         <View style={styles.paletteRow}>
@@ -93,19 +110,98 @@ export default function StyleDNAScreen() {
           )}
         </View>
 
-        <View style={styles.dnaColumns}>
-          <View style={styles.dnaColumn}>
-            <Text style={styles.sectionLabel}>IN YOUR DNA</Text>
-            {dna.inYourDNA.map((trait, i) => (
+        <Text style={styles.sectionLabel}>PERSONAL COLOR ANALYSIS</Text>
+        {colorAnalysis ? (
+          <TouchableOpacity
+            style={styles.colorAnalysisCard}
+            onPress={() => navigation.navigate('ColorAnalysis')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.colorSeasonName}>{colorAnalysis.season}</Text>
+            <Text style={styles.colorSeasonDesc} numberOfLines={2}>{colorAnalysis.description}</Text>
+            <View style={styles.paletteRow}>
+              {colorAnalysis.palette.slice(0, 6).map((swatch, i) => (
+                <View key={i} style={[styles.miniSwatch, { backgroundColor: swatch.hex }]} />
+              ))}
+            </View>
+            <Text style={styles.colorAnalysisLink}>Retake analysis →</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.colorAnalysisCard}
+            onPress={() => navigation.navigate('ColorAnalysis')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.colorSeasonDesc}>
+              Discover your seasonal color type from a selfie, and get a palette built for your
+              undertone.
+            </Text>
+            <Text style={styles.colorAnalysisLink}>Analyze my colors →</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.sectionLabel}>BODY & FIT ANALYSIS</Text>
+        {bodyAnalysis ? (
+          <TouchableOpacity
+            style={styles.colorAnalysisCard}
+            onPress={() => navigation.navigate('BodyAnalysis')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.colorSeasonName}>{BODY_TYPE_GUIDES[bodyAnalysis.bodyType].label}</Text>
+            <Text style={styles.colorSeasonDesc} numberOfLines={2}>{bodyAnalysis.description}</Text>
+            <Text style={styles.colorAnalysisLink}>Retake analysis →</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.colorAnalysisCard}
+            onPress={() => navigation.navigate('BodyAnalysis')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.colorSeasonDesc}>
+              A 4-question quiz (plus an optional photo check) to find your body & fit type, with
+              styling guidance and a check against pieces you already own.
+            </Text>
+            <Text style={styles.colorAnalysisLink}>Find my body & fit type →</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.sectionLabel}>SHOPPING</Text>
+        <TouchableOpacity
+          style={styles.colorAnalysisCard}
+          onPress={() => navigation.navigate('Shop', { matchedOnly: true })}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.colorSeasonDesc}>
+            Browse real product picks filtered against your color season, body & fit, and style
+            archetypes - and against gaps in your closet.
+          </Text>
+          <Text style={styles.colorAnalysisLink}>Shop your matches →</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.colorAnalysisCard, { marginTop: 12 }]}
+          onPress={() => navigation.navigate('InStoreCheck')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.colorSeasonDesc}>
+            Standing in a fitting room? Snap the item and get a buy/maybe/skip verdict against
+            your profile - plus a check against what you already own.
+          </Text>
+          <Text style={styles.colorAnalysisLink}>Check an item →</Text>
+        </TouchableOpacity>
+
+        <View style={styles.voiceColumns}>
+          <View style={styles.voiceColumn}>
+            <Text style={styles.sectionLabel}>IN YOUR STYLE</Text>
+            {voice.inYourStyle.map((trait, i) => (
               <View key={i} style={styles.traitRow}>
                 <Text style={styles.traitDash}>—</Text>
                 <Text style={styles.traitText}>{trait}</Text>
               </View>
             ))}
           </View>
-          <View style={styles.dnaColumn}>
+          <View style={styles.voiceColumn}>
             <Text style={styles.sectionLabel}>RARELY YOU</Text>
-            {dna.rarelyYou.map((trait, i) => (
+            {voice.rarelyYou.map((trait, i) => (
               <View key={i} style={styles.traitRow}>
                 <Text style={styles.traitDash}>—</Text>
                 <Text style={[styles.traitText, styles.traitTextMuted]}>{trait}</Text>
@@ -203,11 +299,38 @@ const styles = StyleSheet.create({
   emptyText: {
     ...textType.meta,
   },
-  dnaColumns: {
+  colorAnalysisCard: {
+    backgroundColor: colors.paper,
+    padding: 18,
+  },
+  colorSeasonName: {
+    fontFamily: fonts.serifMedium,
+    fontSize: 20,
+    color: colors.ink,
+    marginBottom: 6,
+  },
+  colorSeasonDesc: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+  },
+  miniSwatch: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: colors.hair,
+  },
+  colorAnalysisLink: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 12,
+    color: colors.tobacco,
+    marginTop: 12,
+  },
+  voiceColumns: {
     flexDirection: 'row',
     marginTop: 8,
   },
-  dnaColumn: {
+  voiceColumn: {
     flex: 1,
   },
   traitRow: {

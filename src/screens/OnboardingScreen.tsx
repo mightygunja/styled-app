@@ -79,7 +79,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.quizWrap}>
-          <Text style={styles.quizEyebrow}>STYLE DNA · FIVE QUESTIONS</Text>
+          <Text style={styles.quizEyebrow}>STYLE PROFILE · FIVE QUESTIONS</Text>
           <Text style={styles.quizTitle}>
             A quick read on your <Text style={styles.heroTitleAccent}>taste</Text>.
           </Text>
@@ -106,7 +106,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.revealWrap}>
-        <Text style={styles.quizEyebrow}>STYLE DNA · YOUR RESULT</Text>
+        <Text style={styles.quizEyebrow}>STYLE PROFILE · YOUR RESULT</Text>
         <Text style={styles.archetypeReveal}>{archetype}</Text>
         <Text style={styles.revealBody}>
           I only have a few answers to work with — add a few pieces from your closet and I can

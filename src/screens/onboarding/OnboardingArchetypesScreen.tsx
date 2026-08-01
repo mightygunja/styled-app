@@ -3,7 +3,7 @@
  * Step 3: Style descriptors/archetypes selection
  * 
  * Captures user's style instinct with friendly, non-judgmental language.
- * Persists to partial StyleDNA state without submitting.
+ * Persists to partial PersonalStyleProfile state without submitting.
  */
 
 import React, { useState } from 'react';
@@ -13,17 +13,17 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { STYLE_ARCHETYPES } from '../../models/styleDNA';
+import { STYLE_ARCHETYPES } from '../../models/personalStyleProfile';
 
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingArchetypes'>;
 
 export default function OnboardingArchetypesScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { partialStyleDNA, updateStyleArchetypes } = useOnboarding();
+  const { partialStyleProfile, updateStyleArchetypes } = useOnboarding();
 
   // Initialize from existing partial state
   const [selectedArchetypes, setSelectedArchetypes] = useState<Set<string>>(
-    new Set(partialStyleDNA.styleArchetypes || [])
+    new Set(partialStyleProfile.styleArchetypes || [])
   );
 
   const toggleArchetype = (archetype: string) => {

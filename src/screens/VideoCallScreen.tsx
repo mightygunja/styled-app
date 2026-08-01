@@ -13,6 +13,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { videoCallService, VideoCallStatus } from '../services/videoCallService';
+import { getCurrentUserId } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -48,7 +49,7 @@ export default function VideoCallScreen() {
     try {
       const result = await videoCallService.initializeCall({
         sessionId,
-        userId: 'current-user',
+        userId: getCurrentUserId(),
         stylistId: 'stylist-id',
         roomName: `session-${sessionId}`,
       });
