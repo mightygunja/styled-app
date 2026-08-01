@@ -67,6 +67,36 @@ export type RootStackParamList = {
   Wishlist: undefined;
   Login: undefined;
   Signup: undefined;
+
+  // ==================== NOT REGISTERED IN AppNavigator ====================
+  // Route types kept only so the corresponding screen files (restored from
+  // git history, intentionally not wired into navigation) still type-check.
+  // None of these are reachable in the running app.
+  ShoppingAssistant: undefined;
+  ARTryOn: undefined;
+  SecondhandMarketplace: undefined;
+  AIShoppingChatbot: undefined;
+  VoiceCommand: undefined;
+  SmartMirror: undefined;
+  MLTrendPrediction: undefined;
+  PremiumStylist: undefined;
+  ExclusiveContent: undefined;
+  AdvancedAnalytics: undefined;
+  PriorityBooking: undefined;
+  AdFreeExperience: undefined;
+  CustomBranding: undefined;
+  WhiteLabel: undefined;
+  LanguageSettings: undefined;
+  AccessibilitySettings: undefined;
+  OfflineMode: undefined;
+  AppleWatch: undefined;
+  Widgets: undefined;
+  SiriShortcuts: undefined;
+  PushNotifications: undefined;
+  EmailCampaigns: undefined;
+  QuickAccess: undefined;
+  FeedPreferences: undefined;
+  ColorPalette: undefined;
 };
 
 export type MainTabParamList = {
