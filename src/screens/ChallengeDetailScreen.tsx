@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { challengeService, Challenge, ChallengeEntry } from '../services/challengeService';
 import { userProfileService } from '../services/userProfileService';
+import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -45,8 +46,8 @@ export default function ChallengeDetailScreen() {
       setLoading(true);
       const [challengeData, entriesData, joined] = await Promise.all([
         challengeService.getChallenge(challengeId),
-        challengeService.getChallengeEntries(challengeId, 'current-user'),
-        challengeService.hasJoinedChallenge(challengeId, 'current-user'),
+        challengeService.getChallengeEntries(challengeId, getCurrentUserId()),
+        challengeService.hasJoinedChallenge(challengeId, getCurrentUserId()),
       ]);
 
       if (challengeData) {
@@ -73,7 +74,7 @@ export default function ChallengeDetailScreen() {
 
   const handleJoinChallenge = async () => {
     try {
-      const success = await challengeService.joinChallenge(challengeId, 'current-user');
+      const success = await challengeService.joinChallenge(challengeId, getCurrentUserId());
       if (success) {
         setHasJoined(true);
         if (challenge) {
@@ -94,14 +95,14 @@ export default function ChallengeDetailScreen() {
 
     try {
       if (entry.hasVoted) {
-        await challengeService.unvoteForEntry(entryId, 'current-user');
+        await challengeService.unvoteForEntry(entryId, getCurrentUserId());
         setEntries(entries.map(e => 
           e.id === entryId 
             ? { ...e, hasVoted: false, votes: e.votes - 1 }
             : e
         ));
       } else {
-        await challengeService.voteForEntry(entryId, 'current-user');
+        await challengeService.voteForEntry(entryId, getCurrentUserId());
         setEntries(entries.map(e => 
           e.id === entryId 
             ? { ...e, hasVoted: true, votes: e.votes + 1 }

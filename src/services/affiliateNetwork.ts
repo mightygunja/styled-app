@@ -33,6 +33,7 @@ function matchesFilters(product: Product, filters: ProductSearchFilters): boolea
   if (filters.category && product.category !== filters.category) return false;
   if (typeof filters.maxPrice === 'number' && product.price > filters.maxPrice) return false;
   if (filters.onSaleOnly && !(product.originalPrice && product.originalPrice > product.price)) return false;
+  if (filters.condition && (product.condition || 'new') !== filters.condition) return false;
   if (filters.query) {
     const q = filters.query.toLowerCase();
     const haystack = [product.name, product.brand, product.retailer, ...(product.styleTags || [])]

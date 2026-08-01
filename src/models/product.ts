@@ -24,6 +24,7 @@ export interface Product {
   sourceUrl: string; // original retailer product page, pre-affiliate-wrap
   inStock: boolean;
   rating?: number; // 0-5, when the network provides it
+  condition?: 'new' | 'secondhand'; // defaults to 'new'; secondhand folds the old standalone marketplace into Shop as a filter
 }
 
 export function isOnSale(product: Product): boolean {
@@ -40,6 +41,7 @@ export interface ProductSearchFilters {
   category?: ItemCategory;
   maxPrice?: number;
   onSaleOnly?: boolean;
+  condition?: 'new' | 'secondhand';
 }
 
 /** A product ranked against a user's style profile - what ShopScreen actually renders. */

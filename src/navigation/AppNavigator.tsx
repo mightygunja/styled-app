@@ -3,14 +3,11 @@ import { Text, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, MainTabParamList } from './types';
 
-// Placeholder screens - will be implemented later
 import HomeScreen from '../screens/HomeScreen';
-import WorkScreen from '../screens/WorkScreen';
-import GoingOutScreen from '../screens/GoingOutScreen';
 import ClosetScreen from '../screens/ClosetScreen';
-import MoreScreen from '../screens/MoreScreen';
 import LookDetailScreen from '../screens/LookDetailScreen';
 import PaletteDetailScreen from '../screens/PaletteDetailScreen';
 import AddClosetItemScreen from '../screens/AddClosetItemScreen';
@@ -44,41 +41,20 @@ import ExploreScreen from '../screens/ExploreScreen';
 import ChallengesScreen from '../screens/ChallengesScreen';
 import ChallengeDetailScreen from '../screens/ChallengeDetailScreen';
 import GroupsScreen from '../screens/GroupsScreen';
+import GroupDetailScreen from '../screens/GroupDetailScreen';
+import EventDetailScreen from '../screens/EventDetailScreen';
 import StyleAnalysisScreen from '../screens/StyleAnalysisScreen';
 import SmartRecommendationsScreen from '../screens/SmartRecommendationsScreen';
 import StylingAssistantScreen from '../screens/StylingAssistantScreen';
-import FeedPreferencesScreen from '../screens/FeedPreferencesScreen';
 import SmartSearchScreen from '../screens/SmartSearchScreen';
 import TrendInsightsScreen from '../screens/TrendInsightsScreen';
-import ShoppingAssistantScreen from '../screens/ShoppingAssistantScreen';
 import ClosetOrganizationScreen from '../screens/ClosetOrganizationScreen';
-import ARTryOnScreen from '../screens/ARTryOnScreen';
 import SustainabilityScreen from '../screens/SustainabilityScreen';
 import CarbonCalculatorScreen from '../screens/CarbonCalculatorScreen';
-import SecondhandMarketplaceScreen from '../screens/SecondhandMarketplaceScreen';
-import AIShoppingChatbotScreen from '../screens/AIShoppingChatbotScreen';
-import VoiceCommandScreen from '../screens/VoiceCommandScreen';
-import SmartMirrorScreen from '../screens/SmartMirrorScreen';
-import MLTrendPredictionScreen from '../screens/MLTrendPredictionScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
-import PremiumStylistScreen from '../screens/PremiumStylistScreen';
-import ExclusiveContentScreen from '../screens/ExclusiveContentScreen';
-import AdvancedAnalyticsScreen from '../screens/AdvancedAnalyticsScreen';
-import PriorityBookingScreen from '../screens/PriorityBookingScreen';
-import AdFreeExperienceScreen from '../screens/AdFreeExperienceScreen';
-import CustomBrandingScreen from '../screens/CustomBrandingScreen';
-import WhiteLabelScreen from '../screens/WhiteLabelScreen';
-import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
-import AccessibilitySettingsScreen from '../screens/AccessibilitySettingsScreen';
-import OfflineModeScreen from '../screens/OfflineModeScreen';
-import AppleWatchScreen from '../screens/AppleWatchScreen';
-import WidgetScreen from '../screens/WidgetScreen';
-import SiriShortcutsScreen from '../screens/SiriShortcutsScreen';
-import PushNotificationsScreen from '../screens/PushNotificationsScreen';
-import EmailCampaignsScreen from '../screens/EmailCampaignsScreen';
-import QuickAccessScreen from '../screens/QuickAccessScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import MoreScreen from '../screens/MoreScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
-import ColorPaletteScreen from '../screens/ColorPaletteScreen';
 import StyleProfileBuilderScreen from '../screens/StyleProfileBuilderScreen';
 import ColorAnalysisScreen from '../screens/ColorAnalysisScreen';
 import BodyAnalysisScreen from '../screens/BodyAnalysisScreen';
@@ -96,6 +72,10 @@ import { colors, fonts } from '../theme/designSystem';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+function TabIcon(name: keyof typeof Ionicons.glyphMap) {
+  return ({ color }: { color: string }) => <Ionicons name={name} size={22} color={color} />;
+}
 
 function MainTabs() {
   const screenOptions = {
@@ -126,52 +106,32 @@ function MainTabs() {
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>⌂</Text>
-          ),
-        }}
+        options={{ tabBarLabel: 'Home', tabBarIcon: TabIcon('home-outline') }}
       />
       <Tab.Screen
         name="Closet"
         component={ClosetScreen}
-        options={{
-          tabBarLabel: 'Closet',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>⊞</Text>
-          ),
-        }}
+        options={{ tabBarLabel: 'Closet', tabBarIcon: TabIcon('shirt-outline') }}
       />
       <Tab.Screen
         name="StyleProfile"
         component={StyleProfileScreen}
-        options={{
-          tabBarLabel: 'Style',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>✦</Text>
-          ),
-        }}
+        options={{ tabBarLabel: 'Style', tabBarIcon: TabIcon('sparkles-outline') }}
       />
       <Tab.Screen
         name="StylistChat"
         component={StylingAssistantScreen}
-        options={{
-          tabBarLabel: 'Chat',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>◐</Text>
-          ),
-        }}
+        options={{ tabBarLabel: 'Chat', tabBarIcon: TabIcon('chatbubble-ellipses-outline') }}
+      />
+      <Tab.Screen
+        name="More"
+        component={MoreScreen}
+        options={{ tabBarLabel: 'More', tabBarIcon: TabIcon('grid-outline') }}
       />
       <Tab.Screen
         name="Account"
         component={AccountScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, color, fontWeight: focused ? '400' : '300' }}>◉</Text>
-          ),
-        }}
+        options={{ tabBarLabel: 'Profile', tabBarIcon: TabIcon('person-outline') }}
       />
     </Tab.Navigator>
   );
@@ -205,309 +165,63 @@ export default function AppNavigator() {
         {user && isNewUser ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : user || DEV_SKIP_AUTH ? (
-          // Authenticated screens
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="LookDetail" component={LookDetailScreen} />
-        <Stack.Screen name="PaletteDetail" component={PaletteDetailScreen} />
-        <Stack.Screen 
-          name="AddClosetItem" 
-          component={AddClosetItemScreen}
-          options={{ presentation: 'modal' }}
-        />
-        <Stack.Screen 
-          name="ClosetItemDetail" 
-          component={ClosetItemDetailScreen}
-        />
-        <Stack.Screen 
-          name="SimilarItems" 
-          component={SimilarItemsScreen}
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen 
-          name="Favorites" 
-          component={FavoritesScreen}
-        />
-        <Stack.Screen 
-          name="OutfitBuilder" 
-          component={OutfitBuilderScreen}
-        />
-        <Stack.Screen 
-          name="OutfitPlanner" 
-          component={OutfitPlannerScreen}
-        />
-        <Stack.Screen 
-          name="SmartOutfitBuilder" 
-          component={SmartOutfitBuilderScreen}
-        />
-        <Stack.Screen 
-          name="ClosetAnalytics" 
-          component={ClosetAnalyticsScreen}
-        />
-        <Stack.Screen 
-          name="StylistMarketplace" 
-          component={StylistMarketplaceScreen}
-        />
-        <Stack.Screen 
-          name="StylistDetail" 
-          component={StylistDetailScreen}
-        />
-        <Stack.Screen 
-          name="VideoCall" 
-          component={VideoCallScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="SessionNotes" 
-          component={SessionNotesScreen}
-        />
-        <Stack.Screen 
-          name="MySessions" 
-          component={MySessionsScreen}
-        />
-        <Stack.Screen 
-          name="BeforeAfterPhotos" 
-          component={BeforeAfterPhotosScreen}
-        />
-        <Stack.Screen 
-          name="SubmitReview" 
-          component={SubmitReviewScreen}
-        />
-        <Stack.Screen 
-          name="PaymentMethods" 
-          component={PaymentMethodsScreen}
-        />
-        <Stack.Screen 
-          name="StylistDashboard" 
-          component={StylistDashboardScreen}
-        />
-        <Stack.Screen
-          name="UserProfile"
-          component={UserProfileScreen}
-        />
-        <Stack.Screen
-          name="EditProfile"
-          component={EditProfileScreen}
-        />
-        <Stack.Screen
-          name="Followers"
-          component={FollowersScreen}
-        />
-        <Stack.Screen
-          name="Following"
-          component={FollowingScreen}
-        />
-        <Stack.Screen
-          name="SocialFeed"
-          component={SocialFeedScreen}
-        />
-        <Stack.Screen 
-          name="CreatePost" 
-          component={CreatePostScreen}
-        />
-        <Stack.Screen 
-          name="PostDetail" 
-          component={PostDetailScreen}
-        />
-        <Stack.Screen 
-          name="Explore" 
-          component={ExploreScreen}
-        />
-        <Stack.Screen 
-          name="Notifications" 
-          component={NotificationsScreen}
-        />
-        <Stack.Screen 
-          name="Messages" 
-          component={MessagesScreen}
-        />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreen}
-        />
-        <Stack.Screen 
-          name="Challenges" 
-          component={ChallengesScreen}
-        />
-        <Stack.Screen 
-          name="ChallengeDetail" 
-          component={ChallengeDetailScreen}
-        />
-        <Stack.Screen 
-          name="Groups" 
-          component={GroupsScreen}
-        />
-        <Stack.Screen 
-          name="StyleAnalysis" 
-          component={StyleAnalysisScreen}
-        />
-        <Stack.Screen 
-          name="SmartRecommendations" 
-          component={SmartRecommendationsScreen}
-        />
-        <Stack.Screen 
-          name="StylingAssistant" 
-          component={StylingAssistantScreen}
-        />
-        <Stack.Screen 
-          name="FeedPreferences" 
-          component={FeedPreferencesScreen}
-        />
-        <Stack.Screen 
-          name="SmartSearch" 
-          component={SmartSearchScreen}
-        />
-        <Stack.Screen 
-          name="TrendInsights" 
-          component={TrendInsightsScreen}
-        />
-        <Stack.Screen 
-          name="ShoppingAssistant" 
-          component={ShoppingAssistantScreen}
-        />
-        <Stack.Screen 
-          name="ColorPalette" 
-          component={ColorPaletteScreen}
-        />
-        <Stack.Screen 
-          name="ClosetOrganization" 
-          component={ClosetOrganizationScreen}
-        />
-        <Stack.Screen 
-          name="ARTryOn" 
-          component={ARTryOnScreen}
-        />
-        <Stack.Screen 
-          name="Sustainability" 
-          component={SustainabilityScreen}
-        />
-        <Stack.Screen 
-          name="CarbonCalculator" 
-          component={CarbonCalculatorScreen}
-        />
-        <Stack.Screen 
-          name="SecondhandMarketplace" 
-          component={SecondhandMarketplaceScreen}
-        />
-        <Stack.Screen 
-          name="AIShoppingChatbot" 
-          component={AIShoppingChatbotScreen}
-        />
-        <Stack.Screen 
-          name="VoiceCommand" 
-          component={VoiceCommandScreen}
-        />
-        <Stack.Screen 
-          name="SmartMirror" 
-          component={SmartMirrorScreen}
-        />
-        <Stack.Screen 
-          name="MLTrendPrediction" 
-          component={MLTrendPredictionScreen}
-        />
-        <Stack.Screen 
-          name="Subscription" 
-          component={SubscriptionScreen}
-        />
-        <Stack.Screen 
-          name="PremiumStylist" 
-          component={PremiumStylistScreen}
-        />
-        <Stack.Screen 
-          name="ExclusiveContent" 
-          component={ExclusiveContentScreen}
-        />
-        <Stack.Screen 
-          name="AdvancedAnalytics" 
-          component={AdvancedAnalyticsScreen}
-        />
-        <Stack.Screen 
-          name="PriorityBooking" 
-          component={PriorityBookingScreen}
-        />
-        <Stack.Screen 
-          name="AdFreeExperience" 
-          component={AdFreeExperienceScreen}
-        />
-        <Stack.Screen 
-          name="CustomBranding" 
-          component={CustomBrandingScreen}
-        />
-        <Stack.Screen 
-          name="WhiteLabel" 
-          component={WhiteLabelScreen}
-        />
-        <Stack.Screen 
-          name="LanguageSettings" 
-          component={LanguageSettingsScreen}
-        />
-        <Stack.Screen 
-          name="AccessibilitySettings" 
-          component={AccessibilitySettingsScreen}
-        />
-        <Stack.Screen 
-          name="OfflineMode" 
-          component={OfflineModeScreen}
-        />
-        <Stack.Screen 
-          name="AppleWatch" 
-          component={AppleWatchScreen}
-        />
-        <Stack.Screen 
-          name="Widgets" 
-          component={WidgetScreen}
-        />
-        <Stack.Screen 
-          name="SiriShortcuts" 
-          component={SiriShortcutsScreen}
-        />
-        <Stack.Screen 
-          name="PushNotifications" 
-          component={PushNotificationsScreen}
-        />
-        <Stack.Screen 
-          name="EmailCampaigns" 
-          component={EmailCampaignsScreen}
-        />
-        <Stack.Screen 
-          name="QuickAccess" 
-          component={QuickAccessScreen}
-        />
-        <Stack.Screen 
-          name="Recommendations" 
-          component={RecommendationsScreen}
-        />
-        <Stack.Screen
-          name="StyleProfileBuilder"
-          component={StyleProfileBuilderScreen}
-        />
-        <Stack.Screen
-          name="ColorAnalysis"
-          component={ColorAnalysisScreen}
-        />
-        <Stack.Screen
-          name="BodyAnalysis"
-          component={BodyAnalysisScreen}
-        />
-        <Stack.Screen
-          name="InStoreCheck"
-          component={InStoreCheckScreen}
-        />
-        <Stack.Screen
-          name="Shop"
-          component={ShopScreen}
-        />
-        <Stack.Screen
-          name="ProductDetail"
-          component={ProductDetailScreen}
-        />
-        <Stack.Screen
-          name="Wishlist"
-          component={WishlistScreen}
-        />
+            <Stack.Screen name="LookDetail" component={LookDetailScreen} />
+            <Stack.Screen name="PaletteDetail" component={PaletteDetailScreen} />
+            <Stack.Screen name="AddClosetItem" component={AddClosetItemScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="ClosetItemDetail" component={ClosetItemDetailScreen} />
+            <Stack.Screen name="SimilarItems" component={SimilarItemsScreen} options={{ presentation: 'card' }} />
+            <Stack.Screen name="Favorites" component={FavoritesScreen} />
+            <Stack.Screen name="OutfitBuilder" component={OutfitBuilderScreen} />
+            <Stack.Screen name="OutfitPlanner" component={OutfitPlannerScreen} />
+            <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
+            <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
+            <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />
+            <Stack.Screen name="StylistDetail" component={StylistDetailScreen} />
+            <Stack.Screen name="VideoCall" component={VideoCallScreen} />
+            <Stack.Screen name="SessionNotes" component={SessionNotesScreen} />
+            <Stack.Screen name="MySessions" component={MySessionsScreen} />
+            <Stack.Screen name="BeforeAfterPhotos" component={BeforeAfterPhotosScreen} />
+            <Stack.Screen name="SubmitReview" component={SubmitReviewScreen} />
+            <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+            <Stack.Screen name="StylistDashboard" component={StylistDashboardScreen} />
+            <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="Followers" component={FollowersScreen} />
+            <Stack.Screen name="Following" component={FollowingScreen} />
+            <Stack.Screen name="SocialFeed" component={SocialFeedScreen} />
+            <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+            <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+            <Stack.Screen name="Explore" component={ExploreScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Messages" component={MessagesScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="Challenges" component={ChallengesScreen} />
+            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen name="Groups" component={GroupsScreen} />
+            <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
+            <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+            <Stack.Screen name="StyleAnalysis" component={StyleAnalysisScreen} />
+            <Stack.Screen name="SmartRecommendations" component={SmartRecommendationsScreen} />
+            <Stack.Screen name="StylingAssistant" component={StylingAssistantScreen} />
+            <Stack.Screen name="SmartSearch" component={SmartSearchScreen} />
+            <Stack.Screen name="TrendInsights" component={TrendInsightsScreen} />
+            <Stack.Screen name="ClosetOrganization" component={ClosetOrganizationScreen} />
+            <Stack.Screen name="Sustainability" component={SustainabilityScreen} />
+            <Stack.Screen name="CarbonCalculator" component={CarbonCalculatorScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Recommendations" component={RecommendationsScreen} />
+            <Stack.Screen name="StyleProfileBuilder" component={StyleProfileBuilderScreen} />
+            <Stack.Screen name="ColorAnalysis" component={ColorAnalysisScreen} />
+            <Stack.Screen name="BodyAnalysis" component={BodyAnalysisScreen} />
+            <Stack.Screen name="InStoreCheck" component={InStoreCheckScreen} />
+            <Stack.Screen name="Shop" component={ShopScreen} />
+            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="Wishlist" component={WishlistScreen} />
           </>
         ) : (
-          // Unauthenticated screens
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />

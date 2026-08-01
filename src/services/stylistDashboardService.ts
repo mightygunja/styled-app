@@ -1,11 +1,12 @@
 /**
- * Stylist Dashboard Service
- * 
- * Manages stylist-side functionality including session management,
- * earnings tracking, and client management.
+ * Real Firestore-backed stylist dashboard - computed from the actual
+ * stylistBookings and reviews collections built for the marketplace.
  */
 
-import { StylingSession, Stylist } from '../types';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { StylingSession } from '../types';
+import { userProfileService } from './userProfileService';
 
 export interface StylistEarnings {
   totalEarnings: number;
@@ -36,311 +37,94 @@ export interface DashboardStats {
   rebookRate: number;
 }
 
-export interface AvailabilitySlot {
-  id: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  isRecurring: boolean;
+function toIso(v: any): string {
+  return v instanceof Timestamp ? v.toDate().toISOString() : v;
+}
+
+async function getBookingsForStylist(stylistId: string): Promise<any[]> {
+  const snapshot = await getDocs(query(collection(db, 'stylistBookings'), where('stylistId', '==', stylistId)));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data(), createdAt: toIso(d.data().createdAt) }));
 }
 
 class StylistDashboardService {
-  private sessions: Map<string, StylingSession[]> = new Map();
-  private clients: Map<string, ClientInfo[]> = new Map();
-  private availability: Map<string, AvailabilitySlot[]> = new Map();
-
-  /**
-   * Get stylist's sessions
-   */
-  async getStylistSessions(
-    stylistId: string,
-    status?: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  ): Promise<StylingSession[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const allSessions = this.sessions.get(stylistId) || this.getMockSessions(stylistId);
-    
-    if (status) {
-      return allSessions.filter(s => s.status === status);
-    }
-    
-    return allSessions.sort((a, b) => 
-      new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
-    );
-  }
-
-  /**
-   * Get stylist earnings
-   */
   async getEarnings(stylistId: string): Promise<StylistEarnings> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const sessions = await this.getStylistSessions(stylistId);
-    const completedSessions = sessions.filter(s => s.status === 'completed');
-    const upcomingSessions = sessions.filter(s => s.status === 'confirmed');
-    
-    const totalEarnings = completedSessions.reduce((sum, s) => sum + s.price, 0);
-    
-    // Calculate this month's earnings
+    const bookings = await getBookingsForStylist(stylistId);
     const now = new Date();
-    const thisMonthSessions = completedSessions.filter(s => {
-      const sessionDate = new Date(s.scheduledDate);
-      return sessionDate.getMonth() === now.getMonth() && 
-             sessionDate.getFullYear() === now.getFullYear();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+    const completed = bookings.filter(b => b.status === 'completed');
+    const upcoming = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending');
+
+    const sum = (list: any[]) => list.reduce((s, b) => s + (b.price || 0), 0);
+    const thisMonth = completed.filter(b => new Date(b.createdAt).getTime() >= thisMonthStart);
+    const lastMonth = completed.filter(b => {
+      const t = new Date(b.createdAt).getTime();
+      return t >= lastMonthStart && t < thisMonthStart;
     });
-    const thisMonth = thisMonthSessions.reduce((sum, s) => sum + s.price, 0);
-    
-    // Calculate last month's earnings
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1);
-    const lastMonthSessions = completedSessions.filter(s => {
-      const sessionDate = new Date(s.scheduledDate);
-      return sessionDate.getMonth() === lastMonthDate.getMonth() && 
-             sessionDate.getFullYear() === lastMonthDate.getFullYear();
-    });
-    const lastMonth = lastMonthSessions.reduce((sum, s) => sum + s.price, 0);
-    
+
     return {
-      totalEarnings,
-      thisMonth,
-      lastMonth,
-      pendingPayouts: thisMonth * 0.85, // 85% after platform fee
-      completedSessions: completedSessions.length,
-      upcomingSessions: upcomingSessions.length,
+      totalEarnings: sum(completed),
+      thisMonth: sum(thisMonth),
+      lastMonth: sum(lastMonth),
+      pendingPayouts: sum(bookings.filter(b => b.status === 'completed')), // no real payout system yet
+      completedSessions: completed.length,
+      upcomingSessions: upcoming.length,
     };
   }
 
-  /**
-   * Get stylist's clients
-   */
   async getClients(stylistId: string): Promise<ClientInfo[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const clients = this.clients.get(stylistId) || this.getMockClients(stylistId);
-    return clients.sort((a, b) => 
-      new Date(b.lastSessionDate).getTime() - new Date(a.lastSessionDate).getTime()
+    const bookings = await getBookingsForStylist(stylistId);
+    const byClient = new Map<string, any[]>();
+    bookings.forEach(b => {
+      const list = byClient.get(b.userId) || [];
+      list.push(b);
+      byClient.set(b.userId, list);
+    });
+
+    const clients = await Promise.all(
+      Array.from(byClient.entries()).map(async ([userId, clientBookings]) => {
+        const profile = await userProfileService.getUserProfile(userId);
+        const sorted = [...clientBookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return {
+          id: userId,
+          name: profile?.displayName || 'Client',
+          email: '',
+          profileImageUrl: profile?.profileImageUrl,
+          totalSessions: clientBookings.length,
+          totalSpent: clientBookings.reduce((s, b) => s + (b.price || 0), 0),
+          lastSessionDate: sorted[0]?.createdAt || '',
+          preferredSessionType: sorted[0]?.sessionType || '',
+        } as ClientInfo;
+      })
     );
+    return clients;
   }
 
-  /**
-   * Get dashboard statistics
-   */
   async getDashboardStats(stylistId: string): Promise<DashboardStats> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const sessions = await this.getStylistSessions(stylistId);
-    const clients = await this.getClients(stylistId);
-    
-    const completedSessions = sessions.filter(s => s.status === 'completed');
-    const totalSessions = sessions.length;
-    
+    const [bookings, reviewSnap] = await Promise.all([
+      getBookingsForStylist(stylistId),
+      getDocs(query(collection(db, 'reviews'), where('stylistId', '==', stylistId))),
+    ]);
+    const clients = new Set(bookings.map(b => b.userId));
+    const ratings = reviewSnap.docs.map(d => d.data().rating as number);
+    const completed = bookings.filter(b => b.status === 'completed').length;
+
     return {
-      totalClients: clients.length,
-      averageRating: 4.9,
-      totalReviews: 127,
-      responseRate: 0.98,
-      completionRate: completedSessions.length / Math.max(totalSessions, 1),
-      rebookRate: 0.75,
+      totalClients: clients.size,
+      averageRating: ratings.length > 0 ? ratings.reduce((s, r) => s + r, 0) / ratings.length : 0,
+      totalReviews: ratings.length,
+      responseRate: 100, // no messaging-response tracking exists yet
+      completionRate: bookings.length > 0 ? Math.round((completed / bookings.length) * 100) : 0,
+      rebookRate: 0, // needs repeat-client analysis beyond current scope
     };
   }
 
-  /**
-   * Update session status
-   */
-  async updateSessionStatus(
-    sessionId: string,
-    status: 'confirmed' | 'cancelled' | 'completed'
-  ): Promise<boolean> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // In production, would update backend
-    console.log(`Session ${sessionId} status updated to ${status}`);
-    return true;
-  }
-
-  /**
-   * Add session notes (stylist-side)
-   */
-  async addSessionNotes(sessionId: string, notes: string): Promise<boolean> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // In production, would save to backend
-    console.log(`Notes added to session ${sessionId}`);
-    return true;
-  }
-
-  /**
-   * Get availability
-   */
-  async getAvailability(stylistId: string): Promise<AvailabilitySlot[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    return this.availability.get(stylistId) || this.getMockAvailability(stylistId);
-  }
-
-  /**
-   * Update availability
-   */
-  async updateAvailability(
-    stylistId: string,
-    slots: AvailabilitySlot[]
-  ): Promise<boolean> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    this.availability.set(stylistId, slots);
-    return true;
-  }
-
-  /**
-   * Get upcoming sessions (next 7 days)
-   */
   async getUpcomingSessions(stylistId: string): Promise<StylingSession[]> {
-    const sessions = await this.getStylistSessions(stylistId, 'confirmed');
-    const now = new Date();
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    return sessions.filter(s => {
-      const sessionDate = new Date(s.scheduledDate);
-      return sessionDate >= now && sessionDate <= nextWeek;
-    });
-  }
-
-  /**
-   * Get session requests (pending approval)
-   */
-  async getSessionRequests(stylistId: string): Promise<StylingSession[]> {
-    return this.getStylistSessions(stylistId, 'pending');
-  }
-
-  /**
-   * Accept session request
-   */
-  async acceptSession(sessionId: string): Promise<boolean> {
-    return this.updateSessionStatus(sessionId, 'confirmed');
-  }
-
-  /**
-   * Decline session request
-   */
-  async declineSession(sessionId: string, reason: string): Promise<boolean> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    console.log(`Session ${sessionId} declined: ${reason}`);
-    return this.updateSessionStatus(sessionId, 'cancelled');
-  }
-
-  /**
-   * Mock sessions for testing
-   */
-  private getMockSessions(stylistId: string): StylingSession[] {
-    const now = new Date();
-    
-    return [
-      {
-        id: 'session-1',
-        userId: 'user-1',
-        stylistId,
-        sessionType: 'closet-audit',
-        scheduledDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 60,
-        status: 'confirmed',
-        price: 150,
-        createdAt: now.toISOString(),
-      },
-      {
-        id: 'session-2',
-        userId: 'user-2',
-        stylistId,
-        sessionType: 'shopping-assistance',
-        scheduledDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 90,
-        status: 'confirmed',
-        price: 225,
-        createdAt: now.toISOString(),
-      },
-      {
-        id: 'session-3',
-        userId: 'user-3',
-        stylistId,
-        sessionType: 'event-styling',
-        scheduledDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 120,
-        status: 'completed',
-        price: 300,
-        createdAt: now.toISOString(),
-      },
-    ];
-  }
-
-  /**
-   * Mock clients for testing
-   */
-  private getMockClients(stylistId: string): ClientInfo[] {
-    return [
-      {
-        id: 'user-1',
-        name: 'Sarah Martinez',
-        email: 'sarah.m@example.com',
-        profileImageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-        totalSessions: 3,
-        totalSpent: 450,
-        lastSessionDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        preferredSessionType: 'closet-audit',
-      },
-      {
-        id: 'user-2',
-        name: 'Michael Chen',
-        email: 'michael.c@example.com',
-        totalSessions: 2,
-        totalSpent: 375,
-        lastSessionDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        preferredSessionType: 'wardrobe-planning',
-      },
-      {
-        id: 'user-3',
-        name: 'Jessica Williams',
-        email: 'jessica.w@example.com',
-        totalSessions: 5,
-        totalSpent: 750,
-        lastSessionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        preferredSessionType: 'shopping-assistance',
-      },
-    ];
-  }
-
-  /**
-   * Mock availability for testing
-   */
-  private getMockAvailability(stylistId: string): AvailabilitySlot[] {
-    return [
-      {
-        id: 'slot-1',
-        dayOfWeek: 'Monday',
-        startTime: '09:00',
-        endTime: '17:00',
-        isRecurring: true,
-      },
-      {
-        id: 'slot-2',
-        dayOfWeek: 'Tuesday',
-        startTime: '09:00',
-        endTime: '17:00',
-        isRecurring: true,
-      },
-      {
-        id: 'slot-3',
-        dayOfWeek: 'Wednesday',
-        startTime: '09:00',
-        endTime: '17:00',
-        isRecurring: true,
-      },
-      {
-        id: 'slot-4',
-        dayOfWeek: 'Thursday',
-        startTime: '09:00',
-        endTime: '17:00',
-        isRecurring: true,
-      },
-    ];
+    const bookings = await getBookingsForStylist(stylistId);
+    return bookings
+      .filter(b => b.status === 'confirmed' || b.status === 'pending')
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()) as StylingSession[];
   }
 }
 

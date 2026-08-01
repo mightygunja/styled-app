@@ -146,8 +146,8 @@ export default function ClosetScreen() {
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SmartOutfitBuilder')}>
             <Ionicons name="sparkles-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('AdvancedAnalytics')}>
-            <Ionicons name="trending-up-outline" size={17} color={colors.ink} />
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Sustainability')}>
+            <Ionicons name="leaf-outline" size={17} color={colors.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ClosetOrganization')}>
             <Ionicons name="folder-outline" size={17} color={colors.ink} />

@@ -16,16 +16,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { getCurrentUserId } from '../services/api';
+import { outfitPlannerService, PlannedOutfit } from '../services/outfitPlannerService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-interface PlannedOutfit {
-  id: string;
-  date: string;
-  items: any[];
-  occasion?: string;
-  notes?: string;
-}
 
 export default function OutfitPlannerScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -61,28 +54,12 @@ export default function OutfitPlannerScreen() {
   }, [plannedOutfits, selectedDate]);
 
   const loadPlannedOutfits = async () => {
-    // TODO: Load from Firestore
-    // For now, using mock data
-    const mockOutfits: Record<string, PlannedOutfit> = {
-      '2024-11-27': {
-        id: '1',
-        date: '2024-11-27',
-        items: [
-          { id: '1', imageUrl: 'https://via.placeholder.com/100', category: 'tops' },
-          { id: '2', imageUrl: 'https://via.placeholder.com/100', category: 'bottoms' },
-        ],
-        occasion: 'Work',
-      },
-      '2024-11-29': {
-        id: '2',
-        date: '2024-11-29',
-        items: [
-          { id: '3', imageUrl: 'https://via.placeholder.com/100', category: 'dresses' },
-        ],
-        occasion: 'Going Out',
-      },
-    };
-    setPlannedOutfits(mockOutfits);
+    try {
+      const outfits = await outfitPlannerService.getForUser(getCurrentUserId());
+      setPlannedOutfits(outfits);
+    } catch (error) {
+      console.error('Error loading planned outfits:', error);
+    }
   };
 
   const handleDayPress = (day: DateData) => {
@@ -128,10 +105,15 @@ export default function OutfitPlannerScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            const updated = { ...plannedOutfits };
-            delete updated[date];
-            setPlannedOutfits(updated);
+          onPress: async () => {
+            try {
+              await outfitPlannerService.delete(getCurrentUserId(), date);
+              const updated = { ...plannedOutfits };
+              delete updated[date];
+              setPlannedOutfits(updated);
+            } catch (error) {
+              console.error('Error deleting planned outfit:', error);
+            }
             setShowOutfitModal(false);
           },
         },
@@ -147,9 +129,14 @@ export default function OutfitPlannerScreen() {
       [
         {
           text: 'Mark Worn',
-          onPress: () => {
-            // TODO: Update wear count in Firestore
-            Alert.alert('Success', 'Outfit marked as worn!');
+          onPress: async () => {
+            try {
+              await outfitPlannerService.markWorn(getCurrentUserId(), date);
+              setPlannedOutfits(prev => ({ ...prev, [date]: { ...prev[date], worn: true } }));
+              Alert.alert('Success', 'Outfit marked as worn!');
+            } catch (error) {
+              console.error('Error marking outfit worn:', error);
+            }
             setShowOutfitModal(false);
           },
         },

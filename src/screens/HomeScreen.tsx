@@ -8,11 +8,9 @@ import {
   RefreshControl,
   Animated,
   SafeAreaView,
-  Modal,
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,7 +27,6 @@ import Chip from '../components/Chip';
 import Button from '../components/Button';
 import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
-import { quickAccessService, QuickAccessItem } from '../services/quickAccessService';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 
@@ -59,11 +56,9 @@ function weatherLine(weather: CurrentWeather): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [quickAccessItems, setQuickAccessItems] = useState<QuickAccessItem[]>([]);
   const [occasion, setOccasion] = useState<OccasionType>('work');
   const [weather, setWeather] = useState<CurrentWeather>({ condition: 'sunny', temperature: 72 });
   const [archetype, setArchetype] = useState<string>('Quiet Luxe');
@@ -127,27 +122,10 @@ export default function HomeScreen() {
     }
   };
 
-  const fetchQuickAccess = async () => {
-    try {
-      const items = await quickAccessService.getQuickAccessItems();
-      setQuickAccessItems(items);
-    } catch (error) {
-      console.error('Error fetching quick access:', error);
-    }
-  };
-
   useEffect(() => {
     loadDressMeToday(occasion);
-    fetchQuickAccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchQuickAccess();
-    });
-    return unsubscribe;
-  }, [navigation]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -200,21 +178,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleMenuItemPress = (route: string) => {
-    setMenuVisible(false);
-    navigation.navigate(route as any);
-  };
-
-  const handleSignOut = async () => {
-    setMenuVisible(false);
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-      showToast('Failed to sign out', 'error');
-    }
-  };
-
   const firstName = (user?.displayName || 'there').split(' ')[0];
   const today = new Date();
   const dateLabel = today
@@ -235,13 +198,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(true)}>
-          <View style={styles.hamburger}>
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-          </View>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>STYLED</Text>
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
@@ -365,49 +322,6 @@ export default function HomeScreen() {
         </Animated.View>
       </ScrollView>
 
-      <Modal visible={menuVisible} animationType="slide" transparent onRequestClose={() => setMenuVisible(false)}>
-        <View style={styles.menuOverlay}>
-          <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill} />
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setMenuVisible(false)} />
-          <View style={styles.menuContainer}>
-            <View style={styles.menuHeader}>
-              <View>
-                <Text style={styles.menuHeaderTitle}>Menu</Text>
-                {user && (
-                  <Text style={styles.menuHeaderSubtitle} numberOfLines={1}>
-                    {user.displayName || user.email}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setMenuVisible(false)}>
-                <Text style={styles.menuClose}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.menuItems}>
-              {quickAccessItems.map(item => (
-                <TouchableOpacity key={item.id} style={styles.menuItem} onPress={() => handleMenuItemPress(item.route)}>
-                  <Text style={styles.menuItemIcon}>{item.icon}</Text>
-                  <Text style={styles.menuItemText}>{item.title}</Text>
-                </TouchableOpacity>
-              ))}
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('QuickAccess')}>
-                <Text style={styles.menuItemIcon}>◎</Text>
-                <Text style={styles.menuItemText}>Manage Menu</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
-                <Text style={styles.menuItemIcon}>⏻</Text>
-                <Text style={[styles.menuItemText, styles.signOutText]}>Sign Out</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
@@ -434,18 +348,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerSpacer: {
+    width: 40,
+    height: 40,
+  },
   headerRightRow: {
     flexDirection: 'row',
-  },
-  hamburger: {
-    width: 24,
-    height: 18,
-    justifyContent: 'space-between',
-  },
-  hamburgerLine: {
-    width: 24,
-    height: 2,
-    backgroundColor: colors.ink,
   },
   socialIcon: {
     fontSize: 22,
@@ -632,70 +540,5 @@ const styles = StyleSheet.create({
   emptyText: {
     ...textType.body,
     color: colors.inkMuted,
-  },
-  menuOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  menuContainer: {
-    backgroundColor: colors.bone,
-    paddingBottom: 40,
-    maxHeight: '80%',
-  },
-  menuHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  menuHeaderTitle: {
-    fontFamily: fonts.serif,
-    fontSize: 20,
-    color: colors.ink,
-  },
-  menuHeaderSubtitle: {
-    fontFamily: fonts.sans,
-    fontSize: 13,
-    color: colors.tobacco,
-    marginTop: 2,
-    maxWidth: 220,
-  },
-  signOutText: {
-    color: '#C62828',
-  },
-  menuClose: {
-    fontSize: 28,
-    color: colors.ink,
-    fontWeight: '300',
-  },
-  menuItems: {
-    paddingTop: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  menuItemIcon: {
-    fontSize: 24,
-    marginRight: 16,
-    width: 32,
-    color: colors.ink,
-    textAlign: 'center',
-  },
-  menuItemText: {
-    fontFamily: fonts.sans,
-    fontSize: 17,
-    color: colors.ink,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: colors.hair,
-    marginVertical: 8,
-    marginHorizontal: 20,
   },
 });

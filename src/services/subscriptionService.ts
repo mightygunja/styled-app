@@ -1,9 +1,15 @@
 /**
  * Subscription Service
- * 
+ *
  * Manages subscription tiers (Free/Premium/Pro) with feature gating.
- * Handles subscription management, upgrades, downgrades, and billing.
+ * Tier assignment is real (persisted to Firestore) - there is no real
+ * payment processor wired up yet, so "upgrading" changes your tier and
+ * entitlements for real, but doesn't charge a card. That needs a
+ * Stripe/RevenueCat integration to be a true billing flow.
  */
+
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 export type SubscriptionTier = 'free' | 'premium' | 'pro';
 export type BillingPeriod = 'monthly' | 'yearly';
@@ -197,9 +203,11 @@ class SubscriptionService {
    * Get user's current subscription
    */
   async getUserSubscription(userId: string): Promise<UserSubscription> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    // Mock user subscription - default to free tier
+    const snap = await getDoc(doc(db, 'subscriptions', userId));
+    if (snap.exists()) {
+      return snap.data() as UserSubscription;
+    }
+    // No subscription doc yet - real free-tier default, not persisted until they change tier.
     return {
       id: `sub-${userId}`,
       userId,
@@ -210,6 +218,11 @@ class SubscriptionService {
       endDate: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
       autoRenew: true,
     };
+  }
+
+  private async saveSubscription(sub: UserSubscription): Promise<UserSubscription> {
+    await setDoc(doc(db, 'subscriptions', sub.userId), sub);
+    return sub;
   }
 
   /**
@@ -235,8 +248,8 @@ class SubscriptionService {
       endDate.setFullYear(endDate.getFullYear() + 1);
     }
 
-    return {
-      id: `sub-${Date.now()}`,
+    return this.saveSubscription({
+      id: `sub-${userId}`,
       userId,
       tier,
       status: 'active',
@@ -244,13 +257,8 @@ class SubscriptionService {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       autoRenew: true,
-      paymentMethod: {
-        type: 'card',
-        last4: '4242',
-        brand: 'Visa',
-      },
       nextBillingDate: endDate.toISOString(),
-    };
+    });
   }
 
   /**
@@ -271,12 +279,12 @@ class SubscriptionService {
       throw new Error('Plan not found');
     }
 
-    return {
+    return this.saveSubscription({
       ...currentSub,
       tier: newTier,
       billingPeriod,
       status: 'active',
-    };
+    });
   }
 
   /**
@@ -291,43 +299,38 @@ class SubscriptionService {
     const currentSub = await this.getUserSubscription(userId);
 
     // Downgrade takes effect at end of current billing period
-    return {
+    return this.saveSubscription({
       ...currentSub,
       tier: newTier,
       status: 'active',
-    };
+    });
   }
 
   /**
    * Cancel subscription
    */
   async cancelSubscription(userId: string): Promise<UserSubscription> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-
     const currentSub = await this.getUserSubscription(userId);
 
-    return {
+    return this.saveSubscription({
       ...currentSub,
       status: 'canceled',
       autoRenew: false,
       canceledAt: new Date().toISOString(),
-    };
+    });
   }
 
   /**
    * Reactivate subscription
    */
   async reactivateSubscription(userId: string): Promise<UserSubscription> {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const { canceledAt, ...currentSub } = await this.getUserSubscription(userId);
 
-    const currentSub = await this.getUserSubscription(userId);
-
-    return {
+    return this.saveSubscription({
       ...currentSub,
       status: 'active',
       autoRenew: true,
-      canceledAt: undefined,
-    };
+    });
   }
 
   /**

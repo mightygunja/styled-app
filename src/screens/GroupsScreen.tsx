@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { groupService, Group, GroupEvent } from '../services/groupService';
+import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -39,7 +40,7 @@ export default function GroupsScreen() {
       setLoading(true);
       const [groups, userGroups, events] = await Promise.all([
         groupService.getGroups(),
-        groupService.getUserGroups('current-user'),
+        groupService.getUserGroups(getCurrentUserId()),
         groupService.getUpcomingEvents(),
       ]);
 

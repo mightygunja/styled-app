@@ -104,7 +104,7 @@ export default function FavoritesScreen() {
           </Text>
           <TouchableOpacity
             style={styles.browseButton}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
           >
             <Text style={styles.browseButtonText}>Browse Looks</Text>
           </TouchableOpacity>

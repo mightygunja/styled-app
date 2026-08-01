@@ -19,6 +19,7 @@ import {
   DashboardStats,
 } from '../services/stylistDashboardService';
 import { StylingSession } from '../types';
+import { getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,7 +32,9 @@ export default function StylistDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'clients'>('overview');
 
-  const stylistId = 'stylist-1'; // In production, get from auth context
+  // A stylist's app account uid doubles as their stylists/{id} doc id -
+  // if there's no matching stylist doc, the dashboard is real but empty.
+  const stylistId = getCurrentUserId();
 
   useEffect(() => {
     loadDashboardData();

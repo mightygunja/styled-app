@@ -15,7 +15,8 @@ import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { paymentService, PaymentMethod, Transaction } from '../services/paymentService';
+import { paymentMethodsService as paymentService, PaymentMethod, Transaction } from '../services/paymentMethodsService';
+import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
@@ -48,8 +49,8 @@ export default function PaymentMethodsScreen() {
     try {
       setLoading(true);
       const [methods, txns] = await Promise.all([
-        paymentService.getPaymentMethods('current-user'),
-        paymentService.getTransactions('current-user'),
+        paymentService.getPaymentMethods(getCurrentUserId()),
+        paymentService.getTransactions(getCurrentUserId()),
       ]);
       setPaymentMethods(methods);
       setTransactions(txns);
@@ -75,7 +76,7 @@ export default function PaymentMethodsScreen() {
     try {
       setAdding(true);
       const method = await paymentService.addPaymentMethod(
-        'current-user',
+        getCurrentUserId(),
         cardNumber,
         parseInt(expiryMonth),
         parseInt(expiryYear),
@@ -101,7 +102,7 @@ export default function PaymentMethodsScreen() {
 
   const handleSetDefault = async (methodId: string) => {
     try {
-      await paymentService.setDefaultPaymentMethod('current-user', methodId);
+      await paymentService.setDefaultPaymentMethod(getCurrentUserId(), methodId);
       const updated = paymentMethods.map(m => ({
         ...m,
         isDefault: m.id === methodId,
@@ -124,7 +125,7 @@ export default function PaymentMethodsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await paymentService.deletePaymentMethod('current-user', methodId);
+              await paymentService.deletePaymentMethod(getCurrentUserId(), methodId);
               setPaymentMethods(paymentMethods.filter(m => m.id !== methodId));
               showToast('Payment method removed', 'success');
             } catch (error) {

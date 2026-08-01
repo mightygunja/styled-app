@@ -15,7 +15,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AccountScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,10 +139,17 @@ export default function AccountScreen() {
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('AccessibilitySettings')}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('PaymentMethods')}>
             <View>
-              <Text style={styles.prefTitle}>Accessibility & language</Text>
-              <Text style={styles.prefSubtitle}>DISPLAY · REGION</Text>
+              <Text style={styles.prefTitle}>Payment methods</Text>
+              <Text style={styles.prefSubtitle}>SAVED CARDS</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('Settings')}>
+            <View>
+              <Text style={styles.prefTitle}>Settings</Text>
+              <Text style={styles.prefSubtitle}>NOTIFICATIONS · LANGUAGE · ACCESSIBILITY</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
@@ -196,6 +203,24 @@ export default function AccountScreen() {
             </View>
           )}
         </View>
+
+        <Text style={styles.sectionLabel}>STYLIST TOOLS</Text>
+        <View style={styles.prefsCard}>
+          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('StylistDashboard')}>
+            <View>
+              <Text style={styles.prefTitle}>Stylist dashboard</Text>
+              <Text style={styles.prefSubtitle}>YOUR BOOKINGS & REVIEWS</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={() => { signOut().catch(err => console.error('Error signing out:', err)); }}
+        >
+          <Text style={styles.signOutText}>Sign out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -355,5 +380,16 @@ const styles = StyleSheet.create({
   prefArrow: {
     fontSize: 20,
     color: colors.inkFaint,
+  },
+  signOutButton: {
+    marginTop: 32,
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  signOutText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
+    letterSpacing: 0.6,
+    color: '#C62828',
   },
 });

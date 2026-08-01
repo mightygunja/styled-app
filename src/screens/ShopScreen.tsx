@@ -44,6 +44,7 @@ export default function ShopScreen() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ItemCategory | 'all'>(route.params?.category || 'all');
   const [matchedOnly, setMatchedOnly] = useState(!!route.params?.matchedOnly);
+  const [secondhandOnly, setSecondhandOnly] = useState(false);
   const [products, setProducts] = useState<MatchedProduct[]>([]);
 
   const load = useCallback(async () => {
@@ -54,6 +55,7 @@ export default function ShopScreen() {
         getActiveAdapter().search({
           query: query.trim() || undefined,
           category: category === 'all' ? undefined : category,
+          condition: secondhandOnly ? 'secondhand' : undefined,
         }),
         buildProfileMatchContext(userId),
         closetAPI.getItems(userId),
@@ -82,7 +84,7 @@ export default function ShopScreen() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, category]);
+  }, [query, category, secondhandOnly]);
 
   useEffect(() => {
     load();
@@ -136,6 +138,12 @@ export default function ShopScreen() {
           label="Matched to you"
           active={matchedOnly}
           onPress={() => setMatchedOnly(!matchedOnly)}
+          style={styles.chipSpacing}
+        />
+        <Chip
+          label="Secondhand"
+          active={secondhandOnly}
+          onPress={() => setSecondhandOnly(!secondhandOnly)}
           style={styles.chipSpacing}
         />
       </View>
