@@ -307,6 +307,52 @@ service cloud.firestore {
       allow delete: if isResourceOwner();
     }
 
+    // Stylist published schedules - anyone signed in may read them (clients
+    // need them to see availability); only the stylist may write their own.
+    match /stylistSchedules/{stylistId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(stylistId);
+    }
+
+    // Edits - visible to the client who bought it and the stylist building it.
+    // The client may only ever change status (to request a revision); the
+    // stylist owns the looks and the note.
+    match /styleEdits/{editId} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.stylistId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == resource.data.stylistId ||
+         (request.auth.uid == resource.data.userId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'revisionNote'])));
+      allow delete: if false;
+    }
+
+    // Receipt inbox tokens - written only by Cloud Functions and the owning
+    // user; never readable by clients, since the token is the credential that
+    // lets mail reach this user's staging queue.
+    match /receiptInboxTokens/{token} {
+      allow read: if false;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow update: if false;
+    }
+
+    match /userReceiptInbox/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Staged imports from forwarded email. Created by the webhook with admin
+    // credentials, which bypass these rules; clients may only read and resolve
+    // their own.
+    match /pendingReceiptImports/{importId} {
+      allow read: if isResourceOwner();
+      allow update: if isResourceOwner();
+      allow create: if false;
+      allow delete: if isResourceOwner();
+    }
+
     // Trip packing lists - private to the traveller
     match /packingLists/{packingListId} {
       allow read: if isResourceOwner();

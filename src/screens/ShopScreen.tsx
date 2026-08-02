@@ -20,9 +20,16 @@ import { colors, fonts, type as textType, spacing } from '../theme/designSystem'
 import { getActiveAdapter, isMockProvider } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
-import { MatchedProduct, isOnSale, discountPercent } from '../models/product';
+import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
+
+const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
+  { value: 'match', label: 'Best match' },
+  { value: 'price-low', label: 'Price ↑' },
+  { value: 'price-high', label: 'Price ↓' },
+  { value: 'discount', label: 'Biggest discount' },
+];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ShopRouteProp = RouteProp<RootStackParamList, 'Shop'>;
@@ -46,17 +53,22 @@ export default function ShopScreen() {
   const [category, setCategory] = useState<ItemCategory | 'all'>(route.params?.category || 'all');
   const [matchedOnly, setMatchedOnly] = useState(!!route.params?.matchedOnly);
   const [secondhandOnly, setSecondhandOnly] = useState(false);
+  const [onSaleOnly, setOnSaleOnly] = useState(false);
+  const [sort, setSort] = useState<ProductSort>('match');
   const [products, setProducts] = useState<MatchedProduct[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      const [catalog, profile, closetResponse] = await Promise.all([
+      const [searchResult, profile, closetResponse] = await Promise.all([
         getActiveAdapter().search({
           query: query.trim() || undefined,
           category: category === 'all' ? undefined : category,
           condition: secondhandOnly ? 'secondhand' : undefined,
+          onSaleOnly: onSaleOnly || undefined,
+          sort,
+          pageSize: 60,
         }),
         buildProfileMatchContext(userId),
         closetAPI.getItems(userId),
@@ -77,7 +89,7 @@ export default function ShopScreen() {
         seasons: item.seasons,
         style: item.style,
       }));
-      const ranked = scoreAndRankProducts(catalog, profile, closetItems);
+      const ranked = scoreAndRankProducts(searchResult.products, profile, closetItems);
       setProducts(ranked);
     } catch (error) {
       console.error('Error loading marketplace products:', error);
@@ -85,7 +97,7 @@ export default function ShopScreen() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, category, secondhandOnly]);
+  }, [query, category, secondhandOnly, onSaleOnly, sort]);
 
   useEffect(() => {
     load();
@@ -150,7 +162,30 @@ export default function ShopScreen() {
           onPress={() => setSecondhandOnly(!secondhandOnly)}
           style={styles.chipSpacing}
         />
+        <Chip
+          label="On sale"
+          active={onSaleOnly}
+          onPress={() => setOnSaleOnly(!onSaleOnly)}
+          style={styles.chipSpacing}
+        />
       </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
+        contentContainerStyle={styles.sortContent}
+      >
+        {SORT_OPTIONS.map(option => (
+          <Chip
+            key={option.value}
+            label={option.label}
+            active={sort === option.value}
+            onPress={() => setSort(option.value)}
+            style={styles.chipSpacing}
+          />
+        ))}
+      </ScrollView>
 
       <ScrollView
         horizontal
@@ -286,6 +321,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hair,
     color: colors.ink,
+  },
+  sortContent: {
+    paddingHorizontal: spacing.page,
+    paddingBottom: spacing.xs,
   },
   chipRow: {
     flexDirection: 'row',

@@ -20,6 +20,10 @@ import ResaleScreen from '../screens/ResaleScreen';
 import TryOnScreen from '../screens/TryOnScreen';
 import ReceiptImportScreen from '../screens/ReceiptImportScreen';
 import ClosetSharingScreen from '../screens/ClosetSharingScreen';
+import EditsScreen from '../screens/EditsScreen';
+import EditDetailScreen from '../screens/EditDetailScreen';
+import EditReviewScreen from '../screens/EditReviewScreen';
+import StylistAvailabilityScreen from '../screens/StylistAvailabilityScreen';
 import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
 import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
 import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
@@ -136,6 +140,10 @@ export default function AppNavigator() {
             <Stack.Screen name="TryOn" component={TryOnScreen} />
             <Stack.Screen name="ReceiptImport" component={ReceiptImportScreen} />
             <Stack.Screen name="ClosetSharing" component={ClosetSharingScreen} />
+            <Stack.Screen name="Edits" component={EditsScreen} />
+            <Stack.Screen name="EditDetail" component={EditDetailScreen} />
+            <Stack.Screen name="EditReview" component={EditReviewScreen} />
+            <Stack.Screen name="StylistAvailability" component={StylistAvailabilityScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
             <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />

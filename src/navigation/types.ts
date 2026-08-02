@@ -60,6 +60,10 @@ export type RootStackParamList = {
   TryOn: undefined;
   ReceiptImport: undefined;
   ClosetSharing: undefined;
+  Edits: undefined;
+  EditDetail: { editId: string };
+  EditReview: undefined;
+  StylistAvailability: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;

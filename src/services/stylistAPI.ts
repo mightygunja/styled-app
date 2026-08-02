@@ -1,6 +1,7 @@
 import { Stylist, StylingSession, StylistReview, TimeSlot, SessionType } from '../types';
 import { stylistsService, stylistBookingsService, reviewsService } from './firestore';
 import { getCurrentUserId } from './api';
+import { stylistAvailabilityService } from './stylistAvailabilityService';
 
 // API functions - backed by real Firestore data (stylists collection is seeded
 // catalog content; bookings and reviews are real, per-user documents).
@@ -27,30 +28,28 @@ export const stylistAPI = {
   },
 
   /**
-   * Get available time slots for a stylist. Availability scheduling isn't backed
-   * by a real calendar system yet, so this stays synthetic - randomized within
-   * the stylist's own weekly availability days would need a booking-conflict
-   * model this app doesn't have. Flagged for a future real scheduling pass.
+   * Real bookable slots, derived from the stylist's published schedule minus
+   * their existing bookings, blackout dates and notice period.
    */
-  getAvailableSlots: async (stylistId: string, date: string): Promise<TimeSlot[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+  getAvailableSlots: async (
+    stylistId: string,
+    date: string,
+    durationMinutes: number = 60
+  ): Promise<TimeSlot[]> => {
+    return stylistAvailabilityService.getAvailableSlots(stylistId, date, durationMinutes);
+  },
 
-    const slots: TimeSlot[] = [];
-    const times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
-
-    times.forEach(time => {
-      slots.push({
-        date,
-        time,
-        available: Math.random() > 0.3, // 70% chance of being available
-      });
-    });
-
-    return slots;
+  /** Dates in the coming month that have at least one open slot. */
+  getBookableDates: async (stylistId: string, durationMinutes: number = 60): Promise<string[]> => {
+    return stylistAvailabilityService.getBookableDates(stylistId, 30, durationMinutes);
   },
 
   /**
-   * Book a session for the real authenticated user
+   * Books a session, re-checking the slot immediately beforehand.
+   *
+   * Without the re-check two people who loaded the same day could both write a
+   * booking for the same time; this makes the loser fail loudly instead of
+   * silently double-booking the stylist.
    */
   bookSession: async (
     stylistId: string,
@@ -59,6 +58,10 @@ export const stylistAPI = {
     time: string,
     duration: number
   ): Promise<StylingSession> => {
+    const stillFree = await stylistAvailabilityService.isStillAvailable(stylistId, date, time, duration);
+    if (!stillFree) {
+      throw new Error('That time was just taken. Please pick another slot.');
+    }
     return stylistBookingsService.create(getCurrentUserId(), stylistId, sessionType, date, time, duration);
   },
 

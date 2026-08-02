@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import * as crypto from 'crypto';
 import OpenAI, { toFile } from 'openai';
 
 // Initialize Firebase Admin
@@ -1131,6 +1132,314 @@ export const renderTryOn = functions
     } catch (error: any) {
       if (error instanceof functions.https.HttpsError) throw error;
       console.error('Error rendering try-on:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ==================== E-RECEIPT FORWARDING ====================
+//
+// Users forward order-confirmation emails to a personal address and the
+// clothing lines land in their closet. This is the inbound-email webhook.
+//
+// Setup (Mailgun is the recommended provider - its route forwarding posts
+// application/x-www-form-urlencoded, which Firebase parses natively; SendGrid
+// Inbound Parse posts multipart/form-data and would need a busboy parser
+// added here first):
+//
+//   1. Point an MX record for a subdomain (e.g. inbox.styled.app) at Mailgun.
+//   2. firebase functions:config:set mailgun.signing_key="..."
+//   3. Create a Mailgun route matching  match_recipient(".*@inbox.styled.app")
+//      with action  forward("https://<region>-<project>.cloudfunctions.net/receiptInbox")
+//   4. Deploy: firebase deploy --only functions:receiptInbox
+//
+// The recipient address carries the user's token: receipts+<token>@inbox...
+// Tokens live in receiptInboxTokens/{token} and are minted per user by the app.
+
+/**
+ * Verifies Mailgun's HMAC signature.
+ *
+ * Without this the endpoint is an open door: anyone who learns the URL could
+ * post arbitrary "receipts" into any user's closet. Returns false when no
+ * signing key is configured rather than defaulting open.
+ */
+function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
+  const signingKey = functions.config().mailgun?.signing_key;
+  if (!signingKey || !timestamp || !token || !signature) return false;
+
+  // Reject anything older than 5 minutes so a captured request cannot be replayed.
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+  if (!isFinite(age) || age > 300) return false;
+
+  const expected = crypto
+    .createHmac('sha256', signingKey)
+    .update(timestamp + token)
+    .digest('hex');
+
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/** Pulls the inbox token out of a `receipts+<token>@host` recipient address. */
+function extractInboxToken(recipient: string): string | null {
+  const match = (recipient || '').match(/\+([A-Za-z0-9_-]{8,})@/);
+  return match ? match[1] : null;
+}
+
+export const receiptInbox = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 120 })
+  .https.onRequest(async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).send('Method not allowed');
+      return;
+    }
+
+    try {
+      const body: any = req.body || {};
+
+      if (!verifyMailgunSignature(body.timestamp, body.token, body.signature)) {
+        console.warn('Rejected receipt inbox POST with an invalid signature');
+        // 406 tells Mailgun not to retry a request that will never be accepted.
+        res.status(406).send('Invalid signature');
+        return;
+      }
+
+      const recipient: string = body.recipient || body.To || body.to || '';
+      const inboxToken = extractInboxToken(recipient);
+      if (!inboxToken) {
+        console.warn('Receipt inbox POST with no token in recipient:', recipient);
+        res.status(406).send('No inbox token');
+        return;
+      }
+
+      const tokenDoc = await db.collection('receiptInboxTokens').doc(inboxToken).get();
+      if (!tokenDoc.exists) {
+        console.warn('Receipt inbox POST for unknown token');
+        res.status(406).send('Unknown inbox');
+        return;
+      }
+      const userId = (tokenDoc.data() as any).userId as string;
+
+      const subject: string = body.subject || body.Subject || '';
+      const emailText: string = body['body-plain'] || body.text || body['stripped-text'] || '';
+
+      if (!emailText.trim()) {
+        res.status(200).send('Nothing to parse');
+        return;
+      }
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `Read this order-confirmation email and extract only the clothing, footwear and accessory lines that were purchased.
+
+Subject: ${subject}
+
+${emailText.slice(0, 12000)}
+
+Rules:
+- Ignore shipping, tax, discounts, totals, loyalty points and marketing copy.
+- Never invent a line that is not in the email. If nothing was purchased, return an empty items array.
+- If a field is absent, use null. Do not guess a brand or colour.
+- category must be one of: tops, bottoms, dresses, outerwear, shoes, accessories, bags.
+- confidence: "high" only when the line is unambiguous.
+
+Return ONLY valid JSON:
+{
+  "retailer": "store name or null",
+  "purchaseDate": "YYYY-MM-DD or null",
+  "items": [{ "description": "as written", "category": "category", "brand": "brand or null", "color": "colour or null", "price": number or null, "confidence": "high"|"medium"|"low" }]
+}`,
+          },
+        ],
+        max_tokens: 1200,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const parsed = JSON.parse(content);
+
+      const validCategories = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
+      const items = (Array.isArray(parsed.items) ? parsed.items : [])
+        .filter((i: any) => i?.description && validCategories.includes(i.category))
+        .map((i: any) => ({
+          description: i.description,
+          category: i.category,
+          brand: i.brand || null,
+          color: i.color || null,
+          price: typeof i.price === 'number' ? i.price : null,
+          confidence: ['high', 'medium', 'low'].includes(i.confidence) ? i.confidence : 'low',
+        }));
+
+      if (items.length === 0) {
+        console.log('Receipt email had no apparel lines');
+        res.status(200).send('No apparel lines');
+        return;
+      }
+
+      // Staged, never written straight into the closet: an email the user did
+      // not expect should not silently add items they have to hunt down later.
+      await db.collection('pendingReceiptImports').add({
+        userId,
+        retailer: parsed.retailer || null,
+        purchaseDate: parsed.purchaseDate || null,
+        subject,
+        items,
+        source: 'email',
+        status: 'pending',
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+
+      console.log(`Staged ${items.length} apparel lines from forwarded email for ${userId}`);
+      res.status(200).send('OK');
+    } catch (error: any) {
+      console.error('Error handling receipt inbox POST:', error);
+      // 500 so the provider retries - a transient model or Firestore failure
+      // should not silently drop the user's receipt.
+      res.status(500).send('Error');
+    }
+  });
+
+// ==================== STYLE EDITS ====================
+
+/**
+ * Drafts a set of looks from a client's real closet for a stylist to review.
+ *
+ * This is the engine behind Edits - the answer to Indyx's Lookbooks. The
+ * difference is where the work starts: a stylist there builds every look from
+ * scratch, which is why it costs $110-150 and takes days. Here the model does
+ * the first pass and the stylist edits, so the human spends their time on
+ * judgement rather than assembly.
+ *
+ * The model never sees a price and is told not to suggest purchases inside a
+ * look - an Edit is explicitly about what the client already owns. Anything
+ * genuinely missing goes in `gaps`, separately and visibly.
+ */
+export const draftStyleEdit = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 300, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        focus,
+        brief,
+        lookCount = 10,
+        closetItems = [],
+        styleProfile,
+      }: {
+        focus: string;
+        brief?: string;
+        lookCount: number;
+        closetItems: PackingClosetItem[];
+        styleProfile?: StoreCheckProfileContext;
+      } = data;
+
+      if (!focus) {
+        throw new functions.https.HttpsError('invalid-argument', 'focus is required');
+      }
+      if (closetItems.length < 4) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'An Edit needs at least a few closet items to work with.'
+        );
+      }
+
+      const profileLines: string[] = [];
+      if (styleProfile?.colorSeason) profileLines.push(`Color season: ${styleProfile.colorSeason}.`);
+      if (styleProfile?.recommendedColors?.length) {
+        profileLines.push(`Colors that work for them: ${styleProfile.recommendedColors.join(', ')}.`);
+      }
+      if (styleProfile?.bodyType) profileLines.push(`Body/fit type: ${styleProfile.bodyType}.`);
+      if (styleProfile?.bodyRecommendedSilhouettes?.length) {
+        profileLines.push(`Silhouettes that suit them: ${styleProfile.bodyRecommendedSilhouettes.join(', ')}.`);
+      }
+      if (styleProfile?.styleArchetypes?.length) {
+        profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
+      }
+      if (styleProfile?.avoidRules?.length) {
+        profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+      }
+
+      const closetLines = closetItems
+        .map(i =>
+          `- ${i.id} | ${i.color} ${i.subcategory || i.category} | category: ${i.category}` +
+          `${i.style ? ` | style: ${i.style}` : ''}${i.fabricTexture ? ` | fabric: ${i.fabricTexture}` : ''}`
+        )
+        .join('\n');
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You are a personal stylist drafting an Edit - a set of finished looks built entirely from one client's existing wardrobe. A human stylist will review and adjust your draft before it reaches the client, so be specific and opinionated rather than safe.
+
+The focus of this Edit: ${focus}.
+${brief ? `What the client asked for, in their words: "${brief}"` : ''}
+${profileLines.length ? `\nAbout them:\n${profileLines.join('\n')}` : ''}
+
+Their closet (use these exact ids):
+${closetLines}
+
+Build ${lookCount} distinct looks.
+
+Rules:
+- Only use item ids from the list above. Never invent an item.
+- Each look needs at least a top and a bottom, or a dress. Add outerwear, shoes and accessories where they genuinely improve it.
+- Reuse pieces across looks - that is the point of an Edit, and a wardrobe that works hard is the outcome the client is paying for.
+- Every look must be genuinely different. Do not produce two looks that differ only by an accessory.
+- rationale: 1-2 sentences on why this works - name the specific reason (proportion, colour relationship, texture contrast, occasion fit). Never use the word "flattering". Never pad with compliments.
+- title: a short evocative name, 2-4 words, no emoji.
+- Do NOT suggest buying anything inside a look. If something is genuinely missing across the whole Edit, put it in gaps.
+- stylistNote: one paragraph to the client about the through-line of this Edit - what you saw in their wardrobe and how you approached it.
+
+Return ONLY valid JSON:
+{
+  "looks": [{ "title": "string", "itemIds": ["ids"], "occasion": "short label", "rationale": "1-2 sentences" }],
+  "gaps": [{ "category": "category", "description": "what's missing", "whyNeeded": "1 sentence" }],
+  "stylistNote": "one paragraph"
+}`,
+          },
+        ],
+        max_tokens: 3000,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      const validIds = new Set(closetItems.map(i => i.id));
+      const looks = (Array.isArray(result.looks) ? result.looks : [])
+        .map((look: any, index: number) => ({
+          id: `look-${index + 1}`,
+          title: look?.title || `Look ${index + 1}`,
+          itemIds: Array.isArray(look?.itemIds) ? look.itemIds.filter((id: string) => validIds.has(id)) : [],
+          occasion: look?.occasion || '',
+          rationale: look?.rationale || '',
+        }))
+        // A look that lost most of its pieces to id validation is not a look.
+        .filter((look: any) => look.itemIds.length >= 2);
+
+      if (looks.length === 0) {
+        throw new functions.https.HttpsError('internal', 'The draft produced no usable looks.');
+      }
+
+      console.log(`Drafted Edit: ${looks.length} looks from ${closetItems.length} closet items`);
+
+      return {
+        success: true,
+        data: {
+          looks,
+          gaps: Array.isArray(result.gaps) ? result.gaps : [],
+          stylistNote: result.stylistNote || '',
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error drafting style edit:', error);
       throw new functions.https.HttpsError('internal', error.message);
     }
   });

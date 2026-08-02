@@ -318,6 +318,16 @@ export default function StylistDetailScreen() {
             {selectedDate && (
               <>
                 <Text style={styles.modalSectionTitle}>Select Time</Text>
+                {timeSlots.length === 0 && (
+                  <Text style={styles.noSlotsText}>
+                    This stylist isn't taking bookings on that day. Try another date.
+                  </Text>
+                )}
+                {timeSlots.length > 0 && !timeSlots.some(s => s.available) && (
+                  <Text style={styles.noSlotsText}>
+                    Every slot that day is already booked. Try another date.
+                  </Text>
+                )}
                 <View style={styles.timeSlotsGrid}>
                   {timeSlots.map((slot, index) => (
                     <TouchableOpacity
@@ -716,6 +726,12 @@ const styles = StyleSheet.create({
   sessionTypeDuration: {
     fontSize: 12,
     color: '#64748b',
+  },
+  noSlotsText: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 19,
+    marginBottom: 12,
   },
   timeSlotsGrid: {
     flexDirection: 'row',

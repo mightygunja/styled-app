@@ -206,10 +206,26 @@ export default function AccountScreen() {
 
         <Text style={styles.sectionLabel}>STYLIST TOOLS</Text>
         <View style={styles.prefsCard}>
-          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('StylistDashboard')}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistDashboard')}>
             <View>
               <Text style={styles.prefTitle}>Stylist dashboard</Text>
               <Text style={styles.prefSubtitle}>YOUR BOOKINGS & REVIEWS</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistAvailability')}>
+            <View>
+              <Text style={styles.prefTitle}>Your availability</Text>
+              <Text style={styles.prefSubtitle}>WHEN CLIENTS CAN BOOK YOU</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('EditReview')}>
+            <View>
+              <Text style={styles.prefTitle}>Edits to build</Text>
+              <Text style={styles.prefSubtitle}>CLIENT EDIT REQUESTS</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>

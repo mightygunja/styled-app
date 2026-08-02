@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +21,10 @@ import { colors, fonts, type as textType, spacing } from '../theme/designSystem'
 import { getCurrentUserId } from '../services/api';
 import { receiptAPI, ParsedReceipt, ParsedReceiptItem } from '../services/firebaseApi';
 import { closetService } from '../services/firestore';
+import {
+  receiptForwardingService,
+  PendingReceiptImport,
+} from '../services/receiptForwardingService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenState = 'intro' | 'parsing' | 'review' | 'importing';
@@ -36,6 +41,68 @@ export default function ReceiptImportScreen() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [receipt, setReceipt] = useState<ParsedReceipt | null>(null);
   const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [forwardingAddress, setForwardingAddress] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingReceiptImport[]>([]);
+
+  useEffect(() => {
+    loadForwarding();
+  }, []);
+
+  const loadForwarding = async () => {
+    try {
+      const userId = getCurrentUserId();
+      const [address, staged] = await Promise.all([
+        receiptForwardingService.getOrCreateAddress(userId),
+        receiptForwardingService.getPending(userId),
+      ]);
+      setForwardingAddress(address);
+      setPending(staged);
+    } catch (error) {
+      console.error('Error loading receipt forwarding:', error);
+    }
+  };
+
+  const handleImportPending = async (item: PendingReceiptImport) => {
+    try {
+      // Everything the parser was confident about is pre-approved; anything it
+      // struggled with is left out rather than quietly added.
+      const indexes = item.items
+        .map((line, i) => (line.confidence !== 'low' ? i : -1))
+        .filter(i => i >= 0);
+
+      if (indexes.length === 0) {
+        Alert.alert(
+          'Nothing confident enough',
+          'None of those lines were legible enough to add automatically. Photograph the receipt instead.'
+        );
+        return;
+      }
+
+      const count = await receiptForwardingService.importItems(getCurrentUserId(), item, indexes);
+      await loadForwarding();
+      Alert.alert('Added to your closet', `${count} item${count === 1 ? '' : 's'} imported.`);
+    } catch (error: any) {
+      Alert.alert('Import failed', error?.message || 'Please try again.');
+    }
+  };
+
+  const handleDismissPending = async (item: PendingReceiptImport) => {
+    try {
+      await receiptForwardingService.dismiss(item.id);
+      await loadForwarding();
+    } catch (error) {
+      console.error('Error dismissing pending import:', error);
+    }
+  };
+
+  const handleShareAddress = async () => {
+    if (!forwardingAddress) return;
+    try {
+      await Share.share({ message: forwardingAddress });
+    } catch (error) {
+      console.error('Error sharing address:', error);
+    }
+  };
 
   const handlePhotoSelected = async (uri: string) => {
     setScreenState('parsing');
@@ -130,6 +197,46 @@ export default function ReceiptImportScreen() {
               fullWidth
               style={{ marginTop: spacing.section }}
             />
+
+            {pending.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>FORWARDED, WAITING FOR YOU</Text>
+                {pending.map(item => (
+                  <View key={item.id} style={styles.pendingCard}>
+                    <Text style={styles.pendingRetailer}>
+                      {item.retailer || item.subject || 'Forwarded receipt'}
+                    </Text>
+                    <Text style={styles.pendingMeta}>
+                      {item.items.length} item{item.items.length === 1 ? '' : 's'} found
+                    </Text>
+                    <View style={styles.pendingActions}>
+                      <TouchableOpacity onPress={() => handleImportPending(item)}>
+                        <Text style={styles.pendingPrimary}>Add to closet</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDismissPending(item)}>
+                        <Text style={styles.pendingSecondary}>Dismiss</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+
+            <Text style={styles.sectionLabel}>OR FORWARD YOUR CONFIRMATION EMAILS</Text>
+            <Text style={styles.forwardHelper}>
+              Forward any order confirmation to your private address and the clothing lines land
+              here for review. Nothing is added to your closet until you say so.
+            </Text>
+            {forwardingAddress ? (
+              <TouchableOpacity style={styles.addressBox} onPress={handleShareAddress} activeOpacity={0.85}>
+                <Text style={styles.addressText} selectable>
+                  {forwardingAddress}
+                </Text>
+                <Text style={styles.addressHint}>Tap to share</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.forwardHelper}>Setting up your address…</Text>
+            )}
           </>
         )}
 
@@ -214,6 +321,23 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
 
   busyBox: { paddingVertical: 80, alignItems: 'center' },
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
+  forwardHelper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
+  addressBox: { backgroundColor: colors.paper, padding: spacing.md },
+  addressText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+  addressHint: { ...textType.meta, fontSize: 11, marginTop: 6 },
+  pendingCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  pendingRetailer: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+  pendingMeta: { ...textType.meta, fontSize: 12, marginTop: 3 },
+  pendingActions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
+  pendingPrimary: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
+  pendingSecondary: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.inkFaint },
   busyText: { ...textType.body, color: colors.inkMuted, marginTop: 20 },
 
   itemRow: {
