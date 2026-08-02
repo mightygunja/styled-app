@@ -33,6 +33,18 @@
     "plugins": [
       "expo-apple-authentication",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Styled uses your location to show accurate local weather for outfit recommendations."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Styled reads your calendar so it can plan outfits around what you actually have on."
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.910996223766-6v0a0qq7saqc14grvnusgsr9fe99lodg"

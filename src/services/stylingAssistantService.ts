@@ -127,6 +127,8 @@ class StylingAssistantService {
     const dayType = [0, 6].includes(now.getDay()) ? 'weekend' : 'weekday';
 
     const styleProfile = context?.styleProfile;
+    const colorAnalysis = styleProfile?.colorAnalysis;
+    const bodyAnalysis = styleProfile?.bodyAnalysis;
     const styleProfilePayload = styleProfile
       ? {
           styleArchetypes: styleProfile.styleArchetypes,
@@ -136,6 +138,20 @@ class StylingAssistantService {
           guidanceLevel: styleProfile.guidanceLevel,
           fitHighlight: styleProfile.fitPreferences.highlight,
           fitDownplay: styleProfile.fitPreferences.downplay,
+          // AI-derived color season analysis (selfie -> seasonal palette), when the
+          // user has completed it - much more precise than the hand-picked go-to
+          // colors above, so the model should defer to this when both are present.
+          colorSeason: colorAnalysis?.season,
+          undertone: colorAnalysis?.undertone,
+          seasonalPalette: colorAnalysis?.palette.map(c => c.name),
+          colorsToAvoid: colorAnalysis?.colorsToAvoid.map(c => c.name),
+          // AI/quiz-derived body & fit analysis - concrete per-category silhouette
+          // guidance, more actionable than the flat highlight/downplay list above.
+          bodyType: bodyAnalysis?.bodyType,
+          bodyHighlight: bodyAnalysis?.highlight,
+          bodyDownplay: bodyAnalysis?.downplay,
+          recommendedSilhouettes: bodyAnalysis?.recommendedSilhouettes,
+          categoryGuidance: bodyAnalysis?.categoryGuidance,
         }
       : undefined;
 

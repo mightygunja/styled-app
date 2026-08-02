@@ -139,29 +139,39 @@ export default function ClosetScreen() {
             Worn on average <Text style={styles.insightAccent}>{avgWearsPerPiece}×</Text> per piece this season.
           </Text>
         )}
-        <View style={styles.headerIconRow}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ClosetAnalytics')}>
-            <Ionicons name="stats-chart-outline" size={17} color={colors.ink} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.headerActionScroll}
+          contentContainerStyle={styles.headerActionRow}
+        >
+          {[
+            { icon: 'stats-chart-outline' as const, label: 'Analytics', onPress: () => navigation.navigate('ClosetAnalytics') },
+            { icon: 'sparkles-outline' as const, label: 'Outfit Builder', onPress: () => navigation.navigate('SmartOutfitBuilder') },
+            { icon: 'folder-outline' as const, label: 'Organize', onPress: () => navigation.navigate('ClosetOrganization') },
+            { icon: 'bag-handle-outline' as const, label: 'In-Store Check', onPress: () => navigation.navigate('InStoreCheck') },
+            { icon: 'storefront-outline' as const, label: 'Shop', onPress: () => navigation.navigate('Shop') },
+            { icon: 'leaf-outline' as const, label: 'Sustainability', onPress: () => navigation.navigate('Sustainability') },
+          ].map(action => (
+            <TouchableOpacity
+              key={action.label}
+              style={styles.actionChip}
+              onPress={action.onPress}
+              activeOpacity={0.8}
+            >
+              <Ionicons name={action.icon} size={15} color={colors.ink} />
+              <Text style={styles.actionChipText}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={[styles.actionChip, showStats && styles.actionChipActive]}
+            onPress={() => setShowStats(!showStats)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={showStats ? 'chevron-up' : 'chevron-down'} size={15} color={showStats ? colors.card : colors.ink} />
+            <Text style={[styles.actionChipText, showStats && styles.actionChipTextActive]}>Stats</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SmartOutfitBuilder')}>
-            <Ionicons name="sparkles-outline" size={17} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Sustainability')}>
-            <Ionicons name="leaf-outline" size={17} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ClosetOrganization')}>
-            <Ionicons name="folder-outline" size={17} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('InStoreCheck')}>
-            <Ionicons name="bag-handle-outline" size={17} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Shop')}>
-            <Ionicons name="storefront-outline" size={17} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => setShowStats(!showStats)}>
-            <Ionicons name={showStats ? 'chevron-up' : 'chevron-down'} size={17} color={colors.ink} />
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       <View style={styles.searchContainer}>
@@ -335,18 +345,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
-  headerIconRow: {
-    flexDirection: 'row',
+  headerActionScroll: {
     marginTop: 14,
-    gap: 8,
   },
-  iconButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
+  headerActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 4,
+  },
+  actionChip: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: colors.hair,
+  },
+  actionChipActive: {
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
+  },
+  actionChipText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: colors.ink,
+  },
+  actionChipTextActive: {
+    color: colors.card,
   },
   statsContainer: {
     paddingHorizontal: 16,

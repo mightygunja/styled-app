@@ -57,9 +57,10 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
   }
 
   async wrapLink(product: Product): Promise<string> {
-    // No real network configured yet - the deep link goes straight to the
-    // (fictional) retailer page. Once a real adapter is active, this call
-    // returns an actual monetized redirect URL instead.
+    // No real network configured yet - the link goes straight to a live
+    // retailer search results page (see mockProductCatalog.ts), not a
+    // monetized redirect. Once a real adapter is active, this call returns
+    // an actual affiliate-wrapped URL instead.
     return product.sourceUrl;
   }
 }

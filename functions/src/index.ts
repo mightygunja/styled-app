@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -550,6 +550,14 @@ interface WeatherContext {
   temperature: number;
 }
 
+interface CategoryGuidanceContext {
+  tops?: string[];
+  bottoms?: string[];
+  dresses?: string[];
+  shoes?: string[];
+  outerwear?: string[];
+}
+
 interface StyleProfileContext {
   styleArchetypes?: string[];
   avoidRules?: string[];
@@ -558,6 +566,17 @@ interface StyleProfileContext {
   guidanceLevel?: 'inspiration' | 'guided' | 'directive';
   fitHighlight?: string[];
   fitDownplay?: string[];
+  // AI-derived color season analysis (selfie -> seasonal palette)
+  colorSeason?: string;
+  undertone?: 'warm' | 'cool' | 'neutral';
+  seasonalPalette?: string[];
+  colorsToAvoid?: string[];
+  // AI/quiz-derived body & fit analysis
+  bodyType?: string;
+  bodyHighlight?: string[];
+  bodyDownplay?: string[];
+  recommendedSilhouettes?: string[];
+  categoryGuidance?: CategoryGuidanceContext;
 }
 
 export const chatWithStylist = functions
@@ -631,8 +650,22 @@ export const chatWithStylist = functions
       if (styleProfile?.styleArchetypes && styleProfile.styleArchetypes.length > 0) {
         styleProfileLines.push(`Their style archetypes: ${styleProfile.styleArchetypes.join(', ')} - lean into these when choosing between options.`);
       }
+
+      // AI-derived color season analysis is the authoritative color signal when present -
+      // it's a real seasonal-color-analysis result, more precise than the hand-picked
+      // go-to colors below, so state it first and have it take priority.
+      if (styleProfile?.colorSeason) {
+        const undertoneNote = styleProfile.undertone ? ` (${styleProfile.undertone} undertone)` : '';
+        styleProfileLines.push(`Their AI color season analysis: ${styleProfile.colorSeason}${undertoneNote}. This is their authoritative color guidance - prioritize it over generic color preference below.`);
+      }
+      if (styleProfile?.seasonalPalette && styleProfile.seasonalPalette.length > 0) {
+        styleProfileLines.push(`Colors that flatter their season: ${styleProfile.seasonalPalette.join(', ')} - strongly prefer these.`);
+      }
+      if (styleProfile?.colorsToAvoid && styleProfile.colorsToAvoid.length > 0) {
+        styleProfileLines.push(`Colors that clash with their season: ${styleProfile.colorsToAvoid.join(', ')} - avoid recommending these unless nothing else in their closet works.`);
+      }
       if (styleProfile?.preferredColors && styleProfile.preferredColors.length > 0) {
-        styleProfileLines.push(`Their go-to colors: ${styleProfile.preferredColors.join(', ')} - prefer these when multiple items fit equally well.`);
+        styleProfileLines.push(`Their go-to colors: ${styleProfile.preferredColors.join(', ')} - prefer these when multiple items fit equally well${styleProfile.colorSeason ? ' and the color season guidance above doesn\'t decide it' : ''}.`);
       }
       if (styleProfile?.stretchColors && styleProfile.stretchColors.length > 0) {
         styleProfileLines.push(`Colors they're open to experimenting with: ${styleProfile.stretchColors.join(', ')} - occasionally suggest these to help them stretch, but don't force it.`);
@@ -640,10 +673,35 @@ export const chatWithStylist = functions
       if (styleProfile?.avoidRules && styleProfile.avoidRules.length > 0) {
         styleProfileLines.push(`HARD CONSTRAINT - they explicitly want to avoid: ${styleProfile.avoidRules.join(', ')}. Never recommend items/styles matching these.`);
       }
-      if (styleProfile?.fitHighlight && styleProfile.fitHighlight.length > 0) {
+
+      // AI/quiz-derived body & fit analysis - concrete per-category silhouette guidance,
+      // more actionable than the flat highlight/downplay list below.
+      if (styleProfile?.bodyType) {
+        styleProfileLines.push(`Their body type analysis: ${styleProfile.bodyType}. Use the silhouette and per-category guidance below to steer fit choices, not just color/style.`);
+      }
+      if (styleProfile?.recommendedSilhouettes && styleProfile.recommendedSilhouettes.length > 0) {
+        styleProfileLines.push(`Silhouettes that work well for them: ${styleProfile.recommendedSilhouettes.join(', ')}.`);
+      }
+      if (styleProfile?.categoryGuidance) {
+        const cg = styleProfile.categoryGuidance;
+        const cgLines: string[] = [];
+        if (cg.tops?.length) cgLines.push(`tops - ${cg.tops.join('; ')}`);
+        if (cg.bottoms?.length) cgLines.push(`bottoms - ${cg.bottoms.join('; ')}`);
+        if (cg.dresses?.length) cgLines.push(`dresses - ${cg.dresses.join('; ')}`);
+        if (cg.shoes?.length) cgLines.push(`shoes - ${cg.shoes.join('; ')}`);
+        if (cg.outerwear?.length) cgLines.push(`outerwear - ${cg.outerwear.join('; ')}`);
+        if (cgLines.length > 0) {
+          styleProfileLines.push(`Fit guidance by category:\n${cgLines.map(l => `  - ${l}`).join('\n')}`);
+        }
+      }
+      if (styleProfile?.bodyHighlight && styleProfile.bodyHighlight.length > 0) {
+        styleProfileLines.push(`They like to highlight: ${styleProfile.bodyHighlight.join(', ')}.`);
+      } else if (styleProfile?.fitHighlight && styleProfile.fitHighlight.length > 0) {
         styleProfileLines.push(`They like to highlight: ${styleProfile.fitHighlight.join(', ')}.`);
       }
-      if (styleProfile?.fitDownplay && styleProfile.fitDownplay.length > 0) {
+      if (styleProfile?.bodyDownplay && styleProfile.bodyDownplay.length > 0) {
+        styleProfileLines.push(`They prefer to downplay: ${styleProfile.bodyDownplay.join(', ')}.`);
+      } else if (styleProfile?.fitDownplay && styleProfile.fitDownplay.length > 0) {
         styleProfileLines.push(`They prefer to downplay: ${styleProfile.fitDownplay.join(', ')}.`);
       }
 
@@ -668,9 +726,11 @@ Guidelines:
 - Weigh occasion formality: casual outings get relaxed pieces, work/formal gets polished pieces.
 - Weigh mood if given: let it flavor the vibe (e.g. "confident" -> bolder pieces, "relaxed" -> comfort-first).
 - Weigh time of day and day type: evenings/weekends can lean dressier-fun or more relaxed depending on occasion; weekday mornings favor practical, quick-to-wear pieces.
+- If they have a color season analysis, use it as the primary color filter for picks - items in their flattering palette outrank items in their generic go-to colors, and items in their "colors to avoid" list should only be picked if nothing else in the relevant category works.
+- If they have a body type / fit analysis, use the per-category fit guidance (necklines, cuts, silhouettes) to choose between otherwise-similar items, not just color or style-archetype fit.
 - Respect their Style Profile above, especially any HARD CONSTRAINT avoid-list - never violate it.
 - Favor items with a lower wear count AND items not worn in the last couple days, when multiple options fit equally well, so the user rotates their closet instead of repeating the same pieces or what they just wore.
-- Briefly explain WHY the outfit works (1-2 short sentences covering the most relevant factors: weather/occasion/mood/style), don't just list items.
+- Briefly explain WHY the outfit works (1-2 short sentences covering the most relevant factors: weather/occasion/mood/color season/fit), don't just list items.
 - Keep replies tight: under 100 words for outfit recommendations, under 60 for quick questions.
 
 Respond with a JSON object shaped exactly like: {"reply": string, "itemIds": string[]}.
@@ -959,4 +1019,618 @@ export const wrapAffiliateLink = functions
     // TODO: call Sovrn's link-wrapping endpoint with sourceUrl + pubId/key,
     // return the resulting monetized redirect URL as { wrappedUrl }.
     throw new functions.https.HttpsError('unimplemented', 'Sovrn link wrapping not yet implemented.');
+  });
+
+// ==================== IMAGE GENERATION HELPERS ====================
+
+/**
+ * Downloads an image URL into an OpenAI-uploadable file.
+ *
+ * Cloud Functions cannot stream a remote URL straight into the images API, so
+ * the bytes come through memory - hence the 1GB/long-timeout config on every
+ * caller below.
+ */
+async function fetchAsUploadable(imageUrl: string, filename: string) {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new functions.https.HttpsError('invalid-argument', `Could not read image at ${imageUrl}`);
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return toFile(buffer, filename, { type: 'image/png' });
+}
+
+/**
+ * Cuts a garment out of its background and returns it on transparency.
+ *
+ * Returns base64 rather than writing to Storage: the client already has a
+ * proven upload path (uploadImageToFirebase) with the right security rules, and
+ * routing the write through it keeps bucket permissions in one place.
+ */
+export const removeGarmentBackground = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 300, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const { imageUrl }: { imageUrl: string } = data;
+      if (!imageUrl) {
+        throw new functions.https.HttpsError('invalid-argument', 'imageUrl is required');
+      }
+
+      const file = await fetchAsUploadable(imageUrl, 'garment.png');
+
+      const result = await openai.images.edit({
+        model: 'gpt-image-1',
+        image: file,
+        prompt:
+          'Isolate only the clothing item in this photo on a fully transparent background. ' +
+          'Remove the person, hanger, floor, and every background element. Keep the garment ' +
+          'exactly as it is - do not restyle it, recolour it, change its pattern, or alter its ' +
+          'shape. Preserve the original fabric texture and true colour. Present it flat and ' +
+          'centred, as a clean catalogue cutout.',
+        background: 'transparent',
+        size: '1024x1024',
+      });
+
+      const b64 = result.data?.[0]?.b64_json;
+      if (!b64) {
+        throw new functions.https.HttpsError('internal', 'Background removal returned no image.');
+      }
+
+      console.log('Removed background for:', imageUrl);
+      return { success: true, data: { imageBase64: `data:image/png;base64,${b64}` } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error removing garment background:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+/**
+ * Renders an outfit on the user's own full-length photo.
+ *
+ * Deliberately grounded in a real photo of the user rather than a generic
+ * avatar: the point of a try-on is seeing it on your own proportions, and a
+ * stock mannequin answers a question nobody asked.
+ */
+export const renderTryOn = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 300, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        personImageUrl,
+        garmentDescriptions = [],
+      }: { personImageUrl: string; garmentDescriptions: string[] } = data;
+
+      if (!personImageUrl) {
+        throw new functions.https.HttpsError('invalid-argument', 'personImageUrl is required');
+      }
+      if (garmentDescriptions.length === 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'At least one garment is required');
+      }
+
+      const file = await fetchAsUploadable(personImageUrl, 'person.png');
+
+      const result = await openai.images.edit({
+        model: 'gpt-image-1',
+        image: file,
+        prompt:
+          `Show this exact person wearing the following outfit: ${garmentDescriptions.join('; ')}. ` +
+          'Keep their face, hair, skin tone, body proportions and pose completely unchanged - ' +
+          'this must still clearly be the same person. Replace only their clothing. Render the ' +
+          'garments realistically with natural fabric drape and lighting consistent with the ' +
+          'original photo. Keep the background simple and neutral.',
+        size: '1024x1536',
+      });
+
+      const b64 = result.data?.[0]?.b64_json;
+      if (!b64) {
+        throw new functions.https.HttpsError('internal', 'Try-on render returned no image.');
+      }
+
+      console.log('Rendered try-on with', garmentDescriptions.length, 'garments');
+      return { success: true, data: { imageBase64: `data:image/png;base64,${b64}` } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error rendering try-on:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ==================== RECEIPT IMPORT ====================
+
+/**
+ * Reads a purchase receipt and returns the clothing lines on it, so a new
+ * wardrobe can be populated from what someone actually bought instead of
+ * photographing every garment one at a time.
+ */
+export const parseReceipt = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 120, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const { imageUrl }: { imageUrl: string } = data;
+      if (!imageUrl) {
+        throw new functions.https.HttpsError('invalid-argument', 'imageUrl is required');
+      }
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Read this purchase receipt and extract only the clothing, footwear and accessory lines.
+
+Rules:
+- Ignore tax, shipping, discounts, totals, loyalty points and any non-apparel line.
+- Never invent a line that is not printed on the receipt. If you cannot read it, leave it out.
+- If a field is not printed, use null. Do not guess a brand or colour that is not there.
+- category must be one of: tops, bottoms, dresses, outerwear, shoes, accessories, bags.
+- purchaseDate: ISO YYYY-MM-DD if a date is printed, otherwise null.
+- confidence: "high" only when the line is clearly legible and unambiguous.
+
+Return ONLY valid JSON:
+{
+  "retailer": "store name or null",
+  "purchaseDate": "YYYY-MM-DD or null",
+  "items": [{ "description": "as printed", "category": "category", "brand": "brand or null", "color": "colour or null", "price": number or null, "confidence": "high"|"medium"|"low" }]
+}`,
+              },
+              { type: 'image_url', image_url: { url: imageUrl } },
+            ],
+          },
+        ],
+        max_tokens: 1200,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      const validCategories = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
+      const items = (Array.isArray(result.items) ? result.items : [])
+        .filter((i: any) => i?.description && validCategories.includes(i.category))
+        .map((i: any) => ({
+          description: i.description,
+          category: i.category,
+          brand: i.brand || null,
+          color: i.color || null,
+          price: typeof i.price === 'number' ? i.price : null,
+          confidence: ['high', 'medium', 'low'].includes(i.confidence) ? i.confidence : 'low',
+        }));
+
+      console.log(`Parsed receipt: ${items.length} apparel lines from ${result.retailer || 'unknown retailer'}`);
+
+      return {
+        success: true,
+        data: {
+          retailer: result.retailer || null,
+          purchaseDate: result.purchaseDate || null,
+          items,
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error parsing receipt:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ==================== TRIP PACKING ====================
+
+interface PackingClosetItem {
+  id: string;
+  category: string;
+  subcategory?: string;
+  color: string;
+  seasons?: string[];
+  style?: string;
+  fabricTexture?: string;
+}
+
+interface PackingForecastDay {
+  date: string;
+  high: number;
+  low: number;
+  condition: string;
+  precipitationChance: number;
+}
+
+/**
+ * Builds a packing list as a coverage problem: the fewest pieces from the
+ * user's real closet that still dress every day of the trip against the real
+ * destination forecast.
+ *
+ * The model selects item ids and explains each choice; it is explicitly told
+ * not to count outfit combinations, because that arithmetic is done
+ * deterministically on the client from the ids it returns.
+ */
+export const generatePackingList = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 120, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        destination,
+        tripType,
+        startDate,
+        endDate,
+        forecast = [],
+        closetItems = [],
+        styleProfile,
+        notes,
+      }: {
+        destination: string;
+        tripType: string;
+        startDate: string;
+        endDate: string;
+        forecast: PackingForecastDay[];
+        closetItems: PackingClosetItem[];
+        styleProfile?: StoreCheckProfileContext;
+        notes?: string;
+      } = data;
+
+      if (!destination || !startDate || !endDate) {
+        throw new functions.https.HttpsError('invalid-argument', 'destination, startDate and endDate are required');
+      }
+      if (closetItems.length === 0) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Add a few items to your closet first - a packing list is built from what you already own.'
+        );
+      }
+
+      const dayCount = forecast.length || 1;
+      const highs = forecast.map(d => d.high);
+      const lows = forecast.map(d => d.low);
+      const tempLine =
+        forecast.length > 0
+          ? `Forecast at the destination: ${Math.min(...lows)}-${Math.max(...highs)}°F across ${dayCount} day(s). Day by day: ${forecast
+              .map(d => `${d.date} ${d.low}-${d.high}°F ${d.condition}${d.precipitationChance >= 40 ? ` (${d.precipitationChance}% rain)` : ''}`)
+              .join('; ')}.`
+          : 'No forecast available - pack for mild, variable conditions.';
+
+      const profileLines: string[] = [];
+      if (styleProfile?.colorSeason) {
+        profileLines.push(`Color season: ${styleProfile.colorSeason}.`);
+      }
+      if (styleProfile?.bodyType) {
+        profileLines.push(`Body/fit type: ${styleProfile.bodyType}.`);
+      }
+      if (styleProfile?.styleArchetypes?.length) {
+        profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
+      }
+      if (styleProfile?.avoidRules?.length) {
+        profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+      }
+
+      const closetLines = closetItems
+        .map(i =>
+          `- ${i.id} | ${i.color} ${i.subcategory || i.category} | category: ${i.category}` +
+          `${i.style ? ` | style: ${i.style}` : ''}${i.fabricTexture ? ` | fabric: ${i.fabricTexture}` : ''}` +
+          `${i.seasons?.length ? ` | seasons: ${i.seasons.join('/')}` : ''}`
+        )
+        .join('\n');
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You are packing a suitcase for someone, choosing only from the clothes they already own.
+
+Trip: ${tripType} to ${destination}, ${startDate} to ${endDate} (${dayCount} day(s)).
+${tempLine}
+${profileLines.length ? `\nAbout them:\n${profileLines.join('\n')}` : ''}
+${notes ? `\nTheir own notes about this trip: ${notes}` : ''}
+
+Their closet (use these exact ids):
+${closetLines}
+
+Pack the FEWEST pieces that still dress every day and every occasion on this trip. Optimise hard for mix-and-match: prefer neutral bottoms that pair with several tops over one-outfit statement pieces, and prefer layers when the daily range is wide. Respect the forecast - do not pack for weather that is not happening.
+
+Rules:
+- Only use item ids from the list above. Never invent an item.
+- Assign each packed piece a role: "top", "bottom", "dress", "outerwear", "shoes" or "accessory".
+- Do NOT state how many outfits the set makes. That is calculated separately.
+- Give every day of the trip a dayPlan referencing packed item ids.
+- If something genuinely necessary is missing from their closet, list it under gaps. Do not invent gaps to pad the list - an empty gaps array is a good outcome.
+- headline: one warm, specific sentence about the strategy you used (e.g. "Two neutral bottoms carry every top, so three days of meetings and two of sightseeing fit in a carry-on.").
+
+Return ONLY valid JSON:
+{
+  "items": [{ "itemId": "exact id", "role": "top|bottom|dress|outerwear|shoes|accessory", "reason": "1 short sentence on why this piece earns its place" }],
+  "dayPlans": [{ "date": "YYYY-MM-DD", "itemIds": ["ids worn that day"], "occasion": "short label", "note": "1 short sentence tying it to that day's weather or plans" }],
+  "gaps": [{ "category": "category", "description": "what's missing", "whyNeeded": "1 sentence" }],
+  "headline": "1 sentence"
+}`,
+          },
+        ],
+        max_tokens: 2000,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      if (!Array.isArray(result.items) || result.items.length === 0) {
+        throw new functions.https.HttpsError('internal', 'Packing list generation did not return any items.');
+      }
+
+      // Drop anything hallucinated: only ids that exist in the real closet survive.
+      const validIds = new Set(closetItems.map(i => i.id));
+      const items = result.items.filter((i: any) => i?.itemId && validIds.has(i.itemId));
+      const packedIds = new Set(items.map((i: any) => i.itemId));
+
+      if (items.length === 0) {
+        throw new functions.https.HttpsError('internal', 'Packing list referenced no items from your closet.');
+      }
+
+      const dayPlans = Array.isArray(result.dayPlans)
+        ? result.dayPlans.map((d: any) => ({
+            date: d?.date || '',
+            itemIds: Array.isArray(d?.itemIds) ? d.itemIds.filter((id: string) => packedIds.has(id)) : [],
+            occasion: d?.occasion || '',
+            note: d?.note || '',
+          }))
+        : [];
+
+      console.log(`Packing list for ${destination}: ${items.length} items across ${dayPlans.length} days`);
+
+      return {
+        success: true,
+        data: {
+          items,
+          dayPlans,
+          gaps: Array.isArray(result.gaps) ? result.gaps : [],
+          headline: result.headline || '',
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error generating packing list:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ==================== SCHEDULE-AWARE OUTFIT PLANNING ====================
+
+interface ScheduleEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time?: string;
+  location?: string;
+  allDay?: boolean;
+}
+
+/**
+ * Assigns an outfit from the user's real closet to each event on their calendar,
+ * reading the dress code out of the event itself and checking it against that
+ * day's forecast and what they have recently worn.
+ */
+export const planOutfitsForSchedule = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 120, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        events = [],
+        forecast = [],
+        closetItems = [],
+        styleProfile,
+        recentlyWorn = [],
+      }: {
+        events: ScheduleEvent[];
+        forecast: PackingForecastDay[];
+        closetItems: PackingClosetItem[];
+        styleProfile?: StoreCheckProfileContext;
+        recentlyWorn: string[];
+      } = data;
+
+      if (events.length === 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'At least one event is required');
+      }
+      if (closetItems.length === 0) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Add a few items to your closet first - outfits are built from what you already own.'
+        );
+      }
+
+      const forecastByDate = new Map(forecast.map(d => [d.date, d]));
+      const eventLines = events
+        .map(e => {
+          const w = forecastByDate.get(e.date);
+          return `- ${e.id} | ${e.date}${e.time ? ` ${e.time}` : ''} | "${e.title}"${e.location ? ` at ${e.location}` : ''}` +
+            `${w ? ` | weather ${w.low}-${w.high}°F ${w.condition}${w.precipitationChance >= 40 ? `, ${w.precipitationChance}% rain` : ''}` : ''}`;
+        })
+        .join('\n');
+
+      const closetLines = closetItems
+        .map(i => `- ${i.id} | ${i.color} ${i.subcategory || i.category} | category: ${i.category}${i.style ? ` | style: ${i.style}` : ''}`)
+        .join('\n');
+
+      const profileLines: string[] = [];
+      if (styleProfile?.colorSeason) profileLines.push(`Color season: ${styleProfile.colorSeason}.`);
+      if (styleProfile?.bodyType) profileLines.push(`Body/fit type: ${styleProfile.bodyType}.`);
+      if (styleProfile?.styleArchetypes?.length) profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
+      if (styleProfile?.avoidRules?.length) profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You are dressing someone for their actual calendar, using only clothes they own.
+
+Their upcoming events:
+${eventLines}
+${profileLines.length ? `\nAbout them:\n${profileLines.join('\n')}` : ''}
+${recentlyWorn.length ? `\nThey wore these item ids in the last few days - avoid repeating them where you reasonably can: ${recentlyWorn.join(', ')}.` : ''}
+
+Their closet (use these exact ids):
+${closetLines}
+
+For each event, infer the dress code from the event title, time and location - a 9am "Client kickoff" and a 8pm "Dinner with Sam" are not the same brief. Then build an outfit that suits both that dress code and that day's weather.
+
+Rules:
+- Only use item ids from the list above. Never invent an item.
+- Every event gets exactly one assignment.
+- Each outfit needs at least a top and a bottom, or a dress. Add outerwear when the forecast calls for it.
+- dressCode: 2-4 words (e.g. "smart business casual").
+- reason: one warm, specific sentence naming why it suits that event and that weather. Never use the word "flattering".
+
+Return ONLY valid JSON:
+{
+  "assignments": [{ "eventId": "exact id", "date": "YYYY-MM-DD", "itemIds": ["ids"], "dressCode": "short label", "reason": "1 sentence" }]
+}`,
+          },
+        ],
+        max_tokens: 1600,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      const validIds = new Set(closetItems.map(i => i.id));
+      const validEventIds = new Set(events.map(e => e.id));
+
+      const assignments = (Array.isArray(result.assignments) ? result.assignments : [])
+        .filter((a: any) => a?.eventId && validEventIds.has(a.eventId))
+        .map((a: any) => ({
+          eventId: a.eventId,
+          date: a.date || events.find(e => e.id === a.eventId)?.date || '',
+          itemIds: Array.isArray(a.itemIds) ? a.itemIds.filter((id: string) => validIds.has(id)) : [],
+          dressCode: a.dressCode || '',
+          reason: a.reason || '',
+        }))
+        .filter((a: any) => a.itemIds.length > 0);
+
+      if (assignments.length === 0) {
+        throw new functions.https.HttpsError('internal', 'Schedule planning returned no usable outfits.');
+      }
+
+      console.log(`Planned ${assignments.length} outfits across ${events.length} events`);
+
+      return { success: true, data: { assignments } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error planning outfits for schedule:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ==================== RESALE VALUATION ====================
+
+/**
+ * Estimates what a garment would fetch secondhand and drafts the listing.
+ *
+ * Deliberately returns a range plus an explicit confidence rather than a single
+ * number: resale price depends on condition and demand this cannot see, and a
+ * confident-looking point estimate would be the wrong shape of answer.
+ */
+export const estimateResaleValue = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        category,
+        subcategory,
+        color,
+        brand,
+        originalPrice,
+        wornCount,
+        ageMonths,
+        condition,
+      }: {
+        category: string;
+        subcategory?: string;
+        color?: string;
+        brand?: string;
+        originalPrice?: number | null;
+        wornCount?: number;
+        ageMonths?: number | null;
+        condition?: string;
+      } = data;
+
+      if (!category) {
+        throw new functions.https.HttpsError('invalid-argument', 'category is required');
+      }
+
+      const facts = [
+        `Item: ${color || ''} ${subcategory || category}`.trim(),
+        `Category: ${category}`,
+        brand ? `Brand: ${brand}` : 'Brand: unbranded or unknown',
+        typeof originalPrice === 'number' ? `Original retail price: $${originalPrice.toFixed(2)}` : 'Original price: unknown',
+        typeof wornCount === 'number' ? `Worn ${wornCount} time(s)` : 'Wear count unknown',
+        typeof ageMonths === 'number' ? `Owned for about ${ageMonths} month(s)` : 'Age unknown',
+        condition ? `Stated condition: ${condition}` : 'Condition not stated',
+      ].join('\n');
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You value secondhand clothing for a resale marketplace in the United States, in USD.
+
+${facts}
+
+Estimate what this would realistically sell for secondhand today, and draft a listing for it.
+
+Rules:
+- Give a range, not a point estimate. Resale depends on condition and demand you cannot verify from this description.
+- confidence must honestly reflect how much you actually know: "low" when brand or original price is unknown, since those drive resale value more than anything else.
+- If the item is very likely worth less than the effort of listing it, say so plainly in rationale and set suggestedPrice to the low end.
+- bestPlatforms: 1-3 real US resale platforms that suit this specific item (e.g. Poshmark, Depop, The RealReal, eBay, Vinted, ThredUp). Match the platform to the item - luxury goes to The RealReal, streetwear to Depop.
+- listingTitle: how a good seller would title it - brand, item, color, size placeholder. Under 80 characters.
+- listingDescription: 2-3 sentences, honest about wear, no invented details like size or measurements you were not given.
+
+Return ONLY valid JSON:
+{
+  "estimatedLow": number,
+  "estimatedHigh": number,
+  "suggestedPrice": number,
+  "confidence": "high" | "medium" | "low",
+  "rationale": "1-2 sentences explaining the range",
+  "bestPlatforms": ["platform"],
+  "listingTitle": "string",
+  "listingDescription": "string"
+}`,
+          },
+        ],
+        max_tokens: 700,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      if (typeof result.estimatedLow !== 'number' || typeof result.estimatedHigh !== 'number') {
+        throw new functions.https.HttpsError('internal', 'Resale valuation did not return a usable range.');
+      }
+
+      return {
+        success: true,
+        data: {
+          estimatedLow: Math.max(0, Math.round(result.estimatedLow * 100) / 100),
+          estimatedHigh: Math.max(0, Math.round(result.estimatedHigh * 100) / 100),
+          suggestedPrice: Math.max(0, Math.round((result.suggestedPrice ?? result.estimatedLow) * 100) / 100),
+          confidence: ['high', 'medium', 'low'].includes(result.confidence) ? result.confidence : 'low',
+          rationale: result.rationale || '',
+          bestPlatforms: Array.isArray(result.bestPlatforms) ? result.bestPlatforms.slice(0, 3) : [],
+          listingTitle: result.listingTitle || '',
+          listingDescription: result.listingDescription || '',
+          estimatedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error estimating resale value:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
   });

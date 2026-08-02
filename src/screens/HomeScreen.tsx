@@ -99,6 +99,7 @@ export default function HomeScreen() {
         tags: item.tags,
         seasons: item.seasons,
         style: item.style,
+        occasion: item.occasion,
       }));
       closetItemsRef.current = items;
 
@@ -183,6 +184,8 @@ export default function HomeScreen() {
   const dateLabel = today
     .toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })
     .toUpperCase();
+  const hour = today.getHours();
+  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
   const look = recommendations[lookIndex];
 
   if (loading) {
@@ -227,7 +230,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.heroTitle}>
-              Morning, <Text style={styles.heroTitleAccent}>{firstName}</Text>.
+              {greeting}, <Text style={styles.heroTitleAccent}>{firstName}</Text>.
             </Text>
             <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>
           </View>
@@ -319,6 +322,29 @@ export default function HomeScreen() {
               </View>
             </>
           )}
+
+          <TouchableOpacity
+            style={styles.shopBanner}
+            onPress={() =>
+              navigation.navigate(
+                'Shop',
+                look?.missingPieces?.[0] ? { category: look.missingPieces[0] as any } : undefined
+              )
+            }
+            activeOpacity={0.9}
+          >
+            <View style={styles.shopBannerCopy}>
+              <Text style={styles.shopBannerLabel}>SHOP</Text>
+              <Text style={styles.shopBannerTitle}>
+                {look?.missingPieces && look.missingPieces.length > 0
+                  ? `Complete this look — shop ${look.missingPieces.join(' & ')}`
+                  : 'Shop pieces matched to your style'}
+              </Text>
+            </View>
+            <View style={styles.shopBannerArrow}>
+              <Ionicons name="arrow-forward" size={18} color={colors.bone} />
+            </View>
+          </TouchableOpacity>
         </Animated.View>
       </ScrollView>
 
@@ -540,5 +566,39 @@ const styles = StyleSheet.create({
   emptyText: {
     ...textType.body,
     color: colors.inkMuted,
+  },
+  shopBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 28,
+    padding: 18,
+    backgroundColor: colors.ink,
+  },
+  shopBannerCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  shopBannerLabel: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 2,
+    color: colors.camel,
+    marginBottom: 4,
+  },
+  shopBannerTitle: {
+    fontFamily: fonts.serifMedium,
+    fontSize: 17,
+    color: colors.bone,
+  },
+  shopBannerArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.bone,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

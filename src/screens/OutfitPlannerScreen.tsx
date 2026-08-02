@@ -15,10 +15,17 @@ import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { getCurrentUserId } from '../services/api';
-import { outfitPlannerService, PlannedOutfit } from '../services/outfitPlannerService';
+import { closetAPI, getCurrentUserId } from '../services/api';
+import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from '../services/outfitPlannerService';
+import {
+  getUpcomingEvents,
+  planForSchedule,
+  CalendarPermissionError,
+} from '../services/schedulePlanningService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const OCCASIONS = ['Casual', 'Work', 'Formal', 'Athletic'];
 
 export default function OutfitPlannerScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -27,9 +34,28 @@ export default function OutfitPlannerScreen() {
   const [markedDates, setMarkedDates] = useState<any>({});
   const [showOutfitModal, setShowOutfitModal] = useState(false);
 
+  // Inline closet picker - the planner used to hand off to a screen that never
+  // existed, so building the outfit happens here against the real closet.
+  const [showPicker, setShowPicker] = useState(false);
+  const [closetItems, setClosetItems] = useState<any[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [pickerOccasion, setPickerOccasion] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+  const [planningWeek, setPlanningWeek] = useState(false);
+
   useEffect(() => {
     loadPlannedOutfits();
+    loadCloset();
   }, []);
+
+  const loadCloset = async () => {
+    try {
+      const response = await closetAPI.getItems(getCurrentUserId());
+      setClosetItems(response.data || []);
+    } catch (error) {
+      console.error('Error loading closet:', error);
+    }
+  };
 
   useEffect(() => {
     // Update marked dates when outfits change
@@ -74,28 +100,183 @@ export default function OutfitPlannerScreen() {
       Alert.alert('Select a Date', 'Please select a date to plan an outfit');
       return;
     }
-    
-    Alert.alert(
-      'Add Outfit',
-      'Choose how to add an outfit for ' + selectedDate,
-      [
-        {
-          text: 'Create New',
-          onPress: () => {
-            // Navigate to outfit builder
-            Alert.alert('Coming Soon', 'This will open the outfit builder');
-          },
-        },
-        {
-          text: 'Use Existing Look',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'This will show your saved looks');
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
+    if (closetItems.length === 0) {
+      Alert.alert(
+        'Your closet is empty',
+        'Add a few items to your closet first — planned outfits are built from what you own.'
+      );
+      return;
+    }
+
+    setSelectedItemIds(plannedOutfits[selectedDate]?.items.map(i => i.id) || []);
+    setPickerOccasion(plannedOutfits[selectedDate]?.occasion || '');
+    setShowPicker(true);
+  };
+
+  /**
+   * Reads the real calendar and dresses every event on it. Falls back to a
+   * clear explanation rather than a silent no-op when permission is refused or
+   * the week is genuinely empty.
+   */
+  const handlePlanWeek = async () => {
+    setPlanningWeek(true);
+    try {
+      const events = await getUpcomingEvents(7);
+      if (events.length === 0) {
+        Alert.alert(
+          'Nothing on your calendar',
+          "There are no events in the next week to plan around. Add an outfit to a date manually instead."
+        );
+        return;
+      }
+
+      const planned = await planForSchedule(getCurrentUserId(), events);
+      if (planned.length === 0) {
+        Alert.alert('Could not plan', 'We could not build outfits for those events. Please try again.');
+        return;
+      }
+
+      await loadPlannedOutfits();
+      Alert.alert(
+        'Your week is planned',
+        `${planned.length} outfit${planned.length === 1 ? '' : 's'} planned around your calendar. Tap any marked date to see the look and why it was chosen.`
+      );
+    } catch (error: any) {
+      console.error('Error planning week:', error);
+      if (error instanceof CalendarPermissionError) {
+        Alert.alert('Calendar access needed', error.message);
+      } else {
+        Alert.alert('Could not plan your week', error?.message || 'Please try again.');
+      }
+    } finally {
+      setPlanningWeek(false);
+    }
+  };
+
+  const toggleItem = (itemId: string) => {
+    setSelectedItemIds(prev =>
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
     );
   };
+
+  const handleSavePlannedOutfit = async () => {
+    if (selectedItemIds.length === 0) {
+      Alert.alert('Pick at least one piece', 'Tap the items you want to wear that day.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const items: PlannedOutfitItem[] = selectedItemIds
+        .map(id => closetItems.find(i => i.id === id))
+        .filter(Boolean)
+        .map(item => ({
+          id: item.id,
+          imageUrl: item.imageUrl || '',
+          category: item.category || '',
+        }));
+
+      await outfitPlannerService.save(
+        getCurrentUserId(),
+        selectedDate,
+        items,
+        pickerOccasion || undefined
+      );
+
+      setPlannedOutfits(prev => ({
+        ...prev,
+        [selectedDate]: {
+          id: `${getCurrentUserId()}_${selectedDate}`,
+          date: selectedDate,
+          items,
+          occasion: pickerOccasion || undefined,
+          worn: false,
+        },
+      }));
+      setShowPicker(false);
+    } catch (error: any) {
+      console.error('Error saving planned outfit:', error);
+      Alert.alert('Could not save', error?.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderPickerModal = () => (
+    <Modal
+      visible={showPicker}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowPicker(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Plan {selectedDate}</Text>
+            <TouchableOpacity onPress={() => setShowPicker(false)}>
+              <Text style={styles.closeButton}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.occasionRow}>
+            {OCCASIONS.map(o => (
+              <TouchableOpacity
+                key={o}
+                style={[styles.occasionChip, pickerOccasion === o && styles.occasionChipActive]}
+                onPress={() => setPickerOccasion(pickerOccasion === o ? '' : o)}
+              >
+                <Text
+                  style={[
+                    styles.occasionChipText,
+                    pickerOccasion === o && styles.occasionChipTextActive,
+                  ]}
+                >
+                  {o}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <ScrollView style={styles.modalScroll}>
+            <View style={styles.pickerGrid}>
+              {closetItems.map(item => {
+                const selected = selectedItemIds.includes(item.id);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.pickerItem, selected && styles.pickerItemSelected]}
+                    onPress={() => toggleItem(item.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={{ uri: item.imageUrl }} style={styles.pickerImage} />
+                    {selected && (
+                      <View style={styles.pickerCheck}>
+                        <Text style={styles.pickerCheckText}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.actionButton, saving && styles.actionButtonDisabled]}
+              onPress={handleSavePlannedOutfit}
+              disabled={saving}
+            >
+              <Text style={styles.actionButtonText}>
+                {saving
+                  ? 'Saving…'
+                  : `Save outfit${selectedItemIds.length > 0 ? ` (${selectedItemIds.length})` : ''}`}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   const handleDeleteOutfit = (date: string) => {
     Alert.alert(
@@ -252,6 +433,20 @@ export default function OutfitPlannerScreen() {
           }}
         />
 
+        <TouchableOpacity
+          style={[styles.planWeekButton, planningWeek && styles.planWeekButtonBusy]}
+          onPress={handlePlanWeek}
+          disabled={planningWeek}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.planWeekText}>
+            {planningWeek ? 'Reading your calendar…' : '✦  Plan my week from my calendar'}
+          </Text>
+          <Text style={styles.planWeekSub}>
+            Dresses every event in the next 7 days from your closet, against the forecast
+          </Text>
+        </TouchableOpacity>
+
         {selectedDate && (
           <View style={styles.selectedDateSection}>
             <Text style={styles.selectedDateTitle}>
@@ -332,11 +527,94 @@ export default function OutfitPlannerScreen() {
       </ScrollView>
 
       {renderOutfitModal()}
+      {renderPickerModal()}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  planWeekButton: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#000',
+  },
+  planWeekButtonBusy: {
+    opacity: 0.6,
+  },
+  planWeekText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  planWeekSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  occasionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  occasionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#f3f4f6',
+  },
+  occasionChipActive: {
+    backgroundColor: '#000',
+  },
+  occasionChipText: {
+    fontSize: 13,
+    color: '#000',
+  },
+  occasionChipTextActive: {
+    color: '#fff',
+  },
+  pickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  pickerItem: {
+    width: 92,
+    height: 92,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  pickerItemSelected: {
+    borderColor: '#000',
+  },
+  pickerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  pickerCheck: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerCheckText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

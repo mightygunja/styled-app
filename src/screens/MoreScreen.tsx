@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/types';
 import { colors, fonts, type as textType } from '../theme/designSystem';
+import { useAuth } from '../contexts/AuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,6 +27,10 @@ const SECTIONS: MoreSection[] = [
     label: 'WARDROBE',
     items: [
       { label: 'Outfit planner', subtitle: 'PLAN LOOKS BY DATE', icon: 'calendar-outline', route: 'OutfitPlanner' },
+      { label: 'Trip packing', subtitle: 'PACK FROM YOUR CLOSET', icon: 'airplane-outline', route: 'PackingList' },
+      { label: 'Virtual try-on', subtitle: 'SEE A LOOK ON YOURSELF', icon: 'body-outline', route: 'TryOn' },
+      { label: 'Import a receipt', subtitle: 'ADD A WHOLE HAUL AT ONCE', icon: 'receipt-outline', route: 'ReceiptImport' },
+      { label: 'Closet sharing', subtitle: 'SHARE WITH PEOPLE YOU TRUST', icon: 'people-circle-outline', route: 'ClosetSharing' },
       { label: 'Smart search', subtitle: 'FIND ITEMS IN YOUR CLOSET', icon: 'search-outline', route: 'SmartSearch' },
       { label: 'Favorites', subtitle: 'SAVED LOOKS', icon: 'heart-outline', route: 'Favorites' },
     ],
@@ -51,18 +56,37 @@ const SECTIONS: MoreSection[] = [
     items: [
       { label: 'Sustainability score', subtitle: 'YOUR WARDROBE IMPACT', icon: 'leaf-outline', route: 'Sustainability' },
       { label: 'Carbon calculator', subtitle: 'ESTIMATED CO2 FOOTPRINT', icon: 'earth-outline', route: 'CarbonCalculator' },
+      { label: 'Resale', subtitle: "SELL WHAT YOU DON'T WEAR", icon: 'pricetag-outline', route: 'Resale' },
     ],
   },
 ];
 
 export default function MoreScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuth();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>MORE</Text>
         <Text style={styles.title}>Everything else</Text>
+
+        <TouchableOpacity
+          style={styles.profileCard}
+          onPress={() => navigation.navigate('Account')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>
+              {(user?.displayName || user?.email || '?').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={styles.profileName}>{user?.displayName || 'Your profile'}</Text>
+            <Text style={styles.profileSubtitle}>ACCOUNT · SUBSCRIPTION · SETTINGS</Text>
+          </View>
+          <Text style={styles.rowArrow}>›</Text>
+        </TouchableOpacity>
 
         {SECTIONS.map(section => (
           <View key={section.label}>
@@ -95,6 +119,40 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 60 },
   eyebrow: { ...textType.eyebrow, marginBottom: 8 },
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginBottom: 8 },
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.sand,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontFamily: fonts.serif,
+    fontSize: 19,
+    color: colors.tobacco,
+  },
+  profileName: {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    color: colors.ink,
+  },
+  profileSubtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: colors.inkFaint,
+    marginTop: 2,
+  },
   sectionLabel: { ...textType.eyebrow, marginTop: 28, marginBottom: 12 },
   card: { borderTopWidth: 1, borderTopColor: colors.hair },
   row: {

@@ -19,7 +19,43 @@ export default function ClosetItemDetailScreen() {
   const [item, setItem] = useState<ClosetItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [removingBackground, setRemovingBackground] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+
+  /**
+   * Cuts the garment out onto transparency for a cleaner closet grid.
+   *
+   * The original image URL is kept in `originalImageUrl` rather than being
+   * overwritten, so a bad cutout is always recoverable - this is the one edit
+   * in the app that visibly destroys the user's own photo if it goes wrong.
+   */
+  const handleRemoveBackground = async () => {
+    if (!item?.imageUrl) return;
+
+    setRemovingBackground(true);
+    try {
+      const { garmentImageAPI } = await import('../services/firebaseApi');
+      const { getCurrentUserId } = await import('../services/api');
+      const cutoutUrl = await garmentImageAPI.removeBackground(item.imageUrl, getCurrentUserId());
+
+      await closetAPI.update(closetItemId, {
+        imageUrl: cutoutUrl,
+        thumbnailUrl: cutoutUrl,
+        originalImageUrl: (item as any).originalImageUrl || item.imageUrl,
+      } as any);
+
+      setItem(prev => (prev ? ({ ...prev, imageUrl: cutoutUrl } as ClosetItem) : prev));
+      showToast('Background removed', 'success');
+    } catch (error: any) {
+      console.error('Error removing background:', error);
+      Alert.alert(
+        'Could not remove the background',
+        error?.message || 'Please try again. Your original photo has not been changed.'
+      );
+    } finally {
+      setRemovingBackground(false);
+    }
+  };
 
   useEffect(() => {
     fetchItemDetail();
@@ -295,6 +331,16 @@ export default function ClosetItemDetailScreen() {
           <TouchableOpacity style={styles.wornButton} onPress={handleMarkWorn}>
             <Text style={styles.wornButtonText}>Mark as Worn Today</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.cutoutButton, removingBackground && styles.cutoutButtonBusy]}
+            onPress={handleRemoveBackground}
+            disabled={removingBackground}
+          >
+            <Text style={styles.cutoutButtonText}>
+              {removingBackground ? 'Cutting it out…' : '✂  Remove background'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       
@@ -453,6 +499,20 @@ const styles = StyleSheet.create({
   },
   outfitButtonText: {
     color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cutoutButton: {
+    backgroundColor: '#f3f4f6',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cutoutButtonBusy: {
+    opacity: 0.6,
+  },
+  cutoutButtonText: {
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },

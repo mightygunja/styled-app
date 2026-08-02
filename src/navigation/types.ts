@@ -55,6 +55,11 @@ export type RootStackParamList = {
   Favorites: undefined;
   OutfitBuilder: { sourceItemId?: string };
   OutfitPlanner: undefined;
+  PackingList: undefined;
+  Resale: undefined;
+  TryOn: undefined;
+  ReceiptImport: undefined;
+  ClosetSharing: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;
@@ -62,6 +67,7 @@ export type RootStackParamList = {
   ColorAnalysis: undefined;
   BodyAnalysis: undefined;
   InStoreCheck: undefined;
+  Account: undefined;
   Shop: { category?: ItemCategory; matchedOnly?: boolean; secondhandOnly?: boolean } | undefined;
   ProductDetail: { productId: string };
   Wishlist: undefined;
@@ -105,7 +111,6 @@ export type MainTabParamList = {
   StyleProfile: undefined;
   StylistChat: undefined;
   More: undefined;
-  Account: undefined;
 };
 
 declare global {

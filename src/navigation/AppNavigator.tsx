@@ -3,7 +3,6 @@ import { Text, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, MainTabParamList } from './types';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -16,6 +15,11 @@ import SimilarItemsScreen from '../screens/SimilarItemsScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import OutfitBuilderScreen from '../screens/OutfitBuilderScreen';
 import OutfitPlannerScreen from '../screens/OutfitPlannerScreen';
+import PackingListScreen from '../screens/PackingListScreen';
+import ResaleScreen from '../screens/ResaleScreen';
+import TryOnScreen from '../screens/TryOnScreen';
+import ReceiptImportScreen from '../screens/ReceiptImportScreen';
+import ClosetSharingScreen from '../screens/ClosetSharingScreen';
 import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
 import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
 import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
@@ -68,71 +72,23 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { useAuth } from '../contexts/AuthContext';
-import { colors, fonts } from '../theme/designSystem';
+import { colors } from '../theme/designSystem';
+import FloatingTabBar from './FloatingTabBar';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function TabIcon(name: keyof typeof Ionicons.glyphMap) {
-  return ({ color }: { color: string }) => <Ionicons name={name} size={22} color={color} />;
-}
-
 function MainTabs() {
-  const screenOptions = {
-    headerShown: false,
-    tabBarActiveTintColor: colors.ink,
-    tabBarInactiveTintColor: colors.tobacco,
-    tabBarStyle: {
-      borderTopWidth: 1,
-      borderTopColor: colors.hair,
-      paddingTop: 8,
-      paddingBottom: 20,
-      height: 85,
-      backgroundColor: colors.bone,
-    },
-    tabBarLabelStyle: {
-      fontSize: 10,
-      fontFamily: fonts.sansMedium,
-      letterSpacing: 0.6,
-      marginTop: 4,
-    },
-    tabBarIconStyle: {
-      marginTop: 4,
-    },
-  };
-
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: 'Home', tabBarIcon: TabIcon('home-outline') }}
-      />
-      <Tab.Screen
-        name="Closet"
-        component={ClosetScreen}
-        options={{ tabBarLabel: 'Closet', tabBarIcon: TabIcon('shirt-outline') }}
-      />
-      <Tab.Screen
-        name="StyleProfile"
-        component={StyleProfileScreen}
-        options={{ tabBarLabel: 'Style', tabBarIcon: TabIcon('sparkles-outline') }}
-      />
-      <Tab.Screen
-        name="StylistChat"
-        component={StylingAssistantScreen}
-        options={{ tabBarLabel: 'Chat', tabBarIcon: TabIcon('chatbubble-ellipses-outline') }}
-      />
-      <Tab.Screen
-        name="More"
-        component={MoreScreen}
-        options={{ tabBarLabel: 'More', tabBarIcon: TabIcon('grid-outline') }}
-      />
-      <Tab.Screen
-        name="Account"
-        component={AccountScreen}
-        options={{ tabBarLabel: 'Profile', tabBarIcon: TabIcon('person-outline') }}
-      />
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={props => <FloatingTabBar {...props} />}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
+      <Tab.Screen name="Closet" component={ClosetScreen} options={{ tabBarLabel: 'Closet' }} />
+      <Tab.Screen name="StyleProfile" component={StyleProfileScreen} options={{ tabBarLabel: 'Style' }} />
+      <Tab.Screen name="StylistChat" component={StylingAssistantScreen} options={{ tabBarLabel: 'Chat' }} />
+      <Tab.Screen name="More" component={MoreScreen} options={{ tabBarLabel: 'More' }} />
     </Tab.Navigator>
   );
 }
@@ -175,6 +131,11 @@ export default function AppNavigator() {
             <Stack.Screen name="Favorites" component={FavoritesScreen} />
             <Stack.Screen name="OutfitBuilder" component={OutfitBuilderScreen} />
             <Stack.Screen name="OutfitPlanner" component={OutfitPlannerScreen} />
+            <Stack.Screen name="PackingList" component={PackingListScreen} />
+            <Stack.Screen name="Resale" component={ResaleScreen} />
+            <Stack.Screen name="TryOn" component={TryOnScreen} />
+            <Stack.Screen name="ReceiptImport" component={ReceiptImportScreen} />
+            <Stack.Screen name="ClosetSharing" component={ClosetSharingScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
             <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />
@@ -217,6 +178,7 @@ export default function AppNavigator() {
             <Stack.Screen name="ColorAnalysis" component={ColorAnalysisScreen} />
             <Stack.Screen name="BodyAnalysis" component={BodyAnalysisScreen} />
             <Stack.Screen name="InStoreCheck" component={InStoreCheckScreen} />
+            <Stack.Screen name="Account" component={AccountScreen} />
             <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="Wishlist" component={WishlistScreen} />

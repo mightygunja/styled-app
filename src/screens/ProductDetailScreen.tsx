@@ -18,7 +18,13 @@ import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 import { getActiveAdapter } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
-import { scoreProduct } from '../services/marketplaceMatchingService';
+import {
+  spendProfile,
+  budgetVerdict,
+  forecastCostPerWear,
+  WearForecast,
+} from '../services/costPerWearForecast';
+import { scoreProduct, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { wishlistService, affiliateClicksService } from '../services/firestore';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { findSimilarOwnedItems } from '../models/storeCheck';
@@ -37,6 +43,8 @@ export default function ProductDetailScreen() {
   const [ownedMatches, setOwnedMatches] = useState<ReturnType<typeof findSimilarOwnedItems>>([]);
   const [wishlistDocId, setWishlistDocId] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [budget, setBudget] = useState<{ label: string; withinBudget: boolean } | null>(null);
+  const [wearForecast, setWearForecast] = useState<WearForecast | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +75,12 @@ export default function ProductDetailScreen() {
         style: item.style,
       }));
       setMatched(scoreProduct(product, profile, closetItems));
+
+      // Budget and cost-per-wear are both inferred from this user's own closet
+      // rather than a budget they had to configure.
+      const rawCloset = closetResponse.data || [];
+      setBudget(budgetVerdict(spendProfile(rawCloset, product.category), product.price));
+      setWearForecast(forecastCostPerWear(rawCloset, product.category, product.price));
       setOwnedMatches(
         findSimilarOwnedItems(
           {
@@ -179,7 +193,23 @@ export default function ProductDetailScreen() {
           </View>
           <Text style={styles.retailer}>at {product.retailer}</Text>
 
-          {matchScore >= 60 && (
+          {(budget || (wearForecast && wearForecast.verdict !== 'unknown')) && (
+            <View style={styles.affordabilityBox}>
+              {budget && (
+                <Text style={[styles.budgetLine, !budget.withinBudget && styles.budgetLineOver]}>
+                  {budget.label}
+                </Text>
+              )}
+              {wearForecast && wearForecast.projectedCostPerWear !== null && (
+                <Text style={styles.cpwLine}>
+                  Likely about ${wearForecast.projectedCostPerWear.toFixed(2)} per wear — you wear
+                  your {product.category} around {wearForecast.projectedWears} times over two years.
+                </Text>
+              )}
+            </View>
+          )}
+
+          {matchScore >= MATCH_THRESHOLD && (
             <View style={styles.matchBox}>
               <Text style={styles.matchBoxTitle}>Why this matches you</Text>
               {matchReasons.map((reason, i) => (
@@ -266,6 +296,25 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: colors.ink,
     marginTop: 4,
+  },
+  affordabilityBox: {
+    marginTop: spacing.md,
+    backgroundColor: colors.paper,
+    padding: 14,
+  },
+  budgetLine: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
+    color: colors.ink,
+  },
+  budgetLineOver: {
+    color: colors.tobacco,
+  },
+  cpwLine: {
+    ...textType.body,
+    fontSize: 12,
+    color: colors.inkMuted,
+    marginTop: 6,
   },
   priceRow: {
     flexDirection: 'row',

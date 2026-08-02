@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,6 +13,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { storeCheckAPI } from '../services/firebaseApi';
 import { styleProfileService } from '../services/firestore';
 import { StoreCheckResult, VerdictDetail, OwnedItemMatch, findSimilarOwnedItems } from '../models/storeCheck';
+import { forecastCostPerWear, verdictLabel, WearForecast } from '../services/costPerWearForecast';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,6 +32,8 @@ export default function InStoreCheckScreen() {
   const [result, setResult] = useState<StoreCheckResult | null>(null);
   const [ownedMatches, setOwnedMatches] = useState<OwnedItemMatch[]>([]);
   const [hasProfile, setHasProfile] = useState(true);
+  const [priceInput, setPriceInput] = useState('');
+  const [forecast, setForecast] = useState<WearForecast | null>(null);
 
   const handlePhotoSelected = async (uri: string) => {
     setScreenState('analyzing');
@@ -47,6 +50,18 @@ export default function InStoreCheckScreen() {
       const checkResult = await storeCheckAPI.analyze(base64Image, userId, profile);
       setResult(checkResult);
       setOwnedMatches(findSimilarOwnedItems(checkResult.classification, closetResponse.data));
+
+      // Project what this would actually cost per wear, from how this user
+      // treats the items they already own in the same category.
+      const parsedPrice = parseFloat(priceInput.replace(/[^0-9.]/g, ''));
+      setForecast(
+        forecastCostPerWear(
+          closetResponse.data || [],
+          checkResult.classification.category,
+          isNaN(parsedPrice) ? null : parsedPrice
+        )
+      );
+
       setScreenState('results');
     } catch (error: any) {
       console.error('Error analyzing store item:', error);
@@ -61,6 +76,8 @@ export default function InStoreCheckScreen() {
   const reset = () => {
     setResult(null);
     setOwnedMatches([]);
+    setForecast(null);
+    setPriceInput('');
     setScreenState('intro');
   };
 
@@ -82,6 +99,20 @@ export default function InStoreCheckScreen() {
               color season, body & fit guidance, and style profile - plus a check against what's
               already in your closet.
             </Text>
+            <Text style={styles.priceLabel}>WHAT DOES IT COST? (OPTIONAL)</Text>
+            <Text style={styles.priceHelper}>
+              Add the price and we'll project what it would actually cost you per wear, based on
+              how often you wear what you already own.
+            </Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="$0.00"
+              placeholderTextColor={colors.inkFaint}
+              value={priceInput}
+              onChangeText={setPriceInput}
+              keyboardType="decimal-pad"
+            />
+
             <Button
               title="Check an item"
               onPress={() => setShowPhotoModal(true)}
@@ -123,6 +154,27 @@ export default function InStoreCheckScreen() {
             <VerdictRow label="Color" detail={result.colorVerdict} />
             <VerdictRow label="Fit" detail={result.fitVerdict} />
             <VerdictRow label="Style" detail={result.styleVerdict} />
+
+            {forecast && forecast.verdict !== 'unknown' && (
+              <>
+                <Text style={styles.sectionLabel}>WHAT IT WOULD COST YOU</Text>
+                <View style={styles.forecastCard}>
+                  <Text style={styles.forecastVerdict}>{verdictLabel(forecast.verdict)}</Text>
+                  {forecast.projectedCostPerWear !== null && (
+                    <Text style={styles.forecastNumber}>
+                      ${forecast.projectedCostPerWear.toFixed(2)}
+                      <Text style={styles.forecastPerWear}> per wear</Text>
+                    </Text>
+                  )}
+                  <Text style={styles.forecastSummary}>{forecast.summary}</Text>
+                  <Text style={styles.forecastBasis}>
+                    Projected from {forecast.sampleSize} item
+                    {forecast.sampleSize === 1 ? '' : 's'} you already own
+                    {forecast.confidence === 'low' ? ' — treat as a rough guide' : ''}
+                  </Text>
+                </View>
+              </>
+            )}
 
             {ownedMatches.length > 0 && (
               <>
@@ -297,6 +349,57 @@ const styles = StyleSheet.create({
     ...textType.body,
     fontSize: 13,
     color: colors.inkMuted,
+  },
+  priceLabel: {
+    ...textType.eyebrow,
+    marginTop: spacing.section,
+    marginBottom: 8,
+  },
+  priceHelper: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    marginBottom: 12,
+  },
+  priceInput: {
+    ...textType.body,
+    color: colors.ink,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  forecastCard: {
+    backgroundColor: colors.paper,
+    padding: spacing.lg,
+  },
+  forecastVerdict: {
+    ...textType.microLabel,
+    color: colors.tobacco,
+    marginBottom: 8,
+  },
+  forecastNumber: {
+    fontFamily: fonts.serif,
+    fontSize: 30,
+    color: colors.ink,
+  },
+  forecastPerWear: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.inkMuted,
+  },
+  forecastSummary: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    marginTop: 8,
+  },
+  forecastBasis: {
+    ...textType.meta,
+    fontSize: 11,
+    marginTop: 8,
+    color: colors.inkFaint,
   },
   ownedIntro: {
     ...textType.body,

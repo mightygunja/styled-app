@@ -34,6 +34,38 @@ const OCCASION_KEYWORDS: Record<OccasionType, RegExp> = {
   outdoor: /outdoor|hiking|weatherproof|jacket|utility/,
 };
 
+// Keyword signal for how well an item fits a given weather condition, matched
+// against item.style/tags/category - used to break the old behavior where
+// weather only ever affected item choice via two hardcoded temperature cutoffs.
+const WEATHER_KEYWORDS: Record<WeatherCondition, RegExp> = {
+  cold: /wool|fleece|thermal|puffer|insulated|flannel|sweater|corduroy|knit/,
+  hot: /linen|shorts|sandal|tank|breathable|lightweight|mesh|cotton/,
+  rainy: /waterproof|rain|water.?resistant|windbreaker|galosh/,
+  snowy: /boot|insulated|wool|fleece|puffer|thermal|waterproof/,
+  cloudy: /layer|versatile|light jacket/,
+  sunny: /light|sunglasses|breathable|linen|cotton/,
+};
+
+// Five-band temperature scale, replacing the old binary <50 / >80 branching so
+// the common 50-80F range actually influences which items get picked.
+type TempBand = 'freezing' | 'cold' | 'mild' | 'warm' | 'hot';
+
+function getTempBand(temperature: number): TempBand {
+  if (temperature < 35) return 'freezing';
+  if (temperature < 55) return 'cold';
+  if (temperature < 75) return 'mild';
+  if (temperature < 85) return 'warm';
+  return 'hot';
+}
+
+const TEMP_BAND_SEASONS: Record<TempBand, string[]> = {
+  freezing: ['winter'],
+  cold: ['winter', 'fall'],
+  mild: ['spring', 'fall'],
+  warm: ['spring', 'summer'],
+  hot: ['summer'],
+};
+
 export interface OutfitRecommendation {
   id: string;
   title: string;
@@ -133,7 +165,7 @@ class RecommendationEngine {
     const top = this.selectItem(items, 'tops', { occasion, weather });
     const bottom = this.selectItem(items, 'bottoms', { occasion, weather });
     const shoes = this.selectItem(items, 'shoes', { occasion, weather });
-    const outerwear = weather && weather.temperature < 60 
+    const outerwear = weather && this.needsOuterwear(weather)
       ? this.selectItem(items, 'outerwear', { occasion, weather })
       : undefined;
 
@@ -183,7 +215,7 @@ class RecommendationEngine {
     const shoes = this.selectItem(items, 'shoes', { occasion, weather });
     
     let outerwear: Item | undefined;
-    if (weather.temperature < 60 || weather.condition === 'rainy') {
+    if (this.needsOuterwear(weather)) {
       outerwear = this.selectItem(items, 'outerwear', { occasion, weather });
     }
 
@@ -191,16 +223,29 @@ class RecommendationEngine {
 
     if (outfitItems.length < 2) return null;
 
+    const band = getTempBand(weather.temperature);
     const reasoning = [
       `Optimized for ${weather.condition} weather`,
       `Temperature: ${weather.temperature}°F`,
       `Comfortable and practical for ${occasion}`,
     ];
 
-    if (weather.temperature < 50) {
+    if (band === 'freezing') {
+      reasoning.push('Heavy layers to handle the cold');
+    } else if (band === 'cold') {
       reasoning.push('Includes warm layers');
-    } else if (weather.temperature > 80) {
+    } else if (band === 'mild') {
+      reasoning.push('Balanced layering for a mild day');
+    } else if (band === 'warm') {
+      reasoning.push('Breathable pieces for a warm day');
+    } else if (band === 'hot') {
       reasoning.push('Lightweight and breathable');
+    }
+
+    if (weather.condition === 'rainy') {
+      reasoning.push('Water-resistant pieces to stay dry');
+    } else if (weather.condition === 'snowy') {
+      reasoning.push('Insulated pieces built for snow');
     }
 
     const missingPieces = this.describeMissingPieces({ shoes });
@@ -364,15 +409,14 @@ class RecommendationEngine {
     let filtered = items.filter(item => item.category === category);
     if (filtered.length === 0) return undefined;
 
-    // Soft-prefer items whose real `seasons` tag matches the weather, when that data exists
+    // Soft-prefer items whose real `seasons` tag matches the current temperature band,
+    // across the full range rather than just the two extreme cutoffs
     if (criteria.weather) {
-      const wantsWarm = criteria.weather.temperature < 50;
-      const wantsLight = criteria.weather.temperature > 80;
+      const band = getTempBand(criteria.weather.temperature);
+      const wantedSeasons = TEMP_BAND_SEASONS[band];
       const seasonFiltered = filtered.filter(item => {
         if (!item.seasons || item.seasons.length === 0) return false;
-        if (wantsWarm) return item.seasons.includes('winter') || item.seasons.includes('fall');
-        if (wantsLight) return item.seasons.includes('summer');
-        return true;
+        return item.seasons.some(s => wantedSeasons.includes(s));
       });
       if (seasonFiltered.length > 0) filtered = seasonFiltered;
     }
@@ -386,11 +430,26 @@ class RecommendationEngine {
       }
 
       if (criteria.occasion) {
+        // A real occasion tag on the item itself is a direct, reliable signal -
+        // weight it above the keyword-inference fallback below, which only fires
+        // when style/tags happen to contain matching words.
+        if (item.occasion && item.occasion.toLowerCase() === criteria.occasion.toLowerCase()) {
+          score += 35;
+        }
         const haystack = [item.style || '', ...(item.tags || []), item.category]
           .join(' ')
           .toLowerCase();
         if (OCCASION_KEYWORDS[criteria.occasion].test(haystack)) {
           score += 25;
+        }
+      }
+
+      if (criteria.weather) {
+        const haystack = [item.style || '', ...(item.tags || []), item.category]
+          .join(' ')
+          .toLowerCase();
+        if (WEATHER_KEYWORDS[criteria.weather.condition].test(haystack)) {
+          score += 20;
         }
       }
 
@@ -407,8 +466,33 @@ class RecommendationEngine {
       return { item, score };
     });
 
-    scored.sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id));
+    // Deterministic but occasion-dependent tie-break: when items with no real
+    // occasion/style tags end up scored equally (a very common closet), falling
+    // back to a fixed alphabetical item-id order made every occasion surface the
+    // exact same pick. Hashing in the occasion spreads ties differently per
+    // occasion instead, so switching tabs actually shows different items.
+    const tieBreak = (id: string): number => {
+      const key = `${criteria.occasion || ''}:${id}`;
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = (hash * 31 + key.charCodeAt(i)) | 0;
+      }
+      return hash;
+    };
+
+    scored.sort((a, b) => b.score - a.score || tieBreak(a.item.id) - tieBreak(b.item.id));
     return scored[0].item;
+  }
+
+  /**
+   * Whether the weather calls for an outerwear layer - true for cold/freezing
+   * temperatures and for rain/snow at any temperature below "hot"
+   */
+  private needsOuterwear(weather: { condition: WeatherCondition; temperature: number }): boolean {
+    const band = getTempBand(weather.temperature);
+    if (band === 'freezing' || band === 'cold') return true;
+    if (band !== 'hot' && (weather.condition === 'rainy' || weather.condition === 'snowy')) return true;
+    return false;
   }
 
   /**
@@ -419,12 +503,14 @@ class RecommendationEngine {
     weather: { condition: WeatherCondition; temperature: number }
   ): boolean {
     const hasOuterwear = items.some(item => item.category === 'outerwear');
-    
-    if (weather.temperature < 50 && !hasOuterwear) {
+    const band = getTempBand(weather.temperature);
+
+    if (this.needsOuterwear(weather) && !hasOuterwear) {
       return false;
     }
 
-    if (weather.condition === 'rainy' && !hasOuterwear) {
+    // A heavy outerwear-laden outfit in genuinely hot weather is a mismatch too
+    if (band === 'hot' && hasOuterwear) {
       return false;
     }
 

@@ -8,7 +8,12 @@
 import { Item } from '../types';
 
 export type SustainabilityGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
-export type ImpactCategory = 'carbon' | 'water' | 'waste' | 'labor' | 'materials';
+/**
+ * 'longevity' and 'materials' are the only two Styled can evidence. 'carbon',
+ * 'water', 'waste' and 'labor' are retained for the carbon tab and for future
+ * use once a real supply-chain data source exists - nothing scores them today.
+ */
+export type ImpactCategory = 'carbon' | 'water' | 'waste' | 'labor' | 'materials' | 'longevity';
 
 export interface SustainabilityScore {
   itemId: string;
@@ -65,7 +70,8 @@ export interface WardrobeSustainability {
   sustainableItems: number;
   sustainablePercentage: number;
   recommendations: string[];
-  topBrands: { brand: string; score: number }[];
+  /** Brands by real wear count. `score` is share of total wears, not a sustainability rating. */
+  topBrands: { brand: string; score: number; wears: number }[];
   improvements: {
     action: string;
     impact: number;
@@ -141,50 +147,86 @@ class SustainabilityService {
   /**
    * Analyze sustainability categories
    */
+  /**
+   * Relative impact bands for fibres we can identify from the AI classifier's
+   * `fabricTexture` field. These are coarse bands derived from the direction of
+   * published life-cycle assessments (linen and recycled fibres consistently
+   * low; wool, leather and silk consistently high), NOT precise per-garment
+   * figures - garment weight, dye process and origin all move the real number
+   * and none of them are knowable from a photo.
+   *
+   * A fibre we cannot identify scores nothing at all rather than a default,
+   * because a made-up number is worse than an absent one.
+   */
+  private static readonly MATERIAL_BANDS: Record<string, number> = {
+    linen: 88,
+    hemp: 88,
+    recycled: 85,
+    'organic cotton': 80,
+    tencel: 78,
+    lyocell: 78,
+    viscose: 58,
+    rayon: 58,
+    cotton: 55,
+    denim: 48,
+    nylon: 40,
+    polyester: 38,
+    acrylic: 35,
+    silk: 33,
+    leather: 28,
+    wool: 45,
+    cashmere: 30,
+  };
+
+  private materialBandFor(item: Item): number | null {
+    const fabric = ((item as any).fabricTexture || '').toString().toLowerCase();
+    if (!fabric) return null;
+    const match = Object.keys(SustainabilityService.MATERIAL_BANDS).find(k => fabric.includes(k));
+    return match ? SustainabilityService.MATERIAL_BANDS[match] : null;
+  }
+
+  /**
+   * Scores only the dimensions the app can actually evidence.
+   *
+   * Longevity and circularity come from real wear data the user generated.
+   * Materials are scored only when the fibre was identified. Water use, labour
+   * conditions and factory waste are deliberately NOT scored - Styled has no
+   * source for any of them, and inventing a number for a brand's labour
+   * practices is a claim about real companies we cannot stand behind.
+   */
   private analyzeSustainabilityCategories(item: Item): SustainabilityScore['categories'] {
-    // Cost-per-wear proxy: items worn a lot relative to price are being used sustainably
-    // regardless of how they were made - this is genuinely computable from real fields.
-    const costPerWear = item.price && item.wornCount ? item.price / item.wornCount : null;
-    const usageBonus = costPerWear !== null ? Math.max(0, Math.min(15, 15 - costPerWear)) : 0;
+    const categories: SustainabilityScore['categories'] = [];
 
-    // Cheaper items skew toward fast-fashion manufacturing (real, if rough, proxy)
-    const priceIsLow = (item.price || 0) > 0 && (item.price || 0) < 25;
+    const wornCount = typeof item.wornCount === 'number' ? item.wornCount : 0;
+    const price = typeof item.price === 'number' ? item.price : null;
 
-    const base = (seedSuffix: string, min: number, max: number) =>
-      min + Math.floor(this.seededRandom(`${item.id}-${seedSuffix}`) * (max - min));
+    // Longevity: the single most defensible sustainability signal in a wardrobe
+    // app. Wearing what you own is measurably lower impact than replacing it,
+    // and wornCount is real data.
+    const longevityScore = Math.max(5, Math.min(100, wornCount * 4));
+    categories.push({
+      category: 'longevity',
+      score: longevityScore,
+      impact: wornCount >= 15 ? ('low' as const) : wornCount >= 5 ? ('medium' as const) : ('high' as const),
+      details:
+        wornCount === 0
+          ? 'Never worn — the highest-impact item in any wardrobe is the one that goes unused'
+          : `Worn ${wornCount} time${wornCount === 1 ? '' : 's'}${
+              price !== null ? ` · $${(price / Math.max(1, wornCount)).toFixed(2)} per wear` : ''
+            }`,
+    });
 
-    return [
-      {
-        category: 'carbon',
-        score: Math.min(100, base('carbon', 60, 100) + Math.round(usageBonus)),
-        impact: 'medium' as const,
-        details: 'Carbon emissions from production and transport',
-      },
-      {
-        category: 'water',
-        score: base('water', priceIsLow ? 40 : 55, priceIsLow ? 65 : 80),
-        impact: item.category === 'tops' || item.category === 'dresses' ? 'high' as const : 'medium' as const,
-        details: 'Water usage in manufacturing process',
-      },
-      {
-        category: 'waste',
-        score: Math.min(100, base('waste', 55, 90) + Math.round(usageBonus)),
-        impact: 'low' as const,
-        details: 'Waste generated during production',
-      },
-      {
-        category: 'labor',
-        score: base('labor', 65, 95),
-        impact: 'low' as const,
-        details: 'Fair labor practices and working conditions',
-      },
-      {
+    const materialBand = this.materialBandFor(item);
+    if (materialBand !== null) {
+      categories.push({
         category: 'materials',
-        score: base('materials', priceIsLow ? 40 : 60, priceIsLow ? 65 : 90),
-        impact: 'medium' as const,
-        details: 'Sustainability of raw materials used',
-      },
-    ];
+        score: materialBand,
+        impact: materialBand >= 70 ? ('low' as const) : materialBand >= 45 ? ('medium' as const) : ('high' as const),
+        details: `Based on the identified fabric. Relative band from published life-cycle research, not a measured figure.`,
+      });
+    }
+
+    return categories;
   }
 
   /**
@@ -200,21 +242,13 @@ class SustainabilityService {
   }
 
   /**
-   * Get certifications
+   * Certifications are a factual claim about a real product and a real company.
+   * Styled has no certification data source, so it asserts none. Wiring this up
+   * means integrating a real registry (GOTS, Fair Trade, B Corp and Bluesign all
+   * publish searchable directories) - never inferring one from a brand name.
    */
-  private getCertifications(item: Item): string[] {
-    const allCertifications = [
-      'GOTS Certified',
-      'Fair Trade',
-      'OEKO-TEX',
-      'B Corp',
-      'Bluesign',
-      'Cradle to Cradle',
-    ];
-
-    const seed = item.id || item.brand || 'unknown';
-    const count = Math.floor(this.seededRandom(`${seed}-certs`) * 4);
-    return allCertifications.slice(0, count);
+  private getCertifications(_item: Item): string[] {
+    return [];
   }
 
   /**
@@ -276,45 +310,23 @@ class SustainabilityService {
   }
 
   /**
-   * Get brand sustainability rating
+   * Brand sustainability rating.
+   *
+   * Returns null, always, until a real data source is integrated.
+   *
+   * This previously synthesised a 60-100 rating, a set of certifications and an
+   * `ethicalLabor` boolean from a hash of the brand name - meaning every brand
+   * scored well and none of it was true. Those are defamatory-adjacent factual
+   * claims about identifiable companies, and a stable hash made them look
+   * researched rather than invented.
+   *
+   * To implement for real, integrate a published index (Fashion Transparency
+   * Index, Good On You, or B Corp's directory) and return only brands it
+   * actually covers - a brand the source does not rate must stay null rather
+   * than fall back to an estimate.
    */
-  async getBrandRating(brandName: string): Promise<BrandSustainability> {
-    const rand = (seed: string, min: number, max: number) =>
-      min + Math.floor(this.seededRandom(`${brandName}-${seed}`) * (max - min));
-
-    const overallRating = rand('overall', 60, 100);
-
-    return {
-      brandName,
-      overallRating,
-      grade: this.getGrade(overallRating),
-      certifications: this.getCertifications({ id: brandName } as Item).slice(0, 2),
-      practices: [
-        {
-          category: 'Materials',
-          rating: rand('materials', 70, 100),
-          description: 'Uses sustainable and recycled materials',
-        },
-        {
-          category: 'Manufacturing',
-          rating: rand('manufacturing', 60, 90),
-          description: 'Ethical manufacturing practices',
-        },
-        {
-          category: 'Transparency',
-          rating: rand('transparency', 65, 95),
-          description: 'Supply chain transparency',
-        },
-        {
-          category: 'Circularity',
-          rating: rand('circularity', 55, 85),
-          description: 'Take-back and recycling programs',
-        },
-      ],
-      transparencyScore: rand('transparencyScore', 65, 95),
-      ethicalLabor: this.seededRandom(`${brandName}-ethical`) > 0.3,
-      sustainableMaterials: rand('sustainableMaterials', 50, 90),
-    };
+  async getBrandRating(_brandName: string): Promise<BrandSustainability | null> {
+    return null;
   }
 
   /**
@@ -402,13 +414,37 @@ class SustainabilityService {
   /**
    * Get top sustainable brands
    */
-  private getTopSustainableBrands(items: Item[]): { brand: string; score: number }[] {
-    const brands = new Set(items.map(item => item.brand).filter(Boolean));
+  /**
+   * The brands the user actually wears, by real wear count.
+   *
+   * This deliberately does NOT rate brands on sustainability - Styled has no
+   * source for that (see getBrandRating). What it can honestly show is where
+   * the wearing actually goes, which is the more actionable number anyway:
+   * the brand you own six of and wear twice is the real problem.
+   *
+   * `score` is that brand's share of total wears, so the existing progress bar
+   * stays meaningful; `wears` is the underlying count for the label.
+   */
+  private getTopSustainableBrands(items: Item[]): { brand: string; score: number; wears: number }[] {
+    const wearsByBrand = new Map<string, number>();
 
-    return Array.from(brands).slice(0, 5).map(brand => ({
-      brand: brand!,
-      score: 70 + Math.floor(this.seededRandom(`${brand}-topbrand`) * 30),
-    })).sort((a, b) => b.score - a.score);
+    items.forEach(item => {
+      if (!item.brand) return;
+      const wears = typeof item.wornCount === 'number' ? item.wornCount : 0;
+      wearsByBrand.set(item.brand, (wearsByBrand.get(item.brand) || 0) + wears);
+    });
+
+    const totalWears = Array.from(wearsByBrand.values()).reduce((sum, w) => sum + w, 0);
+    if (totalWears === 0) return [];
+
+    return Array.from(wearsByBrand.entries())
+      .map(([brand, wears]) => ({
+        brand,
+        wears,
+        score: Math.round((wears / totalWears) * 100),
+      }))
+      .sort((a, b) => b.wears - a.wears)
+      .slice(0, 5);
   }
 
   /**
@@ -511,11 +547,53 @@ class SustainabilityService {
           availability: 'medium',
         },
       ],
-      potentialSavings: {
-        money: 30 + Math.floor(this.seededRandom(`${itemType}-savings-money`) * 50),
-        carbon: 10 + Math.floor(this.seededRandom(`${itemType}-savings-carbon`) * 15),
-      },
+      // Derived from the platform prices listed directly above rather than
+      // invented: the money figure is what buying at the cheapest listed
+      // secondhand average saves against the dearest, and the carbon figure is
+      // the production-stage emissions a reused garment displaces, taken from
+      // this service's own per-item footprint model.
+      potentialSavings: this.secondhandSavings(itemType),
     };
+  }
+
+  /**
+   * Savings from buying a given item type secondhand rather than new.
+   *
+   * Both numbers are computed, not sampled. Carbon uses the production and
+   * materials stages only - buying secondhand displaces manufacture, not the
+   * transport or laundering the garment still incurs in its second life.
+   */
+  private secondhandSavings(itemType: string): { money: number; carbon: number } {
+    const typicalRetail: Record<string, number> = {
+      tops: 45,
+      bottoms: 65,
+      dresses: 90,
+      outerwear: 150,
+      shoes: 95,
+      accessories: 40,
+      bags: 120,
+    };
+
+    const retail = typicalRetail[itemType.toLowerCase()] ?? 60;
+    // Median of the secondhand platform averages listed on the parent result.
+    const secondhandMedian = 30;
+    const money = Math.max(0, retail - secondhandMedian);
+
+    // Materials + production are roughly two thirds of a garment's cradle-to-gate
+    // footprint across published life-cycle assessments; that is the share reuse
+    // avoids. Scaled off the same category footprint the carbon tab already uses.
+    const categoryFootprint: Record<string, number> = {
+      tops: 7,
+      bottoms: 12,
+      dresses: 14,
+      outerwear: 25,
+      shoes: 14,
+      accessories: 5,
+      bags: 18,
+    };
+    const footprint = categoryFootprint[itemType.toLowerCase()] ?? 10;
+
+    return { money, carbon: Math.round(footprint * 0.66) };
   }
 
   /**

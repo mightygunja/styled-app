@@ -31,6 +31,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingVertical: 8,
     paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    alignSelf: 'flex-start',
   },
   chipActive: {
     backgroundColor: colors.ink,
@@ -39,6 +43,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.sansMedium,
     fontSize: 11,
+    lineHeight: 16,
     letterSpacing: 1.4,
     color: colors.ink,
   },

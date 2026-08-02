@@ -33,6 +33,7 @@ export interface Item {
   tags?: string[];
   seasons?: string[];
   style?: string;
+  occasion?: string;
 }
 
 export type ItemCategory = 

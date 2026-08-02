@@ -203,14 +203,16 @@ export default function SustainabilityScreen() {
               ))}
             </View>
 
-            {/* Top Sustainable Brands */}
+            {/* Where the wearing actually goes - real counts, not a brand rating */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>⭐ Top Sustainable Brands</Text>
+              <Text style={styles.sectionTitle}>Brands you actually wear</Text>
               {analysis.topBrands.map((brand, index) => (
                 <View key={index} style={styles.brandCard}>
                   <View style={styles.brandInfo}>
                     <Text style={styles.brandName}>{brand.brand}</Text>
-                    <Text style={styles.brandScore}>{brand.score}/100</Text>
+                    <Text style={styles.brandScore}>
+                      {brand.wears} {brand.wears === 1 ? 'wear' : 'wears'}
+                    </Text>
                   </View>
                   <View style={styles.brandBar}>
                     <View style={[styles.brandBarFill, { width: `${brand.score}%` }]} />

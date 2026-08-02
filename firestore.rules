@@ -53,10 +53,28 @@ service cloud.firestore {
     }
 
     // Closet items - owned by userId field
+    // True when the item's owner has explicitly shared their closet with the
+    // caller. The share doc id encodes both parties, so this is a single
+    // exists() lookup rather than a query - queries are not available in rules.
+    function closetSharedWithCaller(ownerId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/closetShares/$(ownerId + '_' + request.auth.uid));
+    }
+
     match /closetItems/{itemId} {
-      allow read: if isResourceOwner();
+      allow read: if isResourceOwner() || closetSharedWithCaller(resource.data.userId);
       allow create: if isCreatingOwnResource();
+      // Sharing grants read only - a viewer can never modify someone else's closet.
       allow update, delete: if isResourceOwner();
+    }
+
+    // Closet shares - readable by either party so both sides can see and manage
+    // the relationship; only the owner may grant or revoke it.
+    match /closetShares/{shareId} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.ownerId || request.auth.uid == resource.data.viewerId);
+      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.ownerId;
     }
 
     // Looks - shared catalog content, read-only for clients
@@ -284,6 +302,20 @@ service cloud.firestore {
     }
 
     match /plannedOutfits/{plannedOutfitId} {
+      allow read: if isResourceOwner();
+      allow create, update: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+    }
+
+    // Trip packing lists - private to the traveller
+    match /packingLists/{packingListId} {
+      allow read: if isResourceOwner();
+      allow create, update: if isCreatingOwnResource();
+      allow delete: if isResourceOwner();
+    }
+
+    // Resale valuations - private; reveals what the user owns and paid
+    match /resaleValuations/{valuationId} {
       allow read: if isResourceOwner();
       allow create, update: if isCreatingOwnResource();
       allow delete: if isResourceOwner();

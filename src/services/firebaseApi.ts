@@ -32,6 +32,9 @@ const shopMyClosetFn = httpsCallable(functions, 'shopMyCloset');
 const analyzeColorSeasonFn = httpsCallable(functions, 'analyzeColorSeason');
 const analyzeBodyTypeFn = httpsCallable(functions, 'analyzeBodyType');
 const analyzeStoreItemFn = httpsCallable(functions, 'analyzeStoreItem');
+const removeGarmentBackgroundFn = httpsCallable(functions, 'removeGarmentBackground');
+const renderTryOnFn = httpsCallable(functions, 'renderTryOn');
+const parseReceiptFn = httpsCallable(functions, 'parseReceipt');
 
 // ==================== CLOSET API ====================
 
@@ -298,6 +301,66 @@ export const storeCheckAPI = {
 
     const result = await analyzeStoreItemFn({ imageUrl, profile: profilePayload });
     return (result.data as any).data as StoreCheckResult;
+  },
+};
+
+// ==================== GARMENT CUTOUT API ====================
+
+export const garmentImageAPI = {
+  /**
+   * Cuts a garment out of its background and stores the result, returning the
+   * new URL. The original is left untouched so a poor cutout is always
+   * recoverable - background removal is destructive-looking to users and
+   * silently replacing their photo would be the wrong default.
+   */
+  removeBackground: async (imageUrl: string, userId: string): Promise<string> => {
+    const result = await removeGarmentBackgroundFn({ imageUrl });
+    const base64 = (result.data as any).data.imageBase64 as string;
+    return uploadImageToFirebase(base64, userId, 'cutouts');
+  },
+};
+
+// ==================== VIRTUAL TRY-ON API ====================
+
+export const tryOnAPI = {
+  /**
+   * Renders an outfit onto the user's own full-length photo and stores the
+   * render, returning its URL.
+   */
+  render: async (
+    personImageUrl: string,
+    garmentDescriptions: string[],
+    userId: string
+  ): Promise<string> => {
+    const result = await renderTryOnFn({ personImageUrl, garmentDescriptions });
+    const base64 = (result.data as any).data.imageBase64 as string;
+    return uploadImageToFirebase(base64, userId, 'tryOn');
+  },
+};
+
+// ==================== RECEIPT IMPORT API ====================
+
+export interface ParsedReceiptItem {
+  description: string;
+  category: string;
+  brand: string | null;
+  color: string | null;
+  price: number | null;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export interface ParsedReceipt {
+  retailer: string | null;
+  purchaseDate: string | null;
+  items: ParsedReceiptItem[];
+}
+
+export const receiptAPI = {
+  /** Reads a photographed receipt and returns only its apparel lines. */
+  parse: async (imageBase64: string, userId: string): Promise<ParsedReceipt> => {
+    const imageUrl = await uploadImageToFirebase(imageBase64, userId, 'receipts');
+    const result = await parseReceiptFn({ imageUrl });
+    return (result.data as any).data as ParsedReceipt;
   },
 };
 

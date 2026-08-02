@@ -11,6 +11,14 @@ import { findCapsuleGaps } from './closetOrganizationService';
 
 const NEUTRAL_COLORS = ['black', 'white', 'gray', 'grey', 'navy', 'beige', 'cream', 'tan'];
 
+// Score needed to count as "matched" (Shop's "Matched to you" filter + the MATCH badge).
+// Baseline is 40; a single real personalization signal (color season, body/fit, style
+// archetype, or filling a real closet gap) is enough to cross it. Without this being low
+// enough, a user whose profile only has ONE strong signal populated (e.g. a wardrobe gap
+// in just one category) sees "matched" collapse to almost only that category, since
+// nothing else has any signal to add to the neutral-color baseline.
+export const MATCH_THRESHOLD = 45;
+
 export function scoreProduct(
   product: Product,
   profile: ProfileMatchContext | undefined,

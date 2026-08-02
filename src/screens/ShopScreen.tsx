@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   FlatList,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -18,7 +19,7 @@ import Chip from '../components/Chip';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 import { getActiveAdapter, isMockProvider } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
-import { scoreAndRankProducts } from '../services/marketplaceMatchingService';
+import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { MatchedProduct, isOnSale, discountPercent } from '../models/product';
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
@@ -100,7 +101,7 @@ export default function ShopScreen() {
   );
 
   const visibleProducts = useMemo(
-    () => (matchedOnly ? products.filter(p => p.matchScore >= 60) : products),
+    () => (matchedOnly ? products.filter(p => p.matchScore >= MATCH_THRESHOLD) : products),
     [products, matchedOnly]
   );
 
@@ -120,7 +121,10 @@ export default function ShopScreen() {
           Filtered against your color season, body & fit profile, style archetypes, and what's already in your closet.
         </Text>
         {isMockProvider() && (
-          <Text style={styles.devNotice}>Showing sample products - live retailer inventory isn't connected yet.</Text>
+          <Text style={styles.devNotice}>
+            Sample picks curated by us, not a live retailer feed yet - each one links to a real search on the
+            retailer's site rather than a specific in-stock item.
+          </Text>
         )}
       </View>
 
@@ -148,22 +152,22 @@ export default function ShopScreen() {
         />
       </View>
 
-      <FlatList
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        data={CATEGORY_FILTERS}
-        keyExtractor={item => item.value}
         style={styles.categoryScroll}
         contentContainerStyle={styles.categoryContent}
-        renderItem={({ item }) => (
+      >
+        {CATEGORY_FILTERS.map(item => (
           <Chip
+            key={item.value}
             label={item.label}
             active={category === item.value}
             onPress={() => setCategory(item.value)}
             style={styles.chipSpacing}
           />
-        )}
-      />
+        ))}
+      </ScrollView>
 
       {loading ? (
         <View style={styles.loadingBox}>
@@ -198,7 +202,7 @@ export default function ShopScreen() {
                     <Text style={styles.saleBadgeText}>-{discountPercent(item.product)}%</Text>
                   </View>
                 )}
-                {item.matchScore >= 60 && (
+                {item.matchScore >= MATCH_THRESHOLD && (
                   <View style={styles.matchBadge}>
                     <Text style={styles.matchBadgeText}>MATCH</Text>
                   </View>
@@ -287,13 +291,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: spacing.page,
     marginTop: 12,
+    height: 40,
+    alignItems: 'center',
   },
   categoryScroll: {
     marginTop: 10,
+    height: 48,
     flexGrow: 0,
+    flexShrink: 0,
   },
   categoryContent: {
     paddingHorizontal: spacing.page,
+    alignItems: 'center',
+    height: 48,
   },
   chipSpacing: {
     marginRight: 8,

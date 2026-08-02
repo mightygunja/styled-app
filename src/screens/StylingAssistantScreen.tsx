@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -26,8 +25,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 
-const { width } = Dimensions.get('window');
-const ITEM_SIZE = (width - 120) / 3;
+const ITEM_SIZE = 64;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -69,14 +67,6 @@ export default function StylingAssistantScreen() {
     getCurrentWeather().then(setWeather);
     styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => setStyleProfile(null));
   }, []);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [messages, sending]);
 
   const loadData = async () => {
     try {
@@ -229,6 +219,7 @@ export default function StylingAssistantScreen() {
                 {message.items.map((item, index) => (
                   <TouchableOpacity
                     key={index}
+                    style={styles.outfitItem}
                     onPress={() => navigation.navigate('ClosetItemDetail', { closetItemId: item.id })}
                   >
                     <Image source={{ uri: item.imageUrl }} style={styles.outfitItemImage} />
@@ -372,6 +363,7 @@ export default function StylingAssistantScreen() {
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
           {messages.map(renderMessage)}
 
@@ -596,7 +588,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: 20,
-    paddingBottom: 10,
+    paddingBottom: 28,
   },
   messageContainer: {
     marginBottom: 12,
@@ -622,7 +614,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   assistantMessageText: {
-    fontFamily: fonts.serifItalic,
+    fontFamily: fonts.sans,
   },
   userMessageText: {
     fontFamily: fonts.sans,
@@ -639,27 +631,33 @@ const styles = StyleSheet.create({
   },
   outfitContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.hair,
+  },
+  outfitItem: {
+    // No horizontal scroll needed - items wrap onto additional rows instead,
+    // so the whole outfit is always visible without any nested scroll view.
   },
   outfitItemImage: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     backgroundColor: colors.sand,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   outfitItemName: {
     fontFamily: fonts.sans,
-    fontSize: 10,
+    fontSize: 9,
+    lineHeight: 12,
     color: colors.inkMuted,
     textAlign: 'center',
     width: ITEM_SIZE,
   },
   saveOutfitButton: {
-    marginTop: 10,
+    marginTop: 8,
     paddingVertical: 10,
     backgroundColor: 'transparent',
     borderWidth: 1,
