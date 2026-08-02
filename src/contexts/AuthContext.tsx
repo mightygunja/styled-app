@@ -7,11 +7,16 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
   OAuthProvider,
+  FacebookAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
   getAdditionalUserInfo,
+  fetchSignInMethodsForEmail,
+  deleteUser,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
+import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
 
 interface AuthContextType {
@@ -23,7 +28,48 @@ interface AuthContextType {
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Required by App Store Guideline 5.1.1(v) for any app offering Sign in with Apple. */
+  deleteAccount: () => Promise<void>;
+  isFacebookConfigured: boolean;
+}
+
+/**
+ * Turns Firebase's account-collision error into something a person can act on.
+ *
+ * This fires when someone signed up with, say, Google and later taps Facebook
+ * with the same email address. Firebase refuses the second credential and
+ * returns an opaque code; without this the user just sees a failure and has no
+ * idea which button to press instead.
+ */
+async function describeAccountCollision(error: any): Promise<string> {
+  const email = error?.customData?.email;
+  if (!email) {
+    return 'An account already exists with this email using a different sign-in method.';
+  }
+
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    const friendly = methods
+      .map(m => {
+        if (m.includes('google')) return 'Google';
+        if (m.includes('apple')) return 'Apple';
+        if (m.includes('facebook')) return 'Facebook';
+        if (m.includes('password')) return 'email and password';
+        return m;
+      })
+      .filter(Boolean);
+
+    if (friendly.length > 0) {
+      return `You already have an account for ${email}. Sign in with ${friendly.join(' or ')} instead.`;
+    }
+  } catch {
+    // Falls through to the generic message below - a lookup failure here
+    // should not replace the original, more useful error.
+  }
+
+  return `An account already exists for ${email} using a different sign-in method.`;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +89,20 @@ function ensureGoogleConfigured() {
     offlineAccess: false,
   });
   googleSigninConfigured = true;
+}
+
+/** Whether Facebook sign-in can work in this build. Mirrors the condition in
+ *  app.config.js that decides whether the native plugin is included at all. */
+const isFacebookConfigured = !!(
+  process.env.EXPO_PUBLIC_FACEBOOK_APP_ID && process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN
+);
+
+/** Cryptographically random nonce for Sign in with Apple. */
+async function generateRawNonce(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(32);
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -110,6 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error?.code === 'SIGN_IN_CANCELLED' || error?.code === -5) {
         return; // user closed the picker - not an error worth surfacing
       }
+      if (error?.code === 'auth/account-exists-with-different-credential') {
+        throw new Error(await describeAccountCollision(error));
+      }
       if (error?.message?.includes('RNGoogleSignin') || error?.message?.includes('native module')) {
         throw new Error(
           "Google Sign-In needs the full app build (EAS dev client) - it can't run inside Expo Go."
@@ -135,11 +198,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
+      // Nonce binds this specific sign-in to this specific request. Apple is
+      // given the SHA-256 hash and embeds it in the identity token; Firebase is
+      // given the raw value and checks the two agree. Without it, an identity
+      // token intercepted from another session could be replayed here.
+      const rawNonce = await generateRawNonce();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
       const appleCredential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       if (!appleCredential.identityToken) {
@@ -149,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new OAuthProvider('apple.com');
       const firebaseCredential = provider.credential({
         idToken: appleCredential.identityToken,
+        rawNonce,
       });
 
       const result = await signInWithCredential(auth, firebaseCredential);
@@ -168,7 +243,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error?.code === 'ERR_REQUEST_CANCELED') {
         return; // user closed the picker - not an error worth surfacing
       }
+      if (error?.code === 'auth/account-exists-with-different-credential') {
+        throw new Error(await describeAccountCollision(error));
+      }
       throw new Error(error.message || 'Apple sign-in failed');
+    }
+  };
+
+  const signInWithFacebook = async () => {
+    if (!isFacebookConfigured) {
+      throw new Error(
+        'Facebook sign-in is not configured yet (missing EXPO_PUBLIC_FACEBOOK_APP_ID / EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN).'
+      );
+    }
+
+    try {
+      // Lazy require for the same reason as Google and Apple above.
+      const { LoginManager, AccessToken, Settings } = require('react-native-fbsdk-next');
+
+      // Explicit opt-in rather than relying on plugin defaults, so tracking
+      // stays off regardless of how the native side was configured.
+      Settings.setAdvertiserTrackingEnabled(false);
+
+      const loginResult = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+      if (loginResult.isCancelled) {
+        return; // user backed out - not an error worth surfacing
+      }
+
+      const tokenData = await AccessToken.getCurrentAccessToken();
+      if (!tokenData?.accessToken) {
+        throw new Error('Facebook did not return an access token.');
+      }
+
+      const credential = FacebookAuthProvider.credential(tokenData.accessToken.toString());
+      const result = await signInWithCredential(auth, credential);
+      if (getAdditionalUserInfo(result)?.isNewUser) {
+        setIsNewUser(true);
+      }
+    } catch (error: any) {
+      if (error?.code === 'auth/account-exists-with-different-credential') {
+        throw new Error(await describeAccountCollision(error));
+      }
+      if (error?.message?.includes('RNFBSDK') || error?.message?.includes('native module')) {
+        throw new Error(
+          "Facebook sign-in needs the full app build (EAS dev client) - it can't run inside Expo Go."
+        );
+      }
+      throw new Error(error.message || 'Facebook sign-in failed');
+    }
+  };
+
+  /**
+   * Deletes the account and signs the user out.
+   *
+   * Apple requires this for any app offering Sign in with Apple (App Store
+   * Guideline 5.1.1(v)) - offering the button without a way to delete the
+   * account is a rejection.
+   *
+   * Firebase refuses to delete a user whose sign-in is stale, so the caller is
+   * told to sign in again rather than being left with a silent failure. The
+   * user's Firestore documents are intentionally NOT removed here: that is a
+   * multi-collection cascade that belongs in a Cloud Function triggered on
+   * user deletion, where it can complete even if the app is closed.
+   */
+  const deleteAccount = async () => {
+    const current = auth.currentUser;
+    if (!current) {
+      throw new Error('You are not signed in.');
+    }
+
+    try {
+      await deleteUser(current);
+    } catch (error: any) {
+      if (error?.code === 'auth/requires-recent-login') {
+        throw new Error(
+          'For your security, please sign out and sign in again, then delete your account.'
+        );
+      }
+      throw new Error(error.message || 'Could not delete your account.');
     }
   };
 
@@ -189,7 +341,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signInWithGoogle,
     signInWithApple,
+    signInWithFacebook,
     signOut,
+    deleteAccount,
+    isFacebookConfigured,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

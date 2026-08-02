@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,7 +15,45 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AccountScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
+
+  /**
+   * Two-step confirmation. Deleting an account is irreversible and sits one tap
+   * below Sign out, so a single misfire should not be able to destroy it.
+   */
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your account and you will be signed out. This cannot be undone.',
+      [
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you certain?',
+              'Your account will be deleted immediately.',
+              [
+                {
+                  text: 'Delete permanently',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                    } catch (error: any) {
+                      Alert.alert('Could not delete account', error?.message || 'Please try again.');
+                    }
+                  },
+                },
+                { text: 'Keep my account', style: 'cancel' },
+              ]
+            );
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,6 +275,13 @@ export default function AccountScreen() {
         >
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteText}>Delete account</Text>
+        </TouchableOpacity>
+        <Text style={styles.deleteHelp}>
+          Permanently removes your account and sign-in. This cannot be undone.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -407,5 +452,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.6,
     color: '#C62828',
+  },
+  deleteButton: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  deleteText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    letterSpacing: 0.6,
+    color: colors.inkFaint,
+  },
+  deleteHelp: {
+    ...textType.meta,
+    fontSize: 11,
+    textAlign: 'center',
+    color: colors.inkFaint,
+    paddingHorizontal: 32,
+    marginBottom: 24,
   },
 });

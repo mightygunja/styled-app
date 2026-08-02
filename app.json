@@ -56,9 +56,18 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "AppCheckCore", "modular_headers": true },
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true }
+              {
+                "name": "AppCheckCore",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
             ]
           }
         }

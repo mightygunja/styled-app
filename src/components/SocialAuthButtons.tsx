@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -7,58 +7,96 @@ interface Props {
   disabled?: boolean;
 }
 
+/**
+ * Sign-in provider buttons.
+ *
+ * Apple deliberately uses `AppleAuthenticationButton` from
+ * expo-apple-authentication rather than a hand-rolled button. Apple's Human
+ * Interface Guidelines require their own button styling, and apps that fake it
+ * get rejected - the previous custom version also rendered a private SF Symbol
+ * codepoint that shows as a blank box on most devices.
+ *
+ * Apple's guidelines also require their button to be no less prominent than
+ * other sign-in options, which is why it renders first.
+ */
 export default function SocialAuthButtons({ onError, disabled }: Props) {
-  const { signInWithGoogle, signInWithApple } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInWithFacebook, isFacebookConfigured } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const [AppleAuth, setAppleAuth] = useState<any>(null);
 
-  const handleGoogle = async () => {
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        // Lazy require so this component still renders in environments where
+        // the native module isn't linked (Expo Go), just without the button.
+        const module = require('expo-apple-authentication');
+        const available = await module.isAvailableAsync();
+        if (!cancelled) {
+          setAppleAuth(module);
+          setAppleAvailable(available);
+        }
+      } catch {
+        if (!cancelled) setAppleAvailable(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const run = async (
+    fn: () => Promise<void>,
+    setLoading: (v: boolean) => void,
+    label: string
+  ) => {
     try {
-      setGoogleLoading(true);
-      await signInWithGoogle();
+      setLoading(true);
+      await fn();
     } catch (error: any) {
-      onError(error.message || 'Google sign-in failed');
+      onError(error?.message || `${label} sign-in failed`);
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleApple = async () => {
-    try {
-      setAppleLoading(true);
-      await signInWithApple();
-    } catch (error: any) {
-      onError(error.message || 'Apple sign-in failed');
-    } finally {
-      setAppleLoading(false);
-    }
-  };
-
-  const busy = disabled || googleLoading || appleLoading;
+  const busy = disabled || googleLoading || appleLoading || facebookLoading;
 
   return (
     <View style={styles.container}>
-      {Platform.OS === 'ios' && (
-        <TouchableOpacity
-          style={[styles.button, styles.appleButton, busy && styles.buttonDisabled]}
-          onPress={handleApple}
-          disabled={busy}
-        >
+      {Platform.OS === 'ios' && appleAvailable && AppleAuth && (
+        <View style={styles.appleWrap}>
           {appleLoading ? (
-            <ActivityIndicator color="#fff" />
+            <View style={[styles.button, styles.appleFallback]}>
+              <ActivityIndicator color="#fff" />
+            </View>
           ) : (
-            <>
-              <Text style={styles.appleIcon}>􀣺</Text>
-              <Text style={styles.appleButtonText}>Continue with Apple</Text>
-            </>
+            <AppleAuth.AppleAuthenticationButton
+              buttonType={AppleAuth.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuth.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={() => {
+                if (busy) return;
+                run(signInWithApple, setAppleLoading, 'Apple');
+              }}
+            />
           )}
-        </TouchableOpacity>
+        </View>
       )}
 
       <TouchableOpacity
         style={[styles.button, styles.googleButton, busy && styles.buttonDisabled]}
-        onPress={handleGoogle}
+        onPress={() => run(signInWithGoogle, setGoogleLoading, 'Google')}
         disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel="Continue with Google"
       >
         {googleLoading ? (
           <ActivityIndicator color="#0f172a" />
@@ -69,6 +107,25 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
           </>
         )}
       </TouchableOpacity>
+
+      {isFacebookConfigured && (
+        <TouchableOpacity
+          style={[styles.button, styles.facebookButton, busy && styles.buttonDisabled]}
+          onPress={() => run(signInWithFacebook, setFacebookLoading, 'Facebook')}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Facebook"
+        >
+          {facebookLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.facebookIcon}>f</Text>
+              <Text style={styles.facebookButtonText}>Continue with Facebook</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
@@ -95,17 +152,19 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
+  appleWrap: {
+    marginBottom: 12,
+  },
   appleButton: {
+    // Apple's native button needs an explicit height; 52 matches the vertical
+    // rhythm of the other buttons (15pt padding + 16pt line height + borders).
+    height: 52,
+    width: '100%',
+  },
+  appleFallback: {
+    height: 52,
     backgroundColor: '#000000',
-  },
-  appleIcon: {
-    fontSize: 18,
-    color: '#ffffff',
-  },
-  appleButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: 0,
   },
   googleButton: {
     backgroundColor: '#ffffff',
@@ -119,6 +178,19 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  facebookButton: {
+    backgroundColor: '#1877F2',
+  },
+  facebookIcon: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  facebookButtonText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
