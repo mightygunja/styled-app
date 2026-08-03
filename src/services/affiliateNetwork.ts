@@ -38,7 +38,12 @@ import {
 } from '../models/product';
 import { MOCK_CATALOG } from '../data/mockProductCatalog';
 
-type MarketplaceProvider = 'mock' | 'sovrn';
+/**
+ * 'both' runs Sovrn and Rakuten together and merges the results, which is what
+ * a serious catalogue needs - no single affiliate network covers every
+ * retailer, and the competitor doing this best runs exactly this pair.
+ */
+type MarketplaceProvider = 'mock' | 'sovrn' | 'rakuten' | 'both';
 const MARKETPLACE_PROVIDER: MarketplaceProvider = 'mock';
 
 const DEFAULT_PAGE_SIZE = 24;
@@ -149,6 +154,139 @@ class SovrnCommerceAdapter implements AffiliateNetworkAdapter {
   }
 }
 
+const searchRakutenProductsFn = httpsCallable(functions, 'searchRakutenProducts');
+
+class RakutenAdvertisingAdapter implements AffiliateNetworkAdapter {
+  async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
+    const result = await searchRakutenProductsFn(filters);
+    const data = result.data as any;
+    const products = (data.products || []) as Product[];
+
+    // Rakuten returns a retailer but no manufacturer brand, colour or size, so
+    // filters on those must be applied here rather than silently ignored.
+    const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+
+    return {
+      products: refined,
+      hasMore: !!data.hasMore,
+      totalCount: typeof data.totalCount === 'number' ? data.totalCount : null,
+    };
+  }
+
+  /** Rakuten's product search is keyword-only; there is no fetch-by-id. */
+  async getById(): Promise<Product | null> {
+    return null;
+  }
+
+  async getByIds(): Promise<Product[]> {
+    return [];
+  }
+
+  async wrapLink(product: Product): Promise<string> {
+    // linkurl from Rakuten already carries the publisher's tracking, so
+    // re-wrapping it through another network would break attribution.
+    return product.sourceUrl;
+  }
+
+  async getFacets() {
+    return { brands: [], retailers: [] };
+  }
+}
+
+/**
+ * Runs several networks at once and merges the results.
+ *
+ * A failing network is dropped rather than failing the whole page - partial
+ * results beat an empty Shop, and one network being down should not look
+ * identical to having no matches.
+ */
+class CompositeAdapter implements AffiliateNetworkAdapter {
+  constructor(private members: Array<{ name: string; adapter: AffiliateNetworkAdapter }>) {}
+
+  /** Same garment from two networks: same name, same money. */
+  private dedupeKey(product: Product): string {
+    return `${product.name.toLowerCase().replace(/\s+/g, ' ').trim()}|${Math.round(product.price)}`;
+  }
+
+  async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
+    const settled = await Promise.allSettled(
+      this.members.map(m => m.adapter.search(filters))
+    );
+
+    settled.forEach((outcome, i) => {
+      if (outcome.status === 'rejected') {
+        console.error(`${this.members[i].name} search failed`, outcome.reason);
+      }
+    });
+
+    const perNetwork = settled.map(o => (o.status === 'fulfilled' ? o.value.products : []));
+
+    // Interleave rather than concatenate. Concatenating would put one network's
+    // entire catalogue ahead of the other's before scoring ever sees it, which
+    // biases the page toward whichever adapter happens to be listed first.
+    const merged: Product[] = [];
+    const seen = new Set<string>();
+    const longest = Math.max(0, ...perNetwork.map(p => p.length));
+
+    for (let i = 0; i < longest; i++) {
+      for (const products of perNetwork) {
+        const product = products[i];
+        if (!product) continue;
+        const key = this.dedupeKey(product);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(product);
+      }
+    }
+
+    return {
+      products: sortProducts(merged, filters.sort),
+      hasMore: settled.some(o => o.status === 'fulfilled' && o.value.hasMore),
+      totalCount: merged.length,
+    };
+  }
+
+  async getById(productId: string): Promise<Product | null> {
+    for (const member of this.members) {
+      try {
+        const found = await member.adapter.getById(productId);
+        if (found) return found;
+      } catch {
+        // Try the next network rather than failing the detail screen.
+      }
+    }
+    return null;
+  }
+
+  async getByIds(productIds: string[]): Promise<Product[]> {
+    const results = await Promise.allSettled(
+      this.members.map(m => m.adapter.getByIds(productIds))
+    );
+    return results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+  }
+
+  async wrapLink(product: Product): Promise<string> {
+    // Route by origin: a Rakuten link is already tracked and must not be
+    // re-wrapped through Sovrn, or the commission goes to the wrong network.
+    const origin = product.id.startsWith('rakuten-') ? 'Rakuten' : 'Sovrn';
+    const member = this.members.find(m => m.name === origin) || this.members[0];
+    return member.adapter.wrapLink(product);
+  }
+
+  async getFacets() {
+    const results = await Promise.allSettled(this.members.map(m => m.adapter.getFacets()));
+    const brands = new Set<string>();
+    const retailers = new Set<string>();
+    results.forEach(r => {
+      if (r.status === 'fulfilled') {
+        r.value.brands.forEach(b => brands.add(b));
+        r.value.retailers.forEach(x => retailers.add(x));
+      }
+    });
+    return { brands: Array.from(brands).sort(), retailers: Array.from(retailers).sort() };
+  }
+}
+
 /**
  * Wraps whichever adapter is active with caching and failure containment.
  *
@@ -251,9 +389,19 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
   }
 }
 
+const sovrnAdapter = new SovrnCommerceAdapter();
+const rakutenAdapter = new RakutenAdvertisingAdapter();
+
 const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
   mock: new ResilientAdapter(new MockCatalogAdapter()),
-  sovrn: new ResilientAdapter(new SovrnCommerceAdapter()),
+  sovrn: new ResilientAdapter(sovrnAdapter),
+  rakuten: new ResilientAdapter(rakutenAdapter),
+  both: new ResilientAdapter(
+    new CompositeAdapter([
+      { name: 'Sovrn', adapter: sovrnAdapter },
+      { name: 'Rakuten', adapter: rakutenAdapter },
+    ])
+  ),
 };
 
 export function getActiveAdapter(): AffiliateNetworkAdapter {

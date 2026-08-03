@@ -33,10 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
+const fast_xml_parser_1 = require("fast-xml-parser");
 const openai_1 = __importStar(require("openai"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1004,6 +1005,208 @@ exports.searchMarketplaceProducts = functions
         if (error instanceof functions.https.HttpsError)
             throw error;
         console.error('Error calling Sovrn product recommendations:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+// ==================== RAKUTEN ADVERTISING ====================
+//
+// CONFIDENCE NOTE - read before debugging this.
+//
+// Unlike the Sovrn adapter above, this is NOT built from an official published
+// reference: Rakuten's developer portal is not publicly accessible and their
+// Product Search docs sit behind a publisher account. Endpoints, parameter
+// names and XML element names below come from the long-established LinkShare /
+// LinkSynergy ecosystem and are the shape their API has used for years - but
+// they are unverified against current live responses.
+//
+// Everything provider-specific is therefore isolated in RAKUTEN_FIELDS and
+// RAKUTEN_ENDPOINTS below. When you have credentials, run one live query, look
+// at the XML, and correct those two blocks. Nothing else should need touching.
+//
+// Setup:
+//   1. Get client_id, client_secret and SID from your Rakuten Advertising
+//      publisher account (Help > API Access).
+//   2. firebase functions:config:set rakuten.client_id="..." \
+//        rakuten.client_secret="..." rakuten.sid="..."
+//   3. firebase deploy --only functions:searchRakutenProducts
+//   4. Set MARKETPLACE_PROVIDER to 'rakuten' (or 'both') in affiliateNetwork.ts
+const RAKUTEN_ENDPOINTS = {
+    token: 'https://api.rakutenmarketing.com/token',
+    productSearch: 'https://api.rakutenmarketing.com/productsearch/1.0',
+};
+/** XML element names on each returned product. Correct these against a live response. */
+const RAKUTEN_FIELDS = {
+    itemPath: ['result', 'item'],
+    productName: 'productname',
+    merchantName: 'merchantname',
+    merchantId: 'mid',
+    sku: 'sku',
+    price: 'price',
+    salePrice: 'saleprice',
+    linkUrl: 'linkurl',
+    imageUrl: 'imageurl',
+    categoryPrimary: 'primary',
+    description: 'description',
+    upc: 'upccode',
+};
+function getRakutenConfig() {
+    const cfg = functions.config().rakuten;
+    if (!(cfg === null || cfg === void 0 ? void 0 : cfg.client_id) || !(cfg === null || cfg === void 0 ? void 0 : cfg.client_secret) || !(cfg === null || cfg === void 0 ? void 0 : cfg.sid))
+        return null;
+    return { clientId: cfg.client_id, clientSecret: cfg.client_secret, sid: cfg.sid };
+}
+/**
+ * Rakuten access tokens are valid for hours, so one is cached in module scope
+ * and reused across invocations that land on a warm instance. Re-authenticating
+ * on every search would add a round trip to every page of results.
+ */
+let rakutenToken = null;
+async function getRakutenToken(cfg) {
+    if (rakutenToken && Date.now() < rakutenToken.expiresAt - 60000) {
+        return rakutenToken.value;
+    }
+    const basic = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString('base64');
+    const response = await fetch(RAKUTEN_ENDPOINTS.token, {
+        method: 'POST',
+        headers: {
+            Authorization: `Basic ${basic}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `scope=${encodeURIComponent(cfg.sid)}`,
+    });
+    if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new functions.https.HttpsError('unauthenticated', `Rakuten token request failed (${response.status}). ${detail.slice(0, 200)}`);
+    }
+    const payload = await response.json();
+    const token = payload.access_token;
+    if (!token) {
+        throw new functions.https.HttpsError('internal', 'Rakuten token response contained no access_token.');
+    }
+    const ttlSeconds = Number(payload.expires_in) || 3600;
+    rakutenToken = { value: token, expiresAt: Date.now() + ttlSeconds * 1000 };
+    return token;
+}
+/** Rakuten prices arrive as either a bare value or `{ '#text': n, '@_currency': 'USD' }`. */
+function rakutenPrice(node) {
+    var _a;
+    if (node === undefined || node === null)
+        return { amount: null, currency: 'USD' };
+    if (typeof node === 'number')
+        return { amount: node, currency: 'USD' };
+    if (typeof node === 'string') {
+        const parsed = parseFloat(node);
+        return { amount: isNaN(parsed) ? null : parsed, currency: 'USD' };
+    }
+    const raw = (_a = node['#text']) !== null && _a !== void 0 ? _a : node.value;
+    const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw));
+    return {
+        amount: isNaN(parsed) ? null : parsed,
+        currency: String(node['@_currency'] || 'USD').toUpperCase(),
+    };
+}
+function textOf(node) {
+    var _a;
+    if (node === undefined || node === null)
+        return '';
+    if (typeof node === 'string' || typeof node === 'number')
+        return String(node);
+    return String((_a = node['#text']) !== null && _a !== void 0 ? _a : '');
+}
+exports.searchRakutenProducts = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    const cfg = getRakutenConfig();
+    if (!cfg) {
+        throw new functions.https.HttpsError('failed-precondition', 'Rakuten Advertising is not configured. Set rakuten.client_id, rakuten.client_secret and rakuten.sid via firebase functions:config:set.');
+    }
+    try {
+        const token = await getRakutenToken(cfg);
+        const params = new URLSearchParams({
+            // Rakuten is keyword-based, unlike Sovrn. Category is folded into the
+            // keyword when no explicit search term was given, so browsing a
+            // category still returns something relevant.
+            keyword: (data.query || data.subcategory || data.category || 'clothing').toString(),
+            max: String(Math.min(100, Math.max(1, data.pageSize || 24))),
+            pagenumber: String((data.page || 0) + 1), // Rakuten pages are 1-indexed
+        });
+        if (data.category)
+            params.set('cat', String(data.category));
+        if (typeof data.maxPrice === 'number')
+            params.set('maxprice', String(Math.ceil(data.maxPrice)));
+        if (typeof data.minPrice === 'number')
+            params.set('minprice', String(Math.floor(data.minPrice)));
+        const response = await fetch(`${RAKUTEN_ENDPOINTS.productSearch}?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/xml' },
+        });
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            // A 401 here usually means the cached token went stale early; clear it
+            // so the next call re-authenticates rather than failing repeatedly.
+            if (response.status === 401)
+                rakutenToken = null;
+            throw new functions.https.HttpsError('unavailable', `Rakuten returned ${response.status}. ${detail.slice(0, 200)}`);
+        }
+        const xml = await response.text();
+        const parser = new fast_xml_parser_1.XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
+        const parsed = parser.parse(xml);
+        let node = parsed;
+        for (const key of RAKUTEN_FIELDS.itemPath) {
+            node = node === null || node === void 0 ? void 0 : node[key];
+        }
+        // A single result parses to an object rather than an array.
+        const items = Array.isArray(node) ? node : node ? [node] : [];
+        if (items.length === 0) {
+            // Distinguish "no matches" from "we misread the response". If the
+            // payload clearly contained products but our path missed them, that is
+            // a mapping bug and must not look like an empty search.
+            if (/<item[\s>]/i.test(xml)) {
+                console.error('Rakuten XML contained items but itemPath missed them:', xml.slice(0, 600));
+                throw new functions.https.HttpsError('internal', 'Rakuten response shape did not match RAKUTEN_FIELDS.itemPath. Correct the mapping in searchRakutenProducts.');
+            }
+            return { products: [], hasMore: false, totalCount: 0 };
+        }
+        const products = items
+            .map(item => {
+            var _a;
+            const price = rakutenPrice(item[RAKUTEN_FIELDS.price]);
+            const sale = rakutenPrice(item[RAKUTEN_FIELDS.salePrice]);
+            const name = textOf(item[RAKUTEN_FIELDS.productName]);
+            const link = textOf(item[RAKUTEN_FIELDS.linkUrl]);
+            // Sale price of 0 means "not on sale" in this feed, not "free".
+            const effective = sale.amount && sale.amount > 0 ? sale.amount : price.amount;
+            if (!name || !link || effective === null)
+                return null;
+            const onSale = sale.amount !== null && sale.amount > 0 && price.amount !== null && price.amount > sale.amount;
+            return {
+                id: `rakuten-${textOf(item[RAKUTEN_FIELDS.merchantId])}-${textOf(item[RAKUTEN_FIELDS.sku])}`,
+                name,
+                // Rakuten gives a merchant, not a manufacturer brand. Using it as
+                // the retailer is accurate; using it as the brand would not be.
+                brand: '',
+                retailer: textOf(item[RAKUTEN_FIELDS.merchantName]),
+                category: data.category || 'tops',
+                price: effective,
+                originalPrice: onSale ? (_a = price.amount) !== null && _a !== void 0 ? _a : undefined : undefined,
+                currency: price.currency || 'USD',
+                imageUrl: textOf(item[RAKUTEN_FIELDS.imageUrl]),
+                // linkurl is already the tracking link, so it needs no further wrap.
+                sourceUrl: link,
+                inStock: true,
+            };
+        })
+            .filter((p) => p !== null);
+        console.log(`Rakuten returned ${items.length} items, ${products.length} usable`);
+        return {
+            products,
+            hasMore: items.length >= Math.min(100, data.pageSize || 24),
+            totalCount: null,
+        };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error calling Rakuten product search:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
