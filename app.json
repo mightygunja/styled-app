@@ -45,6 +45,13 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Styled needs access to your photos so you can add clothes to your closet and check items before you buy them.",
+          "cameraPermission": "Styled uses your camera to photograph clothes for your closet, receipts, and items you're considering in a store."
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.910996223766-6v0a0qq7saqc14grvnusgsr9fe99lodg"
