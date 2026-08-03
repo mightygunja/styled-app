@@ -67,21 +67,21 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const handleSubscribe = async (tier: 'premium' | 'pro') => {
+  /**
+   * This screen is no longer registered in AppNavigator - Styled is free and
+   * has no paid tiers. It is kept only so the file continues to type-check,
+   * matching how the other retired screens are handled.
+   *
+   * subscribeService.subscribe() now throws by design, so this surfaces an
+   * error rather than silently writing a fake paid tier if the screen is ever
+   * re-wired without being rewritten first.
+   */
+  const handleSubscribe = async (_tier: 'premium' | 'pro') => {
     try {
       setLoading(true);
-      showToast('Processing subscription...', 'info');
-
-      const subscription = await subscriptionService.subscribe(
-        getCurrentUserId(),
-        tier,
-        billingPeriod
-      );
+      const subscription = await subscriptionService.subscribe();
 
       setCurrentSubscription(subscription);
-      showToast(`Successfully subscribed to ${tier}!`, 'success');
-      
-      // Reload data
       await loadData();
     } catch (error) {
       console.error('Error subscribing:', error);

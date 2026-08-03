@@ -59,7 +59,6 @@ import TrendInsightsScreen from '../screens/TrendInsightsScreen';
 import ClosetOrganizationScreen from '../screens/ClosetOrganizationScreen';
 import SustainabilityScreen from '../screens/SustainabilityScreen';
 import CarbonCalculatorScreen from '../screens/CarbonCalculatorScreen';
-import SubscriptionScreen from '../screens/SubscriptionScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MoreScreen from '../screens/MoreScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
@@ -179,7 +178,6 @@ export default function AppNavigator() {
             <Stack.Screen name="ClosetOrganization" component={ClosetOrganizationScreen} />
             <Stack.Screen name="Sustainability" component={SustainabilityScreen} />
             <Stack.Screen name="CarbonCalculator" component={CarbonCalculatorScreen} />
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Recommendations" component={RecommendationsScreen} />
             <Stack.Screen name="StyleProfileBuilder" component={StyleProfileBuilderScreen} />

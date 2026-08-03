@@ -91,11 +91,29 @@ function ensureGoogleConfigured() {
   googleSigninConfigured = true;
 }
 
+/**
+ * Master switch for the Facebook button. Currently OFF.
+ *
+ * The Facebook app is still in Development mode, which means only accounts
+ * explicitly listed under App Roles can complete a login. App Store reviewers
+ * are not on that list, so shipping the button today guarantees they tap it,
+ * watch it fail, and reject the build for broken functionality.
+ *
+ * Turn this back on only once BOTH are done:
+ *   1. Business Verification has completed, and
+ *   2. App Review has granted Advanced Access for the `email` permission,
+ *      and the Facebook app is switched to Live mode.
+ *
+ * Nothing else needs changing - the sign-in path, account-collision handling
+ * and native config are all built and working behind this flag.
+ */
+const FACEBOOK_LOGIN_ENABLED = false;
+
 /** Whether Facebook sign-in can work in this build. Mirrors the condition in
  *  app.config.js that decides whether the native plugin is included at all. */
-const isFacebookConfigured = !!(
-  process.env.EXPO_PUBLIC_FACEBOOK_APP_ID && process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN
-);
+const isFacebookConfigured =
+  FACEBOOK_LOGIN_ENABLED &&
+  !!(process.env.EXPO_PUBLIC_FACEBOOK_APP_ID && process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN);
 
 /** Cryptographically random nonce for Sign in with Apple. */
 async function generateRawNonce(): Promise<string> {

@@ -147,13 +147,18 @@ export default function MySessionsScreen() {
 
                 {/* Actions */}
                 <View style={styles.sessionActions}>
+                  {/* No "Join Session" button until there is a real video
+                      provider behind it. Sessions are arranged here and run
+                      over whatever the stylist and client agree; offering an
+                      in-app call that opens a placeholder reads as broken
+                      functionality, which is a review rejection. Restore this
+                      once WebRTC/Twilio is wired into VideoCallScreen. */}
                   {session.status === 'confirmed' && (
-                    <TouchableOpacity
-                      style={styles.joinButton}
-                      onPress={() => handleJoinSession(session)}
-                    >
-                      <Text style={styles.joinButtonText}>Join Session</Text>
-                    </TouchableOpacity>
+                    <View style={styles.confirmedNote}>
+                      <Text style={styles.confirmedNoteText}>
+                        Your stylist will be in touch to confirm how you'll meet.
+                      </Text>
+                    </View>
                   )}
                   {(session.status === 'completed' || session.status === 'confirmed') && (
                     <TouchableOpacity
@@ -324,6 +329,17 @@ const styles = StyleSheet.create({
   sessionActions: {
     flexDirection: 'row',
     gap: 12,
+  },
+  confirmedNote: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    padding: 14,
+    borderRadius: 12,
+  },
+  confirmedNoteText: {
+    fontSize: 13,
+    color: '#4b5563',
+    lineHeight: 18,
   },
   joinButton: {
     flex: 1,

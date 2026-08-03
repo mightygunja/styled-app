@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1334,6 +1334,209 @@ exports.renderTryOn = functions
         console.error('Error rendering try-on:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
+});
+// ==================== CHALLENGE SEEDING ====================
+/**
+ * Seeds the styling challenges the Challenges screen reads.
+ *
+ * The feature is fully built - entries, voting, leaderboard - but nothing ever
+ * wrote the `challenges` collection, so it rendered an empty screen. An App
+ * Store reviewer opening a blank feature reads it as broken.
+ *
+ * Idempotent: existing challenges are left alone, so re-running is safe.
+ * Admin-invoked, not something the app calls.
+ */
+exports.seedChallenges = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    const now = new Date();
+    const daysFromNow = (days) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() + days);
+        return d.toISOString();
+    };
+    const challenges = [
+        {
+            id: 'challenge-one-piece-five-ways',
+            title: 'One piece, five ways',
+            description: 'Pick the hardest-working item in your closet and show five genuinely different outfits built around it. Bonus points if two of them are for completely different occasions.',
+            theme: 'Versatility',
+            prompt: 'Style a single piece five different ways.',
+            startsAt: daysFromNow(-3),
+            endsAt: daysFromNow(11),
+            status: 'active',
+        },
+        {
+            id: 'challenge-shop-your-closet',
+            title: 'Shop your own closet',
+            description: 'Build an outfit entirely from pieces you have not worn in the last three months. The ones you forgot you owned are usually the most interesting.',
+            theme: 'Rediscovery',
+            prompt: 'Only pieces unworn for 3+ months.',
+            startsAt: daysFromNow(-1),
+            endsAt: daysFromNow(13),
+            status: 'active',
+        },
+        {
+            id: 'challenge-neutral-palette',
+            title: 'Nothing but neutrals',
+            description: 'Cream, camel, charcoal, bone. Prove that a restricted palette is a discipline rather than a limitation - texture and silhouette have to do all the work.',
+            theme: 'Colour',
+            prompt: 'Neutrals only, no accent colours.',
+            startsAt: daysFromNow(2),
+            endsAt: daysFromNow(16),
+            status: 'upcoming',
+        },
+        {
+            id: 'challenge-under-thirty',
+            title: 'The £30 outfit',
+            description: 'An outfit where every piece cost under £30, or was secondhand. Show the cost-per-wear if you have it - the best answers here are usually the oldest pieces.',
+            theme: 'Value',
+            prompt: 'Every piece under £30 or secondhand.',
+            startsAt: daysFromNow(5),
+            endsAt: daysFromNow(19),
+            status: 'upcoming',
+        },
+    ];
+    let created = 0;
+    for (const challenge of challenges) {
+        const ref = db.collection('challenges').doc(challenge.id);
+        const existing = await ref.get();
+        if (existing.exists)
+            continue;
+        await ref.set(Object.assign(Object.assign({}, challenge), { entryCount: 0, participantCount: 0, createdAt: admin.firestore.Timestamp.now() }));
+        created++;
+    }
+    console.log(`Seeded ${created} challenges (${challenges.length - created} already existed)`);
+    return { success: true, created, skipped: challenges.length - created };
+});
+// ==================== ACCOUNT DELETION ====================
+/**
+ * Collections holding user-owned documents, keyed by the field that identifies
+ * the owner.
+ *
+ * Deliberately explicit rather than discovered at runtime: a wildcard sweep
+ * over every collection would be one rename away from deleting data it should
+ * not touch, and this is the one operation with no undo.
+ */
+const USER_OWNED_COLLECTIONS = [
+    { name: 'closetItems', field: 'userId' },
+    { name: 'outfits', field: 'userId' },
+    { name: 'plannedOutfits', field: 'userId' },
+    { name: 'packingLists', field: 'userId' },
+    { name: 'resaleValuations', field: 'userId' },
+    { name: 'wishlistItems', field: 'userId' },
+    { name: 'favoriteLooks', field: 'userId' },
+    { name: 'shoppingListItems', field: 'userId' },
+    { name: 'affiliateClicks', field: 'userId' },
+    { name: 'chatMessages', field: 'userId' },
+    { name: 'notifications', field: 'userId' },
+    { name: 'posts', field: 'userId' },
+    { name: 'postComments', field: 'userId' },
+    { name: 'postLikes', field: 'userId' },
+    { name: 'savedPosts', field: 'userId' },
+    { name: 'postCollections', field: 'userId' },
+    { name: 'userInteractions', field: 'userId' },
+    { name: 'groupMembers', field: 'userId' },
+    { name: 'eventAttendees', field: 'userId' },
+    { name: 'challengeEntries', field: 'userId' },
+    { name: 'challengeParticipants', field: 'userId' },
+    { name: 'challengeVotes', field: 'userId' },
+    { name: 'stylistBookings', field: 'userId' },
+    { name: 'sessionNotes', field: 'userId' },
+    { name: 'sessionPhotos', field: 'userId' },
+    { name: 'sessionDeliverables', field: 'userId' },
+    { name: 'sessionRecommendations', field: 'userId' },
+    { name: 'reviews', field: 'userId' },
+    { name: 'paymentMethods', field: 'userId' },
+    { name: 'pendingReceiptImports', field: 'userId' },
+    { name: 'styleEdits', field: 'userId' },
+    { name: 'closetShares', field: 'ownerId' },
+    { name: 'closetShares', field: 'viewerId' },
+];
+/** Documents whose id IS the uid. */
+const USER_KEYED_DOCS = [
+    'users',
+    'userProfiles',
+    'userSettings',
+    'subscriptions',
+    'notificationSettings',
+    'feedPreferences',
+    'stylistSchedules',
+    'userReceiptInbox',
+];
+async function deleteQueryBatch(collectionName, field, uid) {
+    let deleted = 0;
+    // Batched in pages so a user with thousands of closet items cannot exceed
+    // Firestore's 500-writes-per-batch limit or the function's memory.
+    for (;;) {
+        const snapshot = await db.collection(collectionName).where(field, '==', uid).limit(400).get();
+        if (snapshot.empty)
+            break;
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        deleted += snapshot.size;
+        if (snapshot.size < 400)
+            break;
+    }
+    return deleted;
+}
+/**
+ * Erases a user's data when their auth account is deleted.
+ *
+ * Runs as an auth trigger rather than from the client on purpose: deletion has
+ * to complete even if the app is closed the instant after the user taps
+ * confirm, and a client-side cascade would leave orphaned data behind on every
+ * interrupted run. It is also the difference between satisfying the letter of
+ * Apple's account-deletion requirement and actually honouring a GDPR/CCPA
+ * erasure request.
+ *
+ * Failures are logged per collection rather than aborting: one failed
+ * collection must not strand the remaining thirty.
+ */
+exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
+    const uid = user.uid;
+    console.log(`Erasing data for deleted user ${uid}`);
+    let totalDeleted = 0;
+    for (const { name, field } of USER_OWNED_COLLECTIONS) {
+        try {
+            const count = await deleteQueryBatch(name, field, uid);
+            totalDeleted += count;
+            if (count > 0)
+                console.log(`  ${name}.${field}: ${count}`);
+        }
+        catch (error) {
+            console.error(`  Failed clearing ${name}.${field}`, error);
+        }
+    }
+    for (const name of USER_KEYED_DOCS) {
+        try {
+            await db.collection(name).doc(uid).delete();
+        }
+        catch (error) {
+            console.error(`  Failed deleting ${name}/${uid}`, error);
+        }
+    }
+    // The inbox token is keyed by the token, not the uid, so it needs a lookup
+    // rather than a direct delete - otherwise a forwarded receipt could still
+    // resolve to a user who no longer exists.
+    try {
+        const tokens = await db.collection('receiptInboxTokens').where('userId', '==', uid).get();
+        await Promise.all(tokens.docs.map(d => d.ref.delete()));
+    }
+    catch (error) {
+        console.error('  Failed clearing receipt inbox tokens', error);
+    }
+    // Everything the user uploaded: closet photos, selfies, body shots, receipts,
+    // try-on renders. Storage is not covered by Firestore deletion.
+    try {
+        await admin.storage().bucket().deleteFiles({ prefix: `images/${uid}/` });
+        await admin.storage().bucket().deleteFiles({ prefix: `${uid}/` });
+    }
+    catch (error) {
+        console.error('  Failed clearing Storage files', error);
+    }
+    console.log(`Erased ${totalDeleted} documents for ${uid}`);
 });
 // ==================== E-RECEIPT FORWARDING ====================
 //

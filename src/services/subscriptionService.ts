@@ -228,13 +228,28 @@ class SubscriptionService {
   /**
    * Subscribe to a plan
    */
-  async subscribe(
+  /**
+   * Refuses, always.
+   *
+   * This used to wait 1.5 seconds and then write `status: 'active'` with a paid
+   * tier straight to Firestore, with no payment processor anywhere in the path
+   * - handing anyone who tapped Subscribe the top tier permanently, for
+   * nothing. Styled is now free by design, so there is no tier to sell and no
+   * correct behaviour here other than refusing.
+   *
+   * Kept rather than deleted because several unreachable legacy screens still
+   * reference it; throwing means any of them being re-wired fails loudly
+   * instead of quietly re-introducing a fake billing state.
+   */
+  async subscribe(): Promise<UserSubscription> {
+    throw new Error('Styled has no paid tiers. Every feature is free.');
+  }
+
+  private async legacySubscribe(
     userId: string,
     tier: SubscriptionTier,
     billingPeriod: BillingPeriod
   ): Promise<UserSubscription> {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     const plan = await this.getPlan(tier);
     if (!plan) {
       throw new Error('Plan not found');
@@ -402,40 +417,16 @@ class SubscriptionService {
   /**
    * Get billing history
    */
-  async getBillingHistory(userId: string): Promise<BillingHistory[]> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    const subscription = await this.getUserSubscription(userId);
-
-    if (subscription.tier === 'free') {
-      return [];
-    }
-
-    // Mock billing history
-    const history: BillingHistory[] = [];
-    const plan = await this.getPlan(subscription.tier);
-    
-    if (plan) {
-      const amount = subscription.billingPeriod === 'monthly' 
-        ? plan.price.monthly 
-        : plan.price.yearly;
-
-      for (let i = 0; i < 3; i++) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        
-        history.push({
-          id: `inv-${i}`,
-          date: date.toISOString(),
-          amount,
-          status: 'paid',
-          description: `${plan.name} - ${subscription.billingPeriod}`,
-          invoiceUrl: `https://styled.app/invoices/inv-${i}`,
-        });
-      }
-    }
-
-    return history;
+  /**
+   * Always empty. Styled charges nobody, so there is nothing to bill for.
+   *
+   * This previously synthesised three invoices marked `paid`, with invented
+   * invoice URLs, and rendered them to the user as a billing record. Fabricated
+   * financial documents are a consumer-protection problem before they are an
+   * App Store one.
+   */
+  async getBillingHistory(_userId: string): Promise<BillingHistory[]> {
+    return [];
   }
 
   /**

@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { subscriptionService, SubscriptionPlan, UserSubscription } from '../services/subscriptionService';
 import { affiliateClicksService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,20 +53,12 @@ export default function AccountScreen() {
       ]
     );
   };
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [marketplaceStats, setMarketplaceStats] = useState<{ clicks: number; estimatedCommission: number } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [sub, allPlans, clicks] = await Promise.all([
-        subscriptionService.getUserSubscription(getCurrentUserId()),
-        subscriptionService.getPlans(),
-        affiliateClicksService.getForUser(getCurrentUserId()),
-      ]);
-      setSubscription(sub);
-      setPlans(allPlans);
+      const clicks = await affiliateClicksService.getForUser(getCurrentUserId());
       setMarketplaceStats({
         clicks: clicks.length,
         estimatedCommission: clicks.reduce((sum, c) => sum + c.estimatedCommission, 0),
@@ -95,13 +86,6 @@ export default function AccountScreen() {
     );
   }
 
-  const currentPlan = plans.find(p => p.tier === subscription?.tier) || plans[0];
-  const nextPlan = subscription?.tier === 'free'
-    ? plans.find(p => p.tier === 'premium')
-    : subscription?.tier === 'premium'
-    ? plans.find(p => p.tier === 'pro')
-    : undefined;
-
   const memberSince = user?.metadata?.creationTime
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : undefined;
@@ -120,45 +104,20 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {currentPlan && (
-          <View style={styles.planCard}>
-            <View style={styles.planCardTop}>
-              <Text style={styles.planCardEyebrow}>STYLED {currentPlan.name.toUpperCase()}</Text>
-              <View style={styles.currentBadge}>
-                <Text style={styles.currentBadgeText}>CURRENT</Text>
-              </View>
-            </View>
-            <Text style={styles.planPrice}>
-              {currentPlan.price.monthly === 0 ? 'Free' : `$${currentPlan.price.monthly}`}
-              {currentPlan.price.monthly > 0 && <Text style={styles.planPriceUnit}>/month</Text>}
-            </Text>
-            <Text style={styles.planDescription}>{currentPlan.description}</Text>
-            {nextPlan && (
-              <Button
-                title={`Upgrade to ${nextPlan.name}`}
-                variant="outline"
-                onPress={() => navigation.navigate('Subscription')}
-                textStyle={{ color: colors.bone }}
-                style={styles.upgradeButton}
-              />
-            )}
+        {/* Styled is free. There is no paid tier, no upgrade path and nothing
+            to charge for - the business runs on affiliate revenue. This card
+            replaced a plan/upgrade panel that advertised $9 and $28 tiers,
+            granted them for $0, and rendered invented invoices. */}
+        <View style={styles.planCard}>
+          <View style={styles.planCardTop}>
+            <Text style={styles.planCardEyebrow}>STYLED</Text>
           </View>
-        )}
-
-        <Text style={styles.sectionLabel}>THE TIERS</Text>
-        <View style={styles.tiersCard}>
-          {plans.map((plan, i) => (
-            <View key={plan.id} style={[styles.tierRow, i === plans.length - 1 && styles.tierRowLast]}>
-              <View>
-                <Text style={styles.tierName}>
-                  {plan.name} <Text style={styles.tierPrice}>
-                    {plan.price.monthly === 0 ? '$0/mo' : `$${plan.price.monthly}/mo`}
-                  </Text>
-                </Text>
-              </View>
-              <Text style={styles.tierFeatures}>{plan.features.slice(0, 2).join(' · ')}</Text>
-            </View>
-          ))}
+          <Text style={styles.planPrice}>Free</Text>
+          <Text style={styles.planDescription}>
+            Every feature, with no subscription. When you buy something through Styled we may
+            earn a commission from the retailer — that's how it stays free, and it never
+            changes what we recommend.
+          </Text>
         </View>
 
         <Text style={styles.sectionLabel}>PREFERENCES</Text>
