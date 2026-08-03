@@ -149,7 +149,35 @@ export default function ShopScreen() {
         clearButtonMode="while-editing"
       />
 
-      <View style={styles.chipRow}>
+      {/* Category is primary navigation, so it sits directly under search and
+          keeps a row to itself. Refinements are secondary and share the row
+          below. Both scroll horizontally - chips are flexShrink: 0, so any
+          non-scrolling row silently clips once its contents outgrow the
+          screen, which is exactly what happened when a third filter landed in
+          what used to be a plain View. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryScroll}
+        contentContainerStyle={styles.categoryContent}
+      >
+        {CATEGORY_FILTERS.map(item => (
+          <Chip
+            key={item.value}
+            label={item.label}
+            active={category === item.value}
+            onPress={() => setCategory(item.value)}
+            style={styles.chipSpacing}
+          />
+        ))}
+      </ScrollView>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.refineScroll}
+        contentContainerStyle={styles.refineContent}
+      >
         <Chip
           label="Matched to you"
           active={matchedOnly}
@@ -168,37 +196,13 @@ export default function ShopScreen() {
           onPress={() => setOnSaleOnly(!onSaleOnly)}
           style={styles.chipSpacing}
         />
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipRow}
-        contentContainerStyle={styles.sortContent}
-      >
+        <View style={styles.refineDivider} />
         {SORT_OPTIONS.map(option => (
           <Chip
             key={option.value}
             label={option.label}
             active={sort === option.value}
             onPress={() => setSort(option.value)}
-            style={styles.chipSpacing}
-          />
-        ))}
-      </ScrollView>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={styles.categoryContent}
-      >
-        {CATEGORY_FILTERS.map(item => (
-          <Chip
-            key={item.value}
-            label={item.label}
-            active={category === item.value}
-            onPress={() => setCategory(item.value)}
             style={styles.chipSpacing}
           />
         ))}
@@ -237,11 +241,17 @@ export default function ShopScreen() {
                     <Text style={styles.saleBadgeText}>-{discountPercent(item.product)}%</Text>
                   </View>
                 )}
-                {item.matchScore >= MATCH_THRESHOLD && (
+                {/* The outfit count beats a generic MATCH badge: it says what
+                    the user gets rather than that an algorithm approved. */}
+                {item.unlock && item.unlock.newOutfits >= 2 ? (
+                  <View style={styles.unlockBadge}>
+                    <Text style={styles.unlockBadgeText}>+{item.unlock.newOutfits} OUTFITS</Text>
+                  </View>
+                ) : item.matchScore >= MATCH_THRESHOLD ? (
                   <View style={styles.matchBadge}>
                     <Text style={styles.matchBadgeText}>MATCH</Text>
                   </View>
-                )}
+                ) : null}
               </View>
               <Text style={styles.cardBrand}>{item.product.brand}</Text>
               <Text style={styles.cardName} numberOfLines={1}>{item.product.name}</Text>
@@ -251,8 +261,11 @@ export default function ShopScreen() {
                   <Text style={styles.cardOriginalPrice}>${item.product.originalPrice!.toFixed(0)}</Text>
                 )}
               </View>
-              {item.matchReasons[0] && (
-                <Text style={styles.matchReason} numberOfLines={1}>{item.matchReasons[0]}</Text>
+              {!!item.headline && (
+                <Text style={styles.matchReason} numberOfLines={2}>{item.headline}</Text>
+              )}
+              {item.concerns[0] && (
+                <Text style={styles.cardConcern} numberOfLines={1}>{item.concerns[0]}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -322,27 +335,42 @@ const styles = StyleSheet.create({
     borderColor: colors.hair,
     color: colors.ink,
   },
-  sortContent: {
-    paddingHorizontal: spacing.page,
-    paddingBottom: spacing.xs,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.page,
-    marginTop: 12,
-    height: 40,
-    alignItems: 'center',
-  },
+  // A ScrollView's own `style` carries only its box layout; anything that
+  // positions children (alignItems, justifyContent) belongs on
+  // contentContainerStyle or React Native throws an invariant violation.
+  //
+  // No fixed heights here on purpose. The previous version pinned these rows
+  // to 48px, which clips the moment a chip grows - larger accessibility text
+  // sizes being the obvious case. flexGrow/flexShrink 0 keeps the row from
+  // stealing space from the product grid while still sizing to its content.
   categoryScroll: {
     marginTop: 10,
-    height: 48,
     flexGrow: 0,
     flexShrink: 0,
   },
   categoryContent: {
     paddingHorizontal: spacing.page,
+    paddingVertical: 6,
     alignItems: 'center',
-    height: 48,
+  },
+  refineScroll: {
+    marginTop: 8,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  refineContent: {
+    paddingHorizontal: spacing.page,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  // Separates filters from sort options inside the shared refinement row, so
+  // two different kinds of control don't read as one undifferentiated list.
+  refineDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginVertical: 6,
+    marginRight: 8,
+    backgroundColor: colors.hair,
   },
   chipSpacing: {
     marginRight: 8,
@@ -391,6 +419,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     fontSize: 9,
     color: colors.bone,
+  },
+  unlockBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  unlockBadgeText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 9,
+    letterSpacing: 0.6,
+    color: colors.bone,
+  },
+  cardConcern: {
+    ...textType.meta,
+    fontSize: 10,
+    color: colors.tobacco,
+    marginTop: 2,
   },
   matchBadge: {
     position: 'absolute',

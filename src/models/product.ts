@@ -133,5 +133,23 @@ export function sortProducts(products: Product[], sort?: ProductSort): Product[]
 export interface MatchedProduct {
   product: Product;
   matchScore: number; // 0-100
-  matchReasons: string[]; // e.g. ["In your color season", "Fills a gap: you have 0 shoes"]
+  /** Flat list of reason text, ordered strongest first. Kept for older consumers. */
+  matchReasons: string[];
+  /** Typed signals with strength, so the UI can emphasise rather than just list. */
+  signals: Array<{
+    kind: 'unlock' | 'color' | 'fit' | 'style' | 'gap' | 'value' | 'versatility' | 'concern';
+    text: string;
+    strength: 'strong' | 'moderate' | 'minor';
+  }>;
+  /** The single most compelling line - what a card shows when space is tight. */
+  headline: string;
+  /** Honest reasons not to buy. Shown, not hidden. */
+  concerns: string[];
+  /** How much this would open up the wardrobe they already own. */
+  unlock: {
+    role: string;
+    pairsWith: number;
+    newOutfits: number;
+    bestPairings: Array<{ id: string; label: string }>;
+  } | null;
 }

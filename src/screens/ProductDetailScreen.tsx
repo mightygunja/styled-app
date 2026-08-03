@@ -209,11 +209,53 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {matchScore >= MATCH_THRESHOLD && (
+          {matched.unlock && matched.unlock.newOutfits > 0 && (
+            <View style={styles.unlockBox}>
+              <Text style={styles.unlockNumber}>
+                +{matched.unlock.newOutfits} {matched.unlock.newOutfits === 1 ? 'outfit' : 'outfits'}
+              </Text>
+              <Text style={styles.unlockSub}>
+                that you can't make today, from pieces already in your closet
+              </Text>
+              {matched.unlock.bestPairings.length > 0 && (
+                <Text style={styles.unlockPairs}>
+                  Pairs with your {matched.unlock.bestPairings.map(p => p.label).join(', ')}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {matched.signals.length > 0 && (
             <View style={styles.matchBox}>
-              <Text style={styles.matchBoxTitle}>Why this matches you</Text>
-              {matchReasons.map((reason, i) => (
-                <Text key={i} style={styles.matchReason}>· {reason}</Text>
+              <Text style={styles.matchBoxTitle}>Why this works for you</Text>
+              {matched.signals.map((signal, i) => (
+                <View key={i} style={styles.signalRow}>
+                  <View
+                    style={[
+                      styles.signalDot,
+                      signal.strength === 'strong' && styles.signalDotStrong,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.signalText,
+                      signal.strength === 'strong' && styles.signalTextStrong,
+                    ]}
+                  >
+                    {signal.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Shown deliberately. A recommender that only ever argues in favour
+              is advertising; naming the catch is what makes the rest credible. */}
+          {matched.concerns.length > 0 && (
+            <View style={styles.concernBox}>
+              <Text style={styles.concernTitle}>Worth knowing</Text>
+              {matched.concerns.map((concern, i) => (
+                <Text key={i} style={styles.concernText}>{concern}</Text>
               ))}
             </View>
           )}
@@ -347,6 +389,71 @@ const styles = StyleSheet.create({
   retailer: {
     ...textType.meta,
     marginTop: 4,
+  },
+  // The unlock is the headline argument, so it gets the only filled panel on
+  // the page rather than sharing the hairline-rule treatment of the reasons.
+  unlockBox: {
+    marginTop: spacing.section,
+    backgroundColor: colors.paper,
+    padding: spacing.lg,
+  },
+  unlockNumber: {
+    fontFamily: fonts.serif,
+    fontSize: 32,
+    color: colors.ink,
+  },
+  unlockSub: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    marginTop: 4,
+  },
+  unlockPairs: {
+    ...textType.meta,
+    fontSize: 12,
+    marginTop: 10,
+    textTransform: 'capitalize',
+  },
+  signalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  signalDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.inkFaint,
+    marginTop: 8,
+    marginRight: 10,
+  },
+  signalDotStrong: {
+    backgroundColor: colors.camel,
+  },
+  signalText: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    flex: 1,
+  },
+  signalTextStrong: {
+    color: colors.ink,
+  },
+  concernBox: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.sand,
+    padding: spacing.md,
+  },
+  concernTitle: {
+    ...textType.microLabel,
+    color: colors.tobacco,
+    marginBottom: 6,
+  },
+  concernText: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.ink,
+    marginBottom: 4,
   },
   matchBox: {
     marginTop: spacing.section,

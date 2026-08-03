@@ -13,6 +13,16 @@ export interface ProfileMatchContext {
   bodyMatchKeywords?: string[];
   styleArchetypes?: string[];
   avoidRules?: string[];
+  /**
+   * The named specifics below exist so a match can say *why* rather than
+   * merely *that*. "Sits in your True Autumn palette" is a reason someone can
+   * act on; "in your color season" is a label.
+   */
+  colorSeason?: string;
+  bodyTypeLabel?: string;
+  recommendedSilhouettes?: string[];
+  /** Per-category fit guidance, e.g. categoryGuidance.bottoms -> ["high-waisted", "wide-leg"]. */
+  categoryGuidance?: Record<string, string[]>;
 }
 
 export async function buildProfileMatchContext(userId: string): Promise<ProfileMatchContext | undefined> {
@@ -26,6 +36,12 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
       bodyMatchKeywords: bodyGuide?.matchKeywords,
       styleArchetypes: savedProfile.styleArchetypes,
       avoidRules: savedProfile.avoidRules,
+      colorSeason: savedProfile.colorAnalysis?.season,
+      bodyTypeLabel: bodyGuide?.label,
+      recommendedSilhouettes: savedProfile.bodyAnalysis?.recommendedSilhouettes,
+      categoryGuidance: savedProfile.bodyAnalysis?.categoryGuidance as
+        | Record<string, string[]>
+        | undefined,
     };
   } catch (error) {
     console.error('Error loading style profile context:', error);
