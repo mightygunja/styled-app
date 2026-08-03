@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -24,6 +24,7 @@ import {
   forecastCostPerWear,
   WearForecast,
 } from '../services/costPerWearForecast';
+import { shopperSignals } from '../services/shopperSignals';
 import { scoreProduct, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { wishlistService, affiliateClicksService } from '../services/firestore';
 import { closetAPI, getCurrentUserId } from '../services/api';
@@ -36,6 +37,7 @@ type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
 export default function ProductDetailScreen() {
   const route = useRoute<ProductDetailRouteProp>();
+  const navigation = useNavigation();
   const { productId } = route.params;
 
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,7 @@ export default function ProductDetailScreen() {
       } else {
         const id = await wishlistService.add(userId, product);
         setWishlistDocId(id);
+        shopperSignals.recordSave(product);
       }
     } catch (error) {
       console.error('Error updating wishlist:', error);
@@ -130,7 +133,10 @@ export default function ProductDetailScreen() {
       const userId = getCurrentUserId();
       const [wrappedUrl] = await Promise.all([
         getActiveAdapter().wrapLink(product),
+        // Two separate records on purpose: Firestore for revenue accounting,
+        // local signals for ranking. Different lifetimes, different costs.
         affiliateClicksService.record(userId, product),
+        shopperSignals.recordTap(product),
       ]);
       await Linking.openURL(wrappedUrl);
     } catch (error) {
@@ -268,6 +274,19 @@ export default function ProductDetailScreen() {
               </Text>
             </View>
           )}
+
+          {/* The only explicit negative signal in the app. Without it the
+              ranking only ever learns from approval, which biases it toward
+              whatever it already shows. */}
+          <TouchableOpacity
+            style={styles.dismissRow}
+            onPress={async () => {
+              await shopperSignals.recordDismiss(product);
+              navigation.goBack();
+            }}
+          >
+            <Text style={styles.dismissText}>Not for me — show me less like this</Text>
+          </TouchableOpacity>
 
           <Button
             title={opening ? 'Opening…' : `Shop at ${product.retailer}`}
@@ -438,6 +457,16 @@ const styles = StyleSheet.create({
   },
   signalTextStrong: {
     color: colors.ink,
+  },
+  dismissRow: {
+    marginTop: spacing.section,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dismissText: {
+    ...textType.meta,
+    fontSize: 12,
+    color: colors.inkFaint,
   },
   concernBox: {
     marginTop: spacing.lg,

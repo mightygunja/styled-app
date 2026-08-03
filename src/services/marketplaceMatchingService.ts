@@ -22,6 +22,72 @@ import { ProfileMatchContext } from './profileMatchContext';
 import { findCapsuleGaps } from './closetOrganizationService';
 import { computeOutfitUnlock, unlockHeadline, OutfitUnlock, colorsWork } from './outfitUnlock';
 import { forecastCostPerWear, spendProfile, budgetVerdict } from './costPerWearForecast';
+import { seasonalFit, currentSeason } from './seasonalFit';
+import { behaviouralAdjustment, ShopperSignals } from './shopperSignals';
+import { Season } from '../types';
+import { WeatherCondition } from './recommendationEngine';
+
+/**
+ * Everything that makes a ranking change over time rather than only when the
+ * user edits their closet. All optional - scoring degrades to the purely
+ * profile-based ranking when none of it is supplied.
+ */
+export interface MatchEnvironment {
+  season?: Season;
+  weather?: { condition: WeatherCondition; temperature: number };
+  signals?: ShopperSignals;
+}
+
+/**
+ * Signals that only a live retailer feed can provide.
+ *
+ * Every branch is guarded on the field being present, so this contributes
+ * nothing against the placeholder catalogue and starts influencing rankings
+ * the moment a real provider populates them - no rewiring at switchover.
+ */
+function inventorySignals(product: Product): MatchSignal[] {
+  const out: MatchSignal[] = [];
+
+  if (product.listedAt) {
+    const days = (Date.now() - new Date(product.listedAt).getTime()) / 86_400_000;
+    if (!isNaN(days) && days <= 14) {
+      out.push({ kind: 'value', text: 'Just landed', strength: 'moderate' });
+    }
+  }
+
+  if (typeof product.previousPrice === 'number' && product.previousPrice > product.price) {
+    const drop = Math.round((1 - product.price / product.previousPrice) * 100);
+    if (drop >= 5) {
+      out.push({
+        kind: 'value',
+        text: `Price dropped ${drop}% since you last looked`,
+        strength: 'strong',
+      });
+    }
+  }
+
+  // Scarcity only when the retailer actually reports it. Inventing urgency is
+  // the fastest way to lose the trust the rest of this file is built on.
+  if (product.stockLevel === 'low') {
+    out.push({ kind: 'value', text: 'Low stock at this retailer', strength: 'minor' });
+  }
+
+  // A rating is only meaningful with enough reviews behind it.
+  if (typeof product.rating === 'number' && (product.reviewCount ?? 0) >= 20 && product.rating >= 4.5) {
+    out.push({
+      kind: 'value',
+      text: `${product.rating.toFixed(1)}★ from ${product.reviewCount} buyers`,
+      strength: 'minor',
+    });
+  }
+
+  return out;
+}
+
+const INVENTORY_WEIGHTS: Record<string, number> = {
+  'Just landed': 8,
+  'Low stock at this retailer': 3,
+};
 
 // Score needed to count as "matched" (Shop's "Matched to you" filter + the MATCH badge).
 export const MATCH_THRESHOLD = 45;
@@ -68,7 +134,8 @@ function matchedSilhouette(haystack: string, guidance?: string[]): string | null
 export function scoreProduct(
   product: Product,
   profile: ProfileMatchContext | undefined,
-  closetItems: Item[]
+  closetItems: Item[],
+  env: MatchEnvironment = {}
 ): MatchedProduct {
   if (!product.inStock) {
     return {
@@ -267,9 +334,52 @@ export function scoreProduct(
     });
   }
 
+  // ---- Seasonality: the slow clock that makes rankings move on their own ----
+  const season = seasonalFit(product, env.season ?? currentSeason(), env.weather);
+  score += season.weight;
+  if (season.reason) {
+    signals.push({
+      kind: 'versatility',
+      text: season.reason,
+      strength: season.weight >= 18 ? 'strong' : 'moderate',
+    });
+  } else if (season.outOfSeason) {
+    concerns.push('Out of season right now');
+  }
+
+  // ---- Live inventory: silent today, active the moment a real feed lands ----
+  const inventory = inventorySignals(product);
+  inventory.forEach(signal => {
+    score += INVENTORY_WEIGHTS[signal.text] ?? (signal.strength === 'strong' ? 10 : 4);
+    signals.push(signal);
+  });
+
+  // ---- Behaviour: novelty decay + what they've actually engaged with ----
+  let suppressed = false;
+  if (env.signals) {
+    const behaviour = behaviouralAdjustment(product, env.signals);
+    score += behaviour.weight;
+    suppressed = behaviour.suppressed;
+    if (behaviour.reason) {
+      signals.push({ kind: 'style', text: behaviour.reason, strength: 'moderate' });
+    }
+  }
+
   const ordered = [...signals].sort(
     (a, b) => STRENGTH_ORDER[a.strength] - STRENGTH_ORDER[b.strength]
   );
+
+  if (suppressed) {
+    return {
+      product,
+      matchScore: 0,
+      matchReasons: ['You dismissed this'],
+      signals: [],
+      headline: 'You dismissed this',
+      concerns: [],
+      unlock,
+    };
+  }
 
   return {
     product,
@@ -286,10 +396,14 @@ export function scoreProduct(
 export function scoreAndRankProducts(
   products: Product[],
   profile: ProfileMatchContext | undefined,
-  closetItems: Item[]
+  closetItems: Item[],
+  env: MatchEnvironment = {}
 ): MatchedProduct[] {
   return products
-    .map(p => scoreProduct(p, profile, closetItems))
+    .map(p => scoreProduct(p, profile, closetItems, env))
+    // Dismissed products drop out entirely rather than sitting at the bottom.
+    // Someone who said no should not have to scroll past it again.
+    .filter(p => p.headline !== 'You dismissed this')
     .sort((a, b) => b.matchScore - a.matchScore);
 }
 

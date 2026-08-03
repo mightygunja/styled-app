@@ -23,6 +23,8 @@ import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMa
 import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
+import { shopperSignals } from '../services/shopperSignals';
+import { getCurrentWeather } from '../services/weatherService';
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
   { value: 'match', label: 'Best match' },
@@ -61,7 +63,7 @@ export default function ShopScreen() {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      const [searchResult, profile, closetResponse] = await Promise.all([
+      const [searchResult, profile, closetResponse, signals, weather] = await Promise.all([
         getActiveAdapter().search({
           query: query.trim() || undefined,
           category: category === 'all' ? undefined : category,
@@ -72,6 +74,10 @@ export default function ShopScreen() {
         }),
         buildProfileMatchContext(userId),
         closetAPI.getItems(userId),
+        shopperSignals.load(),
+        // Weather sharpens seasonality but must never block the page - a failed
+        // lookup just means the calendar season carries the signal alone.
+        getCurrentWeather().catch(() => undefined),
       ]);
       const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
         id: item.id,
@@ -89,7 +95,14 @@ export default function ShopScreen() {
         seasons: item.seasons,
         style: item.style,
       }));
-      const ranked = scoreAndRankProducts(searchResult.products, profile, closetItems);
+      const ranked = scoreAndRankProducts(searchResult.products, profile, closetItems, {
+        signals,
+        weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
+      });
+
+      // Only the first screenful counts as seen. Recording the whole result set
+      // would decay products the user never actually scrolled to.
+      shopperSignals.recordImpressions(ranked.slice(0, 12).map(r => r.product.id));
       setProducts(ranked);
     } catch (error) {
       console.error('Error loading marketplace products:', error);

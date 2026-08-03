@@ -25,6 +25,23 @@ export interface Product {
   inStock: boolean;
   rating?: number; // 0-5, when the network provides it
   condition?: 'new' | 'secondhand'; // defaults to 'new'; secondhand folds the old standalone marketplace into Shop as a filter
+
+  // ---- Live-inventory fields ----
+  // Every one of these is optional and every scorer that reads them no-ops
+  // when absent, so the mock catalogue behaves correctly today and a real
+  // affiliate feed starts influencing rankings the moment it populates them.
+  // Nothing needs rewiring at switchover.
+
+  /** Seasons the item genuinely suits. Inferred from the garment when absent. */
+  seasons?: string[];
+  /** When the retailer listed it. Drives the new-arrival signal. */
+  listedAt?: string;
+  /** Price before a recent drop, when the network reports one. */
+  previousPrice?: number;
+  /** Rough stock depth, for a scarcity nudge. Never fabricated locally. */
+  stockLevel?: 'low' | 'medium' | 'high';
+  /** Number of reviews behind `rating`, so a 5.0 from one person isn't trusted. */
+  reviewCount?: number;
 }
 
 export function isOnSale(product: Product): boolean {
