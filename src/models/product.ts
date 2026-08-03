@@ -81,6 +81,15 @@ export interface ProductSearchFilters {
   /** Zero-indexed. Providers that page by cursor map this internally. */
   page?: number;
   pageSize?: number;
+
+  /**
+   * Style context passed through to providers that take a natural-language
+   * brief rather than keywords (Sovrn's recommendation endpoint being the
+   * case in point). Ignored by providers that only do keyword search, so it is
+   * always safe to send.
+   */
+  styleArchetypes?: string[];
+  silhouettes?: string[];
 }
 
 export interface ProductSearchResult {

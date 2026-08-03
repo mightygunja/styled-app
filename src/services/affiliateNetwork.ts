@@ -110,9 +110,10 @@ class SovrnCommerceAdapter implements AffiliateNetworkAdapter {
     const data = result.data as any;
     const products = (data.products || []) as Product[];
 
-    // Re-filter and re-sort locally. Sovrn does not expose every filter this
-    // app offers, and silently returning unfiltered results would be worse
-    // than a slightly smaller page.
+    // Re-filter and re-sort locally. Sovrn's endpoint honours price range and
+    // little else, and it returns no brand, colour or size at all - so filters
+    // on those fields have to be applied here or they would silently do
+    // nothing.
     const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
 
     return {
@@ -122,16 +123,18 @@ class SovrnCommerceAdapter implements AffiliateNetworkAdapter {
     };
   }
 
-  async getById(productId: string): Promise<Product | null> {
-    const result = await searchMarketplaceProductsFn({ productId });
-    const products = (result.data as any).products as Product[];
-    return products?.[0] || null;
+  /**
+   * Sovrn documents no fetch-by-id endpoint - their recommendation API only
+   * answers with a fresh set for a given brief. Returning null here is honest;
+   * ResilientAdapter serves detail views from the index it builds out of search
+   * results, which is what makes Product Detail keep working.
+   */
+  async getById(): Promise<Product | null> {
+    return null;
   }
 
-  async getByIds(productIds: string[]): Promise<Product[]> {
-    if (productIds.length === 0) return [];
-    const result = await searchMarketplaceProductsFn({ productIds });
-    return ((result.data as any).products || []) as Product[];
+  async getByIds(): Promise<Product[]> {
+    return [];
   }
 
   async wrapLink(product: Product): Promise<string> {
@@ -155,7 +158,28 @@ class SovrnCommerceAdapter implements AffiliateNetworkAdapter {
 class ResilientAdapter implements AffiliateNetworkAdapter {
   private cache = new Map<string, { at: number; result: ProductSearchResult }>();
 
+  /**
+   * Every product ever returned by a search, kept by id.
+   *
+   * This exists because recommendation-style providers (Sovrn) have no
+   * fetch-by-id endpoint - they answer briefs, not lookups. Without this index
+   * a user could tap a product in Shop and land on an empty detail screen.
+   * Indexing on the way past costs nothing and makes detail views work for
+   * every provider, whether or not it supports lookups.
+   */
+  private productIndex = new Map<string, Product>();
+
   constructor(private inner: AffiliateNetworkAdapter) {}
+
+  private index(products: Product[]) {
+    products.forEach(p => this.productIndex.set(p.id, p));
+    // Bound the index so a long browsing session cannot grow it without limit.
+    if (this.productIndex.size > 1000) {
+      const excess = this.productIndex.size - 1000;
+      const keys = Array.from(this.productIndex.keys()).slice(0, excess);
+      keys.forEach(k => this.productIndex.delete(k));
+    }
+  }
 
   private key(filters: ProductSearchFilters): string {
     return JSON.stringify(filters, Object.keys(filters).sort());
@@ -169,6 +193,7 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
     try {
       const result = await this.inner.search(filters);
       this.cache.set(key, { at: Date.now(), result });
+      this.index(result.products);
       return result;
     } catch (error) {
       console.error('Product search failed', error);
@@ -181,20 +206,25 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
 
   async getById(productId: string): Promise<Product | null> {
     try {
-      return await this.inner.getById(productId);
+      const direct = await this.inner.getById(productId);
+      if (direct) return direct;
     } catch (error) {
       console.error('Product lookup failed', error);
-      return null;
     }
+    // Falls back to whatever a search has already surfaced this session.
+    return this.productIndex.get(productId) || null;
   }
 
   async getByIds(productIds: string[]): Promise<Product[]> {
     try {
-      return await this.inner.getByIds(productIds);
+      const direct = await this.inner.getByIds(productIds);
+      if (direct.length > 0) return direct;
     } catch (error) {
       console.error('Batch product lookup failed', error);
-      return [];
     }
+    return productIds
+      .map(id => this.productIndex.get(id))
+      .filter((p): p is Product => p !== undefined);
   }
 
   async wrapLink(product: Product): Promise<string> {

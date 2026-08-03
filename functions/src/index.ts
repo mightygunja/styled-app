@@ -983,8 +983,109 @@ export const seedStylists = functions
 
 function getSovrnConfig(): { key: string; pubId: string } | null {
   const cfg = functions.config().sovrn;
-  if (!cfg?.key || !cfg?.pubid) return null;
-  return { key: cfg.key, pubId: cfg.pubid };
+  // pubid is optional: Sovrn's link format authenticates on `key` alone. It is
+  // still read so an existing config keeps working and so a publisher id can be
+  // threaded through as `cuid` for attribution if you want it later.
+  if (!cfg?.key) return null;
+  return { key: cfg.key, pubId: cfg.pubid || '' };
+}
+
+const SOVRN_PRODUCTS_URL =
+  'https://shopping-gallery.prd-commerce.sovrnservices.com/ai-orchestration/products';
+
+/** Shape Sovrn's Product Recommendation endpoint documents for each product. */
+interface SovrnProduct {
+  id: number;
+  name: string;
+  imageURL?: string;
+  thumbnailURL?: string;
+  currency?: string;
+  salePrice?: number;
+  retailPrice?: number;
+  discountRate?: number;
+  inStock?: boolean;
+  affiliatable?: boolean;
+  deepLink?: string;
+}
+
+/**
+ * Sovrn's endpoint is content-based, not keyword-based: it takes the text of
+ * what the user is looking at and returns products relevant to it. There is no
+ * `query` parameter to pass a search box into.
+ *
+ * That is a better fit here than it first appears. Styled always knows more
+ * than a search term - the category being browsed, the user's colour season,
+ * their archetypes - so this composes a natural-language brief from all of it.
+ * A keyword API would have thrown that context away.
+ */
+function buildRecommendationContent(data: any): string {
+  const parts: string[] = [];
+
+  if (data.query) parts.push(data.query);
+  if (data.category) parts.push(`Category: ${data.category}.`);
+  if (data.subcategory) parts.push(`Specifically ${data.subcategory}.`);
+  if (Array.isArray(data.colors) && data.colors.length) {
+    parts.push(`Colours that suit them: ${data.colors.join(', ')}.`);
+  }
+  if (Array.isArray(data.styleArchetypes) && data.styleArchetypes.length) {
+    parts.push(`Their style reads ${data.styleArchetypes.join(' and ')}.`);
+  }
+  if (Array.isArray(data.silhouettes) && data.silhouettes.length) {
+    parts.push(`Cuts that work for them: ${data.silhouettes.join(', ')}.`);
+  }
+  if (data.condition === 'secondhand') parts.push('Prefer secondhand or resale listings.');
+  if (data.onSaleOnly) parts.push('Prefer items currently on sale.');
+
+  const content = parts.join(' ').trim();
+  // Never send an empty brief - the endpoint requires content, and a blank
+  // string would return arbitrary products presented as recommendations.
+  return content || 'Everyday wardrobe staples in versatile neutral colours.';
+}
+
+/** Sovrn's `priceRange` uses "min-max" with `*` for an open end. */
+function buildPriceRange(minPrice?: number, maxPrice?: number): string | undefined {
+  if (typeof minPrice !== 'number' && typeof maxPrice !== 'number') return undefined;
+  const min = typeof minPrice === 'number' ? String(Math.floor(minPrice)) : '*';
+  const max = typeof maxPrice === 'number' ? String(Math.ceil(maxPrice)) : '*';
+  return `${min}-${max}`;
+}
+
+/**
+ * Maps a Sovrn product onto the client's Product model.
+ *
+ * Sovrn does not return brand, retailer, colour, category or sizes. Those are
+ * left undefined rather than guessed - the client's scorer already treats a
+ * missing field as "no signal" and skips that dimension, which is correct.
+ * Inventing a brand by splitting the product name would produce confident
+ * nonsense in the match reasons, which is the one place it would do real harm.
+ *
+ * `category` is carried over from the request because the caller asked for it,
+ * so it is known rather than inferred.
+ */
+function mapSovrnProduct(raw: SovrnProduct, requestedCategory?: string) {
+  const price = typeof raw.salePrice === 'number' ? raw.salePrice : raw.retailPrice;
+  if (typeof price !== 'number' || !raw.name) return null;
+
+  const onSale =
+    typeof raw.retailPrice === 'number' &&
+    typeof raw.salePrice === 'number' &&
+    raw.retailPrice > raw.salePrice;
+
+  return {
+    id: String(raw.id),
+    name: raw.name,
+    brand: '',
+    retailer: '',
+    category: requestedCategory || 'tops',
+    price,
+    originalPrice: onSale ? raw.retailPrice : undefined,
+    currency: raw.currency ? raw.currency.toUpperCase() : 'USD',
+    imageUrl: raw.imageURL || raw.thumbnailURL || '',
+    // deepLink is already affiliate-wrapped by Sovrn, so no second wrap is
+    // needed for these. wrapAffiliateLink stays for links from anywhere else.
+    sourceUrl: raw.deepLink || '',
+    inStock: raw.inStock !== false,
+  };
 }
 
 export const searchMarketplaceProducts = functions
@@ -997,10 +1098,79 @@ export const searchMarketplaceProducts = functions
         'Sovrn Commerce is not configured yet. Set sovrn.key and sovrn.pubid via firebase functions:config:set, then implement the product search call in searchMarketplaceProducts.'
       );
     }
-    // TODO: call Sovrn's Product Search API with `data.query`/`data.category`/
-    // `data.maxPrice`/`data.onSaleOnly`, map the response into Product[]
-    // (see src/models/product.ts on the client for the exact shape expected).
-    throw new functions.https.HttpsError('unimplemented', 'Sovrn product search not yet implemented.');
+    try {
+      const params = new URLSearchParams({
+        apiKey: sovrn.key,
+        // Sovrn keys recommendations to a page identity. There is no web page
+        // here, so a stable per-surface identifier is sent instead - enough for
+        // their side to group requests without inventing a fake URL.
+        pageUrl: `styled-app://shop/${data.category || 'all'}`,
+        numProducts: String(Math.min(50, Math.max(1, data.pageSize || 24))),
+      });
+
+      const priceRange = buildPriceRange(data.minPrice, data.maxPrice);
+      if (priceRange) params.set('priceRange', priceRange);
+      if (data.market) params.set('market', data.market);
+      if (data.cuid) params.set('cuid', data.cuid);
+
+      const response = await fetch(`${SOVRN_PRODUCTS_URL}?${params.toString()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: buildRecommendationContent(data),
+          ...(data.title ? { title: data.title } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        console.error('Sovrn product request failed', response.status, detail.slice(0, 400));
+        throw new functions.https.HttpsError(
+          'unavailable',
+          `Sovrn returned ${response.status}. ${detail.slice(0, 200)}`
+        );
+      }
+
+      const payload = await response.json();
+
+      // The docs describe a bare array, but tolerate the common wrapper shapes
+      // rather than silently returning nothing if their envelope differs.
+      const rawProducts: SovrnProduct[] = Array.isArray(payload)
+        ? payload
+        : payload?.products || payload?.data || payload?.results;
+
+      if (!Array.isArray(rawProducts)) {
+        // Fail loudly. A silent empty result here would look exactly like "no
+        // matches" and could sit unnoticed for weeks.
+        console.error('Unexpected Sovrn response shape:', JSON.stringify(payload).slice(0, 500));
+        throw new functions.https.HttpsError(
+          'internal',
+          'Sovrn returned an unexpected response shape. Check the mapping in searchMarketplaceProducts.'
+        );
+      }
+
+      const products = rawProducts
+        .map(p => mapSovrnProduct(p, data.category))
+        .filter((p): p is NonNullable<typeof p> => p !== null)
+        // Anything Sovrn cannot monetise is dropped: it would earn nothing and
+        // its link may not resolve.
+        .filter(p => !!p.sourceUrl);
+
+      console.log(`Sovrn returned ${rawProducts.length} products, ${products.length} usable`);
+
+      return {
+        products,
+        // The endpoint caps at 50 and exposes no cursor, so there is no further
+        // page to offer. Claiming otherwise would produce an infinite scroll
+        // that never loads anything.
+        hasMore: false,
+        totalCount: products.length,
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error calling Sovrn product recommendations:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
   });
 
 export const wrapAffiliateLink = functions
@@ -1013,13 +1183,22 @@ export const wrapAffiliateLink = functions
         'Sovrn Commerce is not configured yet. Set sovrn.key and sovrn.pubid via firebase functions:config:set, then implement the link-wrapping call in wrapAffiliateLink.'
       );
     }
-    const { sourceUrl } = data;
+    const { sourceUrl, cuid } = data;
     if (!sourceUrl) {
       throw new functions.https.HttpsError('invalid-argument', 'sourceUrl is required');
     }
-    // TODO: call Sovrn's link-wrapping endpoint with sourceUrl + pubId/key,
-    // return the resulting monetized redirect URL as { wrappedUrl }.
-    throw new functions.https.HttpsError('unimplemented', 'Sovrn link wrapping not yet implemented.');
+
+    // Sovrn link wrapping is URL construction, not an API call - there is no
+    // round trip to make. Building it here rather than on the client keeps the
+    // Commerce key server-side, which is the whole reason this function exists.
+    const params = new URLSearchParams({
+      key: sovrn.key,
+      u: sourceUrl,
+    });
+    if (cuid) params.set('cuid', String(cuid).slice(0, 2048));
+
+    // URLSearchParams percent-encodes `u` for us, which the format requires.
+    return { wrappedUrl: `https://sovrn.co?${params.toString()}` };
   });
 
 // ==================== IMAGE GENERATION HELPERS ====================

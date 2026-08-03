@@ -63,16 +63,24 @@ export default function ShopScreen() {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      const [searchResult, profile, closetResponse, signals, weather] = await Promise.all([
+      // Profile is fetched first so its colours and archetypes can be sent as
+      // part of the search brief. Providers that take a natural-language brief
+      // (Sovrn) use it to return better candidates; keyword providers ignore
+      // the extra fields harmlessly.
+      const profile = await buildProfileMatchContext(userId);
+
+      const [searchResult, closetResponse, signals, weather] = await Promise.all([
         getActiveAdapter().search({
           query: query.trim() || undefined,
           category: category === 'all' ? undefined : category,
           condition: secondhandOnly ? 'secondhand' : undefined,
           onSaleOnly: onSaleOnly || undefined,
+          colors: profile?.recommendedColors?.slice(0, 6),
+          styleArchetypes: profile?.styleArchetypes,
+          silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
           sort,
           pageSize: 60,
         }),
-        buildProfileMatchContext(userId),
         closetAPI.getItems(userId),
         shopperSignals.load(),
         // Weather sharpens seasonality but must never block the page - a failed
