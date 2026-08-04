@@ -120,24 +120,21 @@ export default function CreatePostScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>New Post</Text>
-        <TouchableOpacity onPress={handlePost} disabled={posting}>
-          {posting ? (
-            <ActivityIndicator color={colors.ink} />
-          ) : (
-            <Text style={styles.postButton}>Post</Text>
-          )}
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* BackButton is the cancel affordance. The header previously carried a
+          second one labelled "Cancel" alongside it. */}
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
       <ScrollView style={styles.content}>
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>COMMUNITY</Text>
+          <Text style={styles.title}>Share a look</Text>
+          <Text style={styles.subtitle}>
+            Post an outfit, a closet edit or a tip. Anyone can see a public post.
+          </Text>
+        </View>
         {/* Post Type */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Post Type</Text>
@@ -212,17 +209,28 @@ export default function CreatePostScreen() {
 
         {/* Tips */}
         <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>Posting Tips</Text>
-          <Text style={styles.tipText}>• Use clear, well-lit photos</Text>
-          <Text style={styles.tipText}>• Write engaging captions</Text>
-          <Text style={styles.tipText}>• Add relevant hashtags</Text>
-          <Text style={styles.tipText}>• Tag items from your closet</Text>
+          <Text style={styles.tipsTitle}>WHAT WORKS</Text>
+          <Text style={styles.tipText}>Clear, well-lit photos in front of a plain wall.</Text>
+          <Text style={styles.tipText}>Say what the pieces are and where they came from.</Text>
+          <Text style={styles.tipText}>Tag items from your closet so people can see the detail.</Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.postButton, posting && styles.postButtonDisabled]}
+          onPress={handlePost}
+          disabled={posting}
+        >
+          {posting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.postButtonText}>Post</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Post created! "
+        message="Posted"
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -242,42 +250,67 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
-  cancelButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+  intro: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
   },
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.inkMuted,
+    marginTop: 12,
+  },
   postButton: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 60,
+    backgroundColor: colors.ink,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  postButtonDisabled: {
+    backgroundColor: colors.hair,
+  },
+  postButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.white,
   },
   content: {
     flex: 1,
   },
   section: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.paper,
+    borderBottomColor: colors.hair,
   },
   sectionTitle: {
-    fontSize: 14,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
     marginBottom: 12,
   },
   typeButtons: {
@@ -298,17 +331,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     borderColor: colors.ink,
   },
-  typeIcon: {
-    fontSize: 16,
-  },
   typeLabel: {
+    fontFamily: fonts.sans,
     fontSize: 14,
-    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   typeLabelActive: {
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
   },
   imagesContainer: {
     flexDirection: 'row',
@@ -318,21 +348,21 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     backgroundColor: colors.paper,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.hair,
-    borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addImageIcon: {
-    fontSize: 32,
-    color: colors.inkMuted,
+    fontFamily: fonts.sans,
+    fontSize: 28,
+    color: colors.inkFaint,
     marginBottom: 4,
   },
   addImageText: {
+    fontFamily: fonts.sansMedium,
     fontSize: 12,
     color: colors.inkMuted,
-    fontFamily: fonts.sansMedium,
   },
   imagePreview: {
     width: 120,
@@ -356,13 +386,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeIcon: {
+    fontFamily: fonts.sansMedium,
     fontSize: 12,
-    color: '#ffffff',
-    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   captionInput: {
-    backgroundColor: colors.paper,
-    padding: 16,
+    backgroundColor: colors.card,
+    padding: 14,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     borderWidth: 1,
@@ -371,40 +402,44 @@ const styles = StyleSheet.create({
   },
   characterCount: {
     textAlign: 'right',
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
     marginTop: 8,
   },
   hashtagInput: {
-    backgroundColor: colors.paper,
-    padding: 16,
+    backgroundColor: colors.card,
+    padding: 14,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     borderWidth: 1,
     borderColor: colors.hair,
   },
   hashtagHint: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
     marginTop: 8,
   },
   tipsSection: {
-    margin: 20,
-    padding: 16,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: colors.sand,
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: colors.paper,
   },
   tipsTitle: {
-    fontSize: 14,
     fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
     color: colors.tobacco,
     marginBottom: 12,
   },
   tipText: {
-    fontSize: 13,
-    color: '#78350f',
-    marginBottom: 6,
-    lineHeight: 18,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.inkMuted,
+    marginBottom: 8,
+    lineHeight: 20,
   },
 });

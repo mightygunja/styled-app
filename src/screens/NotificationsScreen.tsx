@@ -141,19 +141,33 @@ export default function NotificationsScreen() {
     return date.toLocaleDateString();
   };
 
-  const getNotificationIcon = (type: string) => {
+  // The type is named in words rather than glyphs. The icon map this replaces
+  // returned an empty string for eight of its ten cases, so most notifications
+  // rendered an invisible element where a badge was meant to be.
+  const notificationKind = (type: string) => {
     switch (type) {
-      case 'like': return '●';
-      case 'comment': return '';
-      case 'follow': return '';
-      case 'mention': return '@';
-      case 'message': return '';
-      case 'post_share': return '';
-      case 'stylist_booking': return '';
-      case 'session_reminder': return '';
-      case 'challenge_invite': return '';
-      case 'group_invite': return '';
-      default: return '';
+      case 'like':
+        return 'LIKE';
+      case 'comment':
+        return 'COMMENT';
+      case 'follow':
+        return 'FOLLOW';
+      case 'mention':
+        return 'MENTION';
+      case 'message':
+        return 'MESSAGE';
+      case 'post_share':
+        return 'SHARE';
+      case 'stylist_booking':
+        return 'BOOKING';
+      case 'session_reminder':
+        return 'REMINDER';
+      case 'challenge_invite':
+        return 'CHALLENGE';
+      case 'group_invite':
+        return 'GROUP';
+      default:
+        return null;
     }
   };
 
@@ -169,14 +183,16 @@ export default function NotificationsScreen() {
         ) : (
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarInitial}>
-              {notification.actor?.displayName.charAt(0) || 'U'}
+              {notification.actor?.displayName?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
         )}
 
         <View style={styles.notificationText}>
+          {!!notificationKind(notification.type) && (
+            <Text style={styles.kindBadge}>{notificationKind(notification.type)}</Text>
+          )}
           <View style={styles.notificationHeader}>
-            <Text style={styles.iconBadge}>{getNotificationIcon(notification.type)}</Text>
             <Text style={styles.title}>{notification.title}</Text>
           </View>
           <Text style={styles.message} numberOfLines={2}>
@@ -211,34 +227,37 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadCount >0 && (
-            <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{unreadCount}</Text>
-            </View>
-          )}
-        </View>
-        {unreadCount >0 && (
-          <TouchableOpacity onPress={handleMarkAllRead}>
-            <Text style={styles.markAllButton}>Mark all read</Text>
-          </TouchableOpacity>
-        )}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
       <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>ACTIVITY</Text>
+          <Text style={styles.screenTitle}>Notifications</Text>
+          <Text style={styles.subtitle}>
+            {unreadCount > 0
+              ? `${unreadCount} unread`
+              : 'Everything that has happened on your account.'}
+          </Text>
+          {unreadCount > 0 && (
+            <TouchableOpacity style={styles.markAllButton} onPress={handleMarkAllRead}>
+              <Text style={styles.markAllButtonText}>Mark all read</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {notifications.length === 0 ? (
           <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>You'll see updates about your activity here
+            <Text style={styles.emptyText}>Nothing yet</Text>
+            <Text style={styles.emptySubtext}>
+              Likes, comments, follows and booking updates land here.
             </Text>
           </View>
         ) : (
@@ -259,54 +278,65 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  content: {
+    paddingBottom: 60,
   },
-  headerTitle: {
-    fontSize: 24,
+  intro: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  eyebrow: {
     fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
+  },
+  screenTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
   },
-  headerBadge: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  headerBadgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.inkMuted,
+    marginTop: 12,
   },
   markAllButton: {
-    fontSize: 14,
+    alignSelf: 'flex-start',
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  markAllButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
     color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
   },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.paper,
+    borderBottomColor: colors.hair,
     gap: 12,
   },
   unreadCard: {
@@ -327,14 +357,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    fontFamily: fonts.serif,
+    fontSize: 19,
+    color: colors.tobacco,
   },
   notificationText: {
     flex: 1,
@@ -345,21 +375,27 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 4,
   },
-  iconBadge: {
-    fontSize: 16,
+  kindBadge: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginBottom: 4,
   },
   title: {
+    fontFamily: fonts.sansMedium,
     fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   message: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 4,
   },
   time: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
   },
@@ -373,26 +409,25 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   deleteIcon: {
-    fontSize: 16,
+    fontFamily: fonts.sans,
+    fontSize: 15,
     color: colors.inkFaint,
   },
   emptyState: {
-    padding: 60,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    backgroundColor: colors.paper,
+    padding: 20,
   },
   emptyText: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
-    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.inkMuted,
-    textAlign: 'center',
+    marginTop: 8,
   },
 });

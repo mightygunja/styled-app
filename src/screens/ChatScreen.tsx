@@ -157,37 +157,41 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      <KeyboardAvoidingView 
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
+      </View>
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.headerUser}
-            onPress={() =>otherUser && navigation.navigate('UserProfile', { userId: otherUser.userId })}
-          >
-            {otherUser?.profileImageUrl ? (
-              <Image source={{ uri: otherUser.profileImageUrl }} style={styles.headerAvatar} />
-            ) : (
-              <View style={styles.headerAvatarPlaceholder}>
-                <Text style={styles.headerInitial}>
-                  {otherUser?.displayName.charAt(0) || 'U'}
-                </Text>
-              </View>
-            )}
+        {/* One back affordance only. This screen previously had both a
+            <BackButton /> and a second "Back" control in its own header. */}
+        <TouchableOpacity
+          style={styles.header}
+          activeOpacity={0.85}
+          onPress={() =>
+            otherUser && navigation.navigate('UserProfile', { userId: otherUser.userId })
+          }
+        >
+          {otherUser?.profileImageUrl ? (
+            <Image source={{ uri: otherUser.profileImageUrl }} style={styles.headerAvatar} />
+          ) : (
+            <View style={styles.headerAvatarPlaceholder}>
+              <Text style={styles.headerInitial}>
+                {otherUser?.displayName?.charAt(0)?.toUpperCase() || 'U'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.headerText}>
             <Text style={styles.headerName}>{otherUser?.displayName || 'User'}</Text>
-          </TouchableOpacity>
-          
-          <View style={{ width: 50 }} />
-        </View>
+            {!!otherUser?.username && (
+              <Text style={styles.headerMeta}>@{otherUser.username}</Text>
+            )}
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
 
         {/* Messages */}
         <ScrollView
@@ -198,8 +202,9 @@ export default function ChatScreen() {
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>Start the conversation!</Text>
-              <Text style={styles.emptySubtext}>Send a message to {otherUser?.displayName}
+              <Text style={styles.emptyText}>No messages yet</Text>
+              <Text style={styles.emptySubtext}>
+                Say something to {otherUser?.displayName || 'them'}.
               </Text>
             </View>
           ) : (
@@ -211,7 +216,8 @@ export default function ChatScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Type a message..."
+            placeholder="Type a message…"
+            placeholderTextColor={colors.inkFaint}
             value={messageText}
             onChangeText={setMessageText}
             multiline
@@ -223,7 +229,7 @@ export default function ChatScreen() {
             disabled={!messageText.trim() || sending}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#ffffff" />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               // Was a paper-plane emoji, which was this button's only content.
               // A word is unambiguous and matches how every other action in the
@@ -247,53 +253,62 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
-  },
-  headerUser: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.paper,
   },
   headerAvatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.ink,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerInitial: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    color: colors.tobacco,
+  },
+  headerText: {
+    flex: 1,
+    marginLeft: 12,
   },
   headerName: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
     color: colors.ink,
+  },
+  headerMeta: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkMuted,
+    marginTop: 2,
+  },
+  chevron: {
+    fontSize: 20,
+    color: colors.inkFaint,
   },
   messagesContainer: {
     flex: 1,
@@ -307,9 +322,10 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   timeText: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
@@ -322,8 +338,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   messageBubble: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
+    backgroundColor: colors.card,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     maxWidth: '75%',
     borderWidth: 1,
@@ -334,58 +350,62 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   messageText: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   ownMessageText: {
-    color: '#ffffff',
+    color: colors.white,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: 20,
+    marginTop: 40,
   },
   emptyText: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.ink,
-    marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.inkMuted,
+    marginTop: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: colors.hair,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
     gap: 12,
   },
   input: {
     flex: 1,
-    backgroundColor: colors.paper,
-    paddingHorizontal: 16,
+    backgroundColor: colors.card,
+    paddingHorizontal: 14,
     paddingVertical: 10,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     maxHeight: 100,
     borderWidth: 1,
     borderColor: colors.hair,
   },
+  // A square button, not a 44px circle - "Send" at the old fontSize of 20 did
+  // not fit inside it.
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     backgroundColor: colors.ink,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minWidth: 72,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -393,6 +413,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.hair,
   },
   sendIcon: {
-    fontSize: 20,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.white,
   },
 });

@@ -143,27 +143,32 @@ export default function MessagesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
-        {unreadCount >0 && (
-          <View style={styles.headerBadge}>
-            <Text style={styles.headerBadgeText}>{unreadCount}</Text>
-          </View>
-        )}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
       <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>DIRECT</Text>
+          <Text style={styles.title}>Messages</Text>
+          <Text style={styles.subtitle}>
+            {unreadCount > 0
+              ? `${unreadCount} unread`
+              : 'Conversations with stylists and people you follow.'}
+          </Text>
+        </View>
+
         {conversations.length === 0 ? (
           <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubtext}>Start a conversation by messaging someone from their profile
+            <Text style={styles.emptyText}>No messages yet</Text>
+            <Text style={styles.emptySubtext}>
+              Open someone's profile and choose Message to start a conversation.
             </Text>
           </View>
         ) : (
@@ -177,43 +182,50 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  content: {
+    paddingBottom: 60,
+  },
+  intro: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
   },
-  headerBadge: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  headerBadgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.inkMuted,
+    marginTop: 12,
   },
   conversationCard: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.paper,
+    borderBottomColor: colors.hair,
     gap: 12,
   },
   avatar: {
@@ -226,14 +238,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.tobacco,
   },
   conversationContent: {
     flex: 1,
@@ -246,11 +258,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userName: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
     color: colors.ink,
   },
   time: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
   },
@@ -261,11 +274,12 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
   unreadMessage: {
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
   },
   unreadBadge: {
@@ -276,27 +290,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unreadCount: {
-    color: '#ffffff',
+    fontFamily: fonts.sansMedium,
     fontSize: 11,
-    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   emptyState: {
-    padding: 60,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    backgroundColor: colors.paper,
+    padding: 20,
   },
   emptyText: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
-    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.inkMuted,
-    textAlign: 'center',
+    marginTop: 8,
   },
 });

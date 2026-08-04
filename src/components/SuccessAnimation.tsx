@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { scale } from '../utils/animations';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -131,36 +132,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(28, 28, 28, 0.55)',
     zIndex: 10000,
   },
+  // The circle stays round - it reads as a mark of completion rather than a
+  // container, which is the one place a radius is right in this system.
   circle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#10b981',
+    width: 116,
+    height: 116,
+    borderRadius: 58,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
   },
   checkmarkContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkmark: {
-    fontSize: 64,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontFamily: fonts.sans,
+    fontSize: 52,
+    color: colors.bone,
   },
   message: {
     marginTop: 24,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.bone,
     textAlign: 'center',
   },
 });

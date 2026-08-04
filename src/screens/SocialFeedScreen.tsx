@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import BackButton from '../components/BackButton';
 import { socialFeedService, Post } from '../services/socialFeedService';
 import { userProfileService, FollowSuggestion } from '../services/userProfileService';
 import { exploreService } from '../services/exploreService';
@@ -157,7 +158,7 @@ export default function SocialFeedScreen() {
         ) : (
           <View style={styles.userAvatarPlaceholder}>
             <Text style={styles.userInitial}>
-              {post.user?.displayName.charAt(0) || 'U'}
+              {post.user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
         )}
@@ -197,34 +198,36 @@ export default function SocialFeedScreen() {
         </View>
       )}
 
-      {/* Post Actions */}
+      {/* Every control carries a word. The icon-only version left Comment,
+          Share and Save rendering as a bare number or nothing at all after the
+          emoji sweep removed their only child. */}
       <View style={styles.postActions}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(post.id)}>
+          <Text style={[styles.actionLabel, post.isLiked && styles.actionLabelActive]}>
+            {post.isLiked ? 'Liked' : 'Like'}
+          </Text>
+          <Text style={styles.actionCount}>{post.likes}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() =>handleLike(post.id)}
+          onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
         >
-          <Text style={styles.actionIcon}>{post.isLiked ? '●' : '○'}</Text>
-          <Text style={styles.actionText}>{post.likes}</Text>
+          <Text style={styles.actionLabel}>Comment</Text>
+          <Text style={styles.actionCount}>{post.comments}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
-        >
-                    <Text style={styles.actionText}>{post.comments}</Text>
+
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleShare(post)}>
+          <Text style={styles.actionLabel}>Share</Text>
+          <Text style={styles.actionCount}>{post.shares}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionButton} onPress={() =>handleShare(post)}>
-                    <Text style={styles.actionText}>{post.shares}</Text>
-        </TouchableOpacity>
-        
+
         <View style={{ flex: 1 }} />
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() =>handleSave(post.id)}
-        >
-          <Text style={styles.actionIcon}>{post.isSaved ? '' : ''}</Text>
+
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleSave(post.id)}>
+          <Text style={[styles.actionLabel, post.isSaved && styles.actionLabelActive]}>
+            {post.isSaved ? 'Saved' : 'Save'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -269,20 +272,29 @@ export default function SocialFeedScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>The feed</Text>
-        <TouchableOpacity onPress={() =>navigation.navigate('CreatePost')}>
-          <Text style={styles.createButton}>+ New Post</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
       <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>COMMUNITY</Text>
+          <Text style={styles.title}>The feed</Text>
+          <Text style={styles.subtitle}>Looks from the people you follow, newest first.</Text>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => navigation.navigate('CreatePost')}
+          >
+            <Text style={styles.createButtonText}>Share a look</Text>
+          </TouchableOpacity>
+        </View>
+
         {posts.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>Your feed is quiet</Text>
@@ -365,72 +377,103 @@ export default function SocialFeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  content: {
+    paddingBottom: 60,
+  },
+  intro: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
   },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 26,
+    fontSize: 34,
     color: colors.ink,
+  },
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.inkMuted,
+    marginTop: 12,
   },
   createButton: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    alignSelf: 'flex-start',
+    marginTop: 20,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
+  createButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.white,
+  },
+  // A hairline rule between posts rather than an 8px slab of paper. The
+  // separation should read as editorial, not as a gap in the page.
   postCard: {
-    marginBottom: 20,
-    borderBottomWidth: 8,
-    borderBottomColor: colors.paper,
+    marginBottom: 28,
+    paddingBottom: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
   userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.paper,
   },
   userAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.ink,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   userInitial: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    fontFamily: fonts.serif,
+    fontSize: 18,
+    color: colors.tobacco,
   },
   userInfo: {
     flex: 1,
     marginLeft: 12,
   },
   userName: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
     color: colors.ink,
   },
   postTime: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
+    marginTop: 2,
   },
   typeBadge: {
     backgroundColor: colors.sand,
@@ -453,43 +496,51 @@ const styles = StyleSheet.create({
   imageIndicator: {
     position: 'absolute',
     top: width - 40,
-    right: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    right: 20,
+    backgroundColor: 'rgba(28, 28, 28, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   imageCount: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    color: colors.white,
   },
   postActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    gap: 20,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  actionIcon: {
-    fontSize: 20,
+  actionLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.inkMuted,
   },
-  actionText: {
-    fontSize: 14,
+  actionLabelActive: {
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
+  actionCount: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.inkFaint,
+  },
   postCaption: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 14,
   },
   captionText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.ink,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   captionUser: {
     fontFamily: fonts.sansSemiBold,
@@ -497,18 +548,20 @@ const styles = StyleSheet.create({
   hashtagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 4,
+    marginTop: 8,
+    gap: 10,
   },
   hashtag: {
+    fontFamily: fonts.sansMedium,
     fontSize: 14,
     color: colors.tobacco,
-    fontFamily: fonts.sansMedium,
   },
   viewComments: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   viewCommentsText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },

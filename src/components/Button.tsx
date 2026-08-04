@@ -111,8 +111,10 @@ const styles = StyleSheet.create({
   },
   // Text styles
   text: {
+    // No fontWeight alongside a custom family - React Native cannot select a
+    // real weight from it and synthesises or falls back to the system font.
+    // The weight lives in the family name.
     fontFamily: fonts.sansSemiBold,
-    fontWeight: '600',
     letterSpacing: 1.8,
   },
   primaryText: {

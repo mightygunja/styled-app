@@ -170,11 +170,17 @@ export default function GroupsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Groups & Events</Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
+      </View>
+
+      <View style={styles.intro}>
+        <Text style={styles.eyebrow}>COMMUNITY</Text>
+        <Text style={styles.title}>Groups & events</Text>
+        <Text style={styles.subtitle}>
+          Places to talk style with people who dress like you — and things to turn up to.
+        </Text>
       </View>
 
       {/* Tabs */}
@@ -212,8 +218,10 @@ export default function GroupsScreen() {
           <>
             {allGroups.length === 0 ? (
               <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No groups yet</Text>
-                <Text style={styles.emptySubtext}>Check back soon!</Text>
+                <Text style={styles.emptyText}>No groups yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Groups appear here as the community grows.
+                </Text>
               </View>
             ) : (
               allGroups.map(renderGroup)
@@ -225,8 +233,10 @@ export default function GroupsScreen() {
           <>
             {myGroups.length === 0 ? (
               <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>You haven't joined any groups</Text>
-                <Text style={styles.emptySubtext}>Discover groups to connect with others!</Text>
+                <Text style={styles.emptyText}>You haven't joined any groups</Text>
+                <Text style={styles.emptySubtext}>
+                  Anything you join from Discover shows up here.
+                </Text>
               </View>
             ) : (
               myGroups.map(renderGroup)
@@ -238,8 +248,10 @@ export default function GroupsScreen() {
           <>
             {upcomingEvents.length === 0 ? (
               <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No upcoming events</Text>
-                <Text style={styles.emptySubtext}>Check back soon for new events!</Text>
+                <Text style={styles.emptyText}>No upcoming events</Text>
+                <Text style={styles.emptySubtext}>
+                  Events run by groups you can join will be listed here.
+                </Text>
               </View>
             ) : (
               upcomingEvents.map(renderEvent)
@@ -261,22 +273,40 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  intro: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
+  },
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.inkMuted,
+    marginTop: 12,
   },
   tabs: {
     flexDirection: 'row',
@@ -285,34 +315,31 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   activeTab: {
-    borderBottomWidth: 2,
+    borderBottomWidth: 1,
     borderBottomColor: colors.ink,
   },
   tabText: {
-    fontSize: 15,
-    fontFamily: fonts.sansMedium,
+    fontFamily: fonts.sans,
+    fontSize: 14,
     color: colors.inkMuted,
   },
   activeTabText: {
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
   },
+  // Square, hairline-bordered, no drop shadow. The 16px radius and elevation
+  // belonged to a different design language than the rest of the app.
   groupCard: {
-    margin: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.card,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.hair,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   groupImage: {
     width: '100%',
@@ -330,17 +357,21 @@ const styles = StyleSheet.create({
   },
   groupName: {
     flex: 1,
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.ink,
   },
   privacyBadge: {
     marginLeft: 8,
   },
   privacyText: {
-    fontSize: 16,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    color: colors.inkFaint,
   },
   groupDescription: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -367,25 +398,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  statIcon: {
-    fontSize: 16,
-  },
   statText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
   eventCard: {
-    margin: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.card,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.hair,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   eventImage: {
     width: '100%',
@@ -403,22 +427,27 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     flex: 1,
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.ink,
   },
+  // The palette carries no semantic green. Sand and tobacco are how every
+  // other badge in the app marks a distinction.
   virtualBadge: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginLeft: 8,
   },
   virtualText: {
-    fontSize: 11,
     fontFamily: fonts.sansSemiBold,
-    color: '#166534',
+    fontSize: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
   },
   eventDescription: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -433,11 +462,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  eventInfoIcon: {
-    fontSize: 14,
-  },
   eventInfoText: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -447,39 +474,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.paper,
+    borderTopColor: colors.hair,
   },
   attendeesText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
   rsvpButton: {
     backgroundColor: colors.ink,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
   rsvpButtonText: {
-    color: '#ffffff',
+    fontFamily: fonts.sansMedium,
     fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   emptyState: {
-    padding: 60,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.paper,
+    padding: 20,
   },
   emptyText: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
-    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.inkMuted,
-    textAlign: 'center',
+    marginTop: 8,
   },
 });
