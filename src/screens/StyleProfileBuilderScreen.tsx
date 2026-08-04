@@ -19,7 +19,7 @@ import { styleProfileService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds } from '../theme/designSystem';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -535,17 +535,17 @@ export default function StyleProfileBuilderScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <BackButton onPress={handleBack} />
-        <Text style={styles.headerTitle}>Build Your Style Profile</Text>
-        <View style={{ width: 40 }} />
       </View>
 
+      {/* Step count reads first, then the rule - an eyebrow above a hairline,
+          rather than a rounded progress pill with a caption under it. */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
-        </View>
         <Text style={styles.progressText}>
           Step {currentStepIndex + 1} of {steps.length}
         </Text>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -564,7 +564,7 @@ export default function StyleProfileBuilderScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator size="small" color="#F1ECE7" />
+              <ActivityIndicator size="small" color={ds.bone} />
             ) : (
               <Text style={styles.saveButtonText}>Save Profile</Text>
             )}
@@ -587,7 +587,7 @@ export default function StyleProfileBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ds.paper,
+    backgroundColor: ds.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -597,294 +597,337 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: ds.hair,
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: ds.ink,
+    // Retired in favour of each step carrying its own serif heading - a fixed
+    // title above a changing one just competed with it.
+    display: 'none',
   },
+
+  // Progress reads as an eyebrow and a hairline rule rather than a rounded
+  // pill, matching how progress is expressed elsewhere in the app.
   progressContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 4,
+  },
+  progressText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: ds.tobacco,
+    marginBottom: 10,
   },
   progressBar: {
-    height: 6,
+    height: 1,
     backgroundColor: ds.hair,
-    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
-    height: '100%',
+    height: 1,
     backgroundColor: ds.ink,
   },
-  progressText: {
-    fontSize: 12,
-    color: ds.inkMuted,
-    marginTop: 8,
-    textAlign: 'center',
-  },
+
   content: {
     flex: 1,
   },
   stepContainer: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 40,
   },
   stepTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontFamily: fonts.serif,
+    fontSize: 30,
+    lineHeight: 36,
     color: ds.ink,
-    marginBottom: 8,
   },
   stepSubtitle: {
-    fontSize: 16,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 22,
     color: ds.inkMuted,
-    marginBottom: 24,
+    marginTop: 12,
+    marginBottom: 32,
   },
+
+  // ---- Lifestyle sliders ----
   sliderContainer: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   sliderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'baseline',
+    marginBottom: 10,
   },
   sliderLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
     color: ds.ink,
   },
   sliderValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: ds.ink,
+    fontFamily: fonts.serif,
+    fontSize: 20,
+    color: ds.camel,
   },
   sliderTrack: {
-    height: 8,
+    height: 2,
     backgroundColor: ds.hair,
-    borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 8,
   },
   sliderFill: {
-    height: '100%',
+    height: 2,
     backgroundColor: ds.ink,
   },
   sliderButtons: {
     flexDirection: 'row',
     gap: 8,
+    marginTop: 12,
   },
   sliderButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: ds.hair,
+    backgroundColor: ds.card,
   },
   sliderButtonText: {
-    fontSize: 24,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
     color: ds.ink,
+    lineHeight: 18,
   },
+
+  // ---- Archetypes ----
   archetypeGrid: {
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   archetypeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    width: '47.5%',
     padding: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: ds.hair,
+    backgroundColor: ds.card,
   },
   archetypeCardSelected: {
+    backgroundColor: ds.ink,
     borderColor: ds.ink,
-    backgroundColor: '#F8F6F3',
   },
   archetypeName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.serif,
+    fontSize: 17,
     color: ds.ink,
-    marginBottom: 4,
   },
   archetypeNameSelected: {
-    color: ds.ink,
+    color: ds.bone,
   },
   archetypeDescription: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 17,
     color: ds.inkMuted,
+    marginTop: 6,
   },
   archetypeDescriptionSelected: {
-    color: ds.ink,
+    color: 'rgba(253, 251, 250, 0.7)',
   },
+
+  // ---- Colours ----
   colorSection: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   colorSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: ds.ink,
-    marginBottom: 4,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: ds.tobacco,
+    marginBottom: 6,
   },
   colorSectionSubtitle: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
     color: ds.inkMuted,
     marginBottom: 12,
   },
   colorInputContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
   },
   colorInput: {
     flex: 1,
-    height: 48,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    fontFamily: fonts.sans,
+    fontSize: 15,
     color: ds.ink,
+    backgroundColor: ds.card,
     borderWidth: 1,
     borderColor: ds.hair,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   addButton: {
-    height: 48,
-    paddingHorizontal: 24,
-    backgroundColor: ds.ink,
-    borderRadius: 8,
-    alignItems: 'center',
+    paddingHorizontal: 20,
     justifyContent: 'center',
+    backgroundColor: ds.ink,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: ds.bone,
   },
   colorTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginTop: 14,
   },
   colorTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: ds.ink,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingLeft: 16,
-    paddingRight: 12,
     gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: ds.paper,
+    borderWidth: 1,
+    borderColor: ds.hair,
   },
   avoidTag: {
-    backgroundColor: '#C62828',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: ds.sand,
+    borderWidth: 1,
+    borderColor: ds.hair,
   },
   colorTagText: {
-    fontSize: 14,
-    color: '#F1ECE7',
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: ds.ink,
     textTransform: 'capitalize',
   },
   colorTagRemove: {
-    fontSize: 20,
-    color: '#F1ECE7',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: ds.inkFaint,
   },
+
+  // ---- Fit ----
   fitLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: ds.ink,
-    marginTop: 16,
-    marginBottom: 4,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: ds.tobacco,
+    marginTop: 20,
+    marginBottom: 8,
   },
   fitHint: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
     color: ds.inkMuted,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   skipText: {
-    fontSize: 14,
-    color: ds.inkMuted,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: ds.inkFaint,
     textAlign: 'center',
     marginTop: 24,
-    fontStyle: 'italic',
   },
+
+  // ---- Guidance ----
   guidanceOption: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
-    borderWidth: 2,
+    padding: 18,
+    borderWidth: 1,
     borderColor: ds.hair,
+    backgroundColor: ds.card,
+    marginBottom: 10,
   },
   guidanceOptionSelected: {
+    backgroundColor: ds.ink,
     borderColor: ds.ink,
-    backgroundColor: '#F8F6F3',
   },
   guidanceTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.serif,
+    fontSize: 19,
     color: ds.ink,
-    marginBottom: 4,
   },
   guidanceTitleSelected: {
-    color: ds.ink,
+    color: ds.bone,
   },
   guidanceDescription: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
     color: ds.inkMuted,
+    marginTop: 6,
   },
+
+  // ---- Review ----
   reviewSection: {
-    marginBottom: 20,
-    paddingBottom: 20,
+    marginBottom: 22,
+    paddingBottom: 18,
     borderBottomWidth: 1,
     borderBottomColor: ds.hair,
   },
   reviewLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: ds.ink,
-    marginBottom: 8,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: ds.tobacco,
+    marginBottom: 6,
   },
   reviewText: {
-    fontSize: 14,
-    color: ds.inkMuted,
-    marginBottom: 4,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 22,
+    color: ds.ink,
+    textTransform: 'capitalize',
   },
+
+  // ---- Footer ----
   footer: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: ds.hair,
-    backgroundColor: ds.paper,
+    backgroundColor: ds.bone,
   },
   nextButton: {
-    height: 56,
     backgroundColor: ds.ink,
-    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   nextButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: ds.bone,
   },
   saveButton: {
-    height: 56,
     backgroundColor: ds.ink,
-    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   saveButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   saveButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: ds.bone,
   },
 });
