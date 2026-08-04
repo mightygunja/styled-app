@@ -17,6 +17,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -103,18 +104,18 @@ export default function StyleAnalysisScreen() {
 
   const getPriorityColor = (priority: string): string => {
     const colorMap: { [key: string]: string } = {
-      high: '#ef4444',
-      medium: '#f59e0b',
-      low: '#10b981',
+      high: colors.ink,
+      medium: colors.camel,
+      low: colors.camel,
     };
-    return colorMap[priority] || '#64748b';
+    return colorMap[priority] || colors.inkMuted;
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Analyzing your style...</Text>
         </View>
       </SafeAreaView>
@@ -222,7 +223,7 @@ export default function StyleAnalysisScreen() {
                   <View 
                     style={[
                       styles.colorSwatch, 
-                      { backgroundColor: color.color === 'white' ? '#f1f5f9' : color.color }
+                      { backgroundColor: color.color === 'white' ? colors.paper : color.color }
                     ]} 
                   >
                     {color.color === 'white' && (
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -394,16 +395,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   reanalyzeButton: {
     fontSize: 20,
@@ -414,16 +415,16 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   overviewCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 16,
     padding: 20,
   },
@@ -437,12 +438,12 @@ const styles = StyleSheet.create({
   overviewNumber: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
     marginBottom: 4,
   },
   overviewLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   styleCard: {
     backgroundColor: '#ffffff',
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   styleHeader: {
     flexDirection: 'row',
@@ -469,38 +470,38 @@ const styles = StyleSheet.create({
   styleName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   styleCount: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginTop: 2,
   },
   stylePercentage: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#94a3b8',
+    backgroundColor: colors.inkFaint,
     borderRadius: 4,
   },
   progressFillPrimary: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   colorCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorHeader: {
     marginBottom: 16,
@@ -508,12 +509,12 @@ const styles = StyleSheet.create({
   colorSeasonTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   colorSeasonSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -540,27 +541,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   colorPercentage: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   colorFamilies: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.paper,
   },
   colorFamiliesTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   familyRow: {
@@ -571,25 +572,25 @@ const styles = StyleSheet.create({
   },
   familyName: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
     width: 80,
   },
   familyBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 3,
     overflow: 'hidden',
   },
   familyFill: {
     height: '100%',
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 3,
   },
   familyPercentage: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     width: 40,
     textAlign: 'right',
   },
@@ -598,7 +599,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   brandRow: {
     flexDirection: 'row',
@@ -606,7 +607,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   brandInfo: {
     flex: 1,
@@ -614,24 +615,24 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   brandStats: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   brandPercentage: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   categoryCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -645,29 +646,29 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   categoryCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   categoryBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 4,
     overflow: 'hidden',
   },
   categoryFill: {
     height: '100%',
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 4,
   },
   categoryPercentage: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     width: 40,
     textAlign: 'right',
   },
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderLeftWidth: 4,
   },
   insightHeader: {
@@ -693,12 +694,12 @@ const styles = StyleSheet.create({
   insightTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   insightDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   insightAction: {
@@ -707,29 +708,29 @@ const styles = StyleSheet.create({
   insightActionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   statsCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   statLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   statValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
 });

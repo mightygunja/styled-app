@@ -23,6 +23,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -85,20 +86,20 @@ export default function CarbonCalculatorScreen() {
 
   const getDifficultyColor = (difficulty: string): string => {
     const colors = {
-      easy: '#10b981',
-      medium: '#f59e0b',
-      hard: '#ef4444',
+      easy: ds.camel,
+      medium: ds.camel,
+      hard: ds.ink,
     };
-    return colors[difficulty as keyof typeof colors] || '#64748b';
+    return colors[difficulty as keyof typeof colors] || ds.inkMuted;
   };
 
   const getImpactColor = (impact: string): string => {
     const colors = {
-      low: '#94a3b8',
-      medium: '#f59e0b',
-      high: '#10b981',
+      low: ds.inkFaint,
+      medium: ds.camel,
+      high: ds.camel,
     };
-    return colors[impact as keyof typeof colors] || '#64748b';
+    return colors[impact as keyof typeof colors] || ds.inkMuted;
   };
 
   const getTrendIcon = (trend: string): string => {
@@ -114,7 +115,7 @@ export default function CarbonCalculatorScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10b981" />
+          <ActivityIndicator size="large" color={ds.camel} />
           <Text style={styles.loadingText}>Calculating carbon footprint...</Text>
         </View>
       </SafeAreaView>
@@ -205,7 +206,7 @@ export default function CarbonCalculatorScreen() {
                     <View style={styles.comparisonBarTrack}>
                       <View style={[
                         styles.comparisonBarFill,
-                        { width: `${(wardrobeFootprint.totalKgCO2 / comparison.averageUser) * 100}%`, backgroundColor: '#3b82f6' }
+                        { width: `${(wardrobeFootprint.totalKgCO2 / comparison.averageUser) * 100}%`, backgroundColor: ds.tobacco }
                       ]} />
                     </View>
                     <Text style={styles.comparisonBarValue}>{wardrobeFootprint.totalKgCO2.toFixed(0)} kg</Text>
@@ -213,7 +214,7 @@ export default function CarbonCalculatorScreen() {
                   <View style={styles.comparisonBar}>
                     <Text style={styles.comparisonBarLabel}>Average</Text>
                     <View style={styles.comparisonBarTrack}>
-                      <View style={[styles.comparisonBarFill, { width: '100%', backgroundColor: '#94a3b8' }]} />
+                      <View style={[styles.comparisonBarFill, { width: '100%', backgroundColor: ds.inkFaint }]} />
                     </View>
                     <Text style={styles.comparisonBarValue}>{comparison.averageUser} kg</Text>
                   </View>
@@ -222,7 +223,7 @@ export default function CarbonCalculatorScreen() {
                     <View style={styles.comparisonBarTrack}>
                       <View style={[
                         styles.comparisonBarFill,
-                        { width: `${(comparison.sustainableTarget / comparison.averageUser) * 100}%`, backgroundColor: '#10b981' }
+                        { width: `${(comparison.sustainableTarget / comparison.averageUser) * 100}%`, backgroundColor: ds.camel }
                       ]} />
                     </View>
                     <Text style={styles.comparisonBarValue}>{comparison.sustainableTarget} kg</Text>
@@ -352,14 +353,14 @@ export default function CarbonCalculatorScreen() {
               <Text style={styles.sectionTitle}>◉ Lowest Impact Items</Text>
               {wardrobeFootprint.lowestEmitters.map((emitter, index) => (
                 <View key={index} style={styles.emitterCard}>
-                  <View style={[styles.emitterRank, { backgroundColor: '#10b981' }]}>
+                  <View style={[styles.emitterRank, { backgroundColor: ds.camel }]}>
                     <Text style={styles.emitterRankText}>#{index + 1}</Text>
                   </View>
                   <View style={styles.emitterInfo}>
                     <Text style={styles.emitterName}>{emitter.item.name}</Text>
                     <Text style={styles.emitterCategory}>{emitter.item.category}</Text>
                   </View>
-                  <Text style={[styles.emitterValue, { color: '#10b981' }]}>
+                  <Text style={[styles.emitterValue, { color: ds.camel }]}>
                     {emitter.kgCO2.toFixed(1)} kg
                   </Text>
                 </View>
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emptyContainer: {
     flex: 1,
@@ -501,7 +502,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -509,24 +510,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
   },
   refreshButton: {
     fontSize: 20,
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   totalBanner: {
     padding: 24,
-    backgroundColor: '#0f172a',
+    backgroundColor: ds.ink,
     alignItems: 'center',
   },
   totalLabel: {
@@ -562,17 +563,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#10b981',
+    borderColor: ds.camel,
   },
   comparisonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10b981',
+    color: ds.camel,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -581,36 +582,36 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#10b981',
+    borderBottomColor: ds.camel,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#10b981',
+    color: ds.camel,
     fontWeight: '600',
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 16,
   },
   comparisonCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
   },
   comparisonMessage: {
     fontSize: 15,
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 20,
     lineHeight: 22,
   },
@@ -623,11 +624,11 @@ const styles = StyleSheet.create({
   comparisonBarLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   comparisonBarTrack: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -637,7 +638,7 @@ const styles = StyleSheet.create({
   },
   comparisonBarValue: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   equivalentsGrid: {
     flexDirection: 'row',
@@ -646,7 +647,7 @@ const styles = StyleSheet.create({
   },
   equivalentCard: {
     width: (width - 52) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -658,16 +659,16 @@ const styles = StyleSheet.create({
   equivalentValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 4,
   },
   equivalentLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   timelineCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
   },
@@ -685,22 +686,22 @@ const styles = StyleSheet.create({
   timelineBar: {
     width: 24,
     height: 100,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   timelineBarFill: {
     width: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     borderRadius: 4,
   },
   timelineMonth: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   projectionCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -714,7 +715,7 @@ const styles = StyleSheet.create({
   projectionPeriod: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
   },
   projectionTrend: {
     fontSize: 20,
@@ -722,12 +723,12 @@ const styles = StyleSheet.create({
   projectionValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
     marginBottom: 4,
   },
   projectionDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   breakdownCard: {
     marginBottom: 16,
@@ -740,33 +741,33 @@ const styles = StyleSheet.create({
   breakdownCategory: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
   },
   breakdownValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
   },
   breakdownBar: {
     height: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 6,
   },
   breakdownBarFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     borderRadius: 4,
   },
   breakdownDetails: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emitterCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -776,7 +777,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -791,20 +792,20 @@ const styles = StyleSheet.create({
   emitterName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 2,
   },
   emitterCategory: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emitterValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: ds.ink,
   },
   recommendationsCard: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
   },
@@ -815,7 +816,7 @@ const styles = StyleSheet.create({
   },
   recommendationBullet: {
     fontSize: 16,
-    color: '#10b981',
+    color: ds.camel,
     fontWeight: 'bold',
   },
   recommendationText: {
@@ -825,7 +826,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   strategyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
     marginRight: 12,
   },
   strategyImpact: {
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
   },
   strategyDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   strategyMetrics: {
@@ -868,7 +869,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   strategyMetric: {
     flex: 1,
@@ -876,13 +877,13 @@ const styles = StyleSheet.create({
   },
   strategyMetricLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   strategyMetricValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
   },
   strategyDifficulty: {
     paddingHorizontal: 8,
@@ -900,17 +901,17 @@ const styles = StyleSheet.create({
   strategyStepsTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 8,
   },
   strategyStep: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
     marginBottom: 4,
   },
   strategyButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -921,11 +922,11 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   offsetCard: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#10b981',
+    borderColor: ds.camel,
   },
   offsetTitle: {
     fontSize: 18,
@@ -951,7 +952,7 @@ const styles = StyleSheet.create({
   offsetStatValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
     marginBottom: 4,
   },
   offsetStatLabel: {
@@ -960,7 +961,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   offsetButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

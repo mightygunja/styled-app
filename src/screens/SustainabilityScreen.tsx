@@ -21,6 +21,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -73,30 +74,30 @@ export default function SustainabilityScreen() {
 
   const getGradeColor = (grade: SustainabilityGrade): string => {
     const colors: Record<SustainabilityGrade, string> = {
-      'A+': '#10b981',
+      'A+': ds.camel,
       'A': '#22c55e',
       'B': '#84cc16',
-      'C': '#f59e0b',
+      'C': ds.camel,
       'D': '#f97316',
-      'F': '#ef4444',
+      'F': ds.ink,
     };
     return colors[grade];
   };
 
   const getDifficultyColor = (difficulty: string): string => {
     const colors = {
-      easy: '#10b981',
-      medium: '#f59e0b',
-      hard: '#ef4444',
+      easy: ds.camel,
+      medium: ds.camel,
+      hard: ds.ink,
     };
-    return colors[difficulty as keyof typeof colors] || '#64748b';
+    return colors[difficulty as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10b981" />
+          <ActivityIndicator size="large" color={ds.camel} />
           <Text style={styles.loadingText}>Analyzing sustainability...</Text>
         </View>
       </SafeAreaView>
@@ -421,7 +422,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emptyContainer: {
     flex: 1,
@@ -430,7 +431,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -438,20 +439,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
   },
   refreshButton: {
     fontSize: 20,
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   gradeBanner: {
     padding: 24,
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -506,15 +507,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#10b981',
+    borderBottomColor: ds.camel,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#10b981',
+    color: ds.camel,
     fontWeight: '600',
   },
   statsGrid: {
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -532,32 +533,32 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 16,
   },
   recommendationCard: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+    borderLeftColor: ds.camel,
   },
   recommendationText: {
     fontSize: 14,
@@ -575,26 +576,26 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
   },
   brandScore: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10b981',
+    color: ds.camel,
   },
   brandBar: {
     height: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 4,
     overflow: 'hidden',
   },
   brandBarFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     borderRadius: 4,
   },
   impactCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -607,29 +608,29 @@ const styles = StyleSheet.create({
   impactValue: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
   },
   impactUnit: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#64748b',
+    color: ds.inkMuted,
     marginLeft: 8,
   },
   impactDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
   impactComparison: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: ds.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   impactComparisonText: {
     fontSize: 13,
-    color: '#1e40af',
+    color: ds.tobacco,
     fontWeight: '500',
   },
   offsetCard: {
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
   offsetOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -652,17 +653,17 @@ const styles = StyleSheet.create({
   offsetTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 4,
   },
   offsetDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   offsetCost: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: ds.camel,
   },
   impactGrid: {
     flexDirection: 'row',
@@ -670,7 +671,7 @@ const styles = StyleSheet.create({
   },
   impactItem: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -682,16 +683,16 @@ const styles = StyleSheet.create({
   impactItemValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 4,
   },
   impactItemLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   actionCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -709,7 +710,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginRight: 12,
   },
   actionDifficulty: {
@@ -729,27 +730,27 @@ const styles = StyleSheet.create({
   },
   actionImpactLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   actionImpactBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 3,
     overflow: 'hidden',
   },
   actionImpactFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     borderRadius: 3,
   },
   actionImpactValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10b981',
+    color: ds.camel,
   },
   actionButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -784,12 +785,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   certificationBadge: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#10b981',
+    borderColor: ds.camel,
   },
   certificationText: {
     fontSize: 12,

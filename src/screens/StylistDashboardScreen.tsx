@@ -20,6 +20,7 @@ import {
 } from '../services/stylistDashboardService';
 import { StylingSession } from '../types';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -215,7 +216,7 @@ export default function StylistDashboardScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -292,21 +293,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -315,15 +316,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   content: {
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   earningsCard: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -392,19 +393,19 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   metricsCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   metricRow: {
     flexDirection: 'row',
@@ -412,16 +413,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   metricLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   metricValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   sessionsContainer: {
     padding: 20,
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   sessionCard: {
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   sessionHeader: {
     flexDirection: 'row',
@@ -448,13 +449,13 @@ const styles = StyleSheet.create({
   sessionType: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
     textTransform: 'capitalize',
   },
   sessionDate: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   sessionPrice: {
     backgroundColor: '#f0fdf4',
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: colors.camel,
   },
   sessionFooter: {
     flexDirection: 'row',
@@ -474,10 +475,10 @@ const styles = StyleSheet.create({
   },
   sessionDuration: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   viewButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   clientHeader: {
     flexDirection: 'row',
@@ -507,14 +508,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginRight: 12,
   },
   clientImagePlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -530,12 +531,12 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   clientEmail: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   clientStats: {
     flexDirection: 'row',
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
   },
   clientStat: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -551,12 +552,12 @@ const styles = StyleSheet.create({
   clientStatValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   clientStatLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emptyState: {
     padding: 60,
@@ -569,6 +570,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
 });

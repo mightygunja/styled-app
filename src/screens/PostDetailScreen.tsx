@@ -23,6 +23,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -229,7 +230,7 @@ export default function PostDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -428,20 +429,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postSection: {
     borderBottomWidth: 8,
-    borderBottomColor: '#f8fafc',
+    borderBottomColor: colors.paper,
   },
   postHeader: {
     flexDirection: 'row',
@@ -452,13 +453,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   userAvatarPlaceholder: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -474,11 +475,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postTime: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   imagesContainer: {
     width: width,
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
   postImage: {
     width: width,
     height: width,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   postActions: {
     flexDirection: 'row',
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postCaption: {
     paddingHorizontal: 12,
@@ -513,7 +514,7 @@ const styles = StyleSheet.create({
   },
   captionText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 20,
   },
   captionUser: {
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
   },
   hashtag: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: colors.tobacco,
     fontWeight: '500',
   },
   commentsSection: {
@@ -535,7 +536,7 @@ const styles = StyleSheet.create({
   commentsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   commentCard: {
@@ -551,13 +552,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   commentAvatarPlaceholder: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -577,15 +578,15 @@ const styles = StyleSheet.create({
   commentUser: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   commentTime: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   commentText: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -596,10 +597,10 @@ const styles = StyleSheet.create({
   commentAction: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   deleteAction: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   repliesContainer: {
     marginTop: 8,
@@ -611,21 +612,21 @@ const styles = StyleSheet.create({
   emptyEmoji: {
     fontSize: 48,
     marginBottom: 12,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   commentInputContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     backgroundColor: '#ffffff',
   },
   replyingToBar: {
@@ -634,15 +635,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   replyingToText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   cancelReply: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     fontWeight: 'bold',
   },
   commentInputRow: {
@@ -653,16 +654,16 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -670,7 +671,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   sendButtonText: {
     color: '#ffffff',

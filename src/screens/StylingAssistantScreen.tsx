@@ -253,7 +253,7 @@ export default function StylingAssistantScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading your closet...</Text>
         </View>
       </SafeAreaView>
@@ -405,7 +405,7 @@ export default function StylingAssistantScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ask me anything about fashion..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={() => handleSendMessage()}

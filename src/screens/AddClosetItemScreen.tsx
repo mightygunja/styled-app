@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
+import { colors } from '../theme/designSystem';
 
 const CATEGORIES = [
   { id: 'tops', label: 'Tops', emoji: '👕' },
@@ -18,16 +19,16 @@ const CATEGORIES = [
 ];
 
 const COLORS = [
-  { id: 'black', label: 'Black', hex: '#000000' },
+  { id: 'black', label: 'Black', hex: colors.ink },
   { id: 'white', label: 'White', hex: '#FFFFFF' },
-  { id: 'gray', label: 'Gray', hex: '#9CA3AF' },
-  { id: 'red', label: 'Red', hex: '#EF4444' },
-  { id: 'blue', label: 'Blue', hex: '#3B82F6' },
-  { id: 'green', label: 'Green', hex: '#10B981' },
-  { id: 'yellow', label: 'Yellow', hex: '#F59E0B' },
+  { id: 'gray', label: 'Gray', hex: colors.inkFaint },
+  { id: 'red', label: 'Red', hex: colors.ink },
+  { id: 'blue', label: 'Blue', hex: colors.tobacco },
+  { id: 'green', label: 'Green', hex: colors.camel },
+  { id: 'yellow', label: 'Yellow', hex: colors.camel },
   { id: 'pink', label: 'Pink', hex: '#EC4899' },
-  { id: 'purple', label: 'Purple', hex: '#8B5CF6' },
-  { id: 'brown', label: 'Brown', hex: '#92400E' },
+  { id: 'purple', label: 'Purple', hex: colors.tobacco },
+  { id: 'brown', label: 'Brown', hex: colors.tobacco },
 ];
 
 export default function AddClosetItemScreen() {
@@ -187,7 +188,7 @@ export default function AddClosetItemScreen() {
             placeholder="e.g., Zara, H&M, Nike"
             value={brand}
             onChangeText={setBrand}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
         </View>
 
@@ -200,7 +201,7 @@ export default function AddClosetItemScreen() {
             value={price}
             onChangeText={setPrice}
             keyboardType="decimal-pad"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
         </View>
 
@@ -214,13 +215,13 @@ export default function AddClosetItemScreen() {
             onChangeText={setNotes}
             multiline
             numberOfLines={4}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
         </View>
 
         {uploading && (
           <View style={styles.uploadingOverlay}>
-            <ActivityIndicator size="large" color="#ef4444" />
+            <ActivityIndicator size="large" color={colors.ink} />
             <Text style={styles.uploadingText}>Uploading your item...</Text>
           </View>
         )}
@@ -258,24 +259,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   saveButtonDisabled: {
-    color: '#cbd5e1',
+    color: colors.hair,
   },
   imageSection: {
     padding: 20,
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 0.75,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   changeImageButton: {
     position: 'absolute',
@@ -306,10 +307,10 @@ const styles = StyleSheet.create({
   },
   imagePlaceholder: {
     aspectRatio: 0.75,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -321,13 +322,13 @@ const styles = StyleSheet.create({
   },
   imagePlaceholderText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
     textAlign: 'center',
   },
   imagePlaceholderSubtext: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textAlign: 'center',
   },
   section: {
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   optionsGrid: {
@@ -348,17 +349,17 @@ const styles = StyleSheet.create({
   optionCard: {
     width: '30%',
     aspectRatio: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 12,
   },
   optionCardSelected: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   optionEmoji: {
     fontSize: 32,
@@ -367,11 +368,11 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   optionLabelSelected: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -388,10 +389,10 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   colorOptionWhite: {
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorOptionSelected: {
-    borderColor: '#0f172a',
+    borderColor: colors.ink,
     borderWidth: 4,
   },
   colorCheckmark: {
@@ -403,13 +404,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
   },
   textArea: {
     height: 100,
@@ -422,6 +423,6 @@ const styles = StyleSheet.create({
   uploadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
 });

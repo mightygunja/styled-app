@@ -21,6 +21,7 @@ import { userProfileService, UserProfile } from '../services/userProfileService'
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
@@ -149,7 +150,7 @@ export default function ChatScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -258,11 +259,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerUser: {
     flexDirection: 'row',
@@ -273,13 +274,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   headerAvatarPlaceholder: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -291,11 +292,11 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   messagesContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   messagesContent: {
     padding: 16,
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -327,15 +328,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     maxWidth: '75%',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   ownMessageBubble: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   messageText: {
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 20,
   },
   ownMessageText: {
@@ -354,44 +355,44 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     backgroundColor: '#ffffff',
     gap: 12,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   sendIcon: {
     fontSize: 20,

@@ -20,6 +20,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -238,7 +239,7 @@ export default function SocialFeedScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -302,22 +303,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   createButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   postCard: {
     marginBottom: 20,
     borderBottomWidth: 8,
-    borderBottomColor: '#f8fafc',
+    borderBottomColor: colors.paper,
   },
   postHeader: {
     flexDirection: 'row',
@@ -328,13 +329,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   userAvatarPlaceholder: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -350,14 +351,14 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postTime: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   typeBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
   typeBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#92400e',
+    color: colors.tobacco,
   },
   imagesContainer: {
     width: width,
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
   postImage: {
     width: width,
     height: width,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   imageIndicator: {
     position: 'absolute',
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postCaption: {
     paddingHorizontal: 12,
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
   },
   captionText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 20,
   },
   captionUser: {
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
   },
   hashtag: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: colors.tobacco,
     fontWeight: '500',
   },
   viewComments: {
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   },
   viewCommentsText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emptyState: {
     padding: 60,
@@ -449,16 +450,16 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 24,
   },
   exploreButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,

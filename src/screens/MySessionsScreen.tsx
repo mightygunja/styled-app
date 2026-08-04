@@ -17,6 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
 import { StylingSession } from '../types';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -56,11 +57,11 @@ export default function MySessionsScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return '#10b981';
-      case 'pending': return '#f59e0b';
+      case 'confirmed': return colors.camel;
+      case 'pending': return colors.camel;
       case 'completed': return '#6366f1';
-      case 'cancelled': return '#ef4444';
-      default: return '#64748b';
+      case 'cancelled': return colors.ink;
+      default: return colors.inkMuted;
     }
   };
 
@@ -72,7 +73,7 @@ export default function MySessionsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -130,17 +131,17 @@ export default function MySessionsScreen() {
                 {/* Session Details */}
                 <View style={styles.sessionDetails}>
                   <View style={styles.detailRow}>
-                    <Ionicons name="calendar-outline" size={16} color="#64748b" style={styles.detailIcon} />
+                    <Ionicons name="calendar-outline" size={16} color={colors.inkMuted} style={styles.detailIcon} />
                     <Text style={styles.detailText}>
                       {new Date(session.scheduledDate).toLocaleDateString()}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Ionicons name="time-outline" size={16} color="#64748b" style={styles.detailIcon} />
+                    <Ionicons name="time-outline" size={16} color={colors.inkMuted} style={styles.detailIcon} />
                     <Text style={styles.detailText}>{session.duration} minutes</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Ionicons name="cash-outline" size={16} color="#64748b" style={styles.detailIcon} />
+                    <Ionicons name="cash-outline" size={16} color={colors.inkMuted} style={styles.detailIcon} />
                     <Text style={styles.detailText}>${session.price}</Text>
                   </View>
                 </View>
@@ -215,16 +216,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   content: {
     flex: 1,
@@ -240,16 +241,16 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 24,
   },
   bookButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   sessionHeader: {
     flexDirection: 'row',
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginRight: 12,
   },
   sessionInfo: {
@@ -288,12 +289,12 @@ const styles = StyleSheet.create({
   stylistName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   sessionType: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   statusBadge: {
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   sessionDetails: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
   sessionActions: {
     flexDirection: 'row',
@@ -332,18 +333,18 @@ const styles = StyleSheet.create({
   },
   confirmedNote: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.paper,
     padding: 14,
     borderRadius: 12,
   },
   confirmedNoteText: {
     fontSize: 13,
-    color: '#4b5563',
+    color: colors.inkMuted,
     lineHeight: 18,
   },
   joinButton: {
     flex: 1,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -355,15 +356,15 @@ const styles = StyleSheet.create({
   },
   notesButton: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   notesButtonText: {
-    color: '#0f172a',
+    color: colors.ink,
     fontSize: 15,
     fontWeight: '600',
   },

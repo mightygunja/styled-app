@@ -8,6 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { TrendPalette, Look } from '../types';
 import { paletteAPI, lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PaletteDetailRouteProp = RouteProp<RootStackParamList, 'PaletteDetail'>;
@@ -67,7 +68,7 @@ export default function PaletteDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading palette...</Text>
         </View>
       </SafeAreaView>
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 20,
   },
   header: {
@@ -198,31 +199,31 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   backButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   backButtonText: {
-    color: '#ef4444',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '600',
   },
   paletteSection: {
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   paletteName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   paletteDescription: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 24,
     marginBottom: 20,
   },
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorCode: {
     fontSize: 10,
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
   },
   occasionBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -267,7 +268,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   looksContainer: {
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textAlign: 'center',
   },
 });

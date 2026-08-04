@@ -17,6 +17,7 @@ import { lookAPI, getCurrentUserId } from '../services/api';
 import { Look } from '../types';
 import LookCard from '../components/LookCard';
 import { fadeIn } from '../utils/animations';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -71,7 +72,7 @@ export default function FavoritesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading favorites...</Text>
         </View>
       </SafeAreaView>
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
   },
   header: {
     padding: 20,
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#000',
+    color: colors.ink,
     fontWeight: '600',
   },
   title: {
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
   },
   grid: {
     padding: 16,
@@ -206,12 +207,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 24,
   },
   browseButton: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 8,

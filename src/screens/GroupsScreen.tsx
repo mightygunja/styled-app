@@ -18,6 +18,7 @@ import { groupService, Group, GroupEvent } from '../services/groupService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -166,7 +167,7 @@ export default function GroupsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -280,17 +281,17 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -299,15 +300,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   activeTabText: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   groupCard: {
@@ -316,8 +317,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
+    borderColor: colors.hair,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
   groupImage: {
     width: '100%',
     height: 150,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   groupContent: {
     padding: 16,
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   privacyBadge: {
     marginLeft: 8,
@@ -351,13 +352,13 @@ const styles = StyleSheet.create({
   },
   groupDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1e40af',
+    color: colors.tobacco,
   },
   groupStats: {
     flexDirection: 'row',
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   eventCard: {
     margin: 16,
@@ -390,8 +391,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
+    borderColor: colors.hair,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
   eventImage: {
     width: '100%',
     height: 150,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   eventContent: {
     padding: 16,
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   virtualBadge: {
     backgroundColor: '#f0fdf4',
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
   },
   eventDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   eventInfoText: {
     flex: 1,
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
   },
   eventFooter: {
     flexDirection: 'row',
@@ -458,14 +459,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.paper,
   },
   attendeesText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   rsvpButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -486,12 +487,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

@@ -8,6 +8,7 @@ import { closetAPI, ClosetItem } from '../services/api';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 type ClosetItemDetailRouteProp = RouteProp<RootStackParamList, 'ClosetItemDetail'>;
 
@@ -135,7 +136,7 @@ export default function ClosetItemDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -372,15 +373,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   deleteButton: {
     fontSize: 16,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   loadingContainer: {
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   content: {
     flex: 1,
@@ -398,12 +399,12 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     aspectRatio: 0.75,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   aiBadge: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: colors.ink,
     padding: 12,
     margin: 16,
     marginBottom: 0,
@@ -417,12 +418,12 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   infoRow: {
@@ -433,12 +434,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   infoValue: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -460,31 +461,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   seasonTag: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   seasonTagText: {
     fontSize: 12,
-    color: '#92400e',
+    color: colors.tobacco,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   notesText: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   actionButtons: {
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   outfitButton: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cutoutButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -512,12 +513,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   cutoutButtonText: {
-    color: '#000',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '600',
   },
   similarButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.tobacco,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -528,7 +529,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   wornButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',

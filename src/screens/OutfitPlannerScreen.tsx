@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from '../services/outfitPlannerService';
+import { colors } from '../theme/designSystem';
 import {
   getUpcomingEvents,
   planForSchedule,
@@ -63,16 +64,16 @@ export default function OutfitPlannerScreen() {
     Object.keys(plannedOutfits).forEach(date => {
       marks[date] = {
         marked: true,
-        dotColor: '#000',
+        dotColor: colors.ink,
         selected: date === selectedDate,
-        selectedColor: date === selectedDate ? '#000' : undefined,
+        selectedColor: date === selectedDate ? colors.ink : undefined,
       };
     });
     
     if (selectedDate && !marks[selectedDate]) {
       marks[selectedDate] = {
         selected: true,
-        selectedColor: '#e5e7eb',
+        selectedColor: colors.hair,
       };
     }
     
@@ -414,16 +415,16 @@ export default function OutfitPlannerScreen() {
           theme={{
             backgroundColor: '#ffffff',
             calendarBackground: '#ffffff',
-            textSectionTitleColor: '#000',
-            selectedDayBackgroundColor: '#000',
+            textSectionTitleColor: colors.ink,
+            selectedDayBackgroundColor: colors.ink,
             selectedDayTextColor: '#ffffff',
-            todayTextColor: '#ef4444',
-            dayTextColor: '#000',
-            textDisabledColor: '#d1d5db',
-            dotColor: '#000',
+            todayTextColor: colors.ink,
+            dayTextColor: colors.ink,
+            textDisabledColor: colors.hair,
+            dotColor: colors.ink,
             selectedDotColor: '#ffffff',
-            arrowColor: '#000',
-            monthTextColor: '#000',
+            arrowColor: colors.ink,
+            monthTextColor: colors.ink,
             textDayFontWeight: '400',
             textMonthFontWeight: 'bold',
             textDayHeaderFontWeight: '600',
@@ -537,7 +538,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
   },
   planWeekButtonBusy: {
     opacity: 0.6,
@@ -563,14 +564,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.paper,
   },
   occasionChipActive: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
   },
   occasionChipText: {
     fontSize: 13,
-    color: '#000',
+    color: colors.ink,
   },
   occasionChipTextActive: {
     color: '#fff',
@@ -585,12 +586,12 @@ const styles = StyleSheet.create({
   pickerItem: {
     width: 92,
     height: 92,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.paper,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   pickerItemSelected: {
-    borderColor: '#000',
+    borderColor: colors.ink,
   },
   pickerImage: {
     width: '100%',
@@ -603,7 +604,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -629,7 +630,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#000',
+    color: colors.ink,
   },
   title: {
     fontSize: 18,
@@ -638,11 +639,11 @@ const styles = StyleSheet.create({
   addButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.ink,
   },
   selectedDateSection: {
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     margin: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -654,11 +655,11 @@ const styles = StyleSheet.create({
   },
   selectedDateText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   viewButton: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   planButton: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -691,7 +692,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -703,7 +704,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   upcomingSection: {
@@ -716,7 +717,7 @@ const styles = StyleSheet.create({
   },
   upcomingCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
   },
   upcomingDay: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
     textTransform: 'uppercase',
   },
   upcomingDateNumber: {
@@ -746,7 +747,7 @@ const styles = StyleSheet.create({
   },
   upcomingItems: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
   },
   upcomingPreview: {
     flexDirection: 'row',
@@ -782,10 +783,10 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
+    color: colors.inkMuted,
   },
   occasionBadge: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -823,7 +824,7 @@ const styles = StyleSheet.create({
   notesSection: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
   },
   notesLabel: {
@@ -833,7 +834,7 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   modalActions: {
@@ -845,7 +846,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -858,9 +859,9 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: colors.ink,
   },
   deleteButtonText: {
-    color: '#ef4444',
+    color: colors.ink,
   },
 });

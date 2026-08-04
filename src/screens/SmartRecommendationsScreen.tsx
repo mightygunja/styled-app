@@ -21,6 +21,7 @@ import { outfitsService } from '../services/firestore';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -208,7 +209,7 @@ export default function SmartRecommendationsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Generating recommendations...</Text>
         </View>
       </SafeAreaView>
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -324,25 +325,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   refreshButton: {
     fontSize: 20,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   weatherCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     margin: 20,
     padding: 16,
     borderRadius: 12,
@@ -354,11 +355,11 @@ const styles = StyleSheet.create({
   weatherTemp: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   weatherCondition: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   occasionScroll: {
     maxHeight: 60,
@@ -373,23 +374,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     gap: 6,
   },
   occasionChipActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   occasionEmoji: {
     fontSize: 16,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   occasionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   occasionTextActive: {
     color: '#ffffff',
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   recCountText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   recCard: {
     margin: 20,
@@ -410,8 +411,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
+    borderColor: colors.hair,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -425,16 +426,16 @@ const styles = StyleSheet.create({
   recTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   recDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   scoreContainer: {
     alignItems: 'center',
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
@@ -442,11 +443,11 @@ const styles = StyleSheet.create({
   scoreNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
   },
   scoreLabel: {
     fontSize: 11,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   itemsGrid: {
@@ -462,12 +463,12 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginBottom: 4,
   },
   itemCategory: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   reasoningSection: {
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   reasoningTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   reasonItem: {
@@ -486,13 +487,13 @@ const styles = StyleSheet.create({
   },
   reasonBullet: {
     fontSize: 14,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: 'bold',
   },
   reasonText: {
     flex: 1,
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 18,
   },
   tagsContainer: {
@@ -502,14 +503,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tag: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   tagText: {
     fontSize: 12,
-    color: '#1e40af',
+    color: colors.tobacco,
     fontWeight: '600',
   },
   actions: {
@@ -519,7 +520,7 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     flex: 1,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -534,11 +535,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     alignItems: 'center',
   },
   modifyButtonText: {
-    color: '#64748b',
+    color: colors.inkMuted,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -567,17 +568,17 @@ const styles = StyleSheet.create({
   emptyEmoji: {
     fontSize: 64,
     marginBottom: 16,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

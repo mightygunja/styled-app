@@ -23,6 +23,7 @@ import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -129,7 +130,7 @@ export default function CreatePostScreen() {
         <Text style={styles.title}>New Post</Text>
         <TouchableOpacity onPress={handlePost} disabled={posting}>
           {posting ? (
-            <ActivityIndicator color="#ef4444" />
+            <ActivityIndicator color={colors.ink} />
           ) : (
             <Text style={styles.postButton}>Post</Text>
           )}
@@ -250,21 +251,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   postButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   content: {
     flex: 1,
@@ -272,12 +273,12 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   typeButtons: {
@@ -287,17 +288,17 @@ const styles = StyleSheet.create({
   typeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     gap: 6,
   },
   typeButtonActive: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   typeIcon: {
     fontSize: 16,
@@ -305,10 +306,10 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   typeLabelActive: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   imagesContainer: {
@@ -318,22 +319,22 @@ const styles = StyleSheet.create({
   addImageButton: {
     width: 120,
     height: 120,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addImageIcon: {
     fontSize: 32,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   addImageText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   imagePreview: {
@@ -345,7 +346,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   removeButton: {
     position: 'absolute',
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -364,33 +365,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   captionInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     minHeight: 120,
   },
   characterCount: {
     textAlign: 'right',
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginTop: 8,
   },
   hashtagInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   hashtagHint: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginTop: 8,
   },
   tipsSection: {
@@ -399,12 +400,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fffbeb',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fef3c7',
+    borderColor: colors.sand,
   },
   tipsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#92400e',
+    color: colors.tobacco,
     marginBottom: 12,
   },
   tipText: {

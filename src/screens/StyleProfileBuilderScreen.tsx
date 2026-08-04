@@ -19,6 +19,7 @@ import { styleProfileService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -230,7 +231,7 @@ export default function StyleProfileBuilderScreen() {
             <TextInput
               style={styles.colorInput}
               placeholder="Add a color..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={ds.inkFaint}
               value={primaryInput}
               onChangeText={setPrimaryInput}
               onSubmitEditing={() => {
@@ -269,7 +270,7 @@ export default function StyleProfileBuilderScreen() {
             <TextInput
               style={styles.colorInput}
               placeholder="Add a color..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={ds.inkFaint}
               value={secondaryInput}
               onChangeText={setSecondaryInput}
               onSubmitEditing={() => {
@@ -308,7 +309,7 @@ export default function StyleProfileBuilderScreen() {
             <TextInput
               style={styles.colorInput}
               placeholder="Add a color..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={ds.inkFaint}
               value={stretchInput}
               onChangeText={setStretchInput}
               onSubmitEditing={() => {
@@ -355,7 +356,7 @@ export default function StyleProfileBuilderScreen() {
           <TextInput
             style={styles.colorInput}
             placeholder="Add a style to avoid..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={ds.inkFaint}
             value={avoidInput}
             onChangeText={setAvoidInput}
             onSubmitEditing={() => {
@@ -524,7 +525,7 @@ export default function StyleProfileBuilderScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2B1F1A" />
+          <ActivityIndicator size="large" color={ds.ink} />
         </View>
       </SafeAreaView>
     );
@@ -586,7 +587,7 @@ export default function StyleProfileBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: ds.paper,
   },
   loadingContainer: {
     flex: 1,
@@ -600,12 +601,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: ds.hair,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
   },
   progressContainer: {
     paddingHorizontal: 20,
@@ -613,17 +614,17 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#DED7CF',
+    backgroundColor: ds.hair,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
   },
   progressText: {
     fontSize: 12,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -636,12 +637,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#161616',
+    color: ds.ink,
     marginBottom: 8,
   },
   stepSubtitle: {
     fontSize: 16,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginBottom: 24,
   },
   sliderContainer: {
@@ -655,23 +656,23 @@ const styles = StyleSheet.create({
   sliderLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
   },
   sliderValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   sliderTrack: {
     height: 8,
-    backgroundColor: '#DED7CF',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
   },
   sliderFill: {
     height: '100%',
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
   },
   sliderButtons: {
     flexDirection: 'row',
@@ -685,11 +686,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   sliderButtonText: {
     fontSize: 24,
-    color: '#161616',
+    color: ds.ink,
   },
   archetypeGrid: {
     gap: 12,
@@ -699,27 +700,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   archetypeCardSelected: {
-    borderColor: '#2B1F1A',
+    borderColor: ds.ink,
     backgroundColor: '#F8F6F3',
   },
   archetypeName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
     marginBottom: 4,
   },
   archetypeNameSelected: {
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   archetypeDescription: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
   },
   archetypeDescriptionSelected: {
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   colorSection: {
     marginBottom: 24,
@@ -727,12 +728,12 @@ const styles = StyleSheet.create({
   colorSectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
     marginBottom: 4,
   },
   colorSectionSubtitle: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   colorInputContainer: {
@@ -747,14 +748,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#161616',
+    color: ds.ink,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   addButton: {
     height: 48,
     paddingHorizontal: 24,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -772,7 +773,7 @@ const styles = StyleSheet.create({
   colorTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
     borderRadius: 20,
     paddingVertical: 8,
     paddingLeft: 16,
@@ -795,18 +796,18 @@ const styles = StyleSheet.create({
   fitLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
     marginTop: 16,
     marginBottom: 4,
   },
   fitHint: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   skipText: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginTop: 24,
     fontStyle: 'italic',
@@ -817,51 +818,51 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   guidanceOptionSelected: {
-    borderColor: '#2B1F1A',
+    borderColor: ds.ink,
     backgroundColor: '#F8F6F3',
   },
   guidanceTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
     marginBottom: 4,
   },
   guidanceTitleSelected: {
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   guidanceDescription: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
   },
   reviewSection: {
     marginBottom: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: ds.hair,
   },
   reviewLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#161616',
+    color: ds.ink,
     marginBottom: 8,
   },
   reviewText: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#DED7CF',
-    backgroundColor: '#F4F1ED',
+    borderTopColor: ds.hair,
+    backgroundColor: ds.paper,
   },
   nextButton: {
     height: 56,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -873,7 +874,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     height: 56,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

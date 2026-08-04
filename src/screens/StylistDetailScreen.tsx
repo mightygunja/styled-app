@@ -20,6 +20,7 @@ import { stylistAPI } from '../services/stylistAPI';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -116,7 +117,7 @@ export default function StylistDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -304,13 +305,13 @@ export default function StylistDetailScreen() {
             <Calendar
               onDayPress={(day) => handleDateSelect(day.dateString)}
               markedDates={{
-                [selectedDate]: { selected: true, selectedColor: '#ef4444' },
+                [selectedDate]: { selected: true, selectedColor: colors.ink },
               }}
               minDate={new Date().toISOString().split('T')[0]}
               theme={{
-                selectedDayBackgroundColor: '#ef4444',
-                todayTextColor: '#ef4444',
-                arrowColor: '#ef4444',
+                selectedDayBackgroundColor: colors.ink,
+                todayTextColor: colors.ink,
+                arrowColor: colors.ink,
               }}
             />
 
@@ -437,12 +438,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   coverImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   profileSection: {
     flexDirection: 'row',
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 4,
     borderColor: '#ffffff',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   profileInfo: {
     flex: 1,
@@ -471,14 +472,14 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginRight: 8,
   },
   verifiedBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -495,28 +496,28 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   divider: {
     marginHorizontal: 8,
-    color: '#cbd5e1',
+    color: colors.hair,
   },
   reviews: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   experience: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   location: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   responseTime: {
     fontSize: 12,
-    color: '#10b981',
+    color: colors.camel,
     fontWeight: '500',
   },
   section: {
@@ -527,12 +528,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   bio: {
     fontSize: 15,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 22,
   },
   specialtiesGrid: {
@@ -541,14 +542,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   specialtyTag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
   },
   specialtyText: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   certItem: {
@@ -562,7 +563,7 @@ const styles = StyleSheet.create({
   },
   certText: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
   },
   portfolioItem: {
     width: 200,
@@ -572,22 +573,22 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   portfolioTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   portfolioDesc: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 16,
   },
   reviewCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -600,25 +601,25 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   reviewRating: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   reviewComment: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 8,
   },
   reviewDate: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   pricingCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -626,12 +627,12 @@ const styles = StyleSheet.create({
   hourlyRate: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
     marginBottom: 8,
   },
   pricingNote: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   bookBar: {
     flexDirection: 'row',
@@ -639,21 +640,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     backgroundColor: '#ffffff',
   },
   bookBarLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   bookBarPrice: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   bookBarButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
@@ -673,16 +674,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   modalClose: {
     fontSize: 24,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   modalContent: {
     flex: 1,
@@ -691,7 +692,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
     marginTop: 20,
   },
@@ -702,16 +703,16 @@ const styles = StyleSheet.create({
   },
   sessionTypeCard: {
     width: (width - 60) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   sessionTypeCardActive: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderColor: colors.ink,
+    backgroundColor: colors.sand,
   },
   sessionTypeIcon: {
     fontSize: 32,
@@ -720,16 +721,16 @@ const styles = StyleSheet.create({
   sessionTypeLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   sessionTypeDuration: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   noSlotsText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.inkMuted,
     lineHeight: 19,
     marginBottom: 12,
   },
@@ -741,14 +742,14 @@ const styles = StyleSheet.create({
   timeSlot: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   timeSlotActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   timeSlotDisabled: {
     opacity: 0.4,
@@ -756,16 +757,16 @@ const styles = StyleSheet.create({
   timeSlotText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
   },
   timeSlotTextActive: {
     color: '#ffffff',
   },
   timeSlotTextDisabled: {
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   priceSummary: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 20,
     borderRadius: 12,
     marginTop: 20,
@@ -777,42 +778,42 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
   },
   summaryTotal: {
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     paddingTop: 12,
     marginTop: 8,
   },
   summaryTotalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   summaryTotalValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
   },
   modalFooter: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
   },
   confirmButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   confirmButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   confirmButtonText: {
     color: '#ffffff',

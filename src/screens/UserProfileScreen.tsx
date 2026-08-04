@@ -20,6 +20,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 6) / 3;
@@ -123,7 +124,7 @@ export default function UserProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -303,16 +304,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   username: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   profileSection: {
     padding: 20,
@@ -326,13 +327,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   profileImagePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -353,11 +354,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginTop: 2,
   },
   profileInfo: {
@@ -366,18 +367,18 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 4,
   },
   location: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   tagsContainer: {
@@ -386,16 +387,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   tagText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -403,29 +404,29 @@ const styles = StyleSheet.create({
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   editButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   followButton: {
     flex: 1,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   followingButton: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   followButtonText: {
     fontSize: 14,
@@ -433,26 +434,26 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   followingButtonText: {
-    color: '#0f172a',
+    color: colors.ink,
   },
   messageButton: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   messageButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -461,15 +462,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   gridContainer: {
@@ -488,7 +489,7 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   multipleIndicator: {
     position: 'absolute',
@@ -508,16 +509,16 @@ const styles = StyleSheet.create({
   emptyEmoji: {
     fontSize: 48,
     marginBottom: 16,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   createPostButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

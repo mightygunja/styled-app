@@ -23,6 +23,7 @@ import {
 } from '../services/sessionNotesService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SessionNotesRouteProp = RouteProp<RootStackParamList, 'SessionNotes'>;
@@ -212,7 +213,7 @@ export default function SessionNotesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading session notes...</Text>
         </View>
       </SafeAreaView>
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -388,16 +389,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   exportButton: {
     fontSize: 20,
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -414,15 +415,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   content: {
@@ -432,12 +433,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   noteCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   noteHeader: {
     flexDirection: 'row',
@@ -456,15 +457,15 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   deleteButton: {
     fontSize: 18,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   noteContent: {
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 22,
     marginBottom: 12,
   },
@@ -475,11 +476,11 @@ const styles = StyleSheet.create({
   },
   noteAuthor: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   noteDate: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   recommendationsContainer: {
     padding: 20,
@@ -490,7 +491,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   recHeader: {
     flexDirection: 'row',
@@ -502,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginRight: 8,
   },
   priorityBadge: {
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   priorityhigh: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
   },
   prioritymedium: {
     backgroundColor: '#fef9c3',
@@ -522,11 +523,11 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   recDescription: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -534,14 +535,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   recCategory: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   recCategoryText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   deliverablesContainer: {
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   delHeader: {
     flexDirection: 'row',
@@ -570,33 +571,33 @@ const styles = StyleSheet.create({
   delTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   delType: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   delDescription: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
   delItems: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
   },
   delItem: {
     fontSize: 13,
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   downloadButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -617,12 +618,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   fab: {
     position: 'absolute',
@@ -631,10 +632,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -655,21 +656,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   modalClose: {
     fontSize: 24,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   modalSave: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   modalContent: {
     flex: 1,
@@ -678,7 +679,7 @@ const styles = StyleSheet.create({
   modalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   categoryGrid: {
@@ -690,16 +691,16 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   categoryButtonActive: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   categoryButtonIcon: {
     fontSize: 16,
@@ -708,16 +709,16 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
   },
   noteInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     minHeight: 150,
   },
 });

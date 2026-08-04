@@ -17,6 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import { messagingService, Conversation } from '../services/messagingService';
 import { userProfileService } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -135,7 +136,7 @@ export default function MessagesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -190,15 +191,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   headerBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -215,20 +216,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
     gap: 12,
   },
   avatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   avatarPlaceholder: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -250,11 +251,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   time: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   messagePreview: {
     flexDirection: 'row',
@@ -264,14 +265,14 @@ const styles = StyleSheet.create({
   lastMessage: {
     flex: 1,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   unreadMessage: {
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   unreadBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -294,12 +295,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

@@ -22,6 +22,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -128,7 +129,7 @@ export default function EditProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -164,12 +165,12 @@ export default function EditProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>Display Name</Text>
-          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder="Your name" placeholderTextColor="#94a3b8" />
+          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder="Your name" placeholderTextColor={colors.inkFaint} />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>Username</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="username" autoCapitalize="none" placeholderTextColor="#94a3b8" />
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="username" autoCapitalize="none" placeholderTextColor={colors.inkFaint} />
         </View>
 
         <View style={styles.section}>
@@ -181,13 +182,13 @@ export default function EditProfileScreen() {
             placeholder="Tell people about your style..."
             multiline
             numberOfLines={3}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>Location</Text>
-          <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="City, State" placeholderTextColor="#94a3b8" />
+          <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="City, State" placeholderTextColor={colors.inkFaint} />
         </View>
 
         <View style={styles.section}>
@@ -197,7 +198,7 @@ export default function EditProfileScreen() {
             value={styleTagsText}
             onChangeText={setStyleTagsText}
             placeholder="minimalist, modern, chic"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
         </View>
       </ScrollView>
@@ -216,35 +217,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
-  cancelButton: { fontSize: 16, color: '#64748b' },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
-  saveButton: { fontSize: 16, fontWeight: '600', color: '#ef4444' },
-  saveButtonDisabled: { color: '#cbd5e1' },
+  cancelButton: { fontSize: 16, color: colors.inkMuted },
+  title: { fontSize: 18, fontWeight: 'bold', color: colors.ink },
+  saveButton: { fontSize: 16, fontWeight: '600', color: colors.ink },
+  saveButtonDisabled: { color: colors.hair },
   content: { flex: 1 },
   avatarSection: { alignItems: 'center', paddingVertical: 24 },
-  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#f1f5f9' },
+  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.paper },
   avatarPlaceholder: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: { fontSize: 36, fontWeight: 'bold', color: '#ffffff' },
-  changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: '#ef4444', fontWeight: '600' },
+  changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontWeight: '600' },
   section: { paddingHorizontal: 20, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: colors.ink, marginBottom: 8 },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
   },
   textArea: { height: 80, textAlignVertical: 'top' },
 });

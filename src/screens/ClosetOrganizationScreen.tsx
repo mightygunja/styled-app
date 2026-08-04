@@ -29,6 +29,7 @@ import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -160,13 +161,13 @@ export default function ClosetOrganizationScreen() {
 
   const getDeclutterReasonColor = (reason: string): string => {
     const colors: Record<string, string> = {
-      unused: '#f59e0b',
-      duplicate: '#8b5cf6',
-      'poor-fit': '#ef4444',
-      outdated: '#64748b',
-      damaged: '#dc2626',
+      unused: ds.camel,
+      duplicate: ds.tobacco,
+      'poor-fit': ds.ink,
+      outdated: ds.inkMuted,
+      damaged: ds.ink,
     };
-    return colors[reason] || '#64748b';
+    return colors[reason] || ds.inkMuted;
   };
 
   const renderOrganizationSection = (section: any) => (
@@ -233,7 +234,7 @@ export default function ClosetOrganizationScreen() {
         <View style={styles.tipHeader}>
           <Text style={styles.tipCategory}>{tip.category}</Text>
           <View style={[styles.tipPriority, { 
-            backgroundColor: tip.priority === 'high' ? '#ef4444' : tip.priority === 'medium' ? '#f59e0b' : '#10b981' 
+            backgroundColor: tip.priority === 'high' ? ds.ink : tip.priority === 'medium' ? ds.camel : ds.camel 
           }]}>
             <Text style={styles.tipPriorityText}>{tip.priority.toUpperCase()}</Text>
           </View>
@@ -247,7 +248,7 @@ export default function ClosetOrganizationScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={ds.ink} />
           <Text style={styles.loadingText}>Organizing your closet...</Text>
         </View>
       </SafeAreaView>
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -475,24 +476,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
   },
   statsBanner: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   stat: {
     alignItems: 'center',
@@ -500,17 +501,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: ds.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -519,26 +520,26 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
+    color: ds.ink,
     fontWeight: '600',
   },
   methodsContainer: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   methodsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 12,
   },
   methodsGrid: {
@@ -551,14 +552,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     gap: 6,
   },
   methodChipActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: ds.ink,
+    borderColor: ds.ink,
   },
   methodEmoji: {
     fontSize: 16,
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
   methodText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   methodTextActive: {
     color: '#ffffff',
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -585,11 +586,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
   },
   sectionCount: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   itemsGrid: {
     flexDirection: 'row',
@@ -602,31 +603,31 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     marginBottom: 6,
   },
   itemName: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 16,
   },
   moreCard: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     borderStyle: 'dashed',
   },
   moreText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   moreLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: ds.inkFaint,
   },
   tipsContainer: {
     padding: 20,
@@ -634,12 +635,12 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 16,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -660,7 +661,7 @@ const styles = StyleSheet.create({
   tipCategory: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: ds.inkMuted,
   },
   tipPriority: {
     paddingHorizontal: 8,
@@ -674,7 +675,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   declutterContainer: {
@@ -683,12 +684,12 @@ const styles = StyleSheet.create({
   declutterTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 4,
   },
   declutterSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 20,
   },
   declutterCard: {
@@ -698,12 +699,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   declutterImage: {
     width: 120,
     height: 160,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
   },
   declutterContent: {
     flex: 1,
@@ -712,7 +713,7 @@ const styles = StyleSheet.create({
   declutterName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 8,
   },
   declutterReason: {
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
   },
   declutterExplanation: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
     lineHeight: 18,
   },
@@ -741,24 +742,24 @@ const styles = StyleSheet.create({
   },
   declutterConfidenceLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   declutterConfidenceBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 3,
     overflow: 'hidden',
   },
   declutterConfidenceFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.camel,
     borderRadius: 3,
   },
   declutterConfidenceValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10b981',
+    color: ds.camel,
   },
   declutterActions: {
     flexDirection: 'row',
@@ -769,17 +770,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     alignItems: 'center',
   },
   declutterActionButtonPrimary: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: ds.ink,
+    borderColor: ds.ink,
   },
   declutterActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   declutterActionTextPrimary: {
     color: '#ffffff',
@@ -790,12 +791,12 @@ const styles = StyleSheet.create({
   capsuleTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 4,
   },
   capsuleSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 20,
   },
   capsuleStats: {
@@ -807,7 +808,7 @@ const styles = StyleSheet.create({
   capsuleStatLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   colorPalette: {
@@ -819,7 +820,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   personalizedBadge: {
     alignSelf: 'flex-start',
@@ -852,7 +853,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   capsuleEssentials: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -860,7 +861,7 @@ const styles = StyleSheet.create({
   capsuleEssentialsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 12,
   },
   essentialItem: {
@@ -870,12 +871,12 @@ const styles = StyleSheet.create({
   },
   essentialBullet: {
     fontSize: 14,
-    color: '#10b981',
+    color: ds.camel,
     fontWeight: 'bold',
   },
   essentialText: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   capsuleItems: {
     marginBottom: 20,
@@ -883,7 +884,7 @@ const styles = StyleSheet.create({
   capsuleItemsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 12,
   },
   capsuleGrid: {
@@ -898,6 +899,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: (width - 56) / 3,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
   },
 });

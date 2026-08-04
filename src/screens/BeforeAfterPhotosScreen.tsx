@@ -20,6 +20,7 @@ import { beforeAfterService, BeforeAfterPhoto, PhotoPair } from '../services/bef
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = (width - 60) / 2;
@@ -204,7 +205,7 @@ export default function BeforeAfterPhotosScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading photos...</Text>
         </View>
       </SafeAreaView>
@@ -353,7 +354,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -361,21 +362,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -384,15 +385,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   content: {
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   comparisonContainer: {
     flexDirection: 'row',
@@ -422,19 +423,19 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   photoLabel: {
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: '#64748b',
+    backgroundColor: colors.inkMuted,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   photoLabelAfter: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
   },
   photoLabelText: {
     color: '#ffffff',
@@ -447,11 +448,11 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 24,
-    color: '#ef4444',
+    color: colors.ink,
   },
   pairCaption: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -464,11 +465,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   actionIcon: {
     fontSize: 16,
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   typeTag: {
@@ -505,10 +506,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   typeTagBefore: {
-    backgroundColor: '#64748b',
+    backgroundColor: colors.inkMuted,
   },
   typeTagAfter: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
   },
   typeTagText: {
     color: '#ffffff',
@@ -518,7 +519,7 @@ const styles = StyleSheet.create({
   },
   photoCaption: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emptyState: {
     width: '100%',
@@ -528,17 +529,17 @@ const styles = StyleSheet.create({
   emptyEmoji: {
     fontSize: 48,
     marginBottom: 16,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   uploadButtons: {
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
   },
   uploadButton: {
     flex: 1,
@@ -558,10 +559,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadButtonBefore: {
-    backgroundColor: '#64748b',
+    backgroundColor: colors.inkMuted,
   },
   uploadButtonAfter: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
   },
   uploadIcon: {
     fontSize: 20,

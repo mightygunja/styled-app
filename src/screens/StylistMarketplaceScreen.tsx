@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Stylist } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -142,7 +143,7 @@ export default function StylistMarketplaceScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Finding stylists...</Text>
         </View>
       </SafeAreaView>
@@ -167,7 +168,7 @@ export default function StylistMarketplaceScreen() {
             placeholder="Search by name or specialty..."
             value={searchQuery}
             onChangeText={handleSearch}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
           />
           <Text style={styles.searchIcon}>🔍</Text>
         </View>
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     padding: 20,
@@ -249,12 +250,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   searchContainer: {
@@ -266,14 +267,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 48,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingRight: 48,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   searchIcon: {
     position: 'absolute',
@@ -287,20 +288,20 @@ const styles = StyleSheet.create({
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   filterButtonActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   filterTextActive: {
     color: '#ffffff',
@@ -311,7 +312,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   cardsContainer: {
@@ -323,13 +324,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     overflow: 'hidden',
   },
   coverImage: {
     width: '100%',
     height: 120,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   profileSection: {
     flexDirection: 'row',
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 4,
     borderColor: '#ffffff',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   stylistInfo: {
     flex: 1,
@@ -358,14 +359,14 @@ const styles = StyleSheet.create({
   stylistName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginRight: 6,
   },
   verifiedBadge: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -382,21 +383,21 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginRight: 4,
   },
   reviewCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   location: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   bio: {
     paddingHorizontal: 16,
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -408,14 +409,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   specialtyTag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   specialtyText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   cardFooter: {
@@ -425,20 +426,20 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.paper,
   },
   rateLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   rate: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   bookButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -459,11 +460,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
 });

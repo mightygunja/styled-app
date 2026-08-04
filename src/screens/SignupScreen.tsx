@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import SocialAuthButtons from '../components/SocialAuthButtons';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -156,22 +157,22 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
   },
   form: {
     gap: 16,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   button: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -191,10 +192,10 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
   },
   linkTextBold: {
     fontWeight: '600',
-    color: '#000',
+    color: colors.ink,
   },
 });

@@ -17,6 +17,7 @@ import { outfitsService } from '../services/firestore';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -102,7 +103,7 @@ export default function SmartOutfitBuilderScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading your closet...</Text>
         </View>
       </SafeAreaView>
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -276,30 +277,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   previewSection: {
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   emptyPreview: {
@@ -308,17 +309,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderStyle: 'dashed',
   },
   emptyText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   previewGrid: {
     flexDirection: 'row',
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   removeButton: {
     position: 'absolute',
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clearButtonText: {
-    color: '#ef4444',
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -373,17 +374,17 @@ const styles = StyleSheet.create({
   occasionButton: {
     flex: 1,
     padding: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     alignItems: 'center',
   },
   occasionButtonActive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   occasionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   occasionTextActive: {
     color: '#ffffff',
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   suggestionImages: {
     flexDirection: 'row',
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginLeft: -10,
     borderWidth: 2,
     borderColor: '#ffffff',
@@ -420,23 +421,23 @@ const styles = StyleSheet.create({
   suggestionScore: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10b981',
+    color: colors.camel,
     marginBottom: 4,
   },
   suggestionReason: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   applyButton: {
     padding: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 6,
     alignItems: 'center',
   },
   applyButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   closetSection: {
     padding: 20,
@@ -452,10 +453,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   itemCardSelected: {
-    borderColor: '#ef4444',
+    borderColor: colors.ink,
     borderWidth: 3,
   },
   itemImage: {
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   selectedBadge: {
     position: 'absolute',
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
   itemCategory: {
     padding: 8,
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

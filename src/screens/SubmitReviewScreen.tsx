@@ -17,6 +17,7 @@ import { SessionType } from '../types';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SubmitReviewRouteProp = RouteProp<RootStackParamList, 'SubmitReview'>;
@@ -214,31 +215,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   stylistInfo: {
     padding: 20,
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   stylistName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   sessionTypeText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   section: {
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   starsContainer: {
@@ -270,22 +271,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
+    color: colors.ink,
   },
   commentInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     minHeight: 150,
   },
   characterCount: {
     textAlign: 'right',
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginTop: 8,
   },
   recommendButtons: {
@@ -297,16 +298,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     gap: 8,
   },
   recommendButtonActive: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   recommendIcon: {
     fontSize: 24,
@@ -318,10 +319,10 @@ const styles = StyleSheet.create({
   recommendText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   recommendTextActive: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   tipsSection: {
     margin: 20,
@@ -329,12 +330,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fffbeb',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fef3c7',
+    borderColor: colors.sand,
   },
   tipsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#92400e',
+    color: colors.tobacco,
     marginBottom: 12,
   },
   tipText: {
@@ -346,16 +347,16 @@ const styles = StyleSheet.create({
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
   },
   submitButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   submitButtonText: {
     color: '#ffffff',

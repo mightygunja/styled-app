@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { ClosetItem } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type SimilarItemsRouteProp = RouteProp<RootStackParamList, 'SimilarItems'>;
 
@@ -81,20 +82,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
     padding: 16,
   },
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '100%',
     aspectRatio: 0.75,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   itemInfo: {
     padding: 12,
@@ -127,23 +128,23 @@ const styles = StyleSheet.create({
   itemCategory: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     textTransform: 'capitalize',
     marginBottom: 4,
   },
   itemColor: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     textTransform: 'capitalize',
     marginBottom: 4,
   },
   itemBrand: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginBottom: 8,
   },
   similarityBadge: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.tobacco,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

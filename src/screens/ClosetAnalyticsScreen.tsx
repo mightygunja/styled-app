@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { closetAPI, getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -103,7 +104,7 @@ export default function ClosetAnalyticsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Analyzing your closet...</Text>
         </View>
       </SafeAreaView>
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: colors.ink,
   },
   header: {
     flexDirection: 'row',
@@ -301,16 +302,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   overviewSection: {
     flexDirection: 'row',
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -327,12 +328,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   section: {
     padding: 20,
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   breakdownContainer: {
@@ -355,24 +356,24 @@ const styles = StyleSheet.create({
   breakdownLabel: {
     width: 80,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   breakdownBarContainer: {
     flex: 1,
     height: 24,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
   },
   breakdownBar: {
     height: '100%',
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   breakdownValue: {
     width: 30,
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     textAlign: 'right',
   },
   colorGrid: {
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   },
   colorCard: {
     width: (width - 60) / 3,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -393,17 +394,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   colorCount: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   seasonGrid: {
     flexDirection: 'row',
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
   },
   seasonCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -423,12 +424,12 @@ const styles = StyleSheet.create({
   seasonName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   seasonCount: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   itemCard: {
     width: 100,
@@ -438,22 +439,22 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   itemCategory: {
     fontSize: 12,
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   itemWears: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   insightCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -465,6 +466,6 @@ const styles = StyleSheet.create({
   insightText: {
     flex: 1,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
 });

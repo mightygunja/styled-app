@@ -18,6 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, Post } from '../services/socialFeedService';
 import { userProfileService, UserProfile } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (width - 6) / 3;
@@ -325,7 +326,7 @@ export default function ExploreScreen() {
   const renderSearchResults = () => (
     <View style={styles.section}>
       {searching ? (
-        <ActivityIndicator size="small" color="#ef4444" />
+        <ActivityIndicator size="small" color={colors.ink} />
       ) : (
         <>
           {searchResultUsers && searchResultUsers.length > 0 && (
@@ -363,7 +364,7 @@ export default function ExploreScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -465,12 +466,12 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -479,19 +480,19 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   searchButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -502,7 +503,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -511,15 +512,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   activeTabText: {
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   section: {
@@ -528,7 +529,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 16,
   },
   categoriesScroll: {
@@ -538,20 +539,20 @@ const styles = StyleSheet.create({
   categoryCard: {
     width: 120,
     padding: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     marginRight: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   categoryCardActive: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderColor: colors.ink,
+    backgroundColor: colors.sand,
   },
   emptyHint: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
     paddingVertical: 20,
   },
@@ -562,12 +563,12 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   categoryCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   postsGrid: {
     flexDirection: 'row',
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   multipleIndicator: {
     position: 'absolute',
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     marginBottom: 12,
     gap: 12,
@@ -626,7 +627,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -641,12 +642,12 @@ const styles = StyleSheet.create({
   hashtagName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 2,
   },
   hashtagCount: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   hashtagGrowth: {
     flexDirection: 'row',
@@ -659,13 +660,13 @@ const styles = StyleSheet.create({
   growthText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#10b981',
+    color: colors.camel,
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     marginBottom: 12,
     gap: 12,
@@ -674,13 +675,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   userAvatarPlaceholder: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -695,16 +696,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   userUsername: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   userBio: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
     marginBottom: 6,
   },
   userTags: {
@@ -717,14 +718,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   userTagText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   followButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,

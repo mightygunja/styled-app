@@ -25,6 +25,7 @@ import {
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (width - 60) / 2;
@@ -194,7 +195,7 @@ export default function SmartSearchScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search items, styles, looks..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.inkFaint}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={() => handleSearch()}
@@ -289,7 +290,7 @@ export default function SmartSearchScreen() {
         {/* Loading */}
         {searching && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ef4444" />
+            <ActivityIndicator size="large" color={colors.ink} />
             <Text style={styles.loadingText}>Searching...</Text>
           </View>
         )}
@@ -345,20 +346,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   clearButton: {
     fontSize: 14,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   searchContainer: {
@@ -370,11 +371,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   searchIcon: {
     fontSize: 18,
@@ -383,16 +384,16 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     paddingVertical: 12,
   },
   clearIcon: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     fontWeight: 'bold',
   },
   searchButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     borderRadius: 12,
     justifyContent: 'center',
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   categoriesScroll: {
     maxHeight: 50,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   categoriesContainer: {
     paddingHorizontal: 20,
@@ -417,14 +418,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     gap: 6,
   },
   categoryChipActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   categoryEmoji: {
     fontSize: 16,
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   categoryTextActive: {
     color: '#ffffff',
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   toolbar: {
     flexDirection: 'row',
@@ -453,17 +454,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: colors.hair,
+    backgroundColor: colors.paper,
   },
   toolbarButtonText: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   resultCount: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   loadingContainer: {
     padding: 60,
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   suggestionsContainer: {
     padding: 20,
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   suggestionItem: {
@@ -488,7 +489,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
     gap: 12,
   },
   suggestionIcon: {
@@ -497,11 +498,11 @@ const styles = StyleSheet.create({
   suggestionText: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
   },
   suggestionCategory: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   resultsContainer: {
     padding: 20,
@@ -516,13 +517,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     overflow: 'hidden',
   },
   resultImage: {
     width: '100%',
     height: GRID_ITEM_SIZE,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   resultInfo: {
     padding: 12,
@@ -530,12 +531,12 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   resultSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   resultMeta: {
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultType: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
   },
   relevanceScore: {
     fontSize: 11,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   emptyState: {
@@ -568,12 +569,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   discoveryContainer: {
@@ -592,16 +593,16 @@ const styles = StyleSheet.create({
   discoverySectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   discoverySectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginTop: 2,
   },
   seeAllButton: {
     fontSize: 14,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   discoveryGrid: {
@@ -616,13 +617,13 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   discoveryTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 18,
   },
 });

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Look, Item } from '../types';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
 import BackButton from '../components/BackButton';
+import { colors } from '../theme/designSystem';
 
 interface LookDetailScreenProps {
   route: {
@@ -148,7 +149,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading look details...</Text>
         </View>
       </SafeAreaView>
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -382,13 +383,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 24,
   },
   backButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 8,
   },
   backButtonText: {
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     fontSize: 24,
-    color: '#0f172a',
+    color: colors.ink,
   },
   favoriteButton: {
     position: 'absolute',
@@ -440,12 +441,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 24,
     marginBottom: 16,
   },
@@ -456,14 +457,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.inkMuted,
     fontWeight: '500',
   },
   paletteSection: {
@@ -472,23 +473,23 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 12,
   },
   paletteCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
   },
   paletteName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   paletteDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   colorsContainer: {
@@ -504,7 +505,7 @@ const styles = StyleSheet.create({
   },
   tapToExplore: {
     fontSize: 14,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
     marginTop: 12,
     textAlign: 'center',
@@ -514,7 +515,7 @@ const styles = StyleSheet.create({
   },
   itemCount: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   itemCard: {
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     overflow: 'hidden',
   },
   itemImage: {
@@ -543,10 +544,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   heroBadge: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -557,7 +558,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   budgetBadge: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -569,12 +570,12 @@ const styles = StyleSheet.create({
   },
   itemBrand: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   itemRetailer: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginBottom: 8,
   },
   priceRow: {
@@ -585,21 +586,21 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
     marginRight: 8,
   },
   originalPrice: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textDecorationLine: 'line-through',
   },
   itemDetail: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   shopButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   shopAllButton: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.ink,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -632,24 +633,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   miniLookImage: {
     width: '100%',
     height: 180,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   miniLookTitle: {
     padding: 12,
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 18,
   },
   viewAllCard: {
     width: 140,
     height: 180,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -662,7 +663,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shopMyClosetButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.tobacco,
     padding: 16,
     borderRadius: 12,
     marginTop: 20,

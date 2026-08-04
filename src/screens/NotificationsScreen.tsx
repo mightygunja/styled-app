@@ -19,6 +19,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -204,7 +205,7 @@ export default function NotificationsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
     );
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -284,10 +285,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: colors.ink,
   },
   headerBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
   },
   markAllButton: {
     fontSize: 14,
-    color: '#ef4444',
+    color: colors.ink,
     fontWeight: '600',
   },
   notificationCard: {
@@ -309,11 +310,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
     gap: 12,
   },
   unreadCard: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
   },
   notificationContent: {
     flex: 1,
@@ -324,13 +325,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
   },
   avatarPlaceholder: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -354,30 +355,30 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
   },
   message: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 4,
   },
   time: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   deleteButton: {
     padding: 8,
   },
   deleteIcon: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   emptyState: {
     padding: 60,
@@ -390,12 +391,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

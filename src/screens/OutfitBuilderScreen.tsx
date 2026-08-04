@@ -18,6 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { ClosetItem, Season } from '../types';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'OutfitBuilder'>;
@@ -277,7 +278,7 @@ export default function OutfitBuilderScreen() {
       <SafeAreaView style={styles.container}>
         <BackButton />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Creating outfit suggestions...</Text>
         </View>
       </SafeAreaView>
@@ -444,7 +445,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#000',
+    color: colors.ink,
   },
   title: {
     fontSize: 18,
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.ink,
   },
   section: {
     padding: 20,
@@ -477,16 +478,16 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   sourceItemCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: colors.ink,
   },
   sourceItemImage: {
     width: 80,
@@ -504,12 +505,12 @@ const styles = StyleSheet.create({
   },
   sourceItemBrand: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 4,
   },
   sourceItemColor: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 2,
   },
   selectedItemsRow: {
@@ -524,13 +525,13 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: colors.ink,
   },
   removeButton: {
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -549,14 +550,14 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: '48%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   itemCardSelected: {
-    borderColor: '#000',
+    borderColor: colors.ink,
   },
   itemImage: {
     width: '100%',
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
   },
   itemBrand: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 4,
   },
   emptyState: {
@@ -597,14 +598,14 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   filterTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
-    color: '#161616',
+    color: colors.ink,
   },
   occasionFilters: {
     flexDirection: 'row',
@@ -617,14 +618,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: colors.paper,
     borderWidth: 2,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
     gap: 6,
   },
   occasionButtonActive: {
-    backgroundColor: '#2B1F1A',
-    borderColor: '#2B1F1A',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   occasionIcon: {
     fontSize: 16,
@@ -632,7 +633,7 @@ const styles = StyleSheet.create({
   occasionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#161616',
+    color: colors.ink,
   },
   occasionButtonTextActive: {
     color: '#F1ECE7',

@@ -21,6 +21,7 @@ import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
+import { colors } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -291,7 +292,7 @@ export default function RecommendationsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Finding perfect looks for you...</Text>
         </View>
       </SafeAreaView>
@@ -319,7 +320,7 @@ export default function RecommendationsScreen() {
             Curated looks based on your style, closet, and preferences
           </Text>
           <TouchableOpacity
-            style={{ backgroundColor: '#000', padding: 12, borderRadius: 8, marginTop: 12 }}
+            style={{ backgroundColor: colors.ink, padding: 12, borderRadius: 8, marginTop: 12 }}
             onPress={() => {
               console.log('TEST BUTTON PRESSED!');
               Alert.alert('Touch Works!', 'Touch is working on this screen');
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#000',
+    color: colors.ink,
   },
   title: {
     fontSize: 18,
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   },
   intro: {
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   introTitle: {
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
   },
   introText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   category: {
@@ -448,16 +449,16 @@ const styles = StyleSheet.create({
   },
   categorySubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 2,
   },
   seeAllButton: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: colors.ink,
   },
   reasonBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
   reasonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#92400e',
+    color: colors.tobacco,
   },
   looksScroll: {
     paddingHorizontal: 20,
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
   },
   lookOccasion: {
     fontSize: 12,
-    color: '#666',
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   favoriteButtonRec: {
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -530,13 +531,13 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
   emptyStateButton: {
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
