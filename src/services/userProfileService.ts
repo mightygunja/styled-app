@@ -87,7 +87,10 @@ class UserProfileService {
         displayName,
         username: (realUserInfo.email?.split('@')[0] || displayName).toLowerCase().replace(/[^a-z0-9]/g, ''),
         bio: '',
-        profileImageUrl: realUserInfo.photoURL || undefined,
+        // Omitted entirely when absent rather than set to undefined. Email
+        // signups have no photoURL, and writing undefined rejects the whole
+        // document - which meant those users got no profile at all.
+        ...(realUserInfo.photoURL ? { profileImageUrl: realUserInfo.photoURL } : {}),
         styleTags: [],
         isPrivate: false,
         stats: { followers: 0, following: 0, posts: 0, looks: 0 },

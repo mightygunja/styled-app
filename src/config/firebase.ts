@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
@@ -20,7 +20,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize services
-export const db = getFirestore(app);
+/**
+ * `ignoreUndefinedProperties` makes Firestore drop undefined fields instead of
+ * throwing on them.
+ *
+ * Without it, any write containing an optional field that happens to be absent
+ * fails the whole document. That is how a user with no profile photo could not
+ * get a profile created at all: `profileImageUrl: photoURL || undefined` threw
+ * rather than simply omitting the field.
+ *
+ * Optional fields are pervasive in this app's models - brand, price,
+ * purchaseDate, location - so treating "absent" as an error rather than as
+ * absence was always going to surface eventually, and it surfaces as a total
+ * write failure rather than a partial one.
+ */
+export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
 
