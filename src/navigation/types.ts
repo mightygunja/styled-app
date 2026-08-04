@@ -64,6 +64,8 @@ export type RootStackParamList = {
   EditDetail: { editId: string };
   EditReview: undefined;
   StylistAvailability: undefined;
+  StylistApplication: undefined;
+  StylistApplicationsAdmin: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;

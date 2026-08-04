@@ -1547,6 +1547,169 @@ export const renderTryOn = functions
     }
   });
 
+// ==================== STYLIST APPLICATIONS ====================
+//
+// Approving a stylist is the one action in this app that grants a user a role
+// other people are charged for, so it lives entirely server-side. Nothing on
+// the client can write the `stylists` collection.
+//
+// Admins are identified by an allowlist of uids:
+//   firebase functions:config:set admin.uids="uid1,uid2"
+//
+// A config allowlist rather than custom claims because there will be a handful
+// of admins and no self-serve admin signup. If that changes, move to custom
+// claims - the check is isolated in requireAdmin() below.
+
+function requireAdmin(context: functions.https.CallableContext): string {
+  const uid = context.auth?.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
+  }
+
+  const configured: string = functions.config().admin?.uids || '';
+  const admins = configured
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  // An empty allowlist denies everyone rather than allowing everyone. A
+  // misconfiguration should lock admins out, not let the world in.
+  if (!admins.includes(uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'Admins only.');
+  }
+  return uid;
+}
+
+export const listStylistApplications = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    requireAdmin(context);
+
+    const status = data?.status || 'pending';
+    const snapshot = await db
+      .collection('stylistApplications')
+      .where('status', '==', status)
+      .get();
+
+    const applications = snapshot.docs
+      .map(d => d.data())
+      .sort((a: any, b: any) => String(a.submittedAt).localeCompare(String(b.submittedAt)));
+
+    return { applications };
+  });
+
+/**
+ * Approves or declines an application.
+ *
+ * On approval this is the ONLY place a `stylists/{uid}` document is created.
+ * The record is built from the application rather than from anything the
+ * client sends at review time, so an admin cannot be tricked into approving
+ * different terms than the ones that were reviewed.
+ */
+export const reviewStylistApplication = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    const reviewerUid = requireAdmin(context);
+
+    const { applicationId, decision, reviewNote } = data as {
+      applicationId: string;
+      decision: 'approve' | 'decline';
+      reviewNote?: string;
+    };
+
+    if (!applicationId || (decision !== 'approve' && decision !== 'decline')) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        'applicationId and a decision of approve or decline are required.'
+      );
+    }
+
+    const ref = db.collection('stylistApplications').doc(applicationId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      throw new functions.https.HttpsError('not-found', 'That application no longer exists.');
+    }
+
+    const application = snap.data() as any;
+
+    if (application.status !== 'pending') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        `That application was already ${application.status}.`
+      );
+    }
+
+    if (decision === 'decline') {
+      await ref.update({
+        status: 'declined',
+        reviewNote: reviewNote || '',
+        reviewedAt: new Date().toISOString(),
+        reviewedBy: reviewerUid,
+      });
+      console.log(`Declined stylist application ${applicationId}`);
+      return { success: true, decision: 'declined' };
+    }
+
+    // Approval. The stylist doc id is the applicant's uid, which is what makes
+    // the whole role check work - AccountScreen and StylistDashboard both look
+    // up stylists/{their own uid}.
+    const stylistDoc = {
+      id: applicationId,
+      name: application.fullName || 'Stylist',
+      bio: application.bio || '',
+      profileImageUrl: application.profileImageUrl || '',
+      specialties: Array.isArray(application.specialties) ? application.specialties : [],
+      hourlyRate: typeof application.hourlyRate === 'number' ? application.hourlyRate : 0,
+      // A new stylist has no history. Seeding a flattering rating would be
+      // inventing social proof, and every review count in the app is real.
+      rating: 0,
+      reviewCount: 0,
+      availability: [],
+      yearsExperience:
+        typeof application.yearsExperience === 'number' ? application.yearsExperience : 0,
+      certifications: Array.isArray(application.certifications) ? application.certifications : [],
+      portfolio: (Array.isArray(application.portfolioUrls) ? application.portfolioUrls : []).map(
+        (url: string, i: number) => ({
+          id: `portfolio-${i + 1}`,
+          imageUrl: url,
+          title: `Work sample ${i + 1}`,
+        })
+      ),
+      sessionTypes: Array.isArray(application.sessionTypes) ? application.sessionTypes : [],
+      languages: Array.isArray(application.languages) ? application.languages : [],
+      location: application.location || '',
+      // Verified means a human reviewed and accepted them, which is exactly
+      // what just happened.
+      isVerified: true,
+      createdAt: admin.firestore.Timestamp.now(),
+    };
+
+    const batch = db.batch();
+    batch.set(db.collection('stylists').doc(applicationId), stylistDoc);
+    batch.update(ref, {
+      status: 'approved',
+      reviewNote: reviewNote || '',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: reviewerUid,
+    });
+    await batch.commit();
+
+    // Told in-app rather than by email: there is no transactional email
+    // provider wired up, and a notification is something this app can actually
+    // deliver today.
+    await db.collection('notifications').add({
+      userId: applicationId,
+      type: 'system',
+      title: "You're approved as a Styled stylist",
+      body: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
+      read: false,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(`Approved stylist application ${applicationId}`);
+    return { success: true, decision: 'approved' };
+  });
+
 // ==================== CHALLENGE SEEDING ====================
 
 /**

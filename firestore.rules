@@ -314,6 +314,29 @@ service cloud.firestore {
       allow write: if isOwner(stylistId);
     }
 
+    // Stylist applications. The doc id IS the applicant's uid, so an applicant
+    // can only ever see their own. Admin review runs through Cloud Functions
+    // with admin credentials, which bypass these rules - so no rule here needs
+    // to grant anyone a wider read, and none does.
+    //
+    // `status` is deliberately not writable by the applicant: it is the field
+    // that decides whether they become a stylist. Approval is server-side only.
+    match /stylistApplications/{applicantId} {
+      allow read: if isOwner(applicantId);
+      allow create: if isOwner(applicantId)
+        && request.resource.data.status == 'pending';
+      allow update: if isOwner(applicantId)
+        && request.resource.data.status == 'pending'
+        && resource.data.status != 'approved';
+      allow delete: if false;
+    }
+
+    // NOTE: `stylists` is already locked to read-only for clients further up
+    // this file, which is exactly what approval requires - only
+    // reviewStylistApplication, running with admin credentials, can create a
+    // stylist record. No second rule needed here; duplicate matches in
+    // Firestore are OR'd, so adding one could only ever loosen it.
+
     // Edits - visible to the client who bought it and the stylist building it.
     // The client may only ever change status (to request a revision); the
     // stylist owns the looks and the note.

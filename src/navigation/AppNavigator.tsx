@@ -24,6 +24,8 @@ import EditsScreen from '../screens/EditsScreen';
 import EditDetailScreen from '../screens/EditDetailScreen';
 import EditReviewScreen from '../screens/EditReviewScreen';
 import StylistAvailabilityScreen from '../screens/StylistAvailabilityScreen';
+import StylistApplicationScreen from '../screens/StylistApplicationScreen';
+import StylistApplicationsAdminScreen from '../screens/StylistApplicationsAdminScreen';
 import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
 import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
 import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
@@ -142,6 +144,8 @@ export default function AppNavigator() {
             <Stack.Screen name="EditDetail" component={EditDetailScreen} />
             <Stack.Screen name="EditReview" component={EditReviewScreen} />
             <Stack.Screen name="StylistAvailability" component={StylistAvailabilityScreen} />
+            <Stack.Screen name="StylistApplication" component={StylistApplicationScreen} />
+            <Stack.Screen name="StylistApplicationsAdmin" component={StylistApplicationsAdminScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
             <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />

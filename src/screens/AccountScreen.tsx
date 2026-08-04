@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { affiliateClicksService, stylistsService } from '../services/firestore';
+import { stylistApplicationService, ApplicationStatus } from '../services/stylistApplicationService';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -56,6 +57,7 @@ export default function AccountScreen() {
   const [loading, setLoading] = useState(true);
   const [marketplaceStats, setMarketplaceStats] = useState<{ clicks: number; estimatedCommission: number } | null>(null);
   const [isStylist, setIsStylist] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -66,6 +68,13 @@ export default function AccountScreen() {
         .getById(userId)
         .then(record => setIsStylist(!!record))
         .catch(() => setIsStylist(false));
+
+      // Drives whether the row reads "Work as a stylist" or "Your stylist
+      // application", so someone who has applied is not asked to apply again.
+      stylistApplicationService
+        .getMine(userId)
+        .then(application => setApplicationStatus(application?.status ?? null))
+        .catch(() => setApplicationStatus(null));
 
       const clicks = await affiliateClicksService.getForUser(userId);
       setMarketplaceStats({
@@ -180,13 +189,35 @@ export default function AccountScreen() {
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('MySessions')}>
+          <TouchableOpacity
+            style={[styles.prefRow, isStylist && styles.prefRowLast]}
+            onPress={() => navigation.navigate('MySessions')}
+          >
             <View>
               <Text style={styles.prefTitle}>Your sessions</Text>
               <Text style={styles.prefSubtitle}>UPCOMING · PAST</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
+
+          {/* Offered only to people who aren't already stylists. Without this a
+              stylist downloading the app has no route to their own tools. */}
+          {!isStylist && (
+            <TouchableOpacity
+              style={[styles.prefRow, styles.prefRowLast]}
+              onPress={() => navigation.navigate('StylistApplication')}
+            >
+              <View>
+                <Text style={styles.prefTitle}>
+                  {applicationStatus === 'pending' ? 'Your stylist application' : 'Work as a stylist'}
+                </Text>
+                <Text style={styles.prefSubtitle}>
+                  {applicationStatus === 'pending' ? 'WITH OUR TEAM' : 'APPLY TO JOIN THE MARKETPLACE'}
+                </Text>
+              </View>
+              <Text style={styles.prefArrow}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={styles.sectionLabel}>SHOPPING</Text>
