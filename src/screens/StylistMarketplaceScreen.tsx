@@ -8,26 +8,32 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import BackButton from '../components/BackButton';
+import Chip from '../components/Chip';
 import { Stylist } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
-import { colors } from '../theme/designSystem';
-
-const { width } = Dimensions.get('window');
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Filter = 'all' | 'top-rated' | 'affordable';
+
+const FILTERS: Array<{ value: Filter; label: string }> = [
+  { value: 'all', label: 'Everyone' },
+  { value: 'top-rated', label: 'Highest rated' },
+  { value: 'affordable', label: 'Under $125' },
+];
 
 export default function StylistMarketplaceScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [stylists, setStylists] = useState<Stylist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'top-rated' | 'affordable'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<Filter>('all');
 
   useEffect(() => {
     loadStylists();
@@ -51,7 +57,7 @@ export default function StylistMarketplaceScreen() {
       loadStylists();
       return;
     }
-    
+
     try {
       const results = await stylistAPI.searchStylists(query);
       setStylists(results);
@@ -60,9 +66,9 @@ export default function StylistMarketplaceScreen() {
     }
   };
 
-  const applyFilter = async (filter: 'all' | 'top-rated' | 'affordable') => {
+  const applyFilter = async (filter: Filter) => {
     setSelectedFilter(filter);
-    
+
     try {
       if (filter === 'all') {
         loadStylists();
@@ -81,147 +87,117 @@ export default function StylistMarketplaceScreen() {
   const renderStylistCard = (stylist: Stylist) => (
     <TouchableOpacity
       key={stylist.id}
-      style={styles.stylistCard}
+      style={styles.card}
+      activeOpacity={0.85}
       onPress={() => navigation.navigate('StylistDetail', { stylistId: stylist.id })}
     >
-      {/* Cover Image */}
-      {stylist.coverImageUrl && (
-        <Image source={{ uri: stylist.coverImageUrl }} style={styles.coverImage} />
+      <View style={styles.cardHead}>
+        {stylist.profileImageUrl ? (
+          <Image source={{ uri: stylist.profileImageUrl }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarInitial}>{stylist.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+
+        <View style={styles.cardHeadText}>
+          <Text style={styles.name}>{stylist.name}</Text>
+          <Text style={styles.meta}>
+            {/* A new stylist has no reviews. Showing "0.0" would read as a bad
+                score rather than an absent one, so it says so plainly. */}
+            {stylist.reviewCount > 0
+              ? `${stylist.rating.toFixed(1)} · ${stylist.reviewCount} ${
+                  stylist.reviewCount === 1 ? 'review' : 'reviews'
+                }`
+              : 'New to Styled'}
+            {stylist.location ? `  ·  ${stylist.location}` : ''}
+          </Text>
+          {stylist.isVerified && <Text style={styles.verified}>VERIFIED BY STYLED</Text>}
+        </View>
+      </View>
+
+      {!!stylist.bio && (
+        <Text style={styles.bio} numberOfLines={3}>
+          {stylist.bio}
+        </Text>
       )}
-      
-      {/* Profile Section */}
-      <View style={styles.profileSection}>
-        <Image source={{ uri: stylist.profileImageUrl }} style={styles.profileImage} />
-        
-        <View style={styles.stylistInfo}>
-          <View style={styles.nameRow}>
-            <Text style={styles.stylistName}>{stylist.name}</Text>
-            {stylist.isVerified && (
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedText}>✓</Text>
-              </View>
-            )}
-          </View>
-          
-          <View style={styles.ratingRow}>
-            <Text style={styles.rating}>⭐ {stylist.rating.toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>({stylist.reviewCount} reviews)</Text>
-          </View>
-          
-          <Text style={styles.location}>📍 {stylist.location}</Text>
-        </View>
-      </View>
 
-      {/* Bio */}
-      <Text style={styles.bio} numberOfLines={2}>
-        {stylist.bio}
-      </Text>
+      {stylist.specialties?.length > 0 && (
+        <Text style={styles.specialties}>{stylist.specialties.slice(0, 3).join('  ·  ')}</Text>
+      )}
 
-      {/* Specialties */}
-      <View style={styles.specialtiesContainer}>
-        {stylist.specialties.slice(0, 3).map((specialty, index) => (
-          <View key={index} style={styles.specialtyTag}>
-            <Text style={styles.specialtyText}>{specialty}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Footer */}
       <View style={styles.cardFooter}>
-        <View>
-          <Text style={styles.rateLabel}>Starting at</Text>
-          <Text style={styles.rate}>${stylist.hourlyRate}/hr</Text>
-        </View>
-        <View style={styles.bookButton}>
-          <Text style={styles.bookButtonText}>Book Session</Text>
-        </View>
+        <Text style={styles.rate}>
+          ${stylist.hourlyRate}
+          <Text style={styles.rateUnit}> / hour</Text>
+        </Text>
+        {stylist.yearsExperience > 0 && (
+          <Text style={styles.years}>
+            {stylist.yearsExperience} {stylist.yearsExperience === 1 ? 'year' : 'years'} styling
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.ink} />
-          <Text style={styles.loadingText}>Finding stylists...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Find Your Stylist</Text>
-          <Text style={styles.subtitle}>
-            Connect with professional stylists for personalized sessions
-          </Text>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <BackButton />
+      </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or specialty..."
-            value={searchQuery}
-            onChangeText={handleSearch}
-            placeholderTextColor={colors.inkFaint}
-          />
-          <Text style={styles.searchIcon}>🔍</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.eyebrow}>STYLISTS</Text>
+        <Text style={styles.title}>Find your stylist</Text>
+        <Text style={styles.subtitle}>
+          Every stylist here was reviewed by a person before they appeared. Book a session, or
+          ask one to build an Edit from the clothes you already own.
+        </Text>
 
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <TouchableOpacity
-              style={[styles.filterButton, selectedFilter === 'all' && styles.filterButtonActive]}
-              onPress={() => applyFilter('all')}
-            >
-              <Text style={[styles.filterText, selectedFilter === 'all' && styles.filterTextActive]}>
-                All Stylists
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.filterButton, selectedFilter === 'top-rated' && styles.filterButtonActive]}
-              onPress={() => applyFilter('top-rated')}
-            >
-              <Text style={[styles.filterText, selectedFilter === 'top-rated' && styles.filterTextActive]}>
-                ⭐ Top Rated
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.filterButton, selectedFilter === 'affordable' && styles.filterButtonActive]}
-              onPress={() => applyFilter('affordable')}
-            >
-              <Text style={[styles.filterText, selectedFilter === 'affordable' && styles.filterTextActive]}>
-                💰 Affordable
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or specialty…"
+          value={searchQuery}
+          onChangeText={handleSearch}
+          placeholderTextColor={colors.inkFaint}
+          autoCorrect={false}
+        />
 
-        {/* Results Count */}
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsText}>
-            {stylists.length} {stylists.length === 1 ? 'stylist' : 'stylists'} available
-          </Text>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterContent}
+        >
+          {FILTERS.map(filter => (
+            <Chip
+              key={filter.value}
+              label={filter.label}
+              active={selectedFilter === filter.value}
+              onPress={() => applyFilter(filter.value)}
+              style={styles.filterChip}
+            />
+          ))}
+        </ScrollView>
 
-        {/* Stylist Cards */}
-        <View style={styles.cardsContainer}>
-          {stylists.map(renderStylistCard)}
-        </View>
-
-        {/* Empty State */}
-        {stylists.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>No stylists found</Text>
-            <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+        {loading ? (
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : stylists.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No stylists match that</Text>
+            <Text style={styles.emptyText}>
+              Try a different search, or clear the filter to see everyone.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.resultsCount}>
+              {stylists.length} {stylists.length === 1 ? 'STYLIST' : 'STYLISTS'}
+            </Text>
+            {stylists.map(renderStylistCard)}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -229,242 +205,78 @@ export default function StylistMarketplaceScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: colors.inkMuted,
-  },
-  header: {
-    padding: 20,
-    paddingBottom: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.ink,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
+  container: { flex: 1, backgroundColor: colors.bone },
+  header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { padding: spacing.page, paddingBottom: 60 },
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
+
   searchInput: {
-    flex: 1,
-    height: 48,
-    backgroundColor: colors.paper,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingRight: 48,
-    fontSize: 16,
+    ...textType.body,
     color: colors.ink,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  searchIcon: {
-    position: 'absolute',
-    right: 36,
-    fontSize: 20,
+
+  filterScroll: {
+    marginTop: spacing.sm,
+    marginHorizontal: -spacing.page,
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  filtersContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: colors.paper,
-    borderRadius: 20,
-    marginRight: 8,
+  filterContent: { paddingHorizontal: spacing.page, paddingVertical: 6, alignItems: 'center' },
+  filterChip: { marginRight: 8 },
+
+  resultsCount: { ...textType.microLabel, color: colors.inkFaint, marginTop: spacing.lg },
+
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+
+  card: {
+    marginTop: spacing.md,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
+    padding: spacing.lg,
   },
-  filterButtonActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.inkMuted,
-  },
-  filterTextActive: {
-    color: '#ffffff',
-  },
-  resultsHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  resultsText: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    fontWeight: '500',
-  },
-  cardsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  stylistCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.hair,
-    overflow: 'hidden',
-  },
-  coverImage: {
-    width: '100%',
-    height: 120,
-    backgroundColor: colors.paper,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    padding: 16,
-    paddingTop: 0,
-    marginTop: -40,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 4,
-    borderColor: '#ffffff',
-    backgroundColor: colors.paper,
-  },
-  stylistInfo: {
-    flex: 1,
-    marginLeft: 12,
-    marginTop: 40,
-  },
-  nameRow: {
-    flexDirection: 'row',
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start' },
+  // Avatars stay circular - the system's square corners are for panels and
+  // controls, not for portraits.
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.paper },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.sand,
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  stylistName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.ink,
-    marginRight: 6,
-  },
-  verifiedBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.camel,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  verifiedText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-    marginRight: 4,
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  location: {
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  bio: {
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  specialtiesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
-  },
-  specialtyTag: {
-    backgroundColor: colors.paper,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  specialtyText: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    fontWeight: '500',
-  },
+  avatarInitial: { fontFamily: fonts.serif, fontSize: 22, color: colors.tobacco },
+  cardHeadText: { flex: 1, marginLeft: 14 },
+  name: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  meta: { ...textType.meta, fontSize: 12, marginTop: 3 },
+  verified: { ...textType.microLabel, color: colors.camel, marginTop: 6 },
+
+  bio: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: spacing.md, lineHeight: 20 },
+  specialties: { ...textType.meta, fontSize: 11, marginTop: spacing.sm, color: colors.tobacco },
+
   cardFooter: {
     flexDirection: 'row',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 12,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.paper,
+    borderTopColor: colors.hair,
   },
-  rateLabel: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    marginBottom: 2,
-  },
-  rate: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.ink,
-  },
-  bookButton: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  bookButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
+  rate: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  rateUnit: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted },
+  years: { ...textType.meta, fontSize: 11 },
 });
