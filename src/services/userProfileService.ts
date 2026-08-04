@@ -265,8 +265,10 @@ class UserProfileService {
       .map(d => ({ id: d.id, ...d.data() } as UserProfile))
       .filter(
         profile =>
-          profile.displayName.toLowerCase().includes(lowerQuery) ||
-          profile.username.toLowerCase().includes(lowerQuery) ||
+          // Optional chaining throughout: a profile document written before a
+          // field existed would otherwise take down the whole search.
+          profile.displayName?.toLowerCase().includes(lowerQuery) ||
+          profile.username?.toLowerCase().includes(lowerQuery) ||
           profile.bio?.toLowerCase().includes(lowerQuery)
       );
   }

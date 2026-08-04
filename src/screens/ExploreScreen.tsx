@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,109 +14,82 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import BackButton from '../components/BackButton';
+import Chip from '../components/Chip';
 import { RootStackParamList } from '../navigation/types';
-import { socialFeedService, Post } from '../services/socialFeedService';
-import { userProfileService, UserProfile } from '../services/userProfileService';
+import { Post } from '../services/socialFeedService';
+import { userProfileService, UserProfile, FollowSuggestion } from '../services/userProfileService';
+import { buildProfileMatchContext, ProfileMatchContext } from '../services/profileMatchContext';
+import {
+  exploreService,
+  TrendingPost,
+  TrendingHashtag,
+  ExploreCollection,
+} from '../services/exploreService';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
-const GRID_ITEM_SIZE = (width - 6) / 3;
+const GRID_SIZE = (width - spacing.page * 2 - 8) / 3;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Tab = 'for-you' | 'trending' | 'hashtags' | 'people';
 
-interface TrendingHashtag {
-  tag: string;
-  count: number;
-  growth: number;
-}
-
-interface StyleCategory {
-  id: string;
-  name: string;
-  count: number;
-}
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: 'for-you', label: 'For you' },
+  { value: 'trending', label: 'Trending' },
+  { value: 'hashtags', label: 'Tags' },
+  { value: 'people', label: 'People' },
+];
 
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [activeTab, setActiveTab] = useState<'trending' | 'hashtags' | 'people'>('trending');
+  const [activeTab, setActiveTab] = useState<Tab>('for-you');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searching, setSearching] = useState(false);
+
+  const [pool, setPool] = useState<Post[]>([]);
+  const [profile, setProfile] = useState<ProfileMatchContext | undefined>();
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [collections, setCollections] = useState<ExploreCollection[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<FollowSuggestion[]>([]);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+
   const [searchResultPosts, setSearchResultPosts] = useState<Post[] | null>(null);
   const [searchResultUsers, setSearchResultUsers] = useState<UserProfile[] | null>(null);
 
-  // Trending posts
-  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
-  const [allPublicPosts, setAllPublicPosts] = useState<Post[]>([]);
-
-  // Trending hashtags
-  const [trendingHashtags, setTrendingHashtags] = useState<TrendingHashtag[]>([]);
-
-  // Style categories
-  const [categories, setCategories] = useState<StyleCategory[]>([
-    { id: '1', name: 'Minimalist', count: 0 },
-    { id: '2', name: 'Streetwear', count: 0 },
-    { id: '3', name: 'Vintage', count: 0 },
-    { id: '4', name: 'Bohemian', count: 0 },
-    { id: '5', name: 'Athleisure', count: 0 },
-    { id: '6', name: 'Formal', count: 0 },
-  ]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
-  // Suggested users
-  const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
-
   useEffect(() => {
-    loadExploreData();
+    load();
   }, []);
 
-  const loadExploreData = async () => {
+  const load = async () => {
     try {
       setLoading(true);
+      const userId = getCurrentUserId();
 
-      // Load trending posts (recent public posts across the app)
-      const posts = await socialFeedService.getFeed(getCurrentUserId(), 1, 30);
-      const postsWithUsers = await Promise.all(
-        posts.map(async (post) => {
-          const user = await userProfileService.getUserProfile(post.userId);
-          return { ...post, user: user || undefined };
-        })
-      );
-      setTrendingPosts(postsWithUsers);
-      setAllPublicPosts(postsWithUsers);
+      const [posts, matchContext, following] = await Promise.all([
+        exploreService.fetchExplorePool(200),
+        buildProfileMatchContext(userId),
+        userProfileService.getFollowing(userId).catch(() => []),
+      ]);
 
-      // Real trending hashtags: aggregate actual hashtag usage across loaded posts
-      const hashtagCounts = new Map<string, number>();
-      postsWithUsers.forEach(post => {
-        post.hashtags.forEach(tag => {
-          hashtagCounts.set(tag, (hashtagCounts.get(tag) || 0) + 1);
-        });
-      });
-      const sortedHashtags = Array.from(hashtagCounts.entries())
-        .sort((a, b) =>b[1] - a[1])
-        .slice(0, 8)
-        .map(([tag, count]) => ({ tag, count, growth: 0 }));
-      setTrendingHashtags(sortedHashtags);
+      setPool(posts);
+      setProfile(matchContext);
+      setFollowingIds(following.map(u => u.userId));
 
-      // Style categories: count real posts whose hashtags/caption mention the category
-      setCategories(prev =>prev.map(cat => {
-          const key = cat.name.toLowerCase();
-          const count = postsWithUsers.filter(
-            post =>post.hashtags.some(tag =>tag.toLowerCase().includes(key)) ||
-              post.caption.toLowerCase().includes(key)
-          ).length;
-          return { ...cat, count };
-        })
-      );
+      // Curation is enrichment, so the screen renders without waiting on it.
+      exploreService.curateCollections(posts).then(setCollections);
 
-      // Load suggested users
-      const suggestions = await userProfileService.getFollowSuggestions(getCurrentUserId());
-      setSuggestedUsers(suggestions.map(s =>s.user));
-
+      // getFollowSuggestions already ranks by follower count and excludes both
+      // the user and anyone they follow - the same exclusion rankForYou applies
+      // to posts.
+      userProfileService
+        .getFollowSuggestions(userId, 12)
+        .then(setSuggestedUsers)
+        .catch(() => setSuggestedUsers([]));
     } catch (error) {
-      console.error('Error loading explore data:', error);
+      console.error('Error loading explore:', error);
     } finally {
       setLoading(false);
     }
@@ -124,318 +97,318 @@ export default function ExploreScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadExploreData();
+    await load();
     setRefreshing(false);
   };
 
-  const handleSearch = async () => {
-    const trimmed = searchQuery.trim();
-    if (!trimmed) {
+  const handleSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (text.trim().length < 2) {
       setSearchResultPosts(null);
       setSearchResultUsers(null);
       return;
     }
 
+    const q = text.trim().toLowerCase();
+    setSearchResultPosts(
+      pool.filter(
+        p =>
+          p.caption?.toLowerCase().includes(q) ||
+          (p.hashtags || []).some(t => t.toLowerCase().includes(q))
+      )
+    );
     try {
-      setSearching(true);
-      const lowerQuery = trimmed.replace(/^#/, '').toLowerCase();
-
-      const [matchingPosts, matchingUsers] = await Promise.all([
-        Promise.resolve(
-          allPublicPosts.filter(
-            post =>post.caption.toLowerCase().includes(lowerQuery) ||
-              post.hashtags.some(tag =>tag.toLowerCase().includes(lowerQuery))
-          )
-        ),
-        userProfileService.searchUsers(trimmed),
-      ]);
-
-      setSearchResultPosts(matchingPosts);
-      setSearchResultUsers(matchingUsers);
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setSearching(false);
+      setSearchResultUsers(await userProfileService.searchUsers(text.trim()));
+    } catch {
+      setSearchResultUsers([]);
     }
   };
 
-  const handleHashtagPress = (tag: string) => {
-    setSearchQuery(`#${tag}`);
-    setSearchResultPosts(allPublicPosts.filter(post =>post.hashtags.includes(tag)));
-    setSearchResultUsers([]);
-  };
+  const trending = useMemo(() => exploreService.rankTrending(pool), [pool]);
+  const forYou = useMemo(
+    () => exploreService.rankForYou(pool, profile, followingIds, getCurrentUserId()),
+    [pool, profile, followingIds]
+  );
+  const hashtags = useMemo(() => exploreService.rankHashtags(pool), [pool]);
+  const postsById = useMemo(() => new Map(pool.map(p => [p.id, p])), [pool]);
 
-  const handleCategoryPress = (category: StyleCategory) => {
-    const key = category.name.toLowerCase();
-    setActiveCategory(prev => (prev === category.id ? null : category.id));
-    if (activeCategory === category.id) {
-      setTrendingPosts(allPublicPosts);
-    } else {
-      setTrendingPosts(
-        allPublicPosts.filter(
-          post =>post.hashtags.some(tag =>tag.toLowerCase().includes(key)) ||
-            post.caption.toLowerCase().includes(key)
-        )
-      );
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResultPosts(null);
-    setSearchResultUsers(null);
-  };
-
-  const renderTrendingTab = () => (
-    <View>
-      {/* Style Categories */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Style Categories</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[styles.categoryCard, activeCategory === category.id && styles.categoryCardActive]}
-              onPress={() =>handleCategoryPress(category)}
-            >
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryCount}>{category.count} posts</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Trending Posts Grid */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {activeCategory ? `${categories.find(c =>c.id === activeCategory)?.name} Posts` : 'Trending Posts'}
-        </Text>
-        {trendingPosts.length === 0 && (
-          <Text style={styles.emptyHint}>No posts match this category yet.</Text>
-        )}
-        <View style={styles.postsGrid}>
-          {trendingPosts.map((post) => (
-            <TouchableOpacity
-              key={post.id}
-              style={styles.gridItem}
-              onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
-            >
-              <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
-              {post.images.length >1 && (
-                <View style={styles.multipleIndicator}>
-                                  </View>
-              )}
-              <View style={styles.gridOverlay}>
-                <View style={styles.gridStats}>
-                  <Text style={styles.gridStat}>● {post.likes}</Text>
-                  <Text style={styles.gridStat}> {post.comments}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
+  const tagFiltered = useMemo(
+    () => (activeTag ? pool.filter(p => (p.hashtags || []).some(t => t.toLowerCase() === activeTag)) : []),
+    [pool, activeTag]
   );
 
-  const renderHashtagsTab = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Trending Hashtags</Text>
-      {trendingHashtags.length === 0 && (
-        <Text style={styles.emptyHint}>No hashtags trending yet — be the first to post one!</Text>
-      )}
-      {trendingHashtags.map((hashtag, index) => (
-        <TouchableOpacity
-          key={hashtag.tag}
-          style={styles.hashtagCard}
-          onPress={() =>handleHashtagPress(hashtag.tag)}
-        >
-          <View style={styles.hashtagRank}>
-            <Text style={styles.rankNumber}>{index + 1}</Text>
-          </View>
-          <View style={styles.hashtagContent}>
-            <Text style={styles.hashtagName}>#{hashtag.tag}</Text>
-            <Text style={styles.hashtagCount}>{hashtag.count} post{hashtag.count === 1 ? '' : 's'}</Text>
-          </View>
+  const openPost = (postId: string) => navigation.navigate('PostDetail', { postId });
+
+  const renderGrid = (posts: Post[]) => (
+    <View style={styles.grid}>
+      {posts.map(post => (
+        <TouchableOpacity key={post.id} onPress={() => openPost(post.id)} activeOpacity={0.85}>
+          {post.images?.[0] ? (
+            <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
+          ) : (
+            <View style={styles.gridImage} />
+          )}
         </TouchableOpacity>
       ))}
     </View>
   );
 
-  const handleQuickFollow = async (targetUserId: string) => {
-    try {
-      await userProfileService.followUser(getCurrentUserId(), targetUserId);
-      setSuggestedUsers(prev =>prev.filter(u =>u.userId !== targetUserId));
-    } catch (error) {
-      console.error('Error following user:', error);
-    }
-  };
-
-  const renderUserCard = (user: UserProfile) => (
+  const renderUserCard = (user: UserProfile, reason?: string) => (
     <TouchableOpacity
       key={user.id}
-      style={styles.userCard}
-      onPress={() =>navigation.navigate('UserProfile', { userId: user.userId })}
+      style={styles.userRow}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('UserProfile', { userId: user.userId })}
     >
       {user.profileImageUrl ? (
-        <Image source={{ uri: user.profileImageUrl }} style={styles.userAvatar} />
+        <Image source={{ uri: user.profileImageUrl }} style={styles.avatar} />
       ) : (
-        <View style={styles.userAvatarPlaceholder}>
-          <Text style={styles.userInitial}>{user.displayName.charAt(0)}</Text>
+        <View style={styles.avatarPlaceholder}>
+          <Text style={styles.avatarInitial}>
+            {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
+          </Text>
         </View>
       )}
-      <View style={styles.userInfo}>
+      <View style={styles.userText}>
         <Text style={styles.userName}>{user.displayName}</Text>
-        <Text style={styles.userUsername}>@{user.username}</Text>
-        {user.bio && (
-          <Text style={styles.userBio} numberOfLines={1}>
-            {user.bio}
-          </Text>
-        )}
-        <View style={styles.userTags}>
-          {user.styleTags.slice(0, 3).map((tag, index) => (
-            <View key={index} style={styles.userTag}>
-              <Text style={styles.userTagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
+        <Text style={styles.userMeta}>
+          @{user.username}
+          {reason ? `  ·  ${reason}` : ''}
+        </Text>
       </View>
-      <TouchableOpacity style={styles.followButton} onPress={() =>handleQuickFollow(user.userId)}>
-        <Text style={styles.followButtonText}>Follow</Text>
-      </TouchableOpacity>
+      <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   );
 
-  const renderPeopleTab = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Suggested For You</Text>
-      {suggestedUsers.length === 0 && (
-        <Text style={styles.emptyHint}>No new suggestions right now — check back later!</Text>
-      )}
-      {suggestedUsers.map(renderUserCard)}
-    </View>
-  );
-
-  const renderSearchResults = () => (
-    <View style={styles.section}>
-      {searching ? (
-        <ActivityIndicator size="small" color={colors.ink} />
+  const renderPostRow = (post: Post, reason: string) => (
+    <TouchableOpacity
+      key={post.id}
+      style={styles.postRow}
+      activeOpacity={0.85}
+      onPress={() => openPost(post.id)}
+    >
+      {post.images?.[0] ? (
+        <Image source={{ uri: post.images[0] }} style={styles.postThumb} />
       ) : (
-        <>
-          {searchResultUsers && searchResultUsers.length >0 && (
-            <>
-              <Text style={styles.sectionTitle}>People</Text>
-              {searchResultUsers.map(renderUserCard)}
-            </>
-          )}
-          {searchResultPosts && searchResultPosts.length >0 && (
-            <>
-              <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Posts</Text>
-              <View style={styles.postsGrid}>
-                {searchResultPosts.map(post => (
-                  <TouchableOpacity
-                    key={post.id}
-                    style={styles.gridItem}
-                    onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
-                  >
-                    <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
-          )}
-          {(!searchResultUsers || searchResultUsers.length === 0) &&
-            (!searchResultPosts || searchResultPosts.length === 0) && (
-              <Text style={styles.emptyHint}>No results for "{searchQuery}"</Text>
-            )}
-        </>
+        <View style={styles.postThumb} />
       )}
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.ink} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Explore</Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search styles, hashtags, people..."
-          value={searchQuery}
-          onChangeText={text => {
-            setSearchQuery(text);
-            if (!text.trim()) {
-              setSearchResultPosts(null);
-              setSearchResultUsers(null);
-            }
-          }}
-          onSubmitEditing={handleSearch}
-        />
-        {searchResultPosts || searchResultUsers ? (
-          <TouchableOpacity style={styles.searchButton} onPress={clearSearch}>
-            <Text style={styles.searchIcon}>✕</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-                      </TouchableOpacity>
+      <View style={styles.postText}>
+        <Text style={styles.postReason}>{reason}</Text>
+        {!!post.caption && (
+          <Text style={styles.postCaption} numberOfLines={2}>
+            {post.caption}
+          </Text>
         )}
       </View>
+    </TouchableOpacity>
+  );
 
-      {/* Tabs - hidden while showing search results */}
-      {!(searchResultPosts || searchResultUsers) && (
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'trending' && styles.activeTab]}
-            onPress={() =>setActiveTab('trending')}
-          >
-            <Text style={[styles.tabText, activeTab === 'trending' && styles.activeTabText]}>Trending
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'hashtags' && styles.activeTab]}
-            onPress={() =>setActiveTab('hashtags')}
-          >
-            <Text style={[styles.tabText, activeTab === 'hashtags' && styles.activeTabText]}>Hashtags
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'people' && styles.activeTab]}
-            onPress={() =>setActiveTab('people')}
-          >
-            <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>People
-            </Text>
-          </TouchableOpacity>
+  const renderForYou = () => {
+    if (forYou.length === 0 && collections.length === 0) {
+      return (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyTitle}>Nothing new yet</Text>
+          <Text style={styles.emptyText}>
+            This shows posts from people you don't already follow. As the community grows, so does
+            this.
+          </Text>
         </View>
-      )}
+      );
+    }
 
-      {/* Content */}
+    return (
+      <>
+        {collections.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>CURATED THIS WEEK</Text>
+            {collections.map(collection => {
+              const posts = collection.postIds
+                .map(id => postsById.get(id))
+                .filter((p): p is Post => !!p);
+              if (posts.length === 0) return null;
+              return (
+                <View key={collection.title} style={styles.collection}>
+                  <Text style={styles.collectionTitle}>{collection.title}</Text>
+                  <Text style={styles.collectionRationale}>{collection.rationale}</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.collectionStrip}
+                  >
+                    {posts.map(post => (
+                      <TouchableOpacity
+                        key={post.id}
+                        onPress={() => openPost(post.id)}
+                        activeOpacity={0.85}
+                      >
+                        {post.images?.[0] ? (
+                          <Image source={{ uri: post.images[0] }} style={styles.collectionImage} />
+                        ) : (
+                          <View style={styles.collectionImage} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {forYou.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>MATCHED TO YOUR PROFILE</Text>
+            {forYou.slice(0, 12).map(({ post, reason }) => renderPostRow(post, reason))}
+          </>
+        )}
+      </>
+    );
+  };
+
+  const renderTrending = () =>
+    trending.length === 0 ? (
+      <View style={styles.emptyBox}>
+        <Text style={styles.emptyTitle}>Nothing trending yet</Text>
+        <Text style={styles.emptyText}>
+          Trending ranks by how fast a post gathers likes, comments and saves — so it needs some
+          activity before it can say anything honest.
+        </Text>
+      </View>
+    ) : (
+      <>
+        <Text style={styles.sectionLabel}>MOVING FASTEST</Text>
+        {trending.slice(0, 12).map(({ post, reason }: TrendingPost) => renderPostRow(post, reason))}
+      </>
+    );
+
+  const renderHashtags = () =>
+    hashtags.length === 0 ? (
+      <View style={styles.emptyBox}>
+        <Text style={styles.emptyTitle}>No tags yet</Text>
+        <Text style={styles.emptyText}>Tags appear here once posts start using them.</Text>
+      </View>
+    ) : (
+      <>
+        <Text style={styles.sectionLabel}>MOST USED</Text>
+        {hashtags.map((tag: TrendingHashtag) => (
+          <TouchableOpacity
+            key={tag.tag}
+            style={styles.tagRow}
+            activeOpacity={0.85}
+            onPress={() => setActiveTag(activeTag === tag.tag ? null : tag.tag)}
+          >
+            <View style={styles.userText}>
+              <Text style={styles.tagName}>#{tag.tag}</Text>
+              <Text style={styles.userMeta}>
+                {tag.count} {tag.count === 1 ? 'post' : 'posts'}
+                {/* Real growth: the share of this tag's uses from the last two
+                    days. The previous version hardcoded growth to zero. */}
+                {tag.growth >= 40 ? `  ·  ${tag.growth}% in the last 48h` : ''}
+              </Text>
+            </View>
+            <Text style={styles.chevron}>{activeTag === tag.tag ? '−' : '+'}</Text>
+          </TouchableOpacity>
+        ))}
+        {activeTag && tagFiltered.length > 0 && renderGrid(tagFiltered)}
+      </>
+    );
+
+  const renderPeople = () =>
+    suggestedUsers.length === 0 ? (
+      <View style={styles.emptyBox}>
+        <Text style={styles.emptyTitle}>No one to show yet</Text>
+        <Text style={styles.emptyText}>People appear here as the community grows.</Text>
+      </View>
+    ) : (
+      <>
+        <Text style={styles.sectionLabel}>PEOPLE TO FOLLOW</Text>
+        {suggestedUsers.map(s => renderUserCard(s.user, s.reason))}
+      </>
+    );
+
+  const isSearching = searchQuery.trim().length >= 2;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <BackButton />
+      </View>
+
       <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
-        {(searchResultPosts || searchResultUsers) ? (
-          renderSearchResults()
-        ) : (
+        <Text style={styles.eyebrow}>COMMUNITY</Text>
+        <Text style={styles.title}>Explore</Text>
+        <Text style={styles.subtitle}>
+          What the community is wearing — ranked by what's actually moving, and matched to how you
+          dress.
+        </Text>
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search posts and people…"
+          placeholderTextColor={colors.inkFaint}
+          value={searchQuery}
+          onChangeText={handleSearch}
+          autoCorrect={false}
+        />
+
+        {!isSearching && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tabScroll}
+            contentContainerStyle={styles.tabContent}
+          >
+            {TABS.map(tab => (
+              <Chip
+                key={tab.value}
+                label={tab.label}
+                active={activeTab === tab.value}
+                onPress={() => setActiveTab(tab.value)}
+                style={styles.tabChip}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        {loading ? (
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
+          </View>
+        ) : isSearching ? (
           <>
-            {activeTab === 'trending' && renderTrendingTab()}
-            {activeTab === 'hashtags' && renderHashtagsTab()}
-            {activeTab === 'people' && renderPeopleTab()}
+            {!!searchResultUsers?.length && (
+              <>
+                <Text style={styles.sectionLabel}>PEOPLE</Text>
+                {searchResultUsers.map(u => renderUserCard(u))}
+              </>
+            )}
+            {!!searchResultPosts?.length && (
+              <>
+                <Text style={styles.sectionLabel}>POSTS</Text>
+                {renderGrid(searchResultPosts)}
+              </>
+            )}
+            {!searchResultUsers?.length && !searchResultPosts?.length && (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyTitle}>Nothing found</Text>
+                <Text style={styles.emptyText}>Try a different word or tag.</Text>
+              </View>
+            )}
           </>
+        ) : activeTab === 'for-you' ? (
+          renderForYou()
+        ) : activeTab === 'trending' ? (
+          renderTrending()
+        ) : activeTab === 'hashtags' ? (
+          renderHashtags()
+        ) : (
+          renderPeople()
         )}
       </ScrollView>
     </SafeAreaView>
@@ -443,277 +416,103 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
+  container: { flex: 1, backgroundColor: colors.bone },
+  header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { padding: spacing.page, paddingBottom: 60 },
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 14 },
+
   searchInput: {
-    flex: 1,
-    backgroundColor: colors.paper,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
+    ...textType.body,
     color: colors.ink,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  searchButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: colors.ink,
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  tabScroll: {
+    marginTop: spacing.sm,
+    marginHorizontal: -spacing.page,
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  searchIcon: {
-    fontSize: 20,
+  tabContent: { paddingHorizontal: spacing.page, paddingVertical: 6, alignItems: 'center' },
+  tabChip: { marginRight: 8 },
+
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+
+  // Curated collections get the editorial treatment - a serif title and a
+  // written rationale - because that is what separates them from a ranking.
+  collection: { marginBottom: spacing.lg },
+  collectionTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  collectionRationale: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    marginTop: 6,
+    lineHeight: 20,
   },
-  tabs: {
+  collectionStrip: {
+    marginTop: spacing.sm,
+    marginHorizontal: -spacing.page,
+    paddingHorizontal: spacing.page,
+  },
+  collectionImage: { width: 150, height: 190, marginRight: 8, backgroundColor: colors.paper },
+
+  postRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
+  postThumb: { width: 72, height: 88, backgroundColor: colors.paper },
+  postText: { flex: 1, marginLeft: 14 },
+  // The reason leads. A discovery surface that cannot say why it chose
+  // something is indistinguishable from a random feed.
+  postReason: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
+  postCaption: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 4 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: spacing.sm },
+  gridImage: { width: GRID_SIZE, height: GRID_SIZE, backgroundColor: colors.paper },
+
+  tagRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.ink,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: fonts.sansMedium,
-    color: colors.inkMuted,
-  },
-  activeTabText: {
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
-  },
-  section: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 16,
-  },
-  categoriesScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-  },
-  categoryCard: {
-    width: 120,
-    padding: 16,
-    backgroundColor: colors.paper,
-    marginRight: 12,
+  tagName: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+
+  userRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.hair,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  categoryCardActive: {
-    borderColor: colors.ink,
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
+  avatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.sand,
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  categoryEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  categoryName: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  categoryCount: {
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  postsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 2,
-    marginHorizontal: -16,
-  },
-  gridItem: {
-    width: GRID_ITEM_SIZE,
-    height: GRID_ITEM_SIZE,
-    position: 'relative',
-  },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.paper,
-  },
-  multipleIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 4,
-  },
-  multipleIcon: {
-    fontSize: 12,
-  },
-  gridOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    padding: 8,
-  },
-  gridStats: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  gridStat: {
-    fontSize: 11,
-    color: '#ffffff',
-    fontFamily: fonts.sansSemiBold,
-  },
-  hashtagCard: {
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.paper,
-    marginBottom: 12,
-    gap: 12,
-  },
-  hashtagRank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.ink,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  rankNumber: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  hashtagContent: {
-    flex: 1,
-  },
-  hashtagName: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 2,
-  },
-  hashtagCount: {
-    fontSize: 13,
-    color: colors.inkMuted,
-  },
-  hashtagGrowth: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  growthIcon: {
-    fontSize: 16,
-  },
-  growthText: {
-    fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.camel,
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.paper,
-    marginBottom: 12,
-    gap: 12,
-  },
-  userAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.paper,
-  },
-  userAvatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.ink,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userInitial: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  userUsername: {
-    fontSize: 13,
-    color: colors.inkMuted,
-    marginBottom: 4,
-  },
-  userBio: {
-    fontSize: 13,
-    color: colors.inkMuted,
-    marginBottom: 6,
-  },
-  userTags: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  userTag: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.hair,
-  },
-  userTagText: {
-    fontSize: 11,
-    color: colors.inkMuted,
-  },
-  followButton: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  followButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-  },
+  avatarInitial: { fontFamily: fonts.serif, fontSize: 18, color: colors.tobacco },
+  userText: { flex: 1, marginLeft: 12 },
+  userName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  userMeta: { ...textType.meta, fontSize: 12, marginTop: 2 },
+  chevron: { fontSize: 20, color: colors.inkFaint },
 });

@@ -1547,6 +1547,97 @@ export const renderTryOn = functions
     }
   });
 
+// ==================== EXPLORE CURATION ====================
+
+/**
+ * Groups recent community posts into named editorial collections.
+ *
+ * This is the part of Explore that a ranking algorithm cannot do. Velocity can
+ * tell you what is popular and profile-matching can tell you what suits
+ * someone, but neither can notice that eleven unrelated people all posted
+ * neutral layering this week and give that a name.
+ *
+ * The model only ever groups and titles - it is explicitly told not to invent
+ * posts, and every id it returns is validated against the input on the client.
+ */
+export const curateExploreCollections = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const { posts = [] }: { posts: Array<{ id: string; caption: string; hashtags: string[]; type: string }> } = data;
+
+      if (posts.length < 6) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Not enough recent posts to curate collections from.'
+        );
+      }
+
+      const postLines = posts
+        .map(p => `- ${p.id} | ${p.type} | "${p.caption}"${p.hashtags?.length ? ` | #${p.hashtags.join(' #')}` : ''}`)
+        .join('\n');
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You are the editor of a styling app's discovery page. Below are recent posts from its community. Group them into 2-4 collections that a reader would find genuinely interesting.
+
+Posts (use these exact ids):
+${postLines}
+
+What makes a good collection here:
+- A real thread running through the posts - a shared silhouette, palette, occasion, or approach. Not a category label.
+- Specific enough to be worth a title. "Neutral layering, done three ways" beats "Casual looks".
+- At least 3 posts, or it is not a collection.
+
+Rules:
+- Only use ids from the list. Never invent a post.
+- A post may appear in at most one collection.
+- Do not force every post into a collection. Leaving most of them out is correct.
+- title: 2-5 words, no emoji, no hashtags.
+- rationale: one sentence naming what these posts have in common. Write like an editor, not a classifier. Never use the word "flattering".
+- If nothing coherent emerges, return an empty collections array. That is a valid and useful answer.
+
+Return ONLY valid JSON:
+{ "collections": [{ "title": "string", "rationale": "one sentence", "postIds": ["ids"] }] }`,
+          },
+        ],
+        max_tokens: 1200,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      const validIds = new Set(posts.map(p => p.id));
+      const used = new Set<string>();
+
+      const collections = (Array.isArray(result.collections) ? result.collections : [])
+        .map((c: any) => {
+          // Enforce the one-collection-per-post rule server-side rather than
+          // trusting the model to have honoured it.
+          const postIds = (Array.isArray(c?.postIds) ? c.postIds : []).filter((id: string) => {
+            if (!validIds.has(id) || used.has(id)) return false;
+            used.add(id);
+            return true;
+          });
+          return { title: c?.title || '', rationale: c?.rationale || '', postIds };
+        })
+        .filter((c: any) => c.title && c.postIds.length >= 3);
+
+      console.log(`Curated ${collections.length} explore collections from ${posts.length} posts`);
+
+      return { success: true, data: { collections } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error curating explore collections:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
 // ==================== STYLIST APPLICATIONS ====================
 //
 // Approving a stylist is the one action in this app that grants a user a role
