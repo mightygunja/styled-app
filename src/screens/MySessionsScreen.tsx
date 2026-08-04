@@ -17,7 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
 import { StylingSession } from '../types';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -83,7 +83,7 @@ export default function MySessionsScreen() {
     <SafeAreaView style={styles.container}>
       <BackButton />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>My Sessions</Text>
@@ -93,12 +93,11 @@ export default function MySessionsScreen() {
       <ScrollView style={styles.content}>
         {sessions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📅</Text>
-            <Text style={styles.emptyText}>No sessions yet</Text>
+                        <Text style={styles.emptyText}>No sessions yet</Text>
             <Text style={styles.emptySubtext}>Book a stylist to get started</Text>
             <TouchableOpacity
               style={styles.bookButton}
-              onPress={() => navigation.navigate('StylistMarketplace')}
+              onPress={() =>navigation.navigate('StylistMarketplace')}
             >
               <Text style={styles.bookButtonText}>Browse Stylists</Text>
             </TouchableOpacity>
@@ -156,15 +155,14 @@ export default function MySessionsScreen() {
                       once WebRTC/Twilio is wired into VideoCallScreen. */}
                   {session.status === 'confirmed' && (
                     <View style={styles.confirmedNote}>
-                      <Text style={styles.confirmedNoteText}>
-                        Your stylist will be in touch to confirm how you'll meet.
+                      <Text style={styles.confirmedNoteText}>Your stylist will be in touch to confirm how you'll meet.
                       </Text>
                     </View>
                   )}
                   {(session.status === 'completed' || session.status === 'confirmed') && (
                     <TouchableOpacity
                       style={styles.notesButton}
-                      onPress={() => handleViewNotes(session.id)}
+                      onPress={() =>handleViewNotes(session.id)}
                     >
                       <Text style={styles.notesButtonText}>Notes</Text>
                     </TouchableOpacity>
@@ -173,13 +171,13 @@ export default function MySessionsScreen() {
                     <>
                       <TouchableOpacity
                         style={styles.notesButton}
-                        onPress={() => navigation.navigate('BeforeAfterPhotos', { sessionId: session.id })}
+                        onPress={() =>navigation.navigate('BeforeAfterPhotos', { sessionId: session.id })}
                       >
                         <Text style={styles.notesButtonText}>Photos</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.notesButton}
-                        onPress={() => navigation.navigate('SubmitReview', {
+                        onPress={() =>navigation.navigate('SubmitReview', {
                           sessionId: session.id,
                           stylistId: session.stylistId,
                           stylistName: session.stylist?.name || 'Stylist',
@@ -224,7 +222,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   content: {
@@ -240,7 +238,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -253,19 +251,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: 12,
   },
   bookButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   sessionsList: {
     padding: 20,
   },
   sessionCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -288,7 +284,7 @@ const styles = StyleSheet.create({
   },
   stylistName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -300,17 +296,15 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   sessionDetails: {
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 12,
     marginBottom: 16,
   },
   detailRow: {
@@ -335,7 +329,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 14,
-    borderRadius: 12,
   },
   confirmedNoteText: {
     fontSize: 13,
@@ -346,19 +339,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.ink,
     padding: 14,
-    borderRadius: 12,
     alignItems: 'center',
   },
   joinButtonText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   notesButton: {
     flex: 1,
     backgroundColor: colors.paper,
     padding: 14,
-    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -366,6 +357,6 @@ const styles = StyleSheet.create({
   notesButtonText: {
     color: colors.ink,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

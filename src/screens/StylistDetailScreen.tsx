@@ -20,7 +20,7 @@ import { stylistAPI } from '../services/stylistAPI';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -28,10 +28,10 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type StylistDetailRouteProp = RouteProp<RootStackParamList, 'StylistDetail'>;
 
 const SESSION_TYPES = [
-  { id: 'closet-audit', label: 'Closet Audit', duration: 60, icon: '👗' },
-  { id: 'shopping-assistance', label: 'Shopping Help', duration: 90, icon: '🛍️' },
-  { id: 'event-styling', label: 'Event Styling', duration: 120, icon: '✨' },
-  { id: 'wardrobe-planning', label: 'Wardrobe Plan', duration: 90, icon: '📋' },
+  { id: 'closet-audit', label: 'Closet audit', duration: 60 },
+  { id: 'shopping-assistance', label: 'Personal shopping', duration: 90 },
+  { id: 'event-styling', label: 'Event styling', duration: 120 },
+  { id: 'wardrobe-planning', label: 'Wardrobe planning', duration: 90 },
 ];
 
 export default function StylistDetailScreen() {
@@ -131,9 +131,6 @@ export default function StylistDetailScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Cover Image */}
@@ -148,24 +145,20 @@ export default function StylistDetailScreen() {
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{stylist.name}</Text>
-              {stylist.isVerified && (
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}>✓</Text>
-                </View>
-              )}
+              {stylist.isVerified && <Text style={styles.verifiedText}>VERIFIED</Text>}
             </View>
             
             <View style={styles.statsRow}>
-              <Text style={styles.rating}>⭐ {stylist.rating.toFixed(1)}</Text>
+              <Text style={styles.rating}>{stylist.reviewCount > 0 ? stylist.rating.toFixed(1) : 'New'}</Text>
               <Text style={styles.divider}>•</Text>
               <Text style={styles.reviews}>{stylist.reviewCount} reviews</Text>
               <Text style={styles.divider}>•</Text>
               <Text style={styles.experience}>{stylist.yearsExperience} years</Text>
             </View>
             
-            <Text style={styles.location}>📍 {stylist.location}</Text>
+            <Text style={styles.location}>{stylist.location}</Text>
             {stylist.responseTime && (
-              <Text style={styles.responseTime}>⚡ Responds {stylist.responseTime}</Text>
+              <Text style={styles.responseTime}>Responds {stylist.responseTime}</Text>
             )}
           </View>
         </View>
@@ -194,7 +187,7 @@ export default function StylistDetailScreen() {
             <Text style={styles.sectionTitle}>Certifications</Text>
             {stylist.certifications.map((cert, index) => (
               <View key={index} style={styles.certItem}>
-                <Text style={styles.certIcon}>🏆</Text>
+                <Text style={styles.certIcon}>—</Text>
                 <Text style={styles.certText}>{cert}</Text>
               </View>
             ))}
@@ -229,7 +222,7 @@ export default function StylistDetailScreen() {
               <View key={review.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewerName}>{review.userName}</Text>
-                  <Text style={styles.reviewRating}>⭐ {review.rating}</Text>
+                  <Text style={styles.reviewRating}>{review.rating}/5</Text>
                 </View>
                 <Text style={styles.reviewComment}>{review.comment}</Text>
                 <Text style={styles.reviewDate}>
@@ -293,9 +286,22 @@ export default function StylistDetailScreen() {
                   ]}
                   onPress={() => setSelectedSessionType(type.id as SessionType)}
                 >
-                  <Text style={styles.sessionTypeIcon}>{type.icon}</Text>
-                  <Text style={styles.sessionTypeLabel}>{type.label}</Text>
-                  <Text style={styles.sessionTypeDuration}>{type.duration} min</Text>
+                  <Text
+                    style={[
+                      styles.sessionTypeLabel,
+                      selectedSessionType === type.id && styles.sessionTypeLabelActive,
+                    ]}
+                  >
+                    {type.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.sessionTypeDuration,
+                      selectedSessionType === type.id && styles.sessionTypeDurationActive,
+                    ]}
+                  >
+                    {type.duration} min
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -405,7 +411,7 @@ export default function StylistDetailScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Session booked! 🎉"
+        message="Session booked"
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -423,401 +429,190 @@ export default function StylistDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: 20,
-    paddingBottom: 12,
-  },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
-  },
-  coverImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: colors.paper,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    padding: 20,
-    paddingTop: 0,
-    marginTop: -60,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: '#ffffff',
-    backgroundColor: colors.paper,
-  },
-  profileInfo: {
-    flex: 1,
-    marginLeft: 16,
-    marginTop: 60,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.ink,
-    marginRight: 8,
-  },
-  verifiedBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.camel,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.bone },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingHorizontal: 24, paddingTop: 12 },
+  backButton: { display: 'none' },
+
+  coverImage: { width: '100%', height: 180, backgroundColor: colors.paper },
+
+  profileSection: { flexDirection: 'row', alignItems: 'flex-start', padding: 24 },
+  // Portraits stay circular; the square corners are for panels and controls.
+  profileImage: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.paper },
+  profileInfo: { flex: 1, marginLeft: 16 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  name: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, flexShrink: 1 },
+  verifiedBadge: { display: 'none' },
   verifiedText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  divider: {
-    marginHorizontal: 8,
-    color: colors.hair,
-  },
-  reviews: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  experience: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  location: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    marginBottom: 4,
-  },
-  responseTime: {
-    fontSize: 12,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 9,
+    letterSpacing: 1.4,
     color: colors.camel,
-    fontWeight: '500',
   },
-  section: {
-    padding: 20,
-    paddingTop: 0,
-    marginTop: 20,
-  },
+
+  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  rating: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink },
+  divider: { fontSize: 12, color: colors.inkFaint },
+  reviews: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted },
+  experience: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted },
+  location: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
+  responseTime: { fontFamily: fonts.sans, fontSize: 12, color: colors.tobacco, marginTop: 4 },
+
+  section: { paddingHorizontal: 24, marginBottom: 32 },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.ink,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
     marginBottom: 12,
   },
-  bio: {
-    fontSize: 15,
-    color: colors.inkMuted,
-    lineHeight: 22,
-  },
-  specialtiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
+  bio: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 23, color: colors.inkMuted },
+
+  specialtiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   specialtyTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: colors.paper,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  specialtyText: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    fontWeight: '500',
-  },
-  certItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  certIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  certText: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  portfolioItem: {
-    width: 200,
-    marginRight: 16,
-  },
-  portfolioImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.paper,
-    marginBottom: 8,
-  },
-  portfolioTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  portfolioDesc: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    lineHeight: 16,
-  },
-  reviewCard: {
-    backgroundColor: colors.paper,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  reviewerName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  reviewRating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  reviewComment: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  reviewDate: {
-    fontSize: 12,
-    color: colors.inkFaint,
-  },
-  pricingCard: {
-    backgroundColor: colors.paper,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  hourlyRate: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.ink,
-    marginBottom: 8,
-  },
-  pricingNote: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  bookBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.hair,
-    backgroundColor: '#ffffff',
-  },
-  bookBarLabel: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    marginBottom: 2,
-  },
-  bookBarPrice: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.ink,
-  },
-  bookBarButton: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  bookBarButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  modalClose: {
-    fontSize: 24,
-    color: colors.inkMuted,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.ink,
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  modalSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: 12,
-    marginTop: 20,
-  },
-  sessionTypesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  sessionTypeCard: {
-    width: (width - 60) / 2,
-    backgroundColor: colors.paper,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.hair,
-  },
-  sessionTypeCardActive: {
-    borderColor: colors.ink,
-    backgroundColor: colors.sand,
-  },
-  sessionTypeIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  sessionTypeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  sessionTypeDuration: {
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  noSlotsText: {
-    fontSize: 13,
-    color: colors.inkMuted,
-    lineHeight: 19,
-    marginBottom: 12,
-  },
-  timeSlotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  timeSlot: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.paper,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.hair,
   },
-  timeSlotActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+  specialtyText: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink },
+
+  certItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 10 },
+  certIcon: { fontFamily: fonts.sans, fontSize: 13, color: colors.camel },
+  certText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted, flex: 1 },
+
+  portfolioItem: { width: 200, marginRight: 12 },
+  portfolioImage: { width: 200, height: 240, backgroundColor: colors.paper },
+  portfolioTitle: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink, marginTop: 8 },
+  portfolioDesc: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted, marginTop: 3 },
+
+  reviewCard: {
+    paddingBottom: 16,
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  timeSlotDisabled: {
-    opacity: 0.4,
-  },
-  timeSlotText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.ink,
-  },
-  timeSlotTextActive: {
-    color: '#ffffff',
-  },
-  timeSlotTextDisabled: {
-    color: colors.inkFaint,
-  },
-  priceSummary: {
-    backgroundColor: colors.paper,
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  summaryRow: {
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  reviewerName: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+  reviewRating: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.camel },
+  reviewComment: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, color: colors.inkMuted, marginTop: 8 },
+  reviewDate: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkFaint, marginTop: 8 },
+
+  pricingCard: { marginHorizontal: 24, backgroundColor: colors.paper, padding: 20, marginBottom: 32 },
+  hourlyRate: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
+  pricingNote: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
+
+  bookBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    backgroundColor: colors.bone,
+  },
+  bookBarLabel: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkFaint },
+  bookBarPrice: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  bookBarButton: { backgroundColor: colors.ink, paddingHorizontal: 28, paddingVertical: 15 },
+  bookBarButtonText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    letterSpacing: 0.4,
+    color: colors.bone,
+  },
+
+  modalContainer: { flex: 1, backgroundColor: colors.bone },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  modalClose: { fontSize: 20, color: colors.inkMuted },
+  modalTitle: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
+  modalContent: { paddingHorizontal: 24 },
+  modalSectionTitle: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginTop: 24,
     marginBottom: 12,
   },
-  summaryLabel: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.ink,
-  },
-  summaryTotal: {
-    borderTopWidth: 1,
-    borderTopColor: colors.hair,
-    paddingTop: 12,
-    marginTop: 8,
-  },
-  summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  summaryTotalValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.ink,
-  },
-  modalFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.hair,
-  },
-  confirmButton: {
-    backgroundColor: colors.ink,
+
+  sessionTypesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  sessionTypeCard: {
+    width: '47.5%',
     padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
   },
-  confirmButtonDisabled: {
-    backgroundColor: colors.hair,
+  sessionTypeCardActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  sessionTypeIcon: { display: 'none' },
+  sessionTypeLabel: { fontFamily: fonts.serif, fontSize: 16, color: colors.ink },
+  // Selected cards fill with ink, so the text has to invert or it disappears.
+  sessionTypeLabelActive: { color: colors.bone },
+  sessionTypeDuration: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted, marginTop: 4 },
+  sessionTypeDurationActive: { color: 'rgba(253, 251, 250, 0.7)' },
+
+  noSlotsText: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, lineHeight: 19, marginBottom: 12 },
+
+  timeSlotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  timeSlot: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
   },
+  timeSlotActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  timeSlotDisabled: { backgroundColor: colors.paper, borderColor: colors.hair, opacity: 0.45 },
+  timeSlotText: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink, lineHeight: 17 },
+  timeSlotTextActive: { color: colors.bone },
+  timeSlotTextDisabled: { color: colors.inkFaint },
+
+  priceSummary: {
+    marginTop: 28,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  summaryLabel: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  summaryValue: { fontFamily: fonts.sans, fontSize: 14, color: colors.ink },
+  summaryTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
+  summaryTotalLabel: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.ink },
+  summaryTotalValue: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
+
+  modalFooter: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 28,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
+  confirmButton: { backgroundColor: colors.ink, paddingVertical: 16, alignItems: 'center' },
+  confirmButtonDisabled: { opacity: 0.4 },
   confirmButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: colors.bone,
   },
 });

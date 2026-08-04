@@ -17,7 +17,7 @@ import { SessionType } from '../types';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SubmitReviewRouteProp = RouteProp<RootStackParamList, 'SubmitReview'>;
@@ -72,11 +72,11 @@ export default function SubmitReviewScreen() {
         {[1, 2, 3, 4, 5].map((star) => (
           <TouchableOpacity
             key={star}
-            onPress={() => setRating(star)}
+            onPress={() =>setRating(star)}
             style={styles.starButton}
           >
             <Text style={[styles.star, star <= rating && styles.starFilled]}>
-              {star <= rating ? '⭐' : '☆'}
+              {star <= rating ? '●' : '○'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -89,7 +89,7 @@ export default function SubmitReviewScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Write Review</Text>
@@ -108,7 +108,7 @@ export default function SubmitReviewScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>How was your experience?</Text>
           {renderStars()}
-          {rating > 0 && (
+          {rating >0 && (
             <Text style={styles.ratingText}>
               {rating === 5 ? 'Excellent!' : rating === 4 ? 'Great!' : rating === 3 ? 'Good' : rating === 2 ? 'Fair' : 'Poor'}
             </Text>
@@ -137,24 +137,16 @@ export default function SubmitReviewScreen() {
           <View style={styles.recommendButtons}>
             <TouchableOpacity
               style={[styles.recommendButton, wouldRecommend && styles.recommendButtonActive]}
-              onPress={() => setWouldRecommend(true)}
+              onPress={() =>setWouldRecommend(true)}
             >
-              <Text style={[styles.recommendIcon, wouldRecommend && styles.recommendIconActive]}>
-                👍
-              </Text>
-              <Text style={[styles.recommendText, wouldRecommend && styles.recommendTextActive]}>
-                Yes
+                            <Text style={[styles.recommendText, wouldRecommend && styles.recommendTextActive]}>Yes
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.recommendButton, !wouldRecommend && styles.recommendButtonActive]}
-              onPress={() => setWouldRecommend(false)}
+              onPress={() =>setWouldRecommend(false)}
             >
-              <Text style={[styles.recommendIcon, !wouldRecommend && styles.recommendIconActive]}>
-                👎
-              </Text>
-              <Text style={[styles.recommendText, !wouldRecommend && styles.recommendTextActive]}>
-                No
+                            <Text style={[styles.recommendText, !wouldRecommend && styles.recommendTextActive]}>No
               </Text>
             </TouchableOpacity>
           </View>
@@ -162,7 +154,7 @@ export default function SubmitReviewScreen() {
 
         {/* Tips */}
         <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>💡 Review Tips</Text>
+          <Text style={styles.tipsTitle}>Review Tips</Text>
           <Text style={styles.tipText}>• Be specific about what you liked or didn't like</Text>
           <Text style={styles.tipText}>• Mention the stylist's strengths</Text>
           <Text style={styles.tipText}>• Share how the session helped you</Text>
@@ -187,7 +179,7 @@ export default function SubmitReviewScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Review submitted! 🎉"
+        message="Review submitted! "
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -223,7 +215,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   stylistInfo: {
@@ -233,7 +225,7 @@ const styles = StyleSheet.create({
   },
   stylistName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -247,7 +239,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
@@ -270,12 +262,11 @@ const styles = StyleSheet.create({
   ratingText: {
     textAlign: 'center',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   commentInput: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     fontSize: 15,
     color: colors.ink,
@@ -300,7 +291,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.hair,
     gap: 8,
@@ -318,7 +308,7 @@ const styles = StyleSheet.create({
   },
   recommendText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.inkMuted,
   },
   recommendTextActive: {
@@ -328,13 +318,12 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 16,
     backgroundColor: '#fffbeb',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.sand,
   },
   tipsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.tobacco,
     marginBottom: 12,
   },
@@ -352,7 +341,6 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: colors.ink,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   submitButtonDisabled: {
@@ -361,6 +349,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

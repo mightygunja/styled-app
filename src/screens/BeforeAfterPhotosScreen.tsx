@@ -20,7 +20,7 @@ import { beforeAfterService, BeforeAfterPhoto, PhotoPair } from '../services/bef
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = (width - 60) / 2;
@@ -175,13 +175,11 @@ export default function BeforeAfterPhotosScreen() {
 
       {/* Actions */}
       <View style={styles.pairActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleShare(pair.id)}>
-          <Text style={styles.actionIcon}>📤</Text>
-          <Text style={styles.actionText}>Share</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() =>handleShare(pair.id)}>
+                    <Text style={styles.actionText}>Share</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleExport(pair.id)}>
-          <Text style={styles.actionIcon}>💾</Text>
-          <Text style={styles.actionText}>Export</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() =>handleExport(pair.id)}>
+                    <Text style={styles.actionText}>Export</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -217,7 +215,7 @@ export default function BeforeAfterPhotosScreen() {
       <BackButton />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Transformation</Text>
@@ -228,26 +226,23 @@ export default function BeforeAfterPhotosScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'pairs' && styles.tabActive]}
-          onPress={() => setActiveTab('pairs')}
+          onPress={() =>setActiveTab('pairs')}
         >
-          <Text style={[styles.tabText, activeTab === 'pairs' && styles.tabTextActive]}>
-            Comparisons ({photoPairs.length})
+          <Text style={[styles.tabText, activeTab === 'pairs' && styles.tabTextActive]}>Comparisons ({photoPairs.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'before' && styles.tabActive]}
-          onPress={() => setActiveTab('before')}
+          onPress={() =>setActiveTab('before')}
         >
-          <Text style={[styles.tabText, activeTab === 'before' && styles.tabTextActive]}>
-            Before ({beforePhotos.length})
+          <Text style={[styles.tabText, activeTab === 'before' && styles.tabTextActive]}>Before ({beforePhotos.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'after' && styles.tabActive]}
-          onPress={() => setActiveTab('after')}
+          onPress={() =>setActiveTab('after')}
         >
-          <Text style={[styles.tabText, activeTab === 'after' && styles.tabTextActive]}>
-            After ({afterPhotos.length})
+          <Text style={[styles.tabText, activeTab === 'after' && styles.tabTextActive]}>After ({afterPhotos.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -285,8 +280,7 @@ export default function BeforeAfterPhotosScreen() {
             {afterPhotos.map(renderPhoto)}
             {afterPhotos.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>◈</Text>
-                <Text style={styles.emptyText}>No after photos</Text>
+                                <Text style={styles.emptyText}>No after photos</Text>
               </View>
             )}
           </View>
@@ -297,29 +291,27 @@ export default function BeforeAfterPhotosScreen() {
       <View style={styles.uploadButtons}>
         <TouchableOpacity
           style={[styles.uploadButton, styles.uploadButtonBefore]}
-          onPress={() => pickImage('before')}
+          onPress={() =>pickImage('before')}
           disabled={uploading}
         >
           {uploading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
             <>
-              <Text style={styles.uploadIcon}>📷</Text>
-              <Text style={styles.uploadText}>Add Before</Text>
+                            <Text style={styles.uploadText}>Add Before</Text>
             </>
           )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.uploadButton, styles.uploadButtonAfter]}
-          onPress={() => pickImage('after')}
+          onPress={() =>pickImage('after')}
           disabled={uploading}
         >
           {uploading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
             <>
-              <Text style={styles.uploadIcon}>✨</Text>
-              <Text style={styles.uploadText}>Add After</Text>
+                            <Text style={styles.uploadText}>Add After</Text>
             </>
           )}
         </TouchableOpacity>
@@ -327,8 +319,8 @@ export default function BeforeAfterPhotosScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Photo uploaded! 📸"
-        onComplete={() => setShowSuccess(false)}
+        message="Photo uploaded! "
+        onComplete={() =>setShowSuccess(false)}
       />
 
       <Toast
@@ -370,7 +362,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   tabs: {
@@ -389,12 +381,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   tabTextActive: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   content: {
     flex: 1,
@@ -404,7 +396,6 @@ const styles = StyleSheet.create({
   },
   pairCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
@@ -422,7 +413,6 @@ const styles = StyleSheet.create({
   comparisonPhoto: {
     width: '100%',
     aspectRatio: 3 / 4,
-    borderRadius: 12,
     backgroundColor: colors.paper,
   },
   photoLabel: {
@@ -432,7 +422,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inkMuted,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   photoLabelAfter: {
     backgroundColor: colors.camel,
@@ -440,7 +429,7 @@ const styles = StyleSheet.create({
   photoLabelText: {
     color: '#ffffff',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   arrowContainer: {
     width: 40,
@@ -467,7 +456,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -477,7 +465,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   gridContainer: {
@@ -493,7 +481,6 @@ const styles = StyleSheet.create({
   gridPhoto: {
     width: '100%',
     aspectRatio: 3 / 4,
-    borderRadius: 12,
     backgroundColor: colors.paper,
     marginBottom: 8,
   },
@@ -503,7 +490,6 @@ const styles = StyleSheet.create({
     right: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   typeTagBefore: {
     backgroundColor: colors.inkMuted,
@@ -514,7 +500,7 @@ const styles = StyleSheet.create({
   typeTagText: {
     color: '#ffffff',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
   },
   photoCaption: {
@@ -533,7 +519,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -555,7 +541,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 12,
     gap: 8,
   },
   uploadButtonBefore: {
@@ -570,6 +555,6 @@ const styles = StyleSheet.create({
   uploadText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

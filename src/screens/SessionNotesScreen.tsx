@@ -23,17 +23,17 @@ import {
 } from '../services/sessionNotesService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SessionNotesRouteProp = RouteProp<RootStackParamList, 'SessionNotes'>;
 
 const NOTE_CATEGORIES: { id: NoteCategory; label: string; icon: string }[] = [
-  { id: 'observation', label: 'Observation', icon: '👁️' },
-  { id: 'recommendation', label: 'Recommendation', icon: '💡' },
-  { id: 'action-item', label: 'Action Item', icon: '✅' },
-  { id: 'style-tip', label: 'Style Tip', icon: '✨' },
-  { id: 'product-suggestion', label: 'Product', icon: '🛍️' },
+  { id: 'observation', label: 'Observation', icon: '' },
+  { id: 'recommendation', label: 'Recommendation', icon: '' },
+  { id: 'action-item', label: 'Action Item', icon: '' },
+  { id: 'style-tip', label: 'Style Tip', icon: '' },
+  { id: 'product-suggestion', label: 'Product', icon: '' },
 ];
 
 export default function SessionNotesScreen() {
@@ -115,7 +115,7 @@ export default function SessionNotesScreen() {
           onPress: async () => {
             try {
               await sessionNotesService.deleteNote(noteId);
-              setNotes(notes.filter(n => n.id !== noteId));
+              setNotes(notes.filter(n =>n.id !== noteId));
               showToast('Note deleted', 'success');
             } catch (error) {
               showToast('Failed to delete note', 'error');
@@ -137,7 +137,7 @@ export default function SessionNotesScreen() {
   };
 
   const getCategoryIcon = (category: NoteCategory): string => {
-    return NOTE_CATEGORIES.find(c => c.id === category)?.icon || '📝';
+    return NOTE_CATEGORIES.find(c =>c.id === category)?.icon || '';
   };
 
   const renderNote = (note: SessionNote) => (
@@ -146,11 +146,11 @@ export default function SessionNotesScreen() {
         <View style={styles.noteCategory}>
           <Text style={styles.categoryIcon}>{getCategoryIcon(note.category)}</Text>
           <Text style={styles.categoryLabel}>
-            {NOTE_CATEGORIES.find(c => c.id === note.category)?.label}
+            {NOTE_CATEGORIES.find(c =>c.id === note.category)?.label}
           </Text>
         </View>
         {note.createdBy === 'user' && (
-          <TouchableOpacity onPress={() => handleDeleteNote(note.id)}>
+          <TouchableOpacity onPress={() =>handleDeleteNote(note.id)}>
             <Text style={styles.deleteButton}>✕</Text>
           </TouchableOpacity>
         )}
@@ -158,7 +158,7 @@ export default function SessionNotesScreen() {
       <Text style={styles.noteContent}>{note.content}</Text>
       <View style={styles.noteFooter}>
         <Text style={styles.noteAuthor}>
-          {note.createdBy === 'stylist' ? '👨‍💼 Stylist' : '👤 You'}
+          {note.createdBy === 'stylist' ? ' Stylist' : ' You'}
         </Text>
         <Text style={styles.noteDate}>
           {new Date(note.createdAt).toLocaleDateString()}
@@ -188,7 +188,7 @@ export default function SessionNotesScreen() {
     <View key={del.id} style={styles.deliverableCard}>
       <View style={styles.delHeader}>
         <Text style={styles.delIcon}>
-          {del.type === 'lookbook' ? '📖' : del.type === 'shopping-list' ? '🛍️' : del.type === 'style-guide' ? '📋' : '👗'}
+          {del.type === 'lookbook' ? '' : del.type === 'shopping-list' ? '' : del.type === 'style-guide' ? '' : ''}
         </Text>
         <View style={styles.delInfo}>
           <Text style={styles.delTitle}>{del.title}</Text>
@@ -196,7 +196,7 @@ export default function SessionNotesScreen() {
         </View>
       </View>
       <Text style={styles.delDescription}>{del.description}</Text>
-      {del.items && del.items.length > 0 && (
+      {del.items && del.items.length >0 && (
         <View style={styles.delItems}>
           {del.items.map((item, index) => (
             <Text key={index} style={styles.delItem}>• {item}</Text>
@@ -224,39 +224,35 @@ export default function SessionNotesScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Session Notes</Text>
         <TouchableOpacity onPress={handleExportNotes}>
-          <Text style={styles.exportButton}>📤</Text>
-        </TouchableOpacity>
+                  </TouchableOpacity>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'notes' && styles.tabActive]}
-          onPress={() => setActiveTab('notes')}
+          onPress={() =>setActiveTab('notes')}
         >
-          <Text style={[styles.tabText, activeTab === 'notes' && styles.tabTextActive]}>
-            Notes ({notes.length})
+          <Text style={[styles.tabText, activeTab === 'notes' && styles.tabTextActive]}>Notes ({notes.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'recommendations' && styles.tabActive]}
-          onPress={() => setActiveTab('recommendations')}
+          onPress={() =>setActiveTab('recommendations')}
         >
-          <Text style={[styles.tabText, activeTab === 'recommendations' && styles.tabTextActive]}>
-            Recommendations ({recommendations.length})
+          <Text style={[styles.tabText, activeTab === 'recommendations' && styles.tabTextActive]}>Recommendations ({recommendations.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'deliverables' && styles.tabActive]}
-          onPress={() => setActiveTab('deliverables')}
+          onPress={() =>setActiveTab('deliverables')}
         >
-          <Text style={[styles.tabText, activeTab === 'deliverables' && styles.tabTextActive]}>
-            Deliverables ({deliverables.length})
+          <Text style={[styles.tabText, activeTab === 'deliverables' && styles.tabTextActive]}>Deliverables ({deliverables.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -268,8 +264,7 @@ export default function SessionNotesScreen() {
             {notes.map(renderNote)}
             {notes.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>📝</Text>
-                <Text style={styles.emptyText}>No notes yet</Text>
+                                <Text style={styles.emptyText}>No notes yet</Text>
                 <Text style={styles.emptySubtext}>Add notes during your session</Text>
               </View>
             )}
@@ -281,8 +276,7 @@ export default function SessionNotesScreen() {
             {recommendations.map(renderRecommendation)}
             {recommendations.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>💡</Text>
-                <Text style={styles.emptyText}>No recommendations yet</Text>
+                                <Text style={styles.emptyText}>No recommendations yet</Text>
               </View>
             )}
           </View>
@@ -293,8 +287,7 @@ export default function SessionNotesScreen() {
             {deliverables.map(renderDeliverable)}
             {deliverables.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>📦</Text>
-                <Text style={styles.emptyText}>No deliverables yet</Text>
+                                <Text style={styles.emptyText}>No deliverables yet</Text>
               </View>
             )}
           </View>
@@ -303,7 +296,7 @@ export default function SessionNotesScreen() {
 
       {/* Add Note Button */}
       {activeTab === 'notes' && (
-        <TouchableOpacity style={styles.fab} onPress={() => setShowAddNote(true)}>
+        <TouchableOpacity style={styles.fab} onPress={() =>setShowAddNote(true)}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
@@ -313,11 +306,11 @@ export default function SessionNotesScreen() {
         visible={showAddNote}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowAddNote(false)}
+        onRequestClose={() =>setShowAddNote(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowAddNote(false)}>
+            <TouchableOpacity onPress={() =>setShowAddNote(false)}>
               <Text style={styles.modalClose}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Note</Text>
@@ -336,7 +329,7 @@ export default function SessionNotesScreen() {
                     styles.categoryButton,
                     selectedCategory === cat.id && styles.categoryButtonActive,
                   ]}
-                  onPress={() => setSelectedCategory(cat.id)}
+                  onPress={() =>setSelectedCategory(cat.id)}
                 >
                   <Text style={styles.categoryButtonIcon}>{cat.icon}</Text>
                   <Text style={styles.categoryButtonText}>{cat.label}</Text>
@@ -397,7 +390,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   exportButton: {
@@ -419,12 +412,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   tabTextActive: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   content: {
     flex: 1,
@@ -434,7 +427,6 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -456,7 +448,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.inkMuted,
   },
   deleteButton: {
@@ -487,7 +479,6 @@ const styles = StyleSheet.create({
   },
   recommendationCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -502,14 +493,13 @@ const styles = StyleSheet.create({
   recTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginRight: 8,
   },
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   priorityhigh: {
     backgroundColor: colors.sand,
@@ -522,7 +512,7 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   recDescription: {
@@ -538,19 +528,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   recCategoryText: {
     fontSize: 12,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   deliverablesContainer: {
     padding: 20,
   },
   deliverableCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -570,7 +558,7 @@ const styles = StyleSheet.create({
   },
   delTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -588,7 +576,6 @@ const styles = StyleSheet.create({
   delItems: {
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 8,
     marginBottom: 12,
   },
   delItem: {
@@ -599,13 +586,12 @@ const styles = StyleSheet.create({
   downloadButton: {
     backgroundColor: colors.ink,
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   downloadButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,
@@ -617,7 +603,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -644,7 +630,7 @@ const styles = StyleSheet.create({
   fabText: {
     fontSize: 32,
     color: '#ffffff',
-    fontWeight: '300',
+    fontFamily: fonts.sans,
   },
   modalContainer: {
     flex: 1,
@@ -664,12 +650,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   modalSave: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   modalContent: {
@@ -678,7 +664,7 @@ const styles = StyleSheet.create({
   },
   modalLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -694,7 +680,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
     borderWidth: 2,
     borderColor: colors.hair,
   },
@@ -708,12 +693,11 @@ const styles = StyleSheet.create({
   },
   categoryButtonText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
   },
   noteInput: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     fontSize: 15,
     color: colors.ink,
