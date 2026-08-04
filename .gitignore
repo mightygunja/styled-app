@@ -52,6 +52,12 @@ Thumbs.db
 .env
 .env*.local
 
+# Local copy of Cloud Functions config, pulled with `firebase functions:config:get`
+# so functions:shell and the emulators can run. Contains real secrets - the
+# OpenAI key, and the Sovrn/Rakuten/Mailgun keys once those are set.
+.runtimeconfig.json
+functions/.runtimeconfig.json
+
 # typescript
 *.tsbuildinfo
 
