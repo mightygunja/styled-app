@@ -8,28 +8,79 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import BackButton from '../components/BackButton';
+import Chip from '../components/Chip';
 import { RootStackParamList } from '../navigation/types';
-import { challengeService, Challenge } from '../services/challengeService';
-import Toast from '../components/Toast';
-import { useToast } from '../hooks/useToast';
-
-const { width } = Dimensions.get('window');
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { challengeService, Challenge, ChallengeStatus } from '../services/challengeService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const TABS: Array<{ value: ChallengeStatus; label: string }> = [
+  { value: 'active', label: 'Open now' },
+  { value: 'upcoming', label: 'Coming up' },
+  { value: 'completed', label: 'Finished' },
+];
+
+const EMPTY_COPY: Record<ChallengeStatus, { title: string; body: string }> = {
+  active: {
+    title: 'Nothing running right now',
+    body: 'New challenges open every week. Have a look at what is coming up.',
+  },
+  upcoming: {
+    title: 'Nothing scheduled yet',
+    body: 'The next challenge will appear here before it opens.',
+  },
+  completed: {
+    title: 'No finished challenges',
+    body: 'Once a challenge closes it moves here, with every entry intact.',
+  },
+};
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function timing(challenge: Challenge): string {
+  const now = Date.now();
+  const start = new Date(challenge.startDate).getTime();
+  const end = new Date(challenge.endDate).getTime();
+
+  if (challenge.status === 'upcoming') {
+    const days = Math.ceil((start - now) / 86_400_000);
+    if (days <= 0) return 'Opens today';
+    return days === 1 ? 'Opens tomorrow' : `Opens in ${days} days`;
+  }
+
+  if (challenge.status === 'completed') {
+    return `Ended ${formatDate(challenge.endDate)}`;
+  }
+
+  const days = Math.ceil((end - now) / 86_400_000);
+  if (days < 0) return 'Ended';
+  if (days === 0) return 'Ends today';
+  return days === 1 ? '1 day left' : `${days} days left`;
+}
+
+/** True when a challenge is close enough to closing to be worth flagging. */
+function isClosingSoon(challenge: Challenge): boolean {
+  if (challenge.status !== 'active') return false;
+  const days = Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / 86_400_000);
+  return days >= 0 && days <= 3;
+}
+
 export default function ChallengesScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'completed'>('active');
+  const [activeTab, setActiveTab] = useState<ChallengeStatus>('active');
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     loadChallenges();
@@ -38,8 +89,7 @@ export default function ChallengesScreen() {
   const loadChallenges = async () => {
     try {
       setLoading(true);
-      const data = await challengeService.getChallenges(activeTab);
-      setChallenges(data);
+      setChallenges(await challengeService.getChallenges(activeTab));
     } catch (error) {
       console.error('Error loading challenges:', error);
     } finally {
@@ -53,350 +103,159 @@ export default function ChallengesScreen() {
     setRefreshing(false);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const getDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
-    const now = new Date();
-    const diffMs = end.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return 'Ended';
-    if (diffDays === 0) return 'Ends today';
-    if (diffDays === 1) return '1 day left';
-    return `${diffDays} days left`;
-  };
-
-  const getChallengeTypeColor = (type: string) => {
-    switch (type) {
-      case 'daily': return '#3b82f6';
-      case 'weekly': return '#8b5cf6';
-      case 'monthly': return '#ec4899';
-      case 'special': return '#f59e0b';
-      default: return '#64748b';
-    }
-  };
-
-  const renderChallenge = (challenge: Challenge) => (
-    <TouchableOpacity
-      key={challenge.id}
-      style={styles.challengeCard}
-      onPress={() => navigation.navigate('ChallengeDetail', { challengeId: challenge.id })}
-    >
-      {challenge.imageUrl && (
-        <Image source={{ uri: challenge.imageUrl }} style={styles.challengeImage} />
-      )}
-      
-      <View style={styles.challengeContent}>
-        <View style={styles.challengeHeader}>
-          <View style={[styles.typeBadge, { backgroundColor: getChallengeTypeColor(challenge.type) }]}>
-            <Text style={styles.typeBadgeText}>{challenge.type.toUpperCase()}</Text>
-          </View>
-          {challenge.status === 'active' && (
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>{getDaysRemaining(challenge.endDate)}</Text>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.challengeTitle}>{challenge.title}</Text>
-        <Text style={styles.challengeDescription} numberOfLines={2}>
-          {challenge.description}
-        </Text>
-
-        {challenge.prize && (
-          <View style={styles.prizeContainer}>
-            <Text style={styles.prizeIcon}>🏆</Text>
-            <Text style={styles.prizeText}>{challenge.prize}</Text>
-          </View>
-        )}
-
-        <View style={styles.challengeStats}>
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>👥</Text>
-            <Text style={styles.statText}>{challenge.participants} joined</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>📸</Text>
-            <Text style={styles.statText}>{challenge.entries} entries</Text>
-          </View>
-        </View>
-
-        <View style={styles.challengeFooter}>
-          <Text style={styles.dateText}>
-            {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
-          </Text>
-          <TouchableOpacity
-            style={styles.viewButton}
-            onPress={() => navigation.navigate('ChallengeDetail', { challengeId: challenge.id })}
-          >
-            <Text style={styles.viewButtonText}>
-              {challenge.status === 'upcoming' ? 'View Details' : 'View Entries'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Challenges</Text>
+        <BackButton />
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'active' && styles.activeTab]}
-          onPress={() => setActiveTab('active')}
-        >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
-            Active
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
-          onPress={() => setActiveTab('upcoming')}
-        >
-          <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
-            Upcoming
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
-          onPress={() => setActiveTab('completed')}
-        >
-          <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
-            Completed
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
       <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
-        {challenges.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🏆</Text>
-            <Text style={styles.emptyText}>
-              {activeTab === 'active' && 'No active challenges'}
-              {activeTab === 'upcoming' && 'No upcoming challenges'}
-              {activeTab === 'completed' && 'No completed challenges'}
-            </Text>
-            <Text style={styles.emptySubtext}>Check back soon for new challenges!</Text>
+        <Text style={styles.eyebrow}>COMMUNITY</Text>
+        <Text style={styles.title}>Challenges</Text>
+        <Text style={styles.subtitle}>
+          A styling brief, a fortnight to answer it, and everyone working from their own wardrobe.
+          The constraint is the point.
+        </Text>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabScroll}
+          contentContainerStyle={styles.tabContent}
+        >
+          {TABS.map(tab => (
+            <Chip
+              key={tab.value}
+              label={tab.label}
+              active={activeTab === tab.value}
+              onPress={() => setActiveTab(tab.value)}
+              style={styles.tabChip}
+            />
+          ))}
+        </ScrollView>
+
+        {loading ? (
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
+          </View>
+        ) : challenges.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>{EMPTY_COPY[activeTab].title}</Text>
+            <Text style={styles.emptyText}>{EMPTY_COPY[activeTab].body}</Text>
           </View>
         ) : (
-          challenges.map(renderChallenge)
+          challenges.map((challenge, index) => (
+            <TouchableOpacity
+              key={challenge.id}
+              style={styles.card}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('ChallengeDetail', { challengeId: challenge.id })}
+            >
+              {!!challenge.imageUrl && (
+                <Image source={{ uri: challenge.imageUrl }} style={styles.cardImage} />
+              )}
+
+              <View style={styles.cardHead}>
+                <Text style={styles.cardIndex}>{String(index + 1).padStart(2, '0')}</Text>
+                <View style={styles.cardHeadText}>
+                  {!!challenge.type && (
+                    <Text style={styles.cardType}>{challenge.type.toUpperCase()}</Text>
+                  )}
+                  <Text style={styles.cardTitle}>{challenge.title}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.cardDescription} numberOfLines={3}>
+                {challenge.description}
+              </Text>
+
+              {!!challenge.prize && <Text style={styles.cardPrize}>{challenge.prize}</Text>}
+
+              <View style={styles.cardFooter}>
+                <Text style={styles.cardMeta}>
+                  {formatDate(challenge.startDate)} – {formatDate(challenge.endDate)}
+                  {challenge.participants > 0 || challenge.entries > 0
+                    ? `  ·  ${challenge.participants} joined  ·  ${challenge.entries} ${
+                        challenge.entries === 1 ? 'entry' : 'entries'
+                      }`
+                    : ''}
+                </Text>
+                <Text
+                  style={[styles.cardTiming, isClosingSoon(challenge) && styles.cardTimingUrgent]}
+                >
+                  {timing(challenge)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
         )}
       </ScrollView>
-
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
-  },
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
-  },
-  activeTabText: {
-    color: '#ef4444',
-    fontWeight: '600',
-  },
-  challengeCard: {
-    margin: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    overflow: 'hidden',
+  container: { flex: 1, backgroundColor: colors.bone },
+  header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { padding: spacing.page, paddingBottom: 60 },
+
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
+
+  // Horizontal so adding a fourth filter can never clip the way Shop's did.
+  tabScroll: { marginTop: spacing.lg, marginHorizontal: -spacing.page, flexGrow: 0, flexShrink: 0 },
+  tabContent: { paddingHorizontal: spacing.page, paddingVertical: 4, alignItems: 'center' },
+  tabChip: { marginRight: 8 },
+
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+
+  card: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderColor: colors.hair,
+    padding: spacing.lg,
   },
-  challengeImage: {
+  cardImage: {
     width: '100%',
-    height: 200,
-    backgroundColor: '#f1f5f9',
+    height: 140,
+    marginBottom: spacing.md,
+    backgroundColor: colors.paper,
   },
-  challengeContent: {
-    padding: 16,
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start' },
+  // The numeral is the one decorative flourish, the same device Edits uses.
+  cardIndex: { fontFamily: fonts.serif, fontSize: 20, color: colors.camel, width: 38 },
+  cardHeadText: { flex: 1 },
+  cardType: { ...textType.microLabel, color: colors.tobacco, marginBottom: 4 },
+  cardTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink, lineHeight: 27 },
+  cardDescription: {
+    ...textType.body,
+    color: colors.inkMuted,
+    marginTop: spacing.sm,
+    lineHeight: 22,
   },
-  challengeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  typeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  statusBadge: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ef4444',
-  },
-  challengeTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  challengeDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  prizeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    gap: 8,
-  },
-  prizeIcon: {
-    fontSize: 20,
-  },
-  prizeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  challengeStats: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 16,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statIcon: {
-    fontSize: 16,
-  },
-  statText: {
-    fontSize: 13,
-    color: '#64748b',
-  },
-  challengeFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
+  cardPrize: { ...textType.meta, fontSize: 12, color: colors.tobacco, marginTop: spacing.sm },
+  cardFooter: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  viewButton: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  viewButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  emptyState: {
-    padding: 60,
+    borderTopColor: colors.hair,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-  },
+  cardMeta: { ...textType.meta, fontSize: 11, flex: 1 },
+  cardTiming: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.inkMuted },
+  cardTimingUrgent: { color: colors.tobacco },
 });
