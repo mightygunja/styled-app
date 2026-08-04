@@ -84,7 +84,9 @@ export default function MoreScreen() {
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text style={styles.profileName}>{user?.displayName || 'Your profile'}</Text>
-            <Text style={styles.profileSubtitle}>ACCOUNT · SUBSCRIPTION · SETTINGS</Text>
+            {/* No SUBSCRIPTION here - there are no paid tiers, and the
+                Subscription screen is no longer registered. */}
+            <Text style={styles.profileSubtitle}>ACCOUNT · STYLISTS · SETTINGS</Text>
           </View>
           <Text style={styles.rowArrow}>›</Text>
         </TouchableOpacity>
