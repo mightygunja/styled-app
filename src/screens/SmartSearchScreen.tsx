@@ -11,6 +11,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BackButton from '../components/BackButton';
+import Chip from '../components/Chip';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -178,15 +180,21 @@ export default function SmartSearchScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
+      {/* Single back control, and the title moves below the header rather than
+          sitting centred between two actions - which is where every other
+          screen in the app puts it. */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Smart Search</Text>
+        <BackButton />
         <TouchableOpacity onPress={handleClearSearch}>
           <Text style={styles.clearButton}>Clear</Text>
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.eyebrow}>WARDROBE</Text>
+      <Text style={styles.headerTitle}>Smart search</Text>
+      <Text style={styles.subtitle}>
+        Search your own closet, the people you follow, and style guidance — all at once.
+      </Text>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -222,23 +230,13 @@ export default function SmartSearchScreen() {
         contentContainerStyle={styles.categoriesContainer}
       >
         {categories.map((cat) => (
-          <TouchableOpacity
+          <Chip
             key={cat.id}
-            style={[
-              styles.categoryChip,
-              selectedCategory === cat.id && styles.categoryChipActive,
-            ]}
-            onPress={() =>setSelectedCategory(cat.id)}
-          >
-            <Text
-              style={[
-                styles.categoryText,
-                selectedCategory === cat.id && styles.categoryTextActive,
-              ]}
-            >
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
+            label={cat.label}
+            active={selectedCategory === cat.id}
+            onPress={() => setSelectedCategory(cat.id)}
+            style={styles.categoryChipSpacing}
+          />
         ))}
       </ScrollView>
 
@@ -329,26 +327,46 @@ export default function SmartSearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginHorizontal: 24,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.inkMuted,
+    marginHorizontal: 24,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  categoryChipSpacing: { marginRight: 8 },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   backButton: {
     fontSize: 16,
     color: colors.inkMuted,
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
+    marginHorizontal: 24,
   },
   clearButton: {
     fontSize: 14,
@@ -390,7 +408,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchButtonText: {
-    color: '#ffffff',
+    color: colors.bone,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },
@@ -426,7 +444,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   categoryTextActive: {
-    color: '#ffffff',
+    color: colors.bone,
   },
   toolbarContainer: {
     padding: 20,
@@ -468,9 +486,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   suggestionsTitle: {
-    fontSize: 16,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
     marginBottom: 12,
   },
   suggestionItem: {
@@ -503,7 +523,7 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     width: GRID_ITEM_SIZE,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
     borderWidth: 1,
     borderColor: colors.hair,
     overflow: 'hidden',
@@ -554,10 +574,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyText: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
-    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
@@ -607,9 +626,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   discoveryTitle: {
-    fontSize: 13,
-    fontFamily: fonts.sansMedium,
-    color: colors.ink,
-    lineHeight: 18,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 12,
   },
 });
