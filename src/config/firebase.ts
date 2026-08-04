@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
@@ -34,7 +34,20 @@ const app = initializeApp(firebaseConfig);
  * absence was always going to surface eventually, and it surfaces as a total
  * write failure rather than a partial one.
  */
-export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+function createFirestore() {
+  try {
+    return initializeFirestore(app, { ignoreUndefinedProperties: true });
+  } catch {
+    // initializeFirestore throws if Firestore was already started for this app.
+    // In development that happens on every Fast Refresh, since the module
+    // re-evaluates against an app instance that survived the reload. Falling
+    // back to the existing instance keeps the reload working; the setting is
+    // already applied on it from the cold start.
+    return getFirestore(app);
+  }
+}
+
+export const db = createFirestore();
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
 

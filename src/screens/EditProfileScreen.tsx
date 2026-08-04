@@ -107,9 +107,12 @@ export default function EditProfileScreen() {
       await userProfileService.updateProfile(getCurrentUserId(), {
         displayName: displayName.trim(),
         username: username.trim().replace(/^@/, ''),
-        bio: bio.trim() || undefined,
-        location: location.trim() || undefined,
-        profileImageUrl,
+        // Empty string, not undefined. Clearing a bio is a real edit and has to
+        // persist; undefined would either be rejected by Firestore or, with
+        // undefined-stripping on, silently leave the old value in place.
+        bio: bio.trim(),
+        location: location.trim(),
+        ...(profileImageUrl ? { profileImageUrl } : {}),
         styleTags: styleTagsText
           .split(',')
           .map(t => t.trim())
