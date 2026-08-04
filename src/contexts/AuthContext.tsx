@@ -15,6 +15,8 @@ import {
   fetchSignInMethodsForEmail,
   deleteUser,
   reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
@@ -33,6 +35,13 @@ interface AuthContextType {
   /** Required by App Store Guideline 5.1.1(v) for any app offering Sign in with Apple. */
   deleteAccount: () => Promise<void>;
   isFacebookConfigured: boolean;
+  /**
+   * Starts an email change. Returns nothing on success - the address does NOT
+   * change until the user clicks the link sent to the new address.
+   */
+  requestEmailChange: (newEmail: string, currentPassword: string) => Promise<void>;
+  /** True when this account signs in with a password and can therefore change its email here. */
+  canChangeEmail: boolean;
 }
 
 /**
@@ -324,6 +333,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * multi-collection cascade that belongs in a Cloud Function triggered on
    * user deletion, where it can complete even if the app is closed.
    */
+  /**
+   * Only password accounts can change their email here.
+   *
+   * For Google and Apple accounts the address is owned by the provider, and
+   * Apple's private-relay addresses in particular are not something we should
+   * be quietly rewriting. Those users are told where their email comes from
+   * instead of being given a control that would half-work.
+   */
+  const canChangeEmail = !!user?.providerData?.some(p => p.providerId === 'password');
+
+  /**
+   * Begins an email change.
+   *
+   * Uses verifyBeforeUpdateEmail rather than updateEmail deliberately. Firebase
+   * blocks updateEmail entirely when email-enumeration protection is on (the
+   * default for new projects), and even where it works it changes the address
+   * without proving the user owns it - so a typo locks them out of their own
+   * account permanently.
+   *
+   * The consequence, which the UI has to be honest about: the address does NOT
+   * change when this resolves. It changes when the user clicks the link sent to
+   * the NEW address. Until then auth.currentUser.email is still the old one.
+   */
+  const requestEmailChange = async (newEmail: string, currentPassword: string) => {
+    const current = auth.currentUser;
+    if (!current?.email) {
+      throw new Error('You are not signed in.');
+    }
+
+    const trimmed = newEmail.trim();
+    if (trimmed.toLowerCase() === current.email.toLowerCase()) {
+      throw new Error('That is already your email address.');
+    }
+
+    try {
+      // Changing an email is a security-sensitive operation, so Firebase
+      // requires a recent sign-in. Re-authenticating here rather than waiting
+      // for the requires-recent-login error keeps it to one prompt.
+      const credential = EmailAuthProvider.credential(current.email, currentPassword);
+      await reauthenticateWithCredential(current, credential);
+    } catch (error: any) {
+      if (
+        error?.code === 'auth/wrong-password' ||
+        error?.code === 'auth/invalid-credential'
+      ) {
+        throw new Error('That password is not correct.');
+      }
+      if (error?.code === 'auth/too-many-requests') {
+        throw new Error('Too many attempts. Please wait a few minutes and try again.');
+      }
+      throw new Error(error?.message || 'Could not confirm your password.');
+    }
+
+    try {
+      await verifyBeforeUpdateEmail(current, trimmed);
+    } catch (error: any) {
+      if (error?.code === 'auth/email-already-in-use') {
+        throw new Error('Another account already uses that email address.');
+      }
+      if (error?.code === 'auth/invalid-email') {
+        throw new Error('That does not look like a valid email address.');
+      }
+      throw new Error(error?.message || 'Could not start the email change.');
+    }
+  };
+
   const deleteAccount = async () => {
     const current = auth.currentUser;
     if (!current) {
@@ -363,6 +438,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     deleteAccount,
     isFacebookConfigured,
+    requestEmailChange,
+    canChangeEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

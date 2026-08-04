@@ -22,13 +22,13 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user: authUser } = useAuth();
+  const { user: authUser, requestEmailChange, canChangeEmail } = useAuth();
   const { toast, showToast, hideToast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,36 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
   const [styleTagsText, setStyleTagsText] = useState('');
+
+  const [newEmail, setNewEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  /** Which provider owns this account's email, for accounts that cannot change it here. */
+  const providerLabel =
+    authUser?.providerData?.some(p => p.providerId === 'google.com')
+      ? 'Google'
+      : authUser?.providerData?.some(p => p.providerId === 'apple.com')
+      ? 'Apple'
+      : 'your sign-in provider';
+
+  const handleEmailChange = async () => {
+    setChangingEmail(true);
+    try {
+      await requestEmailChange(newEmail, currentPassword);
+      // Deliberately not a "changed" message: nothing has changed yet, and
+      // saying so would leave the user believing they can sign in with the new
+      // address immediately.
+      setEmailSent(true);
+      setCurrentPassword('');
+      showToast('Confirmation link sent', 'success');
+    } catch (error: any) {
+      showToast(error?.message || 'Could not change your email', 'error');
+    } finally {
+      setChangingEmail(false);
+    }
+  };
 
   useEffect(() => {
     loadProfile();
@@ -204,6 +234,67 @@ export default function EditProfileScreen() {
             placeholderTextColor={colors.inkFaint}
           />
         </View>
+
+        {/* Email is kept separate from the Save button on purpose. It is not a
+            profile field - it is the credential you sign in with - and it
+            changes through a different, verified flow. Folding it into Save
+            would imply it takes effect at the same moment, which it does not. */}
+        <View style={styles.emailSection}>
+          <Text style={styles.emailSectionTitle}>Sign-in email</Text>
+          <Text style={styles.currentEmail}>{authUser?.email || '—'}</Text>
+
+          {!canChangeEmail ? (
+            <Text style={styles.emailHelp}>
+              You sign in with {providerLabel}, so your email is managed there. Change it with{' '}
+              {providerLabel} and it will update here too.
+            </Text>
+          ) : emailSent ? (
+            <Text style={styles.emailHelp}>
+              Check {newEmail.trim()} for a confirmation link. Your email changes once you open
+              it — until then you still sign in with your current address.
+            </Text>
+          ) : (
+            <>
+              <Text style={styles.emailHelp}>
+                We'll send a confirmation link to the new address. Your email only changes once
+                you open it.
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={newEmail}
+                onChangeText={setNewEmail}
+                placeholder="New email address"
+                placeholderTextColor={colors.inkFaint}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 10 }]}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Current password"
+                placeholderTextColor={colors.inkFaint}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.emailButton,
+                  (!newEmail.trim() || !currentPassword || changingEmail) && styles.emailButtonDisabled,
+                ]}
+                onPress={handleEmailChange}
+                disabled={!newEmail.trim() || !currentPassword || changingEmail}
+              >
+                <Text style={styles.emailButtonText}>
+                  {changingEmail ? 'Sending…' : 'Send confirmation link'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </ScrollView>
 
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
@@ -240,6 +331,47 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 36, fontWeight: 'bold', color: '#ffffff' },
   changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontWeight: '600' },
   section: { paddingHorizontal: 20, marginBottom: 16 },
+  emailSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    marginTop: 12,
+    marginBottom: 32,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
+  emailSectionTitle: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 8,
+  },
+  currentEmail: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    color: colors.ink,
+  },
+  emailHelp: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+    marginTop: 8,
+    marginBottom: 14,
+  },
+  emailButton: {
+    backgroundColor: colors.ink,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  emailButtonDisabled: { opacity: 0.4 },
+  emailButtonText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: colors.bone,
+  },
   label: { fontSize: 14, fontWeight: '600', color: colors.ink, marginBottom: 8 },
   input: {
     backgroundColor: colors.paper,
