@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1337,77 +1337,191 @@ exports.renderTryOn = functions
 });
 // ==================== CHALLENGE SEEDING ====================
 /**
- * Seeds the styling challenges the Challenges screen reads.
+ * The pool challenges rotate through.
  *
- * The feature is fully built - entries, voting, leaderboard - but nothing ever
- * wrote the `challenges` collection, so it rendered an empty screen. An App
- * Store reviewer opening a blank feature reads it as broken.
- *
- * Idempotent: existing challenges are left alone, so re-running is safe.
- * Admin-invoked, not something the app calls.
+ * Editorial content, so it lives in code rather than a database - these get
+ * reviewed and reworded like copy, not managed like records. Add to the end;
+ * the rotation cursor handles the rest.
  */
-exports.seedChallenges = functions
-    .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
-    .https.onCall(async (data, context) => {
+const CHALLENGE_POOL = [
+    {
+        slug: 'one-piece-five-ways',
+        title: 'One piece, five ways',
+        theme: 'Versatility',
+        prompt: 'Style a single piece five different ways.',
+        description: 'Pick the hardest-working item in your closet and show five genuinely different outfits built around it. Bonus points if two of them are for completely different occasions.',
+    },
+    {
+        slug: 'shop-your-closet',
+        title: 'Shop your own closet',
+        theme: 'Rediscovery',
+        prompt: 'Only pieces unworn for 3+ months.',
+        description: 'Build an outfit entirely from pieces you have not worn in the last three months. The ones you forgot you owned are usually the most interesting.',
+    },
+    {
+        slug: 'nothing-but-neutrals',
+        title: 'Nothing but neutrals',
+        theme: 'Colour',
+        prompt: 'Neutrals only, no accent colours.',
+        description: 'Cream, camel, charcoal, bone. Prove a restricted palette is a discipline rather than a limitation - texture and silhouette have to do all the work.',
+    },
+    {
+        slug: 'lowest-cost-per-wear',
+        title: 'Your lowest cost-per-wear',
+        theme: 'Value',
+        prompt: 'Build a look from your most-worn pieces.',
+        description: 'An outfit made only from the pieces you wear most. Show the cost-per-wear if you have it - the best answers here are usually the oldest things you own.',
+    },
+    {
+        slug: 'one-colour-head-to-toe',
+        title: 'One colour, head to toe',
+        theme: 'Colour',
+        prompt: 'A single colour, top to bottom.',
+        description: 'Commit to one colour for the whole outfit. The trick is varying the shade and texture so it reads considered rather than uniform.',
+    },
+    {
+        slug: 'secondhand-only',
+        title: 'Secondhand only',
+        theme: 'Sustainability',
+        prompt: 'Every piece bought secondhand.',
+        description: 'An outfit where nothing was bought new. Tell us where you found the best piece - half the pleasure is in the hunt.',
+    },
+    {
+        slug: 'dress-for-the-weather',
+        title: 'Dress for the actual weather',
+        theme: 'Practical',
+        prompt: 'An outfit for the weather where you are today.',
+        description: 'No styling for an imaginary climate. Whatever it is doing outside your window right now - dress for that, and make it look good anyway.',
+    },
+    {
+        slug: 'carry-on-only',
+        title: 'Carry-on only',
+        theme: 'Travel',
+        prompt: 'A week of outfits from nine pieces.',
+        description: 'Nine pieces, seven days, one bag. Show the pieces and how they recombine - this is the closest thing styling has to a puzzle.',
+    },
+    {
+        slug: 'oldest-thing-you-own',
+        title: 'The oldest thing you own',
+        theme: 'Longevity',
+        prompt: 'Style your longest-owned piece.',
+        description: 'Build a look around the piece you have had longest. Anything that survived that many wardrobe clear-outs has earned its place.',
+    },
+    {
+        slug: 'texture-over-pattern',
+        title: 'Texture over pattern',
+        theme: 'Craft',
+        prompt: 'No prints - texture only.',
+        description: 'Knit, suede, denim, silk, corduroy. Make an outfit interesting without a single print in it.',
+    },
+];
+const CHALLENGE_DURATION_DAYS = 14;
+/** Overlapping runs, so there is always something mid-flight and something new. */
+const TARGET_ACTIVE = 2;
+const TARGET_UPCOMING = 1;
+/**
+ * Keeps the Challenges screen populated: retires what has ended, promotes what
+ * has started, and opens new ones from the pool when the count runs short.
+ *
+ * A one-off seed was the wrong shape. Challenges are date-boxed, so a static
+ * set expires a fortnight later and the screen goes blank again - which is
+ * exactly the state that made it look broken in the first place.
+ *
+ * Idempotent and safe to run repeatedly: it only creates when below target.
+ */
+async function rotateChallengesNow() {
     const now = new Date();
-    const daysFromNow = (days) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() + days);
-        return d.toISOString();
-    };
-    const challenges = [
-        {
-            id: 'challenge-one-piece-five-ways',
-            title: 'One piece, five ways',
-            description: 'Pick the hardest-working item in your closet and show five genuinely different outfits built around it. Bonus points if two of them are for completely different occasions.',
-            theme: 'Versatility',
-            prompt: 'Style a single piece five different ways.',
-            startsAt: daysFromNow(-3),
-            endsAt: daysFromNow(11),
-            status: 'active',
-        },
-        {
-            id: 'challenge-shop-your-closet',
-            title: 'Shop your own closet',
-            description: 'Build an outfit entirely from pieces you have not worn in the last three months. The ones you forgot you owned are usually the most interesting.',
-            theme: 'Rediscovery',
-            prompt: 'Only pieces unworn for 3+ months.',
-            startsAt: daysFromNow(-1),
-            endsAt: daysFromNow(13),
-            status: 'active',
-        },
-        {
-            id: 'challenge-neutral-palette',
-            title: 'Nothing but neutrals',
-            description: 'Cream, camel, charcoal, bone. Prove that a restricted palette is a discipline rather than a limitation - texture and silhouette have to do all the work.',
-            theme: 'Colour',
-            prompt: 'Neutrals only, no accent colours.',
-            startsAt: daysFromNow(2),
-            endsAt: daysFromNow(16),
-            status: 'upcoming',
-        },
-        {
-            id: 'challenge-under-thirty',
-            title: 'The £30 outfit',
-            description: 'An outfit where every piece cost under £30, or was secondhand. Show the cost-per-wear if you have it - the best answers here are usually the oldest pieces.',
-            theme: 'Value',
-            prompt: 'Every piece under £30 or secondhand.',
-            startsAt: daysFromNow(5),
-            endsAt: daysFromNow(19),
-            status: 'upcoming',
-        },
-    ];
+    const nowIso = now.toISOString();
+    const collection = db.collection('challenges');
+    // Retire anything past its end date.
+    const ended = await collection.where('status', 'in', ['active', 'upcoming']).get();
+    let retired = 0;
+    let promoted = 0;
+    for (const doc of ended.docs) {
+        const data = doc.data();
+        if (data.endsAt && data.endsAt < nowIso) {
+            await doc.ref.update({ status: 'completed' });
+            retired++;
+        }
+        else if (data.status === 'upcoming' && data.startsAt && data.startsAt <= nowIso) {
+            await doc.ref.update({ status: 'active' });
+            promoted++;
+        }
+    }
+    const live = await collection.where('status', 'in', ['active', 'upcoming']).get();
+    const activeCount = live.docs.filter(d => d.data().status === 'active').length;
+    const upcomingCount = live.docs.filter(d => d.data().status === 'upcoming').length;
+    const needed = Math.max(0, TARGET_ACTIVE - activeCount) + Math.max(0, TARGET_UPCOMING - upcomingCount);
+    if (needed === 0) {
+        return { retired, promoted, created: 0 };
+    }
+    // Cursor into the pool so challenges cycle rather than repeating. Stored
+    // rather than derived, so adding to the pool never replays old ones.
+    const cursorRef = db.collection('challengeRotation').doc('state');
+    const cursorDoc = await cursorRef.get();
+    let cursor = cursorDoc.exists ? cursorDoc.data().cursor || 0 : 0;
+    // Never re-open something already running.
+    const liveSlugs = new Set(live.docs.map(d => d.data().slug).filter(Boolean));
     let created = 0;
-    for (const challenge of challenges) {
-        const ref = db.collection('challenges').doc(challenge.id);
-        const existing = await ref.get();
-        if (existing.exists)
+    for (let attempt = 0; attempt < CHALLENGE_POOL.length && created < needed; attempt++) {
+        const template = CHALLENGE_POOL[cursor % CHALLENGE_POOL.length];
+        cursor++;
+        if (liveSlugs.has(template.slug))
             continue;
-        await ref.set(Object.assign(Object.assign({}, challenge), { entryCount: 0, participantCount: 0, createdAt: admin.firestore.Timestamp.now() }));
+        const startOffset = created < Math.max(0, TARGET_ACTIVE - activeCount) ? 0 : 7;
+        const startsAt = new Date(now);
+        startsAt.setDate(startsAt.getDate() + startOffset);
+        const endsAt = new Date(startsAt);
+        endsAt.setDate(endsAt.getDate() + CHALLENGE_DURATION_DAYS);
+        // Id carries the start date so the same theme can run again months later
+        // without colliding with its previous outing.
+        const id = `${template.slug}-${startsAt.toISOString().slice(0, 10)}`;
+        await collection.doc(id).set({
+            id,
+            slug: template.slug,
+            title: template.title,
+            description: template.description,
+            theme: template.theme,
+            prompt: template.prompt,
+            startsAt: startsAt.toISOString(),
+            endsAt: endsAt.toISOString(),
+            status: startOffset === 0 ? 'active' : 'upcoming',
+            entryCount: 0,
+            participantCount: 0,
+            createdAt: admin.firestore.Timestamp.now(),
+        });
+        liveSlugs.add(template.slug);
         created++;
     }
-    console.log(`Seeded ${created} challenges (${challenges.length - created} already existed)`);
-    return { success: true, created, skipped: challenges.length - created };
+    await cursorRef.set({ cursor, updatedAt: admin.firestore.Timestamp.now() });
+    return { retired, promoted, created };
+}
+/**
+ * Runs daily. Cheap - it usually does nothing but a couple of reads.
+ *
+ * Daily rather than weekly because the transitions it handles are date-based:
+ * a challenge that ends on Tuesday should not still be listed as active on
+ * Wednesday just because the scheduler runs on Sundays.
+ */
+exports.rotateChallenges = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 120 })
+    .pubsub.schedule('every 24 hours')
+    .timeZone('America/Chicago')
+    .onRun(async () => {
+    const result = await rotateChallengesNow();
+    console.log(`Challenge rotation: ${result.retired} retired, ${result.promoted} promoted, ${result.created} created`);
+    return null;
+});
+/**
+ * Manual trigger for the same logic, so the board can be filled immediately
+ * rather than waiting for the first scheduled run.
+ */
+exports.seedChallenges = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 120, enforceAppCheck: false })
+    .https.onCall(async () => {
+    const result = await rotateChallengesNow();
+    console.log(`Manual challenge seed: ${result.retired} retired, ${result.promoted} promoted, ${result.created} created`);
+    return Object.assign({ success: true }, result);
 });
 // ==================== ACCOUNT DELETION ====================
 /**
