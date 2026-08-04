@@ -20,7 +20,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 6) / 3;
@@ -109,13 +109,12 @@ export default function UserProfileScreen() {
     <TouchableOpacity
       key={post.id}
       style={styles.gridItem}
-      onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+      onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
     >
       <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
-      {post.images.length > 1 && (
+      {post.images.length >1 && (
         <View style={styles.multipleIndicator}>
-          <Text style={styles.multipleIcon}>📷</Text>
-        </View>
+                  </View>
       )}
     </TouchableOpacity>
   );
@@ -144,7 +143,7 @@ export default function UserProfileScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.username}>@{profile.username}</Text>
@@ -170,14 +169,14 @@ export default function UserProfileScreen() {
               </View>
               <TouchableOpacity
                 style={styles.stat}
-                onPress={() => navigation.navigate('Followers', { userId })}
+                onPress={() =>navigation.navigate('Followers', { userId })}
               >
                 <Text style={styles.statValue}>{profile.stats.followers}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.stat}
-                onPress={() => navigation.navigate('Following', { userId })}
+                onPress={() =>navigation.navigate('Following', { userId })}
               >
                 <Text style={styles.statValue}>{profile.stats.following}</Text>
                 <Text style={styles.statLabel}>Following</Text>
@@ -189,9 +188,9 @@ export default function UserProfileScreen() {
             <Text style={styles.displayName}>{profile.displayName}</Text>
             {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
             {profile.location && (
-              <Text style={styles.location}>📍 {profile.location}</Text>
+              <Text style={styles.location}> {profile.location}</Text>
             )}
-            {profile.styleTags.length > 0 && (
+            {profile.styleTags.length >0 && (
               <View style={styles.tagsContainer}>
                 {profile.styleTags.map((tag, index) => (
                   <View key={index} style={styles.tag}>
@@ -230,18 +229,16 @@ export default function UserProfileScreen() {
         <View style={styles.tabs}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'posts' && styles.tabActive]}
-            onPress={() => setActiveTab('posts')}
+            onPress={() =>setActiveTab('posts')}
           >
-            <Text style={[styles.tabText, activeTab === 'posts' && styles.tabTextActive]}>
-              📸 Posts
+            <Text style={[styles.tabText, activeTab === 'posts' && styles.tabTextActive]}>Posts
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'saved' && styles.tabActive]}
-            onPress={() => setActiveTab('saved')}
+            onPress={() =>setActiveTab('saved')}
           >
-            <Text style={[styles.tabText, activeTab === 'saved' && styles.tabTextActive]}>
-              🔖 Saved
+            <Text style={[styles.tabText, activeTab === 'saved' && styles.tabTextActive]}>Saved
             </Text>
           </TouchableOpacity>
         </View>
@@ -255,7 +252,7 @@ export default function UserProfileScreen() {
               {isOwnProfile && (
                 <TouchableOpacity
                   style={styles.createPostButton}
-                  onPress={() => navigation.navigate('CreatePost')}
+                  onPress={() =>navigation.navigate('CreatePost')}
                 >
                   <Text style={styles.createPostButtonText}>Create First Post</Text>
                 </TouchableOpacity>
@@ -312,7 +309,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   profileSection: {
@@ -339,7 +336,7 @@ const styles = StyleSheet.create({
   },
   profileInitial: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   statsContainer: {
@@ -353,7 +350,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   statLabel: {
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -390,7 +387,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -406,21 +402,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
   },
   editButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   followButton: {
     flex: 1,
     backgroundColor: colors.ink,
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   followingButton: {
@@ -430,7 +424,7 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   followingButtonText: {
@@ -440,14 +434,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
   },
   messageButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   tabs: {
@@ -466,12 +459,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   tabTextActive: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   gridContainer: {
     minHeight: 300,
@@ -496,7 +489,6 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
     padding: 4,
   },
   multipleIcon: {
@@ -513,7 +505,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
@@ -521,11 +513,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   createPostButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

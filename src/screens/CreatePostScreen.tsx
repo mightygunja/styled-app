@@ -23,16 +23,16 @@ import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const POST_TYPES: { id: PostType; label: string; icon: string }[] = [
-  { id: 'transformation', label: 'Transformation', icon: '✨' },
-  { id: 'outfit', label: 'Outfit', icon: '👗' },
-  { id: 'closet', label: 'Closet', icon: '🗄️' },
-  { id: 'tip', label: 'Style Tip', icon: '💡' },
-  { id: 'product', label: 'Product', icon: '🛍️' },
+const POST_TYPES: { id: PostType; label: string }[] = [
+  { id: 'transformation', label: 'Transformation' },
+  { id: 'outfit', label: 'Outfit' },
+  { id: 'closet', label: 'Closet' },
+  { id: 'tip', label: 'Style Tip' },
+  { id: 'product', label: 'Product' },
 ];
 
 export default function CreatePostScreen() {
@@ -61,7 +61,7 @@ export default function CreatePostScreen() {
       });
 
       if (!result.canceled && result.assets) {
-        const newImages = result.assets.map(asset => asset.uri);
+        const newImages = result.assets.map(asset =>asset.uri);
         setImages([...images, ...newImages].slice(0, 10));
       }
     } catch (error) {
@@ -71,7 +71,7 @@ export default function CreatePostScreen() {
   };
 
   const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+    setImages(images.filter((_, i) =>i !== index));
   };
 
   const handlePost = async () => {
@@ -90,8 +90,8 @@ export default function CreatePostScreen() {
 
       const hashtagArray = hashtags
         .split(' ')
-        .filter(tag => tag.startsWith('#'))
-        .map(tag => tag.slice(1));
+        .filter(tag =>tag.startsWith('#'))
+        .map(tag =>tag.slice(1));
 
       // Upload each local image to Firebase Storage so it's durably viewable
       const uploadedUrls = await Promise.all(
@@ -124,7 +124,7 @@ export default function CreatePostScreen() {
       <BackButton />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.title}>New Post</Text>
@@ -147,9 +147,8 @@ export default function CreatePostScreen() {
                 <TouchableOpacity
                   key={type.id}
                   style={[styles.typeButton, postType === type.id && styles.typeButtonActive]}
-                  onPress={() => setPostType(type.id)}
+                  onPress={() =>setPostType(type.id)}
                 >
-                  <Text style={styles.typeIcon}>{type.icon}</Text>
                   <Text style={[styles.typeLabel, postType === type.id && styles.typeLabelActive]}>
                     {type.label}
                   </Text>
@@ -173,7 +172,7 @@ export default function CreatePostScreen() {
                   <Image source={{ uri: image }} style={styles.previewImage} />
                   <TouchableOpacity
                     style={styles.removeButton}
-                    onPress={() => removeImage(index)}
+                    onPress={() =>removeImage(index)}
                   >
                     <Text style={styles.removeIcon}>✕</Text>
                   </TouchableOpacity>
@@ -213,7 +212,7 @@ export default function CreatePostScreen() {
 
         {/* Tips */}
         <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>💡 Posting Tips</Text>
+          <Text style={styles.tipsTitle}>Posting Tips</Text>
           <Text style={styles.tipText}>• Use clear, well-lit photos</Text>
           <Text style={styles.tipText}>• Write engaging captions</Text>
           <Text style={styles.tipText}>• Add relevant hashtags</Text>
@@ -223,7 +222,7 @@ export default function CreatePostScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Post created! 🎉"
+        message="Post created! "
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -259,12 +258,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   content: {
@@ -277,7 +276,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -291,7 +290,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.hair,
     gap: 6,
@@ -305,12 +303,12 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   typeLabelActive: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   imagesContainer: {
     flexDirection: 'row',
@@ -320,7 +318,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.hair,
     borderStyle: 'dashed',
@@ -335,7 +332,7 @@ const styles = StyleSheet.create({
   addImageText: {
     fontSize: 12,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   imagePreview: {
     width: 120,
@@ -345,7 +342,6 @@ const styles = StyleSheet.create({
   previewImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
     backgroundColor: colors.paper,
   },
   removeButton: {
@@ -362,11 +358,10 @@ const styles = StyleSheet.create({
   removeIcon: {
     fontSize: 12,
     color: '#ffffff',
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   captionInput: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     fontSize: 15,
     color: colors.ink,
@@ -382,7 +377,6 @@ const styles = StyleSheet.create({
   },
   hashtagInput: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     fontSize: 15,
     color: colors.ink,
@@ -398,13 +392,12 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 16,
     backgroundColor: '#fffbeb',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.sand,
   },
   tipsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.tobacco,
     marginBottom: 12,
   },

@@ -47,9 +47,9 @@ export default function EditProfileScreen() {
 
   /** Which provider owns this account's email, for accounts that cannot change it here. */
   const providerLabel =
-    authUser?.providerData?.some(p => p.providerId === 'google.com')
+    authUser?.providerData?.some(p =>p.providerId === 'google.com')
       ? 'Google'
-      : authUser?.providerData?.some(p => p.providerId === 'apple.com')
+      : authUser?.providerData?.some(p =>p.providerId === 'apple.com')
       ? 'Apple'
       : 'your sign-in provider';
 
@@ -145,11 +145,11 @@ export default function EditProfileScreen() {
         ...(profileImageUrl ? { profileImageUrl } : {}),
         styleTags: styleTagsText
           .split(',')
-          .map(t => t.trim())
+          .map(t =>t.trim())
           .filter(Boolean),
       });
       showToast('Profile updated!', 'success');
-      setTimeout(() => navigation.goBack(), 1000);
+      setTimeout(() =>navigation.goBack(), 1000);
     } catch (error) {
       console.error('Error saving profile:', error);
       showToast('Failed to save profile', 'error');
@@ -171,7 +171,7 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Edit Profile</Text>
@@ -244,19 +244,16 @@ export default function EditProfileScreen() {
           <Text style={styles.currentEmail}>{authUser?.email || '—'}</Text>
 
           {!canChangeEmail ? (
-            <Text style={styles.emailHelp}>
-              You sign in with {providerLabel}, so your email is managed there. Change it with{' '}
+            <Text style={styles.emailHelp}>You sign in with {providerLabel}, so your email is managed there. Change it with{' '}
               {providerLabel} and it will update here too.
             </Text>
           ) : emailSent ? (
-            <Text style={styles.emailHelp}>
-              Check {newEmail.trim()} for a confirmation link. Your email changes once you open
+            <Text style={styles.emailHelp}>Check {newEmail.trim()} for a confirmation link. Your email changes once you open
               it — until then you still sign in with your current address.
             </Text>
           ) : (
             <>
-              <Text style={styles.emailHelp}>
-                We'll send a confirmation link to the new address. Your email only changes once
+              <Text style={styles.emailHelp}>We'll send a confirmation link to the new address. Your email only changes once
                 you open it.
               </Text>
 
@@ -314,8 +311,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
   },
   cancelButton: { fontSize: 16, color: colors.inkMuted },
-  title: { fontSize: 18, fontWeight: 'bold', color: colors.ink },
-  saveButton: { fontSize: 16, fontWeight: '600', color: colors.ink },
+  title: { fontSize: 18, fontFamily: fonts.sansSemiBold, color: colors.ink },
+  saveButton: { fontSize: 16, fontFamily: fonts.sansSemiBold, color: colors.ink },
   saveButtonDisabled: { color: colors.hair },
   content: { flex: 1 },
   avatarSection: { alignItems: 'center', paddingVertical: 24 },
@@ -328,8 +325,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: { fontSize: 36, fontWeight: 'bold', color: '#ffffff' },
-  changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontWeight: '600' },
+  avatarInitial: { fontSize: 36, fontFamily: fonts.sansSemiBold, color: '#ffffff' },
+  changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontFamily: fonts.sansSemiBold },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   emailSection: {
     paddingHorizontal: 20,
@@ -372,12 +369,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.bone,
   },
-  label: { fontSize: 14, fontWeight: '600', color: colors.ink, marginBottom: 8 },
+  label: { fontSize: 14, fontFamily: fonts.sansSemiBold, color: colors.ink, marginBottom: 8 },
   input: {
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,
-    borderRadius: 8,
     padding: 12,
     fontSize: 16,
     color: colors.ink,

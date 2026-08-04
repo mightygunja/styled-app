@@ -23,7 +23,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -67,7 +67,7 @@ export default function PostDetailScreen() {
         socialFeedService.getPostComments(postId),
       ]);
 
-      const foundPost = feedPosts.find(p => p.id === postId);
+      const foundPost = feedPosts.find(p =>p.id === postId);
       if (foundPost) {
         const user = await userProfileService.getUserProfile(foundPost.userId);
         setPost({ ...foundPost, user: user || undefined });
@@ -141,8 +141,7 @@ export default function PostDetailScreen() {
 
       if (replyingTo) {
         // Add to replies
-        setComments(comments.map(c => 
-          c.id === replyingTo.id 
+        setComments(comments.map(c =>c.id === replyingTo.id 
             ? { ...c, replies: [...(c.replies || []), commentWithUser] }
             : c
         ));
@@ -168,7 +167,7 @@ export default function PostDetailScreen() {
   const handleDeleteComment = async (commentId: string) => {
     try {
       await socialFeedService.deleteComment(commentId, getCurrentUserId());
-      setComments(comments.filter(c => c.id !== commentId));
+      setComments(comments.filter(c =>c.id !== commentId));
       
       if (post) {
         setPost({ ...post, comments: post.comments - 1 });
@@ -183,7 +182,7 @@ export default function PostDetailScreen() {
   const renderComment = (comment: Comment, isReply: boolean = false) => (
     <View key={comment.id} style={[styles.commentCard, isReply && styles.replyCard]}>
       <TouchableOpacity
-        onPress={() => navigation.navigate('UserProfile', { userId: comment.userId })}
+        onPress={() =>navigation.navigate('UserProfile', { userId: comment.userId })}
       >
         {comment.user?.profileImageUrl ? (
           <Image source={{ uri: comment.user.profileImageUrl }} style={styles.commentAvatar} />
@@ -206,20 +205,20 @@ export default function PostDetailScreen() {
         <Text style={styles.commentText}>{comment.text}</Text>
         
         <View style={styles.commentActions}>
-          <TouchableOpacity onPress={() => setReplyingTo(comment)}>
+          <TouchableOpacity onPress={() =>setReplyingTo(comment)}>
             <Text style={styles.commentAction}>Reply</Text>
           </TouchableOpacity>
           {comment.userId === getCurrentUserId() && (
-            <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+            <TouchableOpacity onPress={() =>handleDeleteComment(comment.id)}>
               <Text style={[styles.commentAction, styles.deleteAction]}>Delete</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && (
+        {comment.replies && comment.replies.length >0 && (
           <View style={styles.repliesContainer}>
-            {comment.replies.map(reply => renderComment(reply, true))}
+            {comment.replies.map(reply =>renderComment(reply, true))}
           </View>
         )}
       </View>
@@ -255,7 +254,7 @@ export default function PostDetailScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Post</Text>
@@ -268,7 +267,7 @@ export default function PostDetailScreen() {
             {/* Post Header */}
             <TouchableOpacity
               style={styles.postHeader}
-              onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}
+              onPress={() =>navigation.navigate('UserProfile', { userId: post.userId })}
             >
               {post.user?.profileImageUrl ? (
                 <Image source={{ uri: post.user.profileImageUrl }} style={styles.userAvatar} />
@@ -302,24 +301,22 @@ export default function PostDetailScreen() {
             {/* Post Actions */}
             <View style={styles.postActions}>
               <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-                <Text style={styles.actionIcon}>{post.isLiked ? '❤️' : '🤍'}</Text>
+                <Text style={styles.actionIcon}>{post.isLiked ? '●' : '○'}</Text>
                 <Text style={styles.actionText}>{post.likes}</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.actionButton} onPress={() => commentInputRef.current?.focus()}>
-                <Text style={styles.actionIcon}>💬</Text>
-                <Text style={styles.actionText}>{post.comments}</Text>
+              <TouchableOpacity style={styles.actionButton} onPress={() =>commentInputRef.current?.focus()}>
+                                <Text style={styles.actionText}>{post.comments}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                <Text style={styles.actionIcon}>📤</Text>
-                <Text style={styles.actionText}>{post.shares}</Text>
+                                <Text style={styles.actionText}>{post.shares}</Text>
               </TouchableOpacity>
               
               <View style={{ flex: 1 }} />
               
               <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
-                <Text style={styles.actionIcon}>{post.isSaved ? '🔖' : '📑'}</Text>
+                <Text style={styles.actionIcon}>{post.isSaved ? '●' : '○'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -329,7 +326,7 @@ export default function PostDetailScreen() {
                 <Text style={styles.captionUser}>{post.user?.displayName} </Text>
                 {post.caption}
               </Text>
-              {post.hashtags.length > 0 && (
+              {post.hashtags.length >0 && (
                 <View style={styles.hashtagsContainer}>
                   {post.hashtags.map((tag, index) => (
                     <Text key={index} style={styles.hashtag}>#{tag} </Text>
@@ -341,8 +338,7 @@ export default function PostDetailScreen() {
 
           {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>
-              Comments ({comments.length})
+            <Text style={styles.commentsTitle}>Comments ({comments.length})
             </Text>
             
             {comments.length === 0 ? (
@@ -352,7 +348,7 @@ export default function PostDetailScreen() {
                 <Text style={styles.emptySubtext}>Be the first to comment!</Text>
               </View>
             ) : (
-              comments.map(comment => renderComment(comment))
+              comments.map(comment =>renderComment(comment))
             )}
           </View>
         </ScrollView>
@@ -361,10 +357,9 @@ export default function PostDetailScreen() {
         <View style={styles.commentInputContainer}>
           {replyingTo && (
             <View style={styles.replyingToBar}>
-              <Text style={styles.replyingToText}>
-                Replying to {replyingTo.user?.displayName}
+              <Text style={styles.replyingToText}>Replying to {replyingTo.user?.displayName}
               </Text>
-              <TouchableOpacity onPress={() => setReplyingTo(null)}>
+              <TouchableOpacity onPress={() =>setReplyingTo(null)}>
                 <Text style={styles.cancelReply}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -437,7 +432,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postSection: {
@@ -465,7 +460,7 @@ const styles = StyleSheet.create({
   },
   userInitial: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   userInfo: {
@@ -474,7 +469,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postTime: {
@@ -505,7 +500,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postCaption: {
@@ -518,7 +513,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   captionUser: {
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   hashtagsContainer: {
     flexDirection: 'row',
@@ -528,14 +523,14 @@ const styles = StyleSheet.create({
   hashtag: {
     fontSize: 14,
     color: colors.tobacco,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   commentsSection: {
     padding: 20,
   },
   commentsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
@@ -564,7 +559,7 @@ const styles = StyleSheet.create({
   },
   commentInitial: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   commentContent: {
@@ -577,7 +572,7 @@ const styles = StyleSheet.create({
   },
   commentUser: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   commentTime: {
@@ -596,7 +591,7 @@ const styles = StyleSheet.create({
   },
   commentAction: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   deleteAction: {
@@ -616,7 +611,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -644,7 +639,7 @@ const styles = StyleSheet.create({
   cancelReply: {
     fontSize: 16,
     color: colors.inkMuted,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -655,7 +650,6 @@ const styles = StyleSheet.create({
   commentInput: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
@@ -666,7 +660,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
     minWidth: 70,
     alignItems: 'center',
   },
@@ -676,6 +669,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

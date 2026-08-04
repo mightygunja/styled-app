@@ -17,7 +17,7 @@ import { lookAPI, getCurrentUserId } from '../services/api';
 import { Look } from '../types';
 import LookCard from '../components/LookCard';
 import { fadeIn } from '../utils/animations';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -62,7 +62,7 @@ export default function FavoritesScreen() {
     try {
       await lookAPI.toggleFavorite(lookId, getCurrentUserId());
       // Remove from local state
-      setLooks(prev => prev.filter(look => look.id !== lookId));
+      setLooks(prev =>prev.filter(look =>look.id !== lookId));
     } catch (error) {
       console.error('Error unfavoriting:', error);
     }
@@ -85,7 +85,7 @@ export default function FavoritesScreen() {
         <View style={styles.headerTop}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() =>navigation.goBack()}
           >
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
@@ -98,14 +98,12 @@ export default function FavoritesScreen() {
 
       {looks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>💝</Text>
-          <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the heart icon on any look to save it here
+                    <Text style={styles.emptyTitle}>No Favorites Yet</Text>
+          <Text style={styles.emptyText}>Tap the heart icon on any look to save it here
           </Text>
           <TouchableOpacity
             style={styles.browseButton}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+            onPress={() =>navigation.navigate('MainTabs', { screen: 'Home' })}
           >
             <Text style={styles.browseButtonText}>Browse Looks</Text>
           </TouchableOpacity>
@@ -114,7 +112,7 @@ export default function FavoritesScreen() {
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
         <FlatList
           data={looks}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) =>item.id}
           numColumns={2}
           contentContainerStyle={styles.grid}
           refreshControl={
@@ -124,8 +122,8 @@ export default function FavoritesScreen() {
             <View style={styles.cardWrapper}>
               <LookCard
                 look={item}
-                onPress={() => navigation.navigate('LookDetail', { lookId: item.id })}
-                onFavorite={() => handleUnfavorite(item.id)}
+                onPress={() =>navigation.navigate('LookDetail', { lookId: item.id })}
+                onFavorite={() =>handleUnfavorite(item.id)}
                 isFavorited={true}
               />
             </View>
@@ -165,16 +163,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: '#f5f5f5',
-    borderRadius: 8,
   },
   backButtonText: {
     fontSize: 16,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   subtitle: {
@@ -201,7 +198,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -215,11 +212,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 8,
   },
   browseButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

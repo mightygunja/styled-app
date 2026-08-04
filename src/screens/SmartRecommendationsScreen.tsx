@@ -21,7 +21,7 @@ import { outfitsService } from '../services/firestore';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -104,7 +104,7 @@ export default function SmartRecommendationsScreen() {
     try {
       await outfitsService.create(
         getCurrentUserId(),
-        rec.items.map(item => item.id),
+        rec.items.map(item =>item.id),
         rec.occasion,
         rec.title
       );
@@ -117,7 +117,7 @@ export default function SmartRecommendationsScreen() {
 
   const getOccasionEmoji = (occasion: OccasionType): string => {
     const emojiMap: { [key in OccasionType]: string } = {
-      casual: '◈',
+      casual: '',
       work: '▭',
       formal: '◇',
       party: '◉',
@@ -179,13 +179,13 @@ export default function SmartRecommendationsScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.acceptButton}
-          onPress={() => handleAcceptRecommendation(rec)}
+          onPress={() =>handleAcceptRecommendation(rec)}
         >
           <Text style={styles.acceptButtonText}>✓ Save Outfit</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.modifyButton}
-          onPress={() => navigation.navigate('SmartOutfitBuilder')}
+          onPress={() =>navigation.navigate('SmartOutfitBuilder')}
         >
           <Text style={styles.modifyButtonText}>Modify</Text>
         </TouchableOpacity>
@@ -195,11 +195,11 @@ export default function SmartRecommendationsScreen() {
       <View style={styles.badges}>
         {rec.weatherSuitable && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>☀️ Weather-Ready</Text>
+            <Text style={styles.badgeText}>Weather-ready</Text>
           </View>
         )}
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>✨ {rec.styleMatch}% Style Match</Text>
+          <Text style={styles.badgeText}> {rec.styleMatch}% Style Match</Text>
         </View>
       </View>
     </View>
@@ -220,7 +220,7 @@ export default function SmartRecommendationsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Smart Recommendations</Text>
@@ -232,7 +232,7 @@ export default function SmartRecommendationsScreen() {
       {/* Weather Info */}
       <View style={styles.weatherCard}>
         <Text style={styles.weatherIcon}>
-          {{ sunny: '☀️', cloudy: '☁️', rainy: '🌧️', snowy: '❄️', cold: '🥶', hot: '🥵' }[weather.condition]}
+          {{ sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀' }[weather.condition]}
         </Text>
         <View>
           <Text style={styles.weatherTemp}>{weather.temperature}°F</Text>
@@ -256,7 +256,7 @@ export default function SmartRecommendationsScreen() {
               styles.occasionChip,
               selectedOccasion === occasion && styles.occasionChipActive,
             ]}
-            onPress={() => setSelectedOccasion(occasion)}
+            onPress={() =>setSelectedOccasion(occasion)}
           >
             <Text style={styles.occasionEmoji}>{getOccasionEmoji(occasion)}</Text>
             <Text
@@ -275,10 +275,8 @@ export default function SmartRecommendationsScreen() {
       <ScrollView>
         {recommendations.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>◈</Text>
-            <Text style={styles.emptyText}>No recommendations available</Text>
-            <Text style={styles.emptySubtext}>
-              Add more items to your closet for better recommendations
+                        <Text style={styles.emptyText}>No recommendations available</Text>
+            <Text style={styles.emptySubtext}>Add more items to your closet for better recommendations
             </Text>
           </View>
         ) : (
@@ -333,7 +331,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   refreshButton: {
@@ -346,7 +344,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     margin: 20,
     padding: 16,
-    borderRadius: 12,
     gap: 12,
   },
   weatherIcon: {
@@ -354,7 +351,7 @@ const styles = StyleSheet.create({
   },
   weatherTemp: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   weatherCondition: {
@@ -373,7 +370,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -389,7 +385,7 @@ const styles = StyleSheet.create({
   },
   occasionText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   occasionTextActive: {
@@ -401,7 +397,7 @@ const styles = StyleSheet.create({
   },
   recCountText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   recCard: {
@@ -425,7 +421,7 @@ const styles = StyleSheet.create({
   },
   recTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -438,17 +434,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 12,
   },
   scoreNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   scoreLabel: {
     fontSize: 11,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   itemsGrid: {
     flexDirection: 'row',
@@ -462,7 +457,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: 8,
     backgroundColor: colors.paper,
     marginBottom: 4,
   },
@@ -476,7 +470,7 @@ const styles = StyleSheet.create({
   },
   reasoningTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -488,7 +482,7 @@ const styles = StyleSheet.create({
   reasonBullet: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   reasonText: {
     flex: 1,
@@ -506,12 +500,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   tagText: {
     fontSize: 12,
     color: colors.tobacco,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   actions: {
     flexDirection: 'row',
@@ -522,18 +515,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   acceptButtonText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   modifyButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.hair,
     alignItems: 'center',
@@ -541,7 +532,7 @@ const styles = StyleSheet.create({
   modifyButtonText: {
     color: colors.inkMuted,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   badges: {
     flexDirection: 'row',
@@ -552,14 +543,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
   badgeText: {
     fontSize: 12,
     color: '#166534',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,
@@ -572,7 +562,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },

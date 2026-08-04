@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -45,7 +45,7 @@ export default function ClosetAnalyticsScreen() {
 
       // Calculate analytics
       const totalItems = items.length;
-      const totalValue = items.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+      const totalValue = items.reduce((sum: number, item: any) =>sum + (item.price || 0), 0);
 
       // Category breakdown
       const categoryBreakdown: { [key: string]: number } = {};
@@ -127,7 +127,7 @@ export default function ClosetAnalyticsScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Closet Analytics</Text>
@@ -157,7 +157,7 @@ export default function ClosetAnalyticsScreen() {
           <Text style={styles.sectionTitle}>By Category</Text>
           <View style={styles.breakdownContainer}>
             {Object.entries(analytics.categoryBreakdown)
-              .sort((a, b) => b[1] - a[1])
+              .sort((a, b) =>b[1] - a[1])
               .map(([category, count]) => (
                 <View key={category} style={styles.breakdownRow}>
                   <Text style={styles.breakdownLabel}>{category}</Text>
@@ -180,7 +180,7 @@ export default function ClosetAnalyticsScreen() {
           <Text style={styles.sectionTitle}>By Color</Text>
           <View style={styles.colorGrid}>
             {Object.entries(analytics.colorBreakdown)
-              .sort((a, b) => b[1] - a[1])
+              .sort((a, b) =>b[1] - a[1])
               .slice(0, 6)
               .map(([color, count]) => (
                 <View key={color} style={styles.colorCard}>
@@ -199,7 +199,7 @@ export default function ClosetAnalyticsScreen() {
             {Object.entries(analytics.seasonBreakdown).map(([season, count]) => (
               <View key={season} style={styles.seasonCard}>
                 <Text style={styles.seasonEmoji}>
-                  {season === 'Spring' ? '🌸' : season === 'Summer' ? '☀️' : season === 'Fall' ? '🍂' : '❄️'}
+                  {season === 'Spring' ? '✿' : season === 'Summer' ? '☀' : season === 'Fall' ? '❋' : '❄'}
                 </Text>
                 <Text style={styles.seasonName}>{season}</Text>
                 <Text style={styles.seasonCount}>{count} items</Text>
@@ -210,7 +210,7 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Most Worn Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Most Worn Items 🔥</Text>
+          <Text style={styles.sectionTitle}>Most Worn Items </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {analytics.mostWornItems.map((item: any) => (
               <View key={item.id} style={styles.itemCard}>
@@ -226,7 +226,7 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Least Worn Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Least Worn Items 💤</Text>
+          <Text style={styles.sectionTitle}>Least Worn Items </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {analytics.leastWornItems.map((item: any) => (
               <View key={item.id} style={styles.itemCard}>
@@ -242,25 +242,21 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Insights */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Insights 💡</Text>
+          <Text style={styles.sectionTitle}>Insights </Text>
           <View style={styles.insightCard}>
-            <Text style={styles.insightEmoji}>👕</Text>
-            <Text style={styles.insightText}>
-              You wear {Object.keys(analytics.categoryBreakdown)[0]} items most often
+                        <Text style={styles.insightText}>You wear {Object.keys(analytics.categoryBreakdown)[0]} items most often
             </Text>
           </View>
           <View style={styles.insightCard}>
-            <Text style={styles.insightEmoji}>🎨</Text>
-            <Text style={styles.insightText}>
+                        <Text style={styles.insightText}>
               {Object.keys(analytics.colorBreakdown)[0]} is your most common color
             </Text>
           </View>
           <View style={styles.insightCard}>
-            <Text style={styles.insightEmoji}>💰</Text>
-            <Text style={styles.insightText}>
-              {Object.keys(analytics.costPerWear).length > 0
+                        <Text style={styles.insightText}>
+              {Object.keys(analytics.costPerWear).length >0
                 ? `Average cost per wear: $${(
-                    Object.values(analytics.costPerWear).reduce((sum, v) => sum + v, 0) /
+                    Object.values(analytics.costPerWear).reduce((sum, v) =>sum + v, 0) /
                     Object.values(analytics.costPerWear).length
                   ).toFixed(2)}`
                 : 'Add purchase prices to your items to see cost-per-wear'}
@@ -310,7 +306,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   overviewSection: {
@@ -322,12 +318,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -341,7 +336,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
@@ -362,7 +357,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 24,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     overflow: 'hidden',
   },
   breakdownBar: {
@@ -372,7 +366,7 @@ const styles = StyleSheet.create({
   breakdownValue: {
     width: 30,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     textAlign: 'right',
   },
@@ -385,7 +379,6 @@ const styles = StyleSheet.create({
     width: (width - 60) / 3,
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 12,
     alignItems: 'center',
   },
   colorSwatch: {
@@ -398,7 +391,7 @@ const styles = StyleSheet.create({
   },
   colorName: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -414,7 +407,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   seasonEmoji: {
@@ -423,7 +415,7 @@ const styles = StyleSheet.create({
   },
   seasonName: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -438,7 +430,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: 100,
     height: 100,
-    borderRadius: 8,
     backgroundColor: colors.paper,
     marginBottom: 8,
   },
@@ -456,7 +447,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     marginBottom: 12,
   },
   insightEmoji: {

@@ -19,7 +19,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -70,8 +70,7 @@ export default function NotificationsScreen() {
     // Mark as read
     if (!notification.isRead) {
       await notificationService.markAsRead(notification.id, getCurrentUserId());
-      setNotifications(notifications.map(n => 
-        n.id === notification.id ? { ...n, isRead: true } : n
+      setNotifications(notifications.map(n =>n.id === notification.id ? { ...n, isRead: true } : n
       ));
       setUnreadCount(unreadCount - 1);
     }
@@ -114,8 +113,8 @@ export default function NotificationsScreen() {
   const handleDelete = async (notificationId: string) => {
     try {
       await notificationService.deleteNotification(notificationId, getCurrentUserId());
-      const deletedNotif = notifications.find(n => n.id === notificationId);
-      setNotifications(notifications.filter(n => n.id !== notificationId));
+      const deletedNotif = notifications.find(n =>n.id === notificationId);
+      setNotifications(notifications.filter(n =>n.id !== notificationId));
       
       if (deletedNotif && !deletedNotif.isRead) {
         setUnreadCount(unreadCount - 1);
@@ -144,17 +143,17 @@ export default function NotificationsScreen() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'like': return '❤️';
-      case 'comment': return '💬';
-      case 'follow': return '👤';
+      case 'like': return '●';
+      case 'comment': return '';
+      case 'follow': return '';
       case 'mention': return '@';
-      case 'message': return '💌';
-      case 'post_share': return '📤';
-      case 'stylist_booking': return '📅';
-      case 'session_reminder': return '⏰';
-      case 'challenge_invite': return '🏆';
-      case 'group_invite': return '👥';
-      default: return '🔔';
+      case 'message': return '';
+      case 'post_share': return '';
+      case 'stylist_booking': return '';
+      case 'session_reminder': return '';
+      case 'challenge_invite': return '';
+      case 'group_invite': return '';
+      default: return '';
     }
   };
 
@@ -162,7 +161,7 @@ export default function NotificationsScreen() {
     <TouchableOpacity
       key={notification.id}
       style={[styles.notificationCard, !notification.isRead && styles.unreadCard]}
-      onPress={() => handleNotificationPress(notification)}
+      onPress={() =>handleNotificationPress(notification)}
     >
       <View style={styles.notificationContent}>
         {notification.imageUrl ? (
@@ -218,13 +217,13 @@ export default function NotificationsScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadCount > 0 && (
+          {unreadCount >0 && (
             <View style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>{unreadCount}</Text>
             </View>
           )}
         </View>
-        {unreadCount > 0 && (
+        {unreadCount >0 && (
           <TouchableOpacity onPress={handleMarkAllRead}>
             <Text style={styles.markAllButton}>Mark all read</Text>
           </TouchableOpacity>
@@ -238,10 +237,8 @@ export default function NotificationsScreen() {
       >
         {notifications.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔔</Text>
-            <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>
-              You'll see updates about your activity here
+                        <Text style={styles.emptyText}>No notifications yet</Text>
+            <Text style={styles.emptySubtext}>You'll see updates about your activity here
             </Text>
           </View>
         ) : (
@@ -284,12 +281,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   headerBadge: {
     backgroundColor: colors.ink,
-    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
     minWidth: 24,
@@ -298,12 +294,12 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   markAllButton: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   notificationCard: {
     flexDirection: 'row',
@@ -337,7 +333,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   notificationText: {
@@ -354,7 +350,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   message: {
@@ -390,7 +386,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },

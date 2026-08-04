@@ -7,15 +7,15 @@ import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const CATEGORIES = [
-  { id: 'tops', label: 'Tops', emoji: '👕' },
-  { id: 'bottoms', label: 'Bottoms', emoji: '👖' },
-  { id: 'dresses', label: 'Dresses', emoji: '👗' },
-  { id: 'outerwear', label: 'Outerwear', emoji: '🧥' },
-  { id: 'shoes', label: 'Shoes', emoji: '👟' },
-  { id: 'accessories', label: 'Accessories', emoji: '👜' },
+  { id: 'tops', label: 'Tops' },
+  { id: 'bottoms', label: 'Bottoms' },
+  { id: 'dresses', label: 'Dresses' },
+  { id: 'outerwear', label: 'Outerwear' },
+  { id: 'shoes', label: 'Shoes' },
+  { id: 'accessories', label: 'Accessories' },
 ];
 
 const COLORS = [
@@ -99,7 +99,7 @@ export default function AddClosetItemScreen() {
       <ScrollView style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.cancelButton}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Add Item</Text>
@@ -115,18 +115,17 @@ export default function AddClosetItemScreen() {
           {imageUri ? (
             <View style={styles.imageContainer}>
               <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
-              <TouchableOpacity style={styles.changeImageButton} onPress={() => setShowPhotoModal(true)}>
+              <TouchableOpacity style={styles.changeImageButton} onPress={() =>setShowPhotoModal(true)}>
                 <Text style={styles.changeImageText}>Change Photo</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity 
               style={styles.imagePlaceholder}
-              onPress={() => setShowPhotoModal(true)}
+              onPress={() =>setShowPhotoModal(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.imagePlaceholderEmoji}>📸</Text>
-              <Text style={styles.imagePlaceholderText}>Add a photo of your item</Text>
+                            <Text style={styles.imagePlaceholderText}>Add a photo of your item</Text>
               <Text style={styles.imagePlaceholderSubtext}>Tap to get started</Text>
             </TouchableOpacity>
           )}
@@ -143,9 +142,8 @@ export default function AddClosetItemScreen() {
                   styles.optionCard,
                   category === cat.id && styles.optionCardSelected,
                 ]}
-                onPress={() => setCategory(cat.id)}
+                onPress={() =>setCategory(cat.id)}
               >
-                <Text style={styles.optionEmoji}>{cat.emoji}</Text>
                 <Text style={[
                   styles.optionLabel,
                   category === cat.id && styles.optionLabelSelected,
@@ -170,7 +168,7 @@ export default function AddClosetItemScreen() {
                   col.hex === '#FFFFFF' && styles.colorOptionWhite,
                   color === col.id && styles.colorOptionSelected,
                 ]}
-                onPress={() => setColor(col.id)}
+                onPress={() =>setColor(col.id)}
               >
                 {color === col.id && (
                   <Text style={styles.colorCheckmark}>✓</Text>
@@ -229,13 +227,13 @@ export default function AddClosetItemScreen() {
       
       <PhotoUploadModal
         visible={showPhotoModal}
-        onClose={() => setShowPhotoModal(false)}
+        onClose={() =>setShowPhotoModal(false)}
         onPhotoSelected={handlePhotoSelected}
       />
       
       <SuccessAnimation
         visible={showSuccess}
-        message="Item added to closet! ✨"
+        message="Item added to closet! "
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -263,7 +261,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   cancelButton: {
@@ -272,7 +270,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   saveButtonDisabled: {
@@ -287,7 +285,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     aspectRatio: 0.75,
-    borderRadius: 12,
     backgroundColor: colors.paper,
   },
   changeImageButton: {
@@ -297,18 +294,16 @@ const styles = StyleSheet.create({
     right: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   changeImageText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   imagePlaceholder: {
     aspectRatio: 0.75,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.hair,
     borderStyle: 'dashed',
@@ -337,7 +332,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -350,7 +345,6 @@ const styles = StyleSheet.create({
     width: '30%',
     aspectRatio: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.hair,
     justifyContent: 'center',
@@ -367,7 +361,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.inkMuted,
     textAlign: 'center',
   },
@@ -398,7 +392,7 @@ const styles = StyleSheet.create({
   colorCheckmark: {
     fontSize: 24,
     color: '#ffffff',
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -407,7 +401,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,
-    borderRadius: 8,
     padding: 12,
     fontSize: 16,
     color: colors.ink,

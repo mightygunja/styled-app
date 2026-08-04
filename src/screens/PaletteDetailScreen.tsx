@@ -8,7 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { TrendPalette, Look } from '../types';
 import { paletteAPI, lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PaletteDetailRouteProp = RouteProp<RootStackParamList, 'PaletteDetail'>;
@@ -36,7 +36,7 @@ export default function PaletteDetailScreen() {
 
       // Fetch all looks that use this palette
       const looksResponse = await lookAPI.getAll({ limit: 50 });
-      const paletteLooks = looksResponse.data.filter(look => look.paletteId === paletteId);
+      const paletteLooks = looksResponse.data.filter(look =>look.paletteId === paletteId);
       console.log('Looks for this palette:', paletteLooks);
       setLooks(paletteLooks);
     } catch (error) {
@@ -51,7 +51,7 @@ export default function PaletteDetailScreen() {
       const response = await lookAPI.toggleFavorite(lookId, getCurrentUserId());
       
       if (response.isFavorited) {
-        setFavorites(prev => new Set(prev).add(lookId));
+        setFavorites(prev =>new Set(prev).add(lookId));
       } else {
         setFavorites(prev => {
           const newSet = new Set(prev);
@@ -82,7 +82,7 @@ export default function PaletteDetailScreen() {
           <Text style={styles.errorText}>Palette not found</Text>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() =>navigation.goBack()}
           >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -99,7 +99,7 @@ export default function PaletteDetailScreen() {
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButtonSmall}
-            onPress={() => navigation.goBack()}
+            onPress={() =>navigation.goBack()}
           >
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
@@ -134,14 +134,12 @@ export default function PaletteDetailScreen() {
 
         {/* Looks Section */}
         <View style={styles.looksSection}>
-          <Text style={styles.sectionTitle}>
-            Looks in this Palette ({looks.length})
+          <Text style={styles.sectionTitle}>Looks in this Palette ({looks.length})
           </Text>
           
           {looks.length === 0 ? (
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
-                No looks available for this palette yet.
+              <Text style={styles.placeholderText}>No looks available for this palette yet.
               </Text>
             </View>
           ) : (
@@ -150,8 +148,8 @@ export default function PaletteDetailScreen() {
                 <LookCard
                   key={look.id}
                   look={look}
-                  onPress={() => navigation.navigate('LookDetail', { lookId: look.id })}
-                  onFavorite={() => handleFavorite(look.id)}
+                  onPress={() =>navigation.navigate('LookDetail', { lookId: look.id })}
+                  onFavorite={() =>handleFavorite(look.id)}
                   isFavorited={favorites.has(look.id)}
                 />
               ))}
@@ -202,12 +200,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   backButtonText: {
     color: colors.ink,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   paletteSection: {
     padding: 20,
@@ -217,7 +214,7 @@ const styles = StyleSheet.create({
   },
   paletteName: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -236,7 +233,6 @@ const styles = StyleSheet.create({
   colorSwatchLarge: {
     width: 80,
     height: 80,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -245,7 +241,7 @@ const styles = StyleSheet.create({
   colorCode: {
     fontSize: 10,
     color: '#ffffff',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -255,19 +251,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
   },
   occasionText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   looksSection: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },

@@ -18,7 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, Post } from '../services/socialFeedService';
 import { userProfileService, UserProfile } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (width - 6) / 3;
@@ -33,8 +33,7 @@ interface TrendingHashtag {
 
 interface StyleCategory {
   id: string;
-  name: string;
-  emoji: string;
+  name: string;
   count: number;
 }
 
@@ -57,12 +56,12 @@ export default function ExploreScreen() {
 
   // Style categories
   const [categories, setCategories] = useState<StyleCategory[]>([
-    { id: '1', name: 'Minimalist', emoji: '⚪', count: 0 },
-    { id: '2', name: 'Streetwear', emoji: '🧢', count: 0 },
-    { id: '3', name: 'Vintage', emoji: '👗', count: 0 },
-    { id: '4', name: 'Bohemian', emoji: '🌸', count: 0 },
-    { id: '5', name: 'Athleisure', emoji: '👟', count: 0 },
-    { id: '6', name: 'Formal', emoji: '👔', count: 0 },
+    { id: '1', name: 'Minimalist', count: 0 },
+    { id: '2', name: 'Streetwear', count: 0 },
+    { id: '3', name: 'Vintage', count: 0 },
+    { id: '4', name: 'Bohemian', count: 0 },
+    { id: '5', name: 'Athleisure', count: 0 },
+    { id: '6', name: 'Formal', count: 0 },
   ]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
@@ -96,18 +95,16 @@ export default function ExploreScreen() {
         });
       });
       const sortedHashtags = Array.from(hashtagCounts.entries())
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) =>b[1] - a[1])
         .slice(0, 8)
         .map(([tag, count]) => ({ tag, count, growth: 0 }));
       setTrendingHashtags(sortedHashtags);
 
       // Style categories: count real posts whose hashtags/caption mention the category
-      setCategories(prev =>
-        prev.map(cat => {
+      setCategories(prev =>prev.map(cat => {
           const key = cat.name.toLowerCase();
           const count = postsWithUsers.filter(
-            post =>
-              post.hashtags.some(tag => tag.toLowerCase().includes(key)) ||
+            post =>post.hashtags.some(tag =>tag.toLowerCase().includes(key)) ||
               post.caption.toLowerCase().includes(key)
           ).length;
           return { ...cat, count };
@@ -116,7 +113,7 @@ export default function ExploreScreen() {
 
       // Load suggested users
       const suggestions = await userProfileService.getFollowSuggestions(getCurrentUserId());
-      setSuggestedUsers(suggestions.map(s => s.user));
+      setSuggestedUsers(suggestions.map(s =>s.user));
 
     } catch (error) {
       console.error('Error loading explore data:', error);
@@ -146,9 +143,8 @@ export default function ExploreScreen() {
       const [matchingPosts, matchingUsers] = await Promise.all([
         Promise.resolve(
           allPublicPosts.filter(
-            post =>
-              post.caption.toLowerCase().includes(lowerQuery) ||
-              post.hashtags.some(tag => tag.toLowerCase().includes(lowerQuery))
+            post =>post.caption.toLowerCase().includes(lowerQuery) ||
+              post.hashtags.some(tag =>tag.toLowerCase().includes(lowerQuery))
           )
         ),
         userProfileService.searchUsers(trimmed),
@@ -165,7 +161,7 @@ export default function ExploreScreen() {
 
   const handleHashtagPress = (tag: string) => {
     setSearchQuery(`#${tag}`);
-    setSearchResultPosts(allPublicPosts.filter(post => post.hashtags.includes(tag)));
+    setSearchResultPosts(allPublicPosts.filter(post =>post.hashtags.includes(tag)));
     setSearchResultUsers([]);
   };
 
@@ -177,8 +173,7 @@ export default function ExploreScreen() {
     } else {
       setTrendingPosts(
         allPublicPosts.filter(
-          post =>
-            post.hashtags.some(tag => tag.toLowerCase().includes(key)) ||
+          post =>post.hashtags.some(tag =>tag.toLowerCase().includes(key)) ||
             post.caption.toLowerCase().includes(key)
         )
       );
@@ -201,9 +196,8 @@ export default function ExploreScreen() {
             <TouchableOpacity
               key={category.id}
               style={[styles.categoryCard, activeCategory === category.id && styles.categoryCardActive]}
-              onPress={() => handleCategoryPress(category)}
+              onPress={() =>handleCategoryPress(category)}
             >
-              <Text style={styles.categoryEmoji}>{category.emoji}</Text>
               <Text style={styles.categoryName}>{category.name}</Text>
               <Text style={styles.categoryCount}>{category.count} posts</Text>
             </TouchableOpacity>
@@ -214,7 +208,7 @@ export default function ExploreScreen() {
       {/* Trending Posts Grid */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          {activeCategory ? `${categories.find(c => c.id === activeCategory)?.name} Posts` : 'Trending Posts'}
+          {activeCategory ? `${categories.find(c =>c.id === activeCategory)?.name} Posts` : 'Trending Posts'}
         </Text>
         {trendingPosts.length === 0 && (
           <Text style={styles.emptyHint}>No posts match this category yet.</Text>
@@ -224,18 +218,17 @@ export default function ExploreScreen() {
             <TouchableOpacity
               key={post.id}
               style={styles.gridItem}
-              onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+              onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
             >
               <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
-              {post.images.length > 1 && (
+              {post.images.length >1 && (
                 <View style={styles.multipleIndicator}>
-                  <Text style={styles.multipleIcon}>📷</Text>
-                </View>
+                                  </View>
               )}
               <View style={styles.gridOverlay}>
                 <View style={styles.gridStats}>
-                  <Text style={styles.gridStat}>❤️ {post.likes}</Text>
-                  <Text style={styles.gridStat}>💬 {post.comments}</Text>
+                  <Text style={styles.gridStat}>● {post.likes}</Text>
+                  <Text style={styles.gridStat}> {post.comments}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -255,7 +248,7 @@ export default function ExploreScreen() {
         <TouchableOpacity
           key={hashtag.tag}
           style={styles.hashtagCard}
-          onPress={() => handleHashtagPress(hashtag.tag)}
+          onPress={() =>handleHashtagPress(hashtag.tag)}
         >
           <View style={styles.hashtagRank}>
             <Text style={styles.rankNumber}>{index + 1}</Text>
@@ -272,7 +265,7 @@ export default function ExploreScreen() {
   const handleQuickFollow = async (targetUserId: string) => {
     try {
       await userProfileService.followUser(getCurrentUserId(), targetUserId);
-      setSuggestedUsers(prev => prev.filter(u => u.userId !== targetUserId));
+      setSuggestedUsers(prev =>prev.filter(u =>u.userId !== targetUserId));
     } catch (error) {
       console.error('Error following user:', error);
     }
@@ -282,7 +275,7 @@ export default function ExploreScreen() {
     <TouchableOpacity
       key={user.id}
       style={styles.userCard}
-      onPress={() => navigation.navigate('UserProfile', { userId: user.userId })}
+      onPress={() =>navigation.navigate('UserProfile', { userId: user.userId })}
     >
       {user.profileImageUrl ? (
         <Image source={{ uri: user.profileImageUrl }} style={styles.userAvatar} />
@@ -307,7 +300,7 @@ export default function ExploreScreen() {
           ))}
         </View>
       </View>
-      <TouchableOpacity style={styles.followButton} onPress={() => handleQuickFollow(user.userId)}>
+      <TouchableOpacity style={styles.followButton} onPress={() =>handleQuickFollow(user.userId)}>
         <Text style={styles.followButtonText}>Follow</Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -329,13 +322,13 @@ export default function ExploreScreen() {
         <ActivityIndicator size="small" color={colors.ink} />
       ) : (
         <>
-          {searchResultUsers && searchResultUsers.length > 0 && (
+          {searchResultUsers && searchResultUsers.length >0 && (
             <>
               <Text style={styles.sectionTitle}>People</Text>
               {searchResultUsers.map(renderUserCard)}
             </>
           )}
-          {searchResultPosts && searchResultPosts.length > 0 && (
+          {searchResultPosts && searchResultPosts.length >0 && (
             <>
               <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Posts</Text>
               <View style={styles.postsGrid}>
@@ -343,7 +336,7 @@ export default function ExploreScreen() {
                   <TouchableOpacity
                     key={post.id}
                     style={styles.gridItem}
-                    onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+                    onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
                   >
                     <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
                   </TouchableOpacity>
@@ -398,8 +391,7 @@ export default function ExploreScreen() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.searchIcon}>🔍</Text>
-          </TouchableOpacity>
+                      </TouchableOpacity>
         )}
       </View>
 
@@ -408,26 +400,23 @@ export default function ExploreScreen() {
         <View style={styles.tabs}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'trending' && styles.activeTab]}
-            onPress={() => setActiveTab('trending')}
+            onPress={() =>setActiveTab('trending')}
           >
-            <Text style={[styles.tabText, activeTab === 'trending' && styles.activeTabText]}>
-              Trending
+            <Text style={[styles.tabText, activeTab === 'trending' && styles.activeTabText]}>Trending
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'hashtags' && styles.activeTab]}
-            onPress={() => setActiveTab('hashtags')}
+            onPress={() =>setActiveTab('hashtags')}
           >
-            <Text style={[styles.tabText, activeTab === 'hashtags' && styles.activeTabText]}>
-              Hashtags
+            <Text style={[styles.tabText, activeTab === 'hashtags' && styles.activeTabText]}>Hashtags
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'people' && styles.activeTab]}
-            onPress={() => setActiveTab('people')}
+            onPress={() =>setActiveTab('people')}
           >
-            <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>
-              People
+            <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>People
             </Text>
           </TouchableOpacity>
         </View>
@@ -470,7 +459,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   searchContainer: {
@@ -481,7 +470,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -493,7 +481,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     backgroundColor: colors.ink,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -516,19 +503,19 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   activeTabText: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
@@ -540,7 +527,6 @@ const styles = StyleSheet.create({
     width: 120,
     padding: 16,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     marginRight: 12,
     alignItems: 'center',
     borderWidth: 1,
@@ -562,7 +548,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -591,7 +577,6 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
     padding: 4,
   },
   multipleIcon: {
@@ -612,14 +597,13 @@ const styles = StyleSheet.create({
   gridStat: {
     fontSize: 11,
     color: '#ffffff',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   hashtagCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     marginBottom: 12,
     gap: 12,
   },
@@ -633,7 +617,7 @@ const styles = StyleSheet.create({
   },
   rankNumber: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   hashtagContent: {
@@ -641,7 +625,7 @@ const styles = StyleSheet.create({
   },
   hashtagName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -659,7 +643,7 @@ const styles = StyleSheet.create({
   },
   growthText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.camel,
   },
   userCard: {
@@ -667,7 +651,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: colors.paper,
-    borderRadius: 12,
     marginBottom: 12,
     gap: 12,
   },
@@ -687,7 +670,7 @@ const styles = StyleSheet.create({
   },
   userInitial: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   userInfo: {
@@ -695,7 +678,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   userUsername: {
@@ -716,7 +699,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -728,11 +710,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 20,
   },
   followButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

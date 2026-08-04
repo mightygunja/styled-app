@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import SocialAuthButtons from '../components/SocialAuthButtons';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -71,7 +71,7 @@ export default function SignupScreen() {
         <View style={styles.form}>
           <SocialAuthButtons
             disabled={loading}
-            onError={(message) => Alert.alert('Sign-in failed', message)}
+            onError={(message) =>Alert.alert('Sign-in failed', message)}
           />
 
           <TextInput
@@ -124,11 +124,10 @@ export default function SignupScreen() {
 
           <TouchableOpacity
             style={styles.linkButton}
-            onPress={() => navigation.goBack()}
+            onPress={() =>navigation.goBack()}
             disabled={loading}
           >
-            <Text style={styles.linkText}>
-              Already have an account? <Text style={styles.linkTextBold}>Sign In</Text>
+            <Text style={styles.linkText}>Already have an account? <Text style={styles.linkTextBold}>Sign In</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 8,
   },
   subtitle: {
@@ -166,7 +165,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderRadius: 12,
     fontSize: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -174,7 +172,6 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.ink,
     paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -184,7 +181,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   linkButton: {
     paddingVertical: 12,
@@ -195,7 +192,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   linkTextBold: {
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
 });

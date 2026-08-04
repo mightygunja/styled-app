@@ -21,7 +21,7 @@ import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -55,7 +55,7 @@ export default function RecommendationsScreen() {
       try {
         const favoritesResponse = await lookAPI.getFavorites(getCurrentUserId());
         userFavorites = favoritesResponse.data || [];
-        setFavorites(new Set(userFavorites.map((f: any) => f.id || f.lookId)));
+        setFavorites(new Set(userFavorites.map((f: any) =>f.id || f.lookId)));
       } catch (error) {
         console.log('Could not load favorites, using empty array');
       }
@@ -80,14 +80,14 @@ export default function RecommendationsScreen() {
       const usedLookIds = new Set<string>();
       
       // 1. Based on favorites
-      if (userFavorites.length > 0) {
+      if (userFavorites.length >0) {
         const similarLooks = await getSimilarLooks(userFavorites[0].lookId);
         const uniqueLooks = similarLooks.filter(look => {
           if (usedLookIds.has(look.id)) return false;
           usedLookIds.add(look.id);
           return true;
         });
-        if (uniqueLooks.length > 0) {
+        if (uniqueLooks.length >0) {
           recs.push({
             title: 'More Like Your Favorites',
             subtitle: 'Based on looks you loved',
@@ -98,14 +98,14 @@ export default function RecommendationsScreen() {
       }
 
       // 2. Based on closet
-      if (closetItems.length > 0) {
+      if (closetItems.length >0) {
         const matchingLooks = await getMatchingLooks(preferredCategories);
         const uniqueLooks = matchingLooks.filter(look => {
           if (usedLookIds.has(look.id)) return false;
           usedLookIds.add(look.id);
           return true;
         });
-        if (uniqueLooks.length > 0) {
+        if (uniqueLooks.length >0) {
           recs.push({
             title: 'Match Your Closet',
             subtitle: 'Looks you can recreate',
@@ -122,7 +122,7 @@ export default function RecommendationsScreen() {
         usedLookIds.add(look.id);
         return true;
       });
-      if (uniqueSeasonalLooks.length > 0) {
+      if (uniqueSeasonalLooks.length >0) {
         recs.push({
           title: `${currentSeason} Essentials`,
           subtitle: 'Perfect for this season',
@@ -132,14 +132,14 @@ export default function RecommendationsScreen() {
       }
 
       // 4. Occasion-based
-      if (preferredOccasions.length > 0) {
+      if (preferredOccasions.length >0) {
         const occasionLooks = await getOccasionLooks(preferredOccasions[0]);
         const uniqueLooks = occasionLooks.filter(look => {
           if (usedLookIds.has(look.id)) return false;
           usedLookIds.add(look.id);
           return true;
         });
-        if (uniqueLooks.length > 0) {
+        if (uniqueLooks.length >0) {
           recs.push({
             title: `${preferredOccasions[0]} Looks`,
             subtitle: 'For your lifestyle',
@@ -156,7 +156,7 @@ export default function RecommendationsScreen() {
         usedLookIds.add(look.id);
         return true;
       });
-      if (uniqueTrendingLooks.length > 0) {
+      if (uniqueTrendingLooks.length >0) {
         recs.push({
           title: 'Trending Now',
           subtitle: 'Popular with other users',
@@ -186,8 +186,8 @@ export default function RecommendationsScreen() {
       occasions[occasion] = (occasions[occasion] || 0) + 1;
     });
     return Object.entries(occasions)
-      .sort(([, a], [, b]) => b - a)
-      .map(([occasion]) => occasion);
+      .sort(([, a], [, b]) =>b - a)
+      .map(([occasion]) =>occasion);
   };
 
   const analyzeCategories = (items: any[]) => {
@@ -302,7 +302,7 @@ export default function RecommendationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>For You</Text>
@@ -315,12 +315,11 @@ export default function RecommendationsScreen() {
         }
       >
         <View style={styles.intro}>
-          <Text style={styles.introTitle}>✨ Personalized Recommendations</Text>
-          <Text style={styles.introText}>
-            Curated looks based on your style, closet, and preferences
+          <Text style={styles.introTitle}>Personalized Recommendations</Text>
+          <Text style={styles.introText}>Curated looks based on your style, closet, and preferences
           </Text>
           <TouchableOpacity
-            style={{ backgroundColor: colors.ink, padding: 12, borderRadius: 8, marginTop: 12 }}
+            style={{ backgroundColor: colors.ink, padding: 12, marginTop: 12 }}
             onPress={() => {
               console.log('TEST BUTTON PRESSED!');
               Alert.alert('Touch Works!', 'Touch is working on this screen');
@@ -347,7 +346,7 @@ export default function RecommendationsScreen() {
             </View>
 
             <View style={styles.reasonBadge}>
-              <Text style={styles.reasonText}>💡 {category.reason}</Text>
+              <Text style={styles.reasonText}> {category.reason}</Text>
             </View>
 
             <View style={styles.looksContainer}>
@@ -359,7 +358,7 @@ export default function RecommendationsScreen() {
                     console.log('Card tapped:', look.id);
                     handleLookPress(look.id);
                   }}
-                  onFavorite={() => handleFavorite(look.id)}
+                  onFavorite={() =>handleFavorite(look.id)}
                   isFavorited={favorites.has(look.id)}
                 />
               ))}
@@ -370,12 +369,11 @@ export default function RecommendationsScreen() {
         {recommendations.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No Recommendations Yet</Text>
-            <Text style={styles.emptyStateText}>
-              Start by favoriting some looks and adding items to your closet!
+            <Text style={styles.emptyStateText}>Start by favoriting some looks and adding items to your closet!
             </Text>
             <TouchableOpacity
               style={styles.emptyStateButton}
-              onPress={() => navigation.goBack()}
+              onPress={() =>navigation.goBack()}
             >
               <Text style={styles.emptyStateButtonText}>Browse Looks</Text>
             </TouchableOpacity>
@@ -416,7 +414,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   intro: {
     padding: 20,
@@ -425,7 +423,7 @@ const styles = StyleSheet.create({
   },
   introTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 8,
   },
   introText: {
@@ -445,7 +443,7 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   categorySubtitle: {
     fontSize: 12,
@@ -454,21 +452,20 @@ const styles = StyleSheet.create({
   },
   seeAllButton: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   reasonBadge: {
     backgroundColor: colors.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
     alignSelf: 'flex-start',
     marginLeft: 20,
     marginBottom: 12,
   },
   reasonText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.tobacco,
   },
   looksScroll: {
@@ -486,14 +483,13 @@ const styles = StyleSheet.create({
   lookImage: {
     width: 200,
     height: 250,
-    borderRadius: 12,
   },
   lookInfo: {
     padding: 12,
   },
   lookTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   lookOccasion: {
@@ -526,7 +522,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 12,
   },
   emptyStateText: {
@@ -540,11 +536,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   emptyStateButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

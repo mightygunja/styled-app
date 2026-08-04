@@ -17,7 +17,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -80,26 +80,26 @@ export default function StyleAnalysisScreen() {
 
   const getStyleEmoji = (style: string): string => {
     const emojiMap: { [key: string]: string } = {
-      minimalist: '⚪',
-      bohemian: '🌸',
-      streetwear: '🧢',
-      vintage: '👗',
-      classic: '👔',
-      athleisure: '👟',
-      formal: '🎩',
-      casual: '👕',
+      minimalist: '',
+      bohemian: '',
+      streetwear: '',
+      vintage: '',
+      classic: '',
+      athleisure: '',
+      formal: '',
+      casual: '',
     };
-    return emojiMap[style] || '✨';
+    return emojiMap[style] || '';
   };
 
   const getInsightIcon = (type: string): string => {
     const iconMap: { [key: string]: string } = {
-      strength: '💪',
-      gap: '🔍',
-      suggestion: '💡',
-      trend: '📈',
+      strength: '',
+      gap: '',
+      suggestion: '',
+      trend: '',
     };
-    return iconMap[type] || '✨';
+    return iconMap[type] || '';
   };
 
   const getPriorityColor = (priority: string): string => {
@@ -136,13 +136,13 @@ export default function StyleAnalysisScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Style Analysis</Text>
         <TouchableOpacity onPress={handleReanalyze} disabled={analyzing}>
           <Text style={[styles.reanalyzeButton, analyzing && styles.reanalyzeButtonDisabled]}>
-            {analyzing ? '...' : '🔄'}
+            {analyzing ? 'Analysing…' : 'Reanalyse'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -212,8 +212,7 @@ export default function StyleAnalysisScreen() {
                 {profile.colorPalette.seasonalPalette.charAt(0).toUpperCase() + 
                  profile.colorPalette.seasonalPalette.slice(1)} Palette
               </Text>
-              <Text style={styles.colorSeasonSubtitle}>
-                Based on your color choices
+              <Text style={styles.colorSeasonSubtitle}>Based on your color choices
               </Text>
             </View>
             
@@ -256,7 +255,7 @@ export default function StyleAnalysisScreen() {
         </View>
 
         {/* Brand Preferences */}
-        {profile.brandPreferences.length > 0 && (
+        {profile.brandPreferences.length >0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Top Brands</Text>
             <View style={styles.brandCard}>
@@ -341,7 +340,7 @@ export default function StyleAnalysisScreen() {
                 {profile.wardrobeStats.mostWornCategory}
               </Text>
             </View>
-            {profile.wardrobeStats.wardrobeGaps.length > 0 && (
+            {profile.wardrobeStats.wardrobeGaps.length >0 && (
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>Wardrobe Gaps</Text>
                 <Text style={styles.statValue}>
@@ -403,7 +402,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   reanalyzeButton: {
@@ -419,13 +418,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
   overviewCard: {
     backgroundColor: colors.paper,
-    borderRadius: 16,
     padding: 20,
   },
   overviewRow: {
@@ -437,7 +435,7 @@ const styles = StyleSheet.create({
   },
   overviewNumber: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -447,7 +445,6 @@ const styles = StyleSheet.create({
   },
   styleCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -469,7 +466,7 @@ const styles = StyleSheet.create({
   },
   styleName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   styleCount: {
@@ -479,26 +476,23 @@ const styles = StyleSheet.create({
   },
   stylePercentage: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   progressBar: {
     height: 8,
     backgroundColor: colors.paper,
-    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.inkFaint,
-    borderRadius: 4,
   },
   progressFillPrimary: {
     backgroundColor: colors.ink,
   },
   colorCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -508,7 +502,7 @@ const styles = StyleSheet.create({
   },
   colorSeasonTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -539,13 +533,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 30,
     borderWidth: 1,
     borderColor: colors.hair,
   },
   colorName: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -560,7 +553,7 @@ const styles = StyleSheet.create({
   },
   colorFamiliesTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -579,24 +572,21 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     backgroundColor: colors.paper,
-    borderRadius: 3,
     overflow: 'hidden',
   },
   familyFill: {
     height: '100%',
     backgroundColor: colors.ink,
-    borderRadius: 3,
   },
   familyPercentage: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     width: 40,
     textAlign: 'right',
   },
   brandCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -614,7 +604,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -624,12 +614,11 @@ const styles = StyleSheet.create({
   },
   brandPercentage: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   categoryCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -645,7 +634,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -657,24 +646,21 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 8,
     backgroundColor: colors.paper,
-    borderRadius: 4,
     overflow: 'hidden',
   },
   categoryFill: {
     height: '100%',
     backgroundColor: colors.ink,
-    borderRadius: 4,
   },
   categoryPercentage: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     width: 40,
     textAlign: 'right',
   },
   insightCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -693,7 +679,7 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -707,12 +693,11 @@ const styles = StyleSheet.create({
   },
   insightActionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   statsCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -730,7 +715,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
 });

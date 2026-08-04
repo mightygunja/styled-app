@@ -18,7 +18,7 @@ import { groupService, Group, GroupEvent } from '../services/groupService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -75,7 +75,7 @@ export default function GroupsScreen() {
     <TouchableOpacity
       key={group.id}
       style={styles.groupCard}
-      onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+      onPress={() =>navigation.navigate('GroupDetail', { groupId: group.id })}
     >
       {group.imageUrl && (
         <Image source={{ uri: group.imageUrl }} style={styles.groupImage} />
@@ -86,7 +86,7 @@ export default function GroupsScreen() {
           <Text style={styles.groupName}>{group.name}</Text>
           <View style={styles.privacyBadge}>
             <Text style={styles.privacyText}>
-              {group.privacy === 'public' ? '🌐' : '🔒'}
+              {group.privacy === 'public' ? 'PUBLIC' : 'PRIVATE'}
             </Text>
           </View>
         </View>
@@ -101,12 +101,10 @@ export default function GroupsScreen() {
 
         <View style={styles.groupStats}>
           <View style={styles.stat}>
-            <Text style={styles.statIcon}>👥</Text>
-            <Text style={styles.statText}>{group.members} members</Text>
+                        <Text style={styles.statText}>{group.members} members</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statIcon}>📝</Text>
-            <Text style={styles.statText}>{group.posts} posts</Text>
+                        <Text style={styles.statText}>{group.posts} posts</Text>
           </View>
         </View>
       </View>
@@ -117,7 +115,7 @@ export default function GroupsScreen() {
     <TouchableOpacity
       key={event.id}
       style={styles.eventCard}
-      onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+      onPress={() =>navigation.navigate('EventDetail', { eventId: event.id })}
     >
       {event.imageUrl && (
         <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
@@ -128,7 +126,7 @@ export default function GroupsScreen() {
           <Text style={styles.eventTitle}>{event.title}</Text>
           {event.isVirtual && (
             <View style={styles.virtualBadge}>
-              <Text style={styles.virtualText}>💻 Virtual</Text>
+              <Text style={styles.virtualText}>Virtual</Text>
             </View>
           )}
         </View>
@@ -139,13 +137,11 @@ export default function GroupsScreen() {
 
         <View style={styles.eventInfo}>
           <View style={styles.eventInfoRow}>
-            <Text style={styles.eventInfoIcon}>📅</Text>
-            <Text style={styles.eventInfoText}>{formatEventDate(event.startDate)}</Text>
+                        <Text style={styles.eventInfoText}>{formatEventDate(event.startDate)}</Text>
           </View>
           {event.location && (
             <View style={styles.eventInfoRow}>
-              <Text style={styles.eventInfoIcon}>📍</Text>
-              <Text style={styles.eventInfoText} numberOfLines={1}>{event.location}</Text>
+                            <Text style={styles.eventInfoText} numberOfLines={1}>{event.location}</Text>
             </View>
           )}
         </View>
@@ -185,26 +181,23 @@ export default function GroupsScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'discover' && styles.activeTab]}
-          onPress={() => setActiveTab('discover')}
+          onPress={() =>setActiveTab('discover')}
         >
-          <Text style={[styles.tabText, activeTab === 'discover' && styles.activeTabText]}>
-            Discover
+          <Text style={[styles.tabText, activeTab === 'discover' && styles.activeTabText]}>Discover
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'mygroups' && styles.activeTab]}
-          onPress={() => setActiveTab('mygroups')}
+          onPress={() =>setActiveTab('mygroups')}
         >
-          <Text style={[styles.tabText, activeTab === 'mygroups' && styles.activeTabText]}>
-            My Groups
+          <Text style={[styles.tabText, activeTab === 'mygroups' && styles.activeTabText]}>My Groups
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-          onPress={() => setActiveTab('events')}
+          onPress={() =>setActiveTab('events')}
         >
-          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
-            Events
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>Events
           </Text>
         </TouchableOpacity>
       </View>
@@ -219,8 +212,7 @@ export default function GroupsScreen() {
           <>
             {allGroups.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>👥</Text>
-                <Text style={styles.emptyText}>No groups yet</Text>
+                                <Text style={styles.emptyText}>No groups yet</Text>
                 <Text style={styles.emptySubtext}>Check back soon!</Text>
               </View>
             ) : (
@@ -233,8 +225,7 @@ export default function GroupsScreen() {
           <>
             {myGroups.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>👥</Text>
-                <Text style={styles.emptyText}>You haven't joined any groups</Text>
+                                <Text style={styles.emptyText}>You haven't joined any groups</Text>
                 <Text style={styles.emptySubtext}>Discover groups to connect with others!</Text>
               </View>
             ) : (
@@ -247,8 +238,7 @@ export default function GroupsScreen() {
           <>
             {upcomingEvents.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>📅</Text>
-                <Text style={styles.emptyText}>No upcoming events</Text>
+                                <Text style={styles.emptyText}>No upcoming events</Text>
                 <Text style={styles.emptySubtext}>Check back soon for new events!</Text>
               </View>
             ) : (
@@ -285,7 +275,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   tabs: {
@@ -304,12 +294,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   activeTabText: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   groupCard: {
     margin: 16,
@@ -341,7 +331,7 @@ const styles = StyleSheet.create({
   groupName: {
     flex: 1,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   privacyBadge: {
@@ -361,12 +351,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
     marginBottom: 12,
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.tobacco,
   },
   groupStats: {
@@ -415,19 +404,18 @@ const styles = StyleSheet.create({
   eventTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   virtualBadge: {
     backgroundColor: '#f0fdf4',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
     marginLeft: 8,
   },
   virtualText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#166534',
   },
   eventDescription: {
@@ -469,12 +457,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
   },
   rsvpButtonText: {
     color: '#ffffff',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,
@@ -486,7 +473,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },

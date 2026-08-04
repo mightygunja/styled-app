@@ -29,7 +29,7 @@ import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds } from '../theme/designSystem';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -48,12 +48,12 @@ export default function ClosetOrganizationScreen() {
   const [selectedTab, setSelectedTab] = useState<'organize' | 'declutter' | 'capsule'>('organize');
   const { toast, showToast, hideToast } = useToast();
 
-  const organizationMethods: { id: OrganizationMethod; label: string; emoji: string }[] = [
-    { id: 'category', label: 'Category', emoji: '📦' },
-    { id: 'color', label: 'Color', emoji: '🎨' },
-    { id: 'season', label: 'Season', emoji: '🌤️' },
-    { id: 'occasion', label: 'Occasion', emoji: '🎉' },
-    { id: 'frequency', label: 'Frequency', emoji: '📊' },
+  const organizationMethods: { id: OrganizationMethod; label: string }[] = [
+    { id: 'category', label: 'Category' },
+    { id: 'color', label: 'Color' },
+    { id: 'season', label: 'Season' },
+    { id: 'occasion', label: 'Occasion' },
+    { id: 'frequency', label: 'Frequency' },
   ];
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function ClosetOrganizationScreen() {
   }, []);
 
   useEffect(() => {
-    if (items.length > 0) {
+    if (items.length >0) {
       generateOrganizationPlan(selectedMethod);
     }
   }, [selectedMethod]);
@@ -108,8 +108,8 @@ export default function ClosetOrganizationScreen() {
         if (savedProfile) {
           const bodyGuide = savedProfile.bodyAnalysis ? BODY_TYPE_GUIDES[savedProfile.bodyAnalysis.bodyType] : null;
           profileContext = {
-            recommendedColors: savedProfile.colorAnalysis?.palette.map(s => s.name),
-            colorsToAvoid: savedProfile.colorAnalysis?.colorsToAvoid.map(s => s.name),
+            recommendedColors: savedProfile.colorAnalysis?.palette.map(s =>s.name),
+            colorsToAvoid: savedProfile.colorAnalysis?.colorsToAvoid.map(s =>s.name),
             bodyMatchKeywords: bodyGuide?.matchKeywords,
             styleArchetypes: savedProfile.styleArchetypes,
             avoidRules: savedProfile.avoidRules,
@@ -186,7 +186,7 @@ export default function ClosetOrganizationScreen() {
               </Text>
             </View>
           ))}
-          {section.items.length > 6 && (
+          {section.items.length >6 && (
             <View style={[styles.itemCard, styles.moreCard]}>
               <Text style={styles.moreText}>+{section.items.length - 6}</Text>
               <Text style={styles.moreLabel}>more</Text>
@@ -229,7 +229,6 @@ export default function ClosetOrganizationScreen() {
 
   const renderTip = (tip: OrganizationTip) => (
     <View key={tip.id} style={styles.tipCard}>
-      <Text style={styles.tipIcon}>{tip.icon}</Text>
       <View style={styles.tipContent}>
         <View style={styles.tipHeader}>
           <Text style={styles.tipCategory}>{tip.category}</Text>
@@ -260,7 +259,7 @@ export default function ClosetOrganizationScreen() {
       <BackButton />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Closet Organization</Text>
@@ -287,26 +286,23 @@ export default function ClosetOrganizationScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'organize' && styles.tabActive]}
-          onPress={() => setSelectedTab('organize')}
+          onPress={() =>setSelectedTab('organize')}
         >
-          <Text style={[styles.tabText, selectedTab === 'organize' && styles.tabTextActive]}>
-            Organize
+          <Text style={[styles.tabText, selectedTab === 'organize' && styles.tabTextActive]}>Organize
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'declutter' && styles.tabActive]}
-          onPress={() => setSelectedTab('declutter')}
+          onPress={() =>setSelectedTab('declutter')}
         >
-          <Text style={[styles.tabText, selectedTab === 'declutter' && styles.tabTextActive]}>
-            Declutter
+          <Text style={[styles.tabText, selectedTab === 'declutter' && styles.tabTextActive]}>Declutter
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'capsule' && styles.tabActive]}
-          onPress={() => setSelectedTab('capsule')}
+          onPress={() =>setSelectedTab('capsule')}
         >
-          <Text style={[styles.tabText, selectedTab === 'capsule' && styles.tabTextActive]}>
-            Capsule
+          <Text style={[styles.tabText, selectedTab === 'capsule' && styles.tabTextActive]}>Capsule
           </Text>
         </TouchableOpacity>
       </View>
@@ -327,9 +323,8 @@ export default function ClosetOrganizationScreen() {
                         styles.methodChip,
                         selectedMethod === method.id && styles.methodChipActive,
                       ]}
-                      onPress={() => setSelectedMethod(method.id)}
+                      onPress={() =>setSelectedMethod(method.id)}
                     >
-                      <Text style={styles.methodEmoji}>{method.emoji}</Text>
                       <Text
                         style={[
                           styles.methodText,
@@ -349,7 +344,7 @@ export default function ClosetOrganizationScreen() {
 
             {/* Tips */}
             <View style={styles.tipsContainer}>
-              <Text style={styles.tipsTitle}>💡 Organization Tips</Text>
+              <Text style={styles.tipsTitle}>Organization Tips</Text>
               {tips.map(renderTip)}
             </View>
           </>
@@ -375,18 +370,18 @@ export default function ClosetOrganizationScreen() {
             </Text>
             {capsuleWardrobe.personalized && (
               <View style={styles.personalizedBadge}>
-                <Text style={styles.personalizedBadgeText}>✨ Personalized to your style profile</Text>
+                <Text style={styles.personalizedBadgeText}>Personalized to your style profile</Text>
               </View>
             )}
 
-            {capsuleWardrobe.gaps.length > 0 && (
+            {capsuleWardrobe.gaps.length >0 && (
               <View style={styles.gapsBox}>
                 {capsuleWardrobe.gaps.map((gap, index) => (
                   <TouchableOpacity
                     key={index}
-                    onPress={() => navigation.navigate('Shop', { category: gap.category as any })}
+                    onPress={() =>navigation.navigate('Shop', { category: gap.category as any })}
                   >
-                    <Text style={styles.gapText}>⚠️ {gap.message}</Text>
+                    <Text style={styles.gapText}> {gap.message}</Text>
                     <Text style={styles.gapShopLink}>Shop {gap.category} →</Text>
                   </TouchableOpacity>
                 ))}
@@ -417,7 +412,7 @@ export default function ClosetOrganizationScreen() {
               ))}
             </View>
 
-            {capsuleWardrobe.outfitPreviews.length > 0 && (
+            {capsuleWardrobe.outfitPreviews.length >0 && (
               <View style={styles.capsuleEssentials}>
                 <Text style={styles.capsuleEssentialsTitle}>Try These First</Text>
                 {capsuleWardrobe.outfitPreviews.map((preview, index) => (
@@ -484,7 +479,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   statsBanner: {
@@ -500,7 +495,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -524,12 +519,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: ds.inkMuted,
   },
   tabTextActive: {
     color: ds.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   methodsContainer: {
     padding: 20,
@@ -538,7 +533,7 @@ const styles = StyleSheet.create({
   },
   methodsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 12,
   },
@@ -551,7 +546,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     backgroundColor: ds.paper,
     borderWidth: 1,
     borderColor: ds.hair,
@@ -566,7 +560,7 @@ const styles = StyleSheet.create({
   },
   methodText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: ds.inkMuted,
   },
   methodTextActive: {
@@ -585,7 +579,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   sectionCount: {
@@ -602,7 +596,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: 8,
     backgroundColor: ds.paper,
     marginBottom: 6,
   },
@@ -615,14 +608,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 8,
     borderWidth: 2,
     borderColor: ds.hair,
     borderStyle: 'dashed',
   },
   moreText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
   },
   moreLabel: {
@@ -634,14 +626,13 @@ const styles = StyleSheet.create({
   },
   tipsTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 16,
   },
   tipCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     gap: 12,
@@ -660,17 +651,16 @@ const styles = StyleSheet.create({
   },
   tipCategory: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
   },
   tipPriority: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   tipPriorityText: {
     fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   tipText: {
@@ -683,7 +673,7 @@ const styles = StyleSheet.create({
   },
   declutterTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -695,7 +685,6 @@ const styles = StyleSheet.create({
   declutterCard: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -712,7 +701,7 @@ const styles = StyleSheet.create({
   },
   declutterName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 8,
   },
@@ -720,12 +709,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
     marginBottom: 8,
   },
   declutterReasonText: {
     fontSize: 11,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   declutterExplanation: {
@@ -748,17 +736,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     backgroundColor: ds.paper,
-    borderRadius: 3,
     overflow: 'hidden',
   },
   declutterConfidenceFill: {
     height: '100%',
     backgroundColor: ds.camel,
-    borderRadius: 3,
   },
   declutterConfidenceValue: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   declutterActions: {
@@ -768,7 +754,6 @@ const styles = StyleSheet.create({
   declutterActionButton: {
     flex: 1,
     paddingVertical: 8,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: ds.hair,
     alignItems: 'center',
@@ -779,7 +764,7 @@ const styles = StyleSheet.create({
   },
   declutterActionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
   },
   declutterActionTextPrimary: {
@@ -790,7 +775,7 @@ const styles = StyleSheet.create({
   },
   capsuleTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -807,7 +792,7 @@ const styles = StyleSheet.create({
   },
   capsuleStatLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
     marginBottom: 8,
   },
@@ -825,20 +810,18 @@ const styles = StyleSheet.create({
   personalizedBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#eef2ff',
-    borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginTop: 8,
   },
   personalizedBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#4338ca',
   },
   gapsBox: {
     marginTop: 16,
     backgroundColor: '#fff7ed',
-    borderRadius: 12,
     padding: 14,
   },
   gapText: {
@@ -848,19 +831,18 @@ const styles = StyleSheet.create({
   },
   gapShopLink: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#9a3412',
     marginBottom: 8,
   },
   capsuleEssentials: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 20,
   },
   capsuleEssentialsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 12,
   },
@@ -872,7 +854,7 @@ const styles = StyleSheet.create({
   essentialBullet: {
     fontSize: 14,
     color: ds.camel,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   essentialText: {
     fontSize: 14,
@@ -883,7 +865,7 @@ const styles = StyleSheet.create({
   },
   capsuleItemsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 12,
   },
@@ -898,7 +880,6 @@ const styles = StyleSheet.create({
   capsuleItemImage: {
     width: '100%',
     height: (width - 56) / 3,
-    borderRadius: 8,
     backgroundColor: ds.paper,
   },
 });

@@ -33,7 +33,7 @@ const OCCASIONS = ['Casual', 'Work', 'Formal', 'Date', 'Workout', 'Party'];
 const MOODS = ['Confident', 'Relaxed', 'Adventurous', 'Professional', 'Romantic', 'Energetic'];
 
 const WEATHER_ICON: Record<string, string> = {
-  sunny: '☀️', cloudy: '☁️', rainy: '🌧️', snowy: '❄️', cold: '🥶', hot: '🥵',
+  sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀',
 };
 
 const WELCOME_MESSAGE: ChatMessage = {

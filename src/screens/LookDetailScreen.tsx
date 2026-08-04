@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Look, Item } from '../types';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
 import BackButton from '../components/BackButton';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 interface LookDetailScreenProps {
   route: {
@@ -47,7 +47,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       if (response.data.paletteId) {
         const allLooksResponse = await lookAPI.getAll({ limit: 50 });
         const samePaletteLooks = allLooksResponse.data.filter(
-          l => l.paletteId === response.data.paletteId && l.id !== lookId
+          l =>l.paletteId === response.data.paletteId && l.id !== lookId
         );
         setPaletteLooks(samePaletteLooks);
       }
@@ -96,7 +96,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
   };
 
   const handleShopCompleteLook = async (items: Item[]) => {
-    const shoppableItems = items.filter(item => item.affiliateLink);
+    const shoppableItems = items.filter(item =>item.affiliateLink);
 
     if (shoppableItems.length === 0) {
       alert('No shoppable links available for this look yet');
@@ -109,7 +109,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
         await Linking.openURL(shoppableItems[0].affiliateLink!);
       }
 
-      if (shoppableItems.length > 1) {
+      if (shoppableItems.length >1) {
         alert(
           `Opening "${shoppableItems[0].name}". ${shoppableItems.length - 1} more item${
             shoppableItems.length - 1 === 1 ? '' : 's'
@@ -161,7 +161,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Look not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() =>navigation.goBack()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -190,7 +190,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backIconButton}
-            onPress={() => navigation.goBack()}
+            onPress={() =>navigation.goBack()}
           >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
@@ -201,7 +201,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
             onPress={handleFavorite}
           >
             <Text style={styles.favoriteIcon}>
-              {isFavorited ? '❤️' : '🤍'}
+              {isFavorited ? '●' : '○'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -215,7 +215,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           )}
 
           {/* Tags */}
-          {look.tags && look.tags.length > 0 && (
+          {look.tags && look.tags.length >0 && (
             <View style={styles.tagsContainer}>
               {look.tags.map((tag, index) => (
                 <View key={index} style={styles.tag}>
@@ -227,7 +227,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 
           {/* Shop My Closet Button */}
           <TouchableOpacity style={styles.shopMyClosetButton} onPress={handleShopMyCloset}>
-            <Text style={styles.shopMyClosetText}>👗 Shop My Closet</Text>
+            <Text style={styles.shopMyClosetText}>Shop My Closet</Text>
             <Text style={styles.shopMyClosetSubtext}>Find similar items you already own</Text>
           </TouchableOpacity>
 
@@ -237,7 +237,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
               <Text style={styles.sectionTitle}>More from {look.palette.name}</Text>
               <Text style={styles.paletteDescription}>{look.palette.description}</Text>
               
-              {paletteLooks.length > 0 ? (
+              {paletteLooks.length >0 ? (
                 <ScrollView 
                   horizontal 
                   showsHorizontalScrollIndicator={false}
@@ -247,7 +247,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
                     <TouchableOpacity
                       key={paletteLook.id}
                       style={styles.miniLookCard}
-                      onPress={() => navigation.push('LookDetail', { lookId: paletteLook.id })}
+                      onPress={() =>navigation.push('LookDetail', { lookId: paletteLook.id })}
                       activeOpacity={0.8}
                     >
                       <Image
@@ -264,7 +264,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
                   {/* View All Button */}
                   <TouchableOpacity
                     style={styles.viewAllCard}
-                    onPress={() => navigation.navigate('PaletteDetail', { paletteId: look.palette!.id })}
+                    onPress={() =>navigation.navigate('PaletteDetail', { paletteId: look.palette!.id })}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.viewAllText}>View All{'\n'}Looks →</Text>
@@ -273,7 +273,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
               ) : (
                 <TouchableOpacity
                   style={styles.paletteCard}
-                  onPress={() => navigation.navigate('PaletteDetail', { paletteId: look.palette!.id })}
+                  onPress={() =>navigation.navigate('PaletteDetail', { paletteId: look.palette!.id })}
                   activeOpacity={0.7}
                 >
                   <View style={styles.colorsContainer}>
@@ -324,7 +324,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
                   {item.price !== undefined && item.price !== null && (
                     <View style={styles.priceRow}>
                       <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-                      {item.originalPrice && item.originalPrice > item.price && (
+                      {item.originalPrice && item.originalPrice >item.price && (
                         <Text style={styles.originalPrice}>
                           ${item.originalPrice.toFixed(2)}
                         </Text>
@@ -338,7 +338,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 
                   <TouchableOpacity
                     style={styles.shopButton}
-                    onPress={() => handleShopItem(item)}
+                    onPress={() =>handleShopItem(item)}
                   >
                     <Text style={styles.shopButtonText}>Shop Now →</Text>
                   </TouchableOpacity>
@@ -350,7 +350,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           {/* Shop All Button */}
           <TouchableOpacity
             style={styles.shopAllButton}
-            onPress={() => handleShopCompleteLook(allItems)}
+            onPress={() =>handleShopCompleteLook(allItems)}
           >
             <Text style={styles.shopAllButtonText}>Shop Complete Look</Text>
           </TouchableOpacity>
@@ -390,12 +390,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: colors.ink,
-    borderRadius: 8,
   },
   backButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   imageContainer: {
     width: '100%',
@@ -440,7 +439,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -460,30 +459,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   paletteSection: {
     marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
   paletteCard: {
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
   },
   paletteName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -506,7 +503,7 @@ const styles = StyleSheet.create({
   tapToExplore: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -521,7 +518,6 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -543,29 +539,27 @@ const styles = StyleSheet.create({
   itemName: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   heroBadge: {
     backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
   },
   heroBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   budgetBadge: {
     backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
   },
   budgetBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   itemBrand: {
@@ -585,7 +579,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginRight: 8,
   },
@@ -603,25 +597,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   shopButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   shopAllButton: {
     backgroundColor: colors.ink,
     paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 32,
   },
   shopAllButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   paletteLooksScroll: {
     marginTop: 16,
@@ -630,7 +622,6 @@ const styles = StyleSheet.create({
     width: 140,
     marginRight: 12,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -643,7 +634,7 @@ const styles = StyleSheet.create({
   miniLookTitle: {
     padding: 12,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     lineHeight: 18,
   },
@@ -651,7 +642,6 @@ const styles = StyleSheet.create({
     width: 140,
     height: 180,
     backgroundColor: colors.ink,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -659,20 +649,19 @@ const styles = StyleSheet.create({
   viewAllText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textAlign: 'center',
   },
   shopMyClosetButton: {
     backgroundColor: colors.tobacco,
     padding: 16,
-    borderRadius: 12,
     marginTop: 20,
     alignItems: 'center',
   },
   shopMyClosetText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   shopMyClosetSubtext: {

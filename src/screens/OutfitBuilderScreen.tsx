@@ -18,7 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { ClosetItem, Season } from '../types';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'OutfitBuilder'>;
@@ -37,10 +37,10 @@ export default function OutfitBuilderScreen() {
   const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
 
   const occasions = [
-    { id: 'casual', label: 'Casual', icon: '👕' },
-    { id: 'work', label: 'Work', icon: '💼' },
-    { id: 'formal', label: 'Formal', icon: '🎩' },
-    { id: 'athletic', label: 'Athletic', icon: '⚡' },
+    { id: 'casual', label: 'Casual' },
+    { id: 'work', label: 'Work' },
+    { id: 'formal', label: 'Formal' },
+    { id: 'athletic', label: 'Athletic' },
   ];
 
   useEffect(() => {
@@ -176,15 +176,15 @@ export default function OutfitBuilderScreen() {
       
       // Allow if colors harmonize OR if either is neutral
       const neutrals = ['black', 'white', 'gray', 'beige', 'cream', 'navy'];
-      const isHarmonious = harmonious.some(c => itemColor.includes(c)) ||
-                          neutrals.some(n => sourceColor.includes(n)) ||
-                          neutrals.some(n => itemColor.includes(n));
+      const isHarmonious = harmonious.some(c =>itemColor.includes(c)) ||
+                          neutrals.some(n =>sourceColor.includes(n)) ||
+                          neutrals.some(n =>itemColor.includes(n));
       
       if (!isHarmonious) return false;
 
       // Rule 3: Season compatibility (at least one season in common)
       if (sourceItem.season && item.season) {
-        const hasCommonSeason = sourceItem.season.some((s: Season) => item.season.includes(s));
+        const hasCommonSeason = sourceItem.season.some((s: Season) =>item.season.includes(s));
         if (!hasCommonSeason) return false;
       }
 
@@ -204,10 +204,10 @@ export default function OutfitBuilderScreen() {
 
       // Prefer items with more season overlap
       if (sourceItem.season && a.season) {
-        scoreA += sourceItem.season.filter((s: Season) => a.season.includes(s)).length;
+        scoreA += sourceItem.season.filter((s: Season) =>a.season.includes(s)).length;
       }
       if (sourceItem.season && b.season) {
-        scoreB += sourceItem.season.filter((s: Season) => b.season.includes(s)).length;
+        scoreB += sourceItem.season.filter((s: Season) =>b.season.includes(s)).length;
       }
 
       return scoreB - scoreA;
@@ -216,9 +216,9 @@ export default function OutfitBuilderScreen() {
 
   const toggleItemSelection = (item: ClosetItem) => {
     setSelectedItems(prev => {
-      const isSelected = prev.some(i => i.id === item.id);
+      const isSelected = prev.some(i =>i.id === item.id);
       if (isSelected) {
-        return prev.filter(i => i.id !== item.id);
+        return prev.filter(i =>i.id !== item.id);
       } else {
         return [...prev, item];
       }
@@ -226,7 +226,7 @@ export default function OutfitBuilderScreen() {
   };
 
   const isItemSelected = (itemId: string) => {
-    return selectedItems.some(i => i.id === itemId);
+    return selectedItems.some(i =>i.id === itemId);
   };
 
   const filterByOccasion = (occasion: string | null) => {
@@ -263,7 +263,7 @@ export default function OutfitBuilderScreen() {
     try {
       await outfitsService.create(
         getCurrentUserId(),
-        selectedItems.map(item => item.id),
+        selectedItems.map(item =>item.id),
         selectedOccasion || undefined
       );
       setShowSuccess(true);
@@ -290,7 +290,7 @@ export default function OutfitBuilderScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Build Outfit</Text>
@@ -317,7 +317,7 @@ export default function OutfitBuilderScreen() {
         )}
 
         {/* Selected Items Preview */}
-        {selectedItems.length > 1 && (
+        {selectedItems.length >1 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Your Outfit ({selectedItems.length} items)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -327,7 +327,7 @@ export default function OutfitBuilderScreen() {
                     <Image source={{ uri: item.imageUrl }} style={styles.selectedItemImage} />
                     <TouchableOpacity
                       style={styles.removeButton}
-                      onPress={() => toggleItemSelection(item)}
+                      onPress={() =>toggleItemSelection(item)}
                     >
                       <Text style={styles.removeButtonText}>×</Text>
                     </TouchableOpacity>
@@ -345,10 +345,9 @@ export default function OutfitBuilderScreen() {
             <View style={styles.occasionFilters}>
               <TouchableOpacity
                 style={[styles.occasionButton, !selectedOccasion && styles.occasionButtonActive]}
-                onPress={() => filterByOccasion(null)}
+                onPress={() =>filterByOccasion(null)}
               >
-                <Text style={[styles.occasionButtonText, !selectedOccasion && styles.occasionButtonTextActive]}>
-                  All
+                <Text style={[styles.occasionButtonText, !selectedOccasion && styles.occasionButtonTextActive]}>All
                 </Text>
               </TouchableOpacity>
               {occasions.map(occasion => (
@@ -358,9 +357,8 @@ export default function OutfitBuilderScreen() {
                     styles.occasionButton,
                     selectedOccasion === occasion.id && styles.occasionButtonActive
                   ]}
-                  onPress={() => filterByOccasion(occasion.id)}
+                  onPress={() =>filterByOccasion(occasion.id)}
                 >
-                  <Text style={styles.occasionIcon}>{occasion.icon}</Text>
                   <Text style={[
                     styles.occasionButtonText,
                     selectedOccasion === occasion.id && styles.occasionButtonTextActive
@@ -398,7 +396,7 @@ export default function OutfitBuilderScreen() {
                   <TouchableOpacity
                     key={item.id}
                     style={[styles.itemCard, selected && styles.itemCardSelected]}
-                    onPress={() => toggleItemSelection(item)}
+                    onPress={() =>toggleItemSelection(item)}
                   >
                     <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
                     {selected && (
@@ -422,7 +420,7 @@ export default function OutfitBuilderScreen() {
       
       <SuccessAnimation
         visible={showSuccess}
-        message={`Outfit with ${selectedItems.length} items saved! 🎉`}
+        message={`Outfit with ${selectedItems.length} items saved! `}
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -461,11 +459,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   saveButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   section: {
@@ -473,7 +471,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   sectionSubtitle: {
@@ -484,7 +482,6 @@ const styles = StyleSheet.create({
   sourceItemCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
     padding: 16,
     borderWidth: 2,
     borderColor: colors.ink,
@@ -492,7 +489,6 @@ const styles = StyleSheet.create({
   sourceItemImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
   },
   sourceItemInfo: {
     marginLeft: 16,
@@ -500,7 +496,7 @@ const styles = StyleSheet.create({
   },
   sourceItemCategory: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
   },
   sourceItemBrand: {
@@ -523,7 +519,6 @@ const styles = StyleSheet.create({
   selectedItemImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
     borderWidth: 2,
     borderColor: colors.ink,
   },
@@ -541,7 +536,7 @@ const styles = StyleSheet.create({
   removeButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   grid: {
     flexDirection: 'row',
@@ -551,7 +546,6 @@ const styles = StyleSheet.create({
   itemCard: {
     width: '48%',
     backgroundColor: colors.paper,
-    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
@@ -577,14 +571,14 @@ const styles = StyleSheet.create({
   selectedBadgeText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   itemInfo: {
     padding: 12,
   },
   itemCategory: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
   },
   itemBrand: {
@@ -603,7 +597,7 @@ const styles = StyleSheet.create({
   },
   filterTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 12,
     color: colors.ink,
   },
@@ -617,7 +611,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     backgroundColor: colors.paper,
     borderWidth: 2,
     borderColor: colors.hair,
@@ -632,7 +625,7 @@ const styles = StyleSheet.create({
   },
   occasionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   occasionButtonTextActive: {

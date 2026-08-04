@@ -77,15 +77,14 @@ export default function ClosetScreen() {
     fetchClosetItems();
   };
 
-  const handleAddItem = () => navigation.navigate('AddClosetItem');
-  const handleItemPress = (item: ClosetItem) => navigation.navigate('ClosetItemDetail', { closetItemId: item.id });
+  const handleAddItem = () =>navigation.navigate('AddClosetItem');
+  const handleItemPress = (item: ClosetItem) =>navigation.navigate('ClosetItemDetail', { closetItemId: item.id });
 
-  let filteredItems = selectedCategory === 'all' ? items : items.filter(item => item.category === selectedCategory);
+  let filteredItems = selectedCategory === 'all' ? items : items.filter(item =>item.category === selectedCategory);
 
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase();
-    filteredItems = filteredItems.filter(item =>
-      item.category?.toLowerCase().includes(query) ||
+    filteredItems = filteredItems.filter(item =>item.category?.toLowerCase().includes(query) ||
       item.brand?.toLowerCase().includes(query) ||
       item.color?.toLowerCase().includes(query)
     );
@@ -117,8 +116,8 @@ export default function ClosetScreen() {
     .slice(0, 3)
     .map(item => ({ name: item.brand || item.category, wornCount: item.wornCount || 0 }));
 
-  const totalWears = items.reduce((sum, item) => sum + (item.wornCount || 0), 0);
-  const avgWearsPerPiece = items.length > 0 ? (totalWears / items.length).toFixed(1) : '0';
+  const totalWears = items.reduce((sum, item) =>sum + (item.wornCount || 0), 0);
+  const avgWearsPerPiece = items.length >0 ? (totalWears / items.length).toFixed(1) : '0';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,16 +126,15 @@ export default function ClosetScreen() {
           <View>
             <Text style={styles.sectionLabel}>YOUR CLOSET</Text>
             <Text style={styles.title}>
-              <Text style={styles.titleAccent}>{items.length}</Text> pieces
+              <Text style={styles.titleAccent}>{items.length}</Text>pieces
             </Text>
           </View>
           <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.8}>
             <Text style={styles.addButtonText}>+ ADD</Text>
           </TouchableOpacity>
         </View>
-        {items.length > 0 && (
-          <Text style={styles.insightLine}>
-            Worn on average <Text style={styles.insightAccent}>{avgWearsPerPiece}×</Text> per piece this season.
+        {items.length >0 && (
+          <Text style={styles.insightLine}>Worn on average <Text style={styles.insightAccent}>{avgWearsPerPiece}×</Text>per piece this season.
           </Text>
         )}
         <ScrollView
@@ -146,12 +144,12 @@ export default function ClosetScreen() {
           contentContainerStyle={styles.headerActionRow}
         >
           {[
-            { icon: 'stats-chart-outline' as const, label: 'Analytics', onPress: () => navigation.navigate('ClosetAnalytics') },
-            { icon: 'sparkles-outline' as const, label: 'Outfit Builder', onPress: () => navigation.navigate('SmartOutfitBuilder') },
-            { icon: 'folder-outline' as const, label: 'Organize', onPress: () => navigation.navigate('ClosetOrganization') },
-            { icon: 'bag-handle-outline' as const, label: 'In-Store Check', onPress: () => navigation.navigate('InStoreCheck') },
-            { icon: 'storefront-outline' as const, label: 'Shop', onPress: () => navigation.navigate('Shop') },
-            { icon: 'leaf-outline' as const, label: 'Sustainability', onPress: () => navigation.navigate('Sustainability') },
+            { icon: 'stats-chart-outline' as const, label: 'Analytics', onPress: () =>navigation.navigate('ClosetAnalytics') },
+            { icon: 'sparkles-outline' as const, label: 'Outfit Builder', onPress: () =>navigation.navigate('SmartOutfitBuilder') },
+            { icon: 'folder-outline' as const, label: 'Organize', onPress: () =>navigation.navigate('ClosetOrganization') },
+            { icon: 'bag-handle-outline' as const, label: 'In-Store Check', onPress: () =>navigation.navigate('InStoreCheck') },
+            { icon: 'storefront-outline' as const, label: 'Shop', onPress: () =>navigation.navigate('Shop') },
+            { icon: 'leaf-outline' as const, label: 'Sustainability', onPress: () =>navigation.navigate('Sustainability') },
           ].map(action => (
             <TouchableOpacity
               key={action.label}
@@ -165,7 +163,7 @@ export default function ClosetScreen() {
           ))}
           <TouchableOpacity
             style={[styles.actionChip, showStats && styles.actionChipActive]}
-            onPress={() => setShowStats(!showStats)}
+            onPress={() =>setShowStats(!showStats)}
             activeOpacity={0.8}
           >
             <Ionicons name={showStats ? 'chevron-up' : 'chevron-down'} size={15} color={showStats ? colors.card : colors.ink} />
@@ -188,7 +186,7 @@ export default function ClosetScreen() {
             <TouchableOpacity
               key={key}
               style={[styles.sortButton, sortBy === key && styles.sortButtonActive]}
-              onPress={() => setSortBy(key)}
+              onPress={() =>setSortBy(key)}
             >
               <Text style={[styles.sortButtonText, sortBy === key && styles.sortButtonTextActive]}>
                 {key === 'date' ? 'NEWEST' : key === 'worn' ? 'MOST WORN' : 'CATEGORY'}
@@ -208,7 +206,7 @@ export default function ClosetScreen() {
           <TouchableOpacity
             key={category.id}
             style={[styles.categoryTab, selectedCategory === category.id && styles.categoryTabActive]}
-            onPress={() => setSelectedCategory(category.id)}
+            onPress={() =>setSelectedCategory(category.id)}
           >
             <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
               {category.label.toUpperCase()}
@@ -225,7 +223,7 @@ export default function ClosetScreen() {
         <Animated.FlatList
           style={[styles.content, { opacity: fadeAnim }]}
           data={filteredItems}
-          keyExtractor={(item: ClosetItem) => item.id}
+          keyExtractor={(item: ClosetItem) =>item.id}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContent}
@@ -235,7 +233,7 @@ export default function ClosetScreen() {
           maxToRenderPerBatch={8}
           windowSize={7}
           ListHeaderComponent={
-            showStats && items.length > 0 ? (
+            showStats && items.length >0 ? (
               <View style={styles.statsContainer}>
                 <ClosetStats
                   totalItems={items.length}
@@ -261,12 +259,12 @@ export default function ClosetScreen() {
             return (
               <TouchableOpacity
                 style={styles.gridItem}
-                onPress={() => handleItemPress(item)}
+                onPress={() =>handleItemPress(item)}
                 activeOpacity={0.85}
               >
                 <View style={styles.gridImageWrap}>
                   <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
-                  {item.wornCount > 0 && (
+                  {item.wornCount >0 && (
                     <View style={styles.wornBadge}>
                       <Text style={styles.wornBadgeText}>{item.wornCount}×</Text>
                     </View>
@@ -544,7 +542,7 @@ const styles = StyleSheet.create({
   fabText: {
     fontSize: 28,
     color: colors.bone,
-    fontWeight: '300',
+    fontFamily: fonts.sans,
     lineHeight: 32,
   },
 });

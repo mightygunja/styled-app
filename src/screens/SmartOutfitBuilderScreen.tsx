@@ -17,7 +17,7 @@ import { outfitsService } from '../services/firestore';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -37,7 +37,7 @@ export default function SmartOutfitBuilderScreen() {
   }, []);
 
   useEffect(() => {
-    if (closetItems.length > 0) {
+    if (closetItems.length >0) {
       generateSuggestions();
     }
   }, [closetItems, occasion]);
@@ -62,9 +62,9 @@ export default function SmartOutfitBuilderScreen() {
 
   const toggleItemSelection = (item: ClosetItem) => {
     setSelectedItems(prev => {
-      const isSelected = prev.some(i => i.id === item.id);
+      const isSelected = prev.some(i =>i.id === item.id);
       if (isSelected) {
-        return prev.filter(i => i.id !== item.id);
+        return prev.filter(i =>i.id !== item.id);
       } else {
         return [...prev, item];
       }
@@ -73,7 +73,7 @@ export default function SmartOutfitBuilderScreen() {
 
   const applySuggestion = (suggestion: OutfitSuggestion) => {
     setSelectedItems(suggestion.items);
-    showToast('Outfit applied! ✨', 'success');
+    showToast('Outfit applied! ', 'success');
   };
 
   const saveOutfit = async () => {
@@ -85,7 +85,7 @@ export default function SmartOutfitBuilderScreen() {
     try {
       await outfitsService.create(
         getCurrentUserId(),
-        selectedItems.map(item => item.id),
+        selectedItems.map(item =>item.id),
         occasion
       );
       setShowSuccess(true);
@@ -115,7 +115,7 @@ export default function SmartOutfitBuilderScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Outfit Builder</Text>
@@ -139,7 +139,7 @@ export default function SmartOutfitBuilderScreen() {
                   <Image source={{ uri: item.imageUrl }} style={styles.previewImage} />
                   <TouchableOpacity
                     style={styles.removeButton}
-                    onPress={() => toggleItemSelection(item)}
+                    onPress={() =>toggleItemSelection(item)}
                   >
                     <Text style={styles.removeButtonText}>×</Text>
                   </TouchableOpacity>
@@ -147,7 +147,7 @@ export default function SmartOutfitBuilderScreen() {
               ))}
             </View>
           )}
-          {selectedItems.length > 0 && (
+          {selectedItems.length >0 && (
             <TouchableOpacity style={styles.clearButton} onPress={clearSelection}>
               <Text style={styles.clearButtonText}>Clear All</Text>
             </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function SmartOutfitBuilderScreen() {
               <TouchableOpacity
                 key={occ}
                 style={[styles.occasionButton, occasion === occ && styles.occasionButtonActive]}
-                onPress={() => setOccasion(occ)}
+                onPress={() =>setOccasion(occ)}
               >
                 <Text style={[styles.occasionText, occasion === occ && styles.occasionTextActive]}>
                   {occ.charAt(0).toUpperCase() + occ.slice(1)}
@@ -173,15 +173,15 @@ export default function SmartOutfitBuilderScreen() {
         </View>
 
         {/* AI Suggestions */}
-        {suggestions.length > 0 && (
+        {suggestions.length >0 && (
           <View style={styles.suggestionsSection}>
-            <Text style={styles.sectionTitle}>AI Suggestions ✨</Text>
+            <Text style={styles.sectionTitle}>AI Suggestions </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {suggestions.map(suggestion => (
                 <TouchableOpacity
                   key={suggestion.id}
                   style={styles.suggestionCard}
-                  onPress={() => applySuggestion(suggestion)}
+                  onPress={() =>applySuggestion(suggestion)}
                 >
                   <View style={styles.suggestionImages}>
                     {suggestion.items.slice(0, 3).map((item, idx) => (
@@ -214,12 +214,12 @@ export default function SmartOutfitBuilderScreen() {
           <Text style={styles.sectionTitle}>Your Closet</Text>
           <View style={styles.itemsGrid}>
             {closetItems.map(item => {
-              const isSelected = selectedItems.some(i => i.id === item.id);
+              const isSelected = selectedItems.some(i =>i.id === item.id);
               return (
                 <TouchableOpacity
                   key={item.id}
                   style={[styles.itemCard, isSelected && styles.itemCardSelected]}
-                  onPress={() => toggleItemSelection(item)}
+                  onPress={() =>toggleItemSelection(item)}
                 >
                   <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
                   {isSelected && (
@@ -239,7 +239,7 @@ export default function SmartOutfitBuilderScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Outfit saved! 🎉"
+        message="Outfit saved! "
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -285,12 +285,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   saveButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   previewSection: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -307,7 +307,6 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.hair,
     borderStyle: 'dashed',
@@ -332,7 +331,6 @@ const styles = StyleSheet.create({
   previewImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
     backgroundColor: colors.paper,
   },
   removeButton: {
@@ -349,19 +347,18 @@ const styles = StyleSheet.create({
   removeButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   clearButton: {
     marginTop: 12,
     padding: 12,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
     alignItems: 'center',
   },
   clearButtonText: {
     color: colors.ink,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   occasionSection: {
     padding: 20,
@@ -375,7 +372,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     backgroundColor: colors.paper,
-    borderRadius: 8,
     alignItems: 'center',
   },
   occasionButtonActive: {
@@ -383,7 +379,7 @@ const styles = StyleSheet.create({
   },
   occasionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.inkMuted,
   },
   occasionTextActive: {
@@ -397,7 +393,6 @@ const styles = StyleSheet.create({
     width: 200,
     marginRight: 12,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 12,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -409,7 +404,6 @@ const styles = StyleSheet.create({
   suggestionImage: {
     width: 50,
     height: 50,
-    borderRadius: 8,
     backgroundColor: colors.paper,
     marginLeft: -10,
     borderWidth: 2,
@@ -420,7 +414,7 @@ const styles = StyleSheet.create({
   },
   suggestionScore: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.camel,
     marginBottom: 4,
   },
@@ -431,12 +425,11 @@ const styles = StyleSheet.create({
   applyButton: {
     padding: 8,
     backgroundColor: colors.paper,
-    borderRadius: 6,
     alignItems: 'center',
   },
   applyButtonText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   closetSection: {
@@ -451,7 +444,6 @@ const styles = StyleSheet.create({
   itemCard: {
     width: ITEM_SIZE,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
     borderWidth: 2,
     borderColor: colors.hair,
   },
@@ -480,7 +472,7 @@ const styles = StyleSheet.create({
   selectedBadgeText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   itemCategory: {
     padding: 8,

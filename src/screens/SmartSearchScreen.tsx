@@ -25,7 +25,7 @@ import {
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (width - 60) / 2;
@@ -44,13 +44,13 @@ export default function SmartSearchScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
-  const categories: { id: SearchCategory; label: string; emoji: string }[] = [
-    { id: 'all', label: 'All', emoji: '🔍' },
-    { id: 'items', label: 'Items', emoji: '👕' },
-    { id: 'looks', label: 'Looks', emoji: '✨' },
-    { id: 'styles', label: 'Styles', emoji: '🎨' },
-    { id: 'posts', label: 'Posts', emoji: '📸' },
-    { id: 'users', label: 'Users', emoji: '👤' },
+  const categories: { id: SearchCategory; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'items', label: 'Items' },
+    { id: 'looks', label: 'Looks' },
+    { id: 'styles', label: 'Styles' },
+    { id: 'posts', label: 'Posts' },
+    { id: 'users', label: 'Users' },
   ];
 
   const sortOptions: { id: SortBy; label: string }[] = [
@@ -134,10 +134,10 @@ export default function SmartSearchScreen() {
         <View style={styles.resultMeta}>
           <View style={styles.resultType}>
             <Text style={styles.resultTypeText}>
-              {result.type === 'item' ? '👕' : result.type === 'style' ? '🎨' : '✨'}
+              {result.type === 'item' ? 'ITEM' : result.type === 'style' ? 'STYLE' : 'PERSON'}
             </Text>
           </View>
-          {result.relevanceScore > 0 && (
+          {result.relevanceScore >0 && (
             <Text style={styles.relevanceScore}>
               {Math.round(result.relevanceScore)}% match
             </Text>
@@ -179,7 +179,7 @@ export default function SmartSearchScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Smart Search</Text>
@@ -191,25 +191,24 @@ export default function SmartSearchScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
+                    <TextInput
             style={styles.searchInput}
             placeholder="Search items, styles, looks..."
             placeholderTextColor={colors.inkFaint}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onSubmitEditing={() => handleSearch()}
+            onSubmitEditing={() =>handleSearch()}
             returnKeyType="search"
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+          {searchQuery.length >0 && (
+            <TouchableOpacity onPress={() =>setSearchQuery('')}>
               <Text style={styles.clearIcon}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => handleSearch()}
+          onPress={() =>handleSearch()}
         >
           <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
@@ -229,9 +228,8 @@ export default function SmartSearchScreen() {
               styles.categoryChip,
               selectedCategory === cat.id && styles.categoryChipActive,
             ]}
-            onPress={() => setSelectedCategory(cat.id)}
+            onPress={() =>setSelectedCategory(cat.id)}
           >
-            <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
             <Text
               style={[
                 styles.categoryText,
@@ -245,12 +243,11 @@ export default function SmartSearchScreen() {
       </ScrollView>
 
       {/* Sort & Filter */}
-      {results.length > 0 && (
+      {results.length >0 && (
         <View style={styles.toolbarContainer}>
           <View style={styles.toolbar}>
             <TouchableOpacity style={styles.toolbarButton}>
-              <Text style={styles.toolbarButtonText}>
-                Sort: {sortOptions.find(s => s.id === sortBy)?.label}
+              <Text style={styles.toolbarButtonText}>Sort: {sortOptions.find(s =>s.id === sortBy)?.label}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.toolbarButton}>
@@ -265,7 +262,7 @@ export default function SmartSearchScreen() {
 
       <ScrollView>
         {/* Suggestions */}
-        {searchQuery.length > 0 && suggestions.length > 0 && results.length === 0 && (
+        {searchQuery.length >0 && suggestions.length >0 && results.length === 0 && (
           <View style={styles.suggestionsContainer}>
             <Text style={styles.suggestionsTitle}>Suggestions</Text>
             {suggestions.map((suggestion, index) => (
@@ -277,10 +274,8 @@ export default function SmartSearchScreen() {
                   handleSearch(suggestion.query);
                 }}
               >
-                <Text style={styles.suggestionIcon}>🔍</Text>
-                <Text style={styles.suggestionText}>{suggestion.query}</Text>
-                <Text style={styles.suggestionCategory}>
-                  in {suggestion.category}
+                                <Text style={styles.suggestionText}>{suggestion.query}</Text>
+                <Text style={styles.suggestionCategory}>in {suggestion.category}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -296,7 +291,7 @@ export default function SmartSearchScreen() {
         )}
 
         {/* Results */}
-        {!searching && results.length > 0 && (
+        {!searching && results.length >0 && (
           <View style={styles.resultsContainer}>
             <View style={styles.resultsGrid}>
               {results.map(renderSearchResult)}
@@ -305,12 +300,10 @@ export default function SmartSearchScreen() {
         )}
 
         {/* No Results */}
-        {!searching && searchQuery.length > 0 && results.length === 0 && (
+        {!searching && searchQuery.length >0 && results.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>No results found</Text>
-            <Text style={styles.emptySubtext}>
-              Try different keywords or browse discovery sections below
+                        <Text style={styles.emptyText}>No results found</Text>
+            <Text style={styles.emptySubtext}>Try different keywords or browse discovery sections below
             </Text>
           </View>
         )}
@@ -354,13 +347,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   clearButton: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -372,7 +365,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -390,18 +382,17 @@ const styles = StyleSheet.create({
   clearIcon: {
     fontSize: 16,
     color: colors.inkFaint,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   searchButton: {
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
-    borderRadius: 12,
     justifyContent: 'center',
   },
   searchButtonText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   categoriesScroll: {
     maxHeight: 50,
@@ -417,7 +408,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -432,7 +422,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   categoryTextActive: {
@@ -452,7 +442,6 @@ const styles = StyleSheet.create({
   toolbarButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.hair,
     backgroundColor: colors.paper,
@@ -460,7 +449,7 @@ const styles = StyleSheet.create({
   toolbarButtonText: {
     fontSize: 13,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   resultCount: {
     fontSize: 13,
@@ -480,7 +469,7 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -515,7 +504,6 @@ const styles = StyleSheet.create({
   resultCard: {
     width: GRID_ITEM_SIZE,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.hair,
     overflow: 'hidden',
@@ -530,7 +518,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -548,7 +536,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   resultTypeText: {
     fontSize: 12,
@@ -556,7 +543,7 @@ const styles = StyleSheet.create({
   relevanceScore: {
     fontSize: 11,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,
@@ -568,7 +555,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -592,7 +579,7 @@ const styles = StyleSheet.create({
   },
   discoverySectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   discoverySectionSubtitle: {
@@ -603,7 +590,7 @@ const styles = StyleSheet.create({
   seeAllButton: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   discoveryGrid: {
     flexDirection: 'row',
@@ -616,13 +603,12 @@ const styles = StyleSheet.create({
   discoveryImage: {
     width: 140,
     height: 140,
-    borderRadius: 12,
     backgroundColor: colors.paper,
     marginBottom: 8,
   },
   discoveryTitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.ink,
     lineHeight: 18,
   },

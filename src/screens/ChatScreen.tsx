@@ -21,7 +21,7 @@ import { userProfileService, UserProfile } from '../services/userProfileService'
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
@@ -59,11 +59,11 @@ export default function ChatScreen() {
         messagingService.getMessages(conversationId),
       ]);
 
-      const conv = convs.find(c => c.id === conversationId);
+      const conv = convs.find(c =>c.id === conversationId);
       if (conv) {
         setConversation(conv);
         
-        const otherUserId = conv.participants.find(id => id !== getCurrentUserId());
+        const otherUserId = conv.participants.find(id =>id !== getCurrentUserId());
         if (otherUserId) {
           const profile = await userProfileService.getUserProfile(otherUserId);
           setOtherUser(profile);
@@ -108,7 +108,7 @@ export default function ChatScreen() {
   const handleDeleteMessage = async (messageId: string) => {
     try {
       await messagingService.deleteMessage(messageId, getCurrentUserId());
-      setMessages(messages.filter(m => m.id !== messageId));
+      setMessages(messages.filter(m =>m.id !== messageId));
       showToast('Message deleted', 'success');
     } catch (error) {
       showToast('Failed to delete message', 'error');
@@ -123,7 +123,7 @@ export default function ChatScreen() {
   const renderMessage = (message: Message, index: number) => {
     const isOwnMessage = message.senderId === getCurrentUserId();
     const showTime = index === 0 || 
-      new Date(message.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 5 * 60 * 1000;
+      new Date(message.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() >5 * 60 * 1000;
 
     return (
       <View key={message.id}>
@@ -135,7 +135,7 @@ export default function ChatScreen() {
         <View style={[styles.messageRow, isOwnMessage && styles.ownMessageRow]}>
           <TouchableOpacity
             style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}
-            onLongPress={() => isOwnMessage && handleDeleteMessage(message.id)}
+            onLongPress={() =>isOwnMessage && handleDeleteMessage(message.id)}
           >
             <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
               {message.content}
@@ -166,13 +166,13 @@ export default function ChatScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
             <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.headerUser}
-            onPress={() => otherUser && navigation.navigate('UserProfile', { userId: otherUser.userId })}
+            onPress={() =>otherUser && navigation.navigate('UserProfile', { userId: otherUser.userId })}
           >
             {otherUser?.profileImageUrl ? (
               <Image source={{ uri: otherUser.profileImageUrl }} style={styles.headerAvatar} />
@@ -194,18 +194,16 @@ export default function ChatScreen() {
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() =>scrollViewRef.current?.scrollToEnd({ animated: false })}
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>👋</Text>
-              <Text style={styles.emptyText}>Start the conversation!</Text>
-              <Text style={styles.emptySubtext}>
-                Send a message to {otherUser?.displayName}
+                            <Text style={styles.emptyText}>Start the conversation!</Text>
+              <Text style={styles.emptySubtext}>Send a message to {otherUser?.displayName}
               </Text>
             </View>
           ) : (
-            messages.map((message, index) => renderMessage(message, index))
+            messages.map((message, index) =>renderMessage(message, index))
           )}
         </ScrollView>
 
@@ -227,7 +225,10 @@ export default function ChatScreen() {
             {sending ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={styles.sendIcon}>📤</Text>
+              // Was a paper-plane emoji, which was this button's only content.
+              // A word is unambiguous and matches how every other action in the
+              // app is labelled.
+              <Text style={styles.sendIcon}>Send</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -286,12 +287,12 @@ const styles = StyleSheet.create({
   },
   headerInitial: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   headerName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   messagesContainer: {
@@ -311,7 +312,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   messageRow: {
     flexDirection: 'row',
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     maxWidth: '75%',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -354,7 +353,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -374,7 +373,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,

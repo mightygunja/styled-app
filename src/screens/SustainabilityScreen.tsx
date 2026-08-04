@@ -21,7 +21,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds } from '../theme/designSystem';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -118,13 +118,12 @@ export default function SustainabilityScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sustainability</Text>
         <TouchableOpacity onPress={loadSustainabilityAnalysis}>
-          <Text style={styles.refreshButton}>🔄</Text>
-        </TouchableOpacity>
+                  </TouchableOpacity>
       </View>
 
       {/* Grade Banner */}
@@ -150,26 +149,23 @@ export default function SustainabilityScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'overview' && styles.tabActive]}
-          onPress={() => setSelectedTab('overview')}
+          onPress={() =>setSelectedTab('overview')}
         >
-          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>
-            Overview
+          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>Overview
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'impact' && styles.tabActive]}
-          onPress={() => setSelectedTab('impact')}
+          onPress={() =>setSelectedTab('impact')}
         >
-          <Text style={[styles.tabText, selectedTab === 'impact' && styles.tabTextActive]}>
-            Impact
+          <Text style={[styles.tabText, selectedTab === 'impact' && styles.tabTextActive]}>Impact
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'actions' && styles.tabActive]}
-          onPress={() => setSelectedTab('actions')}
+          onPress={() =>setSelectedTab('actions')}
         >
-          <Text style={[styles.tabText, selectedTab === 'actions' && styles.tabTextActive]}>
-            Actions
+          <Text style={[styles.tabText, selectedTab === 'actions' && styles.tabTextActive]}>Actions
           </Text>
         </TouchableOpacity>
       </View>
@@ -196,7 +192,7 @@ export default function SustainabilityScreen() {
 
             {/* Recommendations */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌱 Recommendations</Text>
+              <Text style={styles.sectionTitle}>Recommendations</Text>
               {analysis.recommendations.map((rec, index) => (
                 <View key={index} style={styles.recommendationCard}>
                   <Text style={styles.recommendationText}>{rec}</Text>
@@ -229,18 +225,16 @@ export default function SustainabilityScreen() {
           <>
             {/* Carbon Footprint */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌍 Carbon Footprint</Text>
+              <Text style={styles.sectionTitle}>Carbon Footprint</Text>
               <View style={styles.impactCard}>
                 <View style={styles.impactHeader}>
                   <Text style={styles.impactValue}>{analysis.totalCarbonFootprint.toFixed(1)}</Text>
                   <Text style={styles.impactUnit}>kg CO₂</Text>
                 </View>
-                <Text style={styles.impactDescription}>
-                  Total carbon emissions from your wardrobe
+                <Text style={styles.impactDescription}>Total carbon emissions from your wardrobe
                 </Text>
                 <View style={styles.impactComparison}>
-                  <Text style={styles.impactComparisonText}>
-                    Equivalent to driving {(analysis.totalCarbonFootprint * 4).toFixed(0)} km
+                  <Text style={styles.impactComparisonText}>Equivalent to driving {(analysis.totalCarbonFootprint * 4).toFixed(0)} km
                   </Text>
                 </View>
               </View>
@@ -248,11 +242,10 @@ export default function SustainabilityScreen() {
 
             {/* Offset Options */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌳 Offset Your Impact</Text>
+              <Text style={styles.sectionTitle}>Offset Your Impact</Text>
               <View style={styles.offsetCard}>
                 <View style={styles.offsetOption}>
-                  <Text style={styles.offsetIcon}>🌲</Text>
-                  <View style={styles.offsetInfo}>
+                                    <View style={styles.offsetInfo}>
                     <Text style={styles.offsetTitle}>Plant Trees</Text>
                     <Text style={styles.offsetDescription}>
                       {Math.ceil(analysis.totalCarbonFootprint / 20)} trees needed
@@ -263,11 +256,9 @@ export default function SustainabilityScreen() {
                   </Text>
                 </View>
                 <View style={styles.offsetOption}>
-                  <Text style={styles.offsetIcon}>⚡</Text>
-                  <View style={styles.offsetInfo}>
+                                    <View style={styles.offsetInfo}>
                     <Text style={styles.offsetTitle}>Renewable Energy</Text>
-                    <Text style={styles.offsetDescription}>
-                      Support clean energy projects
+                    <Text style={styles.offsetDescription}>Support clean energy projects
                     </Text>
                   </View>
                   <Text style={styles.offsetCost}>
@@ -275,11 +266,9 @@ export default function SustainabilityScreen() {
                   </Text>
                 </View>
                 <View style={styles.offsetOption}>
-                  <Text style={styles.offsetIcon}>🌊</Text>
-                  <View style={styles.offsetInfo}>
+                                    <View style={styles.offsetInfo}>
                     <Text style={styles.offsetTitle}>Ocean Cleanup</Text>
-                    <Text style={styles.offsetDescription}>
-                      Remove plastic from oceans
+                    <Text style={styles.offsetDescription}>Remove plastic from oceans
                     </Text>
                   </View>
                   <Text style={styles.offsetCost}>
@@ -291,25 +280,22 @@ export default function SustainabilityScreen() {
 
             {/* Environmental Impact */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>💧 Environmental Impact</Text>
+              <Text style={styles.sectionTitle}>Environmental Impact</Text>
               <View style={styles.impactGrid}>
                 <View style={styles.impactItem}>
-                  <Text style={styles.impactItemIcon}>💧</Text>
-                  <Text style={styles.impactItemValue}>
+                                    <Text style={styles.impactItemValue}>
                     {(analysis.totalItems * 2500).toLocaleString()}L
                   </Text>
                   <Text style={styles.impactItemLabel}>Water Used</Text>
                 </View>
                 <View style={styles.impactItem}>
-                  <Text style={styles.impactItemIcon}>♻️</Text>
-                  <Text style={styles.impactItemValue}>
+                                    <Text style={styles.impactItemValue}>
                     {Math.floor(analysis.sustainablePercentage)}%
                   </Text>
                   <Text style={styles.impactItemLabel}>Recyclable</Text>
                 </View>
                 <View style={styles.impactItem}>
-                  <Text style={styles.impactItemIcon}>🗑️</Text>
-                  <Text style={styles.impactItemValue}>
+                                    <Text style={styles.impactItemValue}>
                     {(analysis.totalItems * 0.5).toFixed(1)}kg
                   </Text>
                   <Text style={styles.impactItemLabel}>Waste</Text>
@@ -324,7 +310,7 @@ export default function SustainabilityScreen() {
           <>
             {/* Improvement Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>✨ Improvement Actions</Text>
+              <Text style={styles.sectionTitle}>Improvement Actions</Text>
               {analysis.improvements.map((improvement, index) => (
                 <View key={index} style={styles.actionCard}>
                   <View style={styles.actionHeader}>
@@ -353,30 +339,22 @@ export default function SustainabilityScreen() {
 
             {/* Quick Tips */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>💡 Quick Tips</Text>
+              <Text style={styles.sectionTitle}>Quick Tips</Text>
               <View style={styles.tipsCard}>
                 <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>🛍️</Text>
-                  <Text style={styles.tipText}>
-                    Buy secondhand to reduce environmental impact by 80%
+                                    <Text style={styles.tipText}>Buy secondhand to reduce environmental impact by 80%
                   </Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>👕</Text>
-                  <Text style={styles.tipText}>
-                    Wear items at least 30 times to maximize value
+                                    <Text style={styles.tipText}>Wear items at least 30 times to maximize value
                   </Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>🔄</Text>
-                  <Text style={styles.tipText}>
-                    Repair and upcycle instead of discarding
+                                    <Text style={styles.tipText}>Repair and upcycle instead of discarding
                   </Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>🌿</Text>
-                  <Text style={styles.tipText}>
-                    Choose natural, organic, or recycled materials
+                                    <Text style={styles.tipText}>Choose natural, organic, or recycled materials
                   </Text>
                 </View>
               </View>
@@ -384,7 +362,7 @@ export default function SustainabilityScreen() {
 
             {/* Certifications to Look For */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🏆 Certifications to Look For</Text>
+              <Text style={styles.sectionTitle}>Certifications to Look For</Text>
               <View style={styles.certificationsGrid}>
                 {['GOTS', 'Fair Trade', 'OEKO-TEX', 'B Corp', 'Bluesign', 'Cradle to Cradle'].map((cert, index) => (
                   <View key={index} style={styles.certificationBadge}>
@@ -447,7 +425,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   refreshButton: {
@@ -463,19 +441,19 @@ const styles = StyleSheet.create({
   },
   gradeLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 8,
   },
   gradeValue: {
     fontSize: 64,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
     marginBottom: 4,
   },
   gradeScore: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: 'rgba(255, 255, 255, 0.9)',
   },
   gradeStats: {
@@ -487,7 +465,7 @@ const styles = StyleSheet.create({
   },
   gradeStatValue: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
     marginBottom: 4,
   },
@@ -511,12 +489,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: ds.inkMuted,
   },
   tabTextActive: {
     color: ds.camel,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -526,13 +504,12 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
     marginBottom: 4,
   },
@@ -548,13 +525,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 16,
   },
   recommendationCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
@@ -575,28 +551,25 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   brandScore: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   brandBar: {
     height: 8,
     backgroundColor: ds.paper,
-    borderRadius: 4,
     overflow: 'hidden',
   },
   brandBarFill: {
     height: '100%',
     backgroundColor: ds.camel,
-    borderRadius: 4,
   },
   impactCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
     padding: 24,
     alignItems: 'center',
   },
@@ -607,12 +580,12 @@ const styles = StyleSheet.create({
   },
   impactValue: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   impactUnit: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
     marginLeft: 8,
   },
@@ -626,12 +599,11 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
   },
   impactComparisonText: {
     fontSize: 13,
     color: ds.tobacco,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   offsetCard: {
     gap: 12,
@@ -640,7 +612,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     gap: 12,
   },
@@ -652,7 +623,7 @@ const styles = StyleSheet.create({
   },
   offsetTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -662,7 +633,7 @@ const styles = StyleSheet.create({
   },
   offsetCost: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   impactGrid: {
@@ -672,7 +643,6 @@ const styles = StyleSheet.create({
   impactItem: {
     flex: 1,
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
@@ -682,7 +652,7 @@ const styles = StyleSheet.create({
   },
   impactItemValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -693,7 +663,6 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
@@ -709,18 +678,17 @@ const styles = StyleSheet.create({
   actionTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginRight: 12,
   },
   actionDifficulty: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   actionDifficultyText: {
     fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   actionImpact: {
@@ -736,33 +704,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     backgroundColor: ds.hair,
-    borderRadius: 3,
     overflow: 'hidden',
   },
   actionImpactFill: {
     height: '100%',
     backgroundColor: ds.camel,
-    borderRadius: 3,
   },
   actionImpactValue: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   actionButton: {
     backgroundColor: ds.camel,
     paddingVertical: 10,
-    borderRadius: 8,
     alignItems: 'center',
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   tipsCard: {
     backgroundColor: '#fffbeb',
-    borderRadius: 12,
     padding: 16,
   },
   tipItem: {
@@ -788,13 +752,12 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
     borderWidth: 1,
     borderColor: ds.camel,
   },
   certificationText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#065f46',
   },
 });

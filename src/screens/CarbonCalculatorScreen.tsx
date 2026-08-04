@@ -23,7 +23,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds } from '../theme/designSystem';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -104,9 +104,9 @@ export default function CarbonCalculatorScreen() {
 
   const getTrendIcon = (trend: string): string => {
     const icons = {
-      increasing: '📈',
+      increasing: '',
       stable: '➡️',
-      decreasing: '📉',
+      decreasing: '',
     };
     return icons[trend as keyof typeof icons] || '➡️';
   };
@@ -137,7 +137,7 @@ export default function CarbonCalculatorScreen() {
       <BackButton />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Carbon Calculator</Text>
@@ -153,8 +153,7 @@ export default function CarbonCalculatorScreen() {
           <Text style={styles.totalValue}>{wardrobeFootprint.totalKgCO2.toFixed(1)}</Text>
           <Text style={styles.totalUnit}>kg CO₂</Text>
         </View>
-        <Text style={styles.totalSubtext}>
-          From {wardrobeFootprint.itemCount} items in your wardrobe
+        <Text style={styles.totalSubtext}>From {wardrobeFootprint.itemCount} items in your wardrobe
         </Text>
         <View style={styles.comparisonBadge}>
           <Text style={styles.comparisonText}>
@@ -167,26 +166,23 @@ export default function CarbonCalculatorScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'overview' && styles.tabActive]}
-          onPress={() => setSelectedTab('overview')}
+          onPress={() =>setSelectedTab('overview')}
         >
-          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>
-            Overview
+          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>Overview
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'breakdown' && styles.tabActive]}
-          onPress={() => setSelectedTab('breakdown')}
+          onPress={() =>setSelectedTab('breakdown')}
         >
-          <Text style={[styles.tabText, selectedTab === 'breakdown' && styles.tabTextActive]}>
-            Breakdown
+          <Text style={[styles.tabText, selectedTab === 'breakdown' && styles.tabTextActive]}>Breakdown
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'reduce' && styles.tabActive]}
-          onPress={() => setSelectedTab('reduce')}
+          onPress={() =>setSelectedTab('reduce')}
         >
-          <Text style={[styles.tabText, selectedTab === 'reduce' && styles.tabTextActive]}>
-            Reduce
+          <Text style={[styles.tabText, selectedTab === 'reduce' && styles.tabTextActive]}>Reduce
           </Text>
         </TouchableOpacity>
       </View>
@@ -197,7 +193,7 @@ export default function CarbonCalculatorScreen() {
           <>
             {/* Comparison */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📊 How You Compare</Text>
+              <Text style={styles.sectionTitle}>How You Compare</Text>
               <View style={styles.comparisonCard}>
                 <Text style={styles.comparisonMessage}>{comparison.message}</Text>
                 <View style={styles.comparisonBars}>
@@ -234,32 +230,28 @@ export default function CarbonCalculatorScreen() {
 
             {/* Equivalents */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌍 Real-World Equivalents</Text>
+              <Text style={styles.sectionTitle}>Real-World Equivalents</Text>
               <View style={styles.equivalentsGrid}>
                 <View style={styles.equivalentCard}>
-                  <Text style={styles.equivalentIcon}>🚗</Text>
-                  <Text style={styles.equivalentValue}>
+                                    <Text style={styles.equivalentValue}>
                     {Math.round(wardrobeFootprint.totalKgCO2 * 4.5)}
                   </Text>
                   <Text style={styles.equivalentLabel}>km driven</Text>
                 </View>
                 <View style={styles.equivalentCard}>
-                  <Text style={styles.equivalentIcon}>🌳</Text>
-                  <Text style={styles.equivalentValue}>
+                                    <Text style={styles.equivalentValue}>
                     {Math.ceil(wardrobeFootprint.totalKgCO2 / 20)}
                   </Text>
                   <Text style={styles.equivalentLabel}>trees needed</Text>
                 </View>
                 <View style={styles.equivalentCard}>
-                  <Text style={styles.equivalentIcon}>📱</Text>
-                  <Text style={styles.equivalentValue}>
+                                    <Text style={styles.equivalentValue}>
                     {Math.round(wardrobeFootprint.totalKgCO2 * 250)}
                   </Text>
                   <Text style={styles.equivalentLabel}>phone charges</Text>
                 </View>
                 <View style={styles.equivalentCard}>
-                  <Text style={styles.equivalentIcon}>◈</Text>
-                  <Text style={styles.equivalentValue}>
+                                    <Text style={styles.equivalentValue}>
                     {Math.round(wardrobeFootprint.totalKgCO2 * 1000)}
                   </Text>
                   <Text style={styles.equivalentLabel}>LED hours</Text>
@@ -269,7 +261,7 @@ export default function CarbonCalculatorScreen() {
 
             {/* Timeline */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📈 6-Month Trend</Text>
+              <Text style={styles.sectionTitle}>6-Month Trend</Text>
               <View style={styles.timelineCard}>
                 <View style={styles.timelineChart}>
                   {wardrobeFootprint.timeline.map((point, index) => (
@@ -289,7 +281,7 @@ export default function CarbonCalculatorScreen() {
 
             {/* Projections */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🔮 Future Projections</Text>
+              <Text style={styles.sectionTitle}>Future Projections</Text>
               {wardrobeFootprint.projections.map((proj, index) => (
                 <View key={index} style={styles.projectionCard}>
                   <View style={styles.projectionHeader}>
@@ -312,7 +304,7 @@ export default function CarbonCalculatorScreen() {
           <>
             {/* Category Breakdown */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📦 By Category</Text>
+              <Text style={styles.sectionTitle}>By Category</Text>
               {wardrobeFootprint.breakdown.map((cat, index) => (
                 <View key={index} style={styles.breakdownCard}>
                   <View style={styles.breakdownHeader}>
@@ -333,7 +325,7 @@ export default function CarbonCalculatorScreen() {
 
             {/* Top Emitters */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>⚠️ Highest Impact Items</Text>
+              <Text style={styles.sectionTitle}>Highest Impact Items</Text>
               {wardrobeFootprint.topEmitters.map((emitter, index) => (
                 <View key={index} style={styles.emitterCard}>
                   <View style={styles.emitterRank}>
@@ -374,7 +366,7 @@ export default function CarbonCalculatorScreen() {
           <>
             {/* Recommendations */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>◈ Personalized Recommendations</Text>
+              <Text style={styles.sectionTitle}>Personalized Recommendations</Text>
               <View style={styles.recommendationsCard}>
                 {comparison.recommendations.map((rec, index) => (
                   <View key={index} style={styles.recommendationItem}>
@@ -439,11 +431,10 @@ export default function CarbonCalculatorScreen() {
 
             {/* Offset Option */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🌳 Offset Your Emissions</Text>
+              <Text style={styles.sectionTitle}>Offset Your Emissions</Text>
               <View style={styles.offsetCard}>
                 <Text style={styles.offsetTitle}>Carbon Offset Programs</Text>
-                <Text style={styles.offsetDescription}>
-                  Offset your {wardrobeFootprint.totalKgCO2.toFixed(0)} kg CO₂ footprint by supporting environmental projects
+                <Text style={styles.offsetDescription}>Offset your {wardrobeFootprint.totalKgCO2.toFixed(0)} kg CO₂ footprint by supporting environmental projects
                 </Text>
                 <View style={styles.offsetStats}>
                   <View style={styles.offsetStat}>
@@ -518,7 +509,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   refreshButton: {
@@ -532,7 +523,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 12,
   },
@@ -543,12 +534,12 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontSize: 56,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   totalUnit: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: 'rgba(255, 255, 255, 0.8)',
     marginLeft: 8,
   },
@@ -561,13 +552,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 20,
     borderWidth: 1,
     borderColor: ds.camel,
   },
   comparisonText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   tabs: {
@@ -586,12 +576,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: ds.inkMuted,
   },
   tabTextActive: {
     color: ds.camel,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
@@ -600,13 +590,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 16,
   },
   comparisonCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 20,
   },
   comparisonMessage: {
@@ -623,18 +612,16 @@ const styles = StyleSheet.create({
   },
   comparisonBarLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.inkMuted,
   },
   comparisonBarTrack: {
     height: 8,
     backgroundColor: ds.hair,
-    borderRadius: 4,
     overflow: 'hidden',
   },
   comparisonBarFill: {
     height: '100%',
-    borderRadius: 4,
   },
   comparisonBarValue: {
     fontSize: 12,
@@ -648,7 +635,6 @@ const styles = StyleSheet.create({
   equivalentCard: {
     width: (width - 52) / 2,
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
@@ -658,7 +644,7 @@ const styles = StyleSheet.create({
   },
   equivalentValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 4,
   },
@@ -669,7 +655,6 @@ const styles = StyleSheet.create({
   },
   timelineCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 20,
   },
   timelineChart: {
@@ -687,14 +672,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 100,
     backgroundColor: ds.hair,
-    borderRadius: 4,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   timelineBarFill: {
     width: '100%',
     backgroundColor: ds.camel,
-    borderRadius: 4,
   },
   timelineMonth: {
     fontSize: 11,
@@ -702,7 +685,6 @@ const styles = StyleSheet.create({
   },
   projectionCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
@@ -714,7 +696,7 @@ const styles = StyleSheet.create({
   },
   projectionPeriod: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   projectionTrend: {
@@ -722,7 +704,7 @@ const styles = StyleSheet.create({
   },
   projectionValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
     marginBottom: 4,
   },
@@ -740,25 +722,23 @@ const styles = StyleSheet.create({
   },
   breakdownCategory: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   breakdownValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   breakdownBar: {
     height: 8,
     backgroundColor: ds.paper,
-    borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 6,
   },
   breakdownBarFill: {
     height: '100%',
     backgroundColor: ds.camel,
-    borderRadius: 4,
   },
   breakdownDetails: {
     fontSize: 12,
@@ -768,7 +748,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     gap: 12,
@@ -783,7 +762,7 @@ const styles = StyleSheet.create({
   },
   emitterRankText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   emitterInfo: {
@@ -791,7 +770,7 @@ const styles = StyleSheet.create({
   },
   emitterName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 2,
   },
@@ -801,12 +780,11 @@ const styles = StyleSheet.create({
   },
   emitterValue: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
   },
   recommendationsCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
     padding: 16,
   },
   recommendationItem: {
@@ -817,7 +795,7 @@ const styles = StyleSheet.create({
   recommendationBullet: {
     fontSize: 16,
     color: ds.camel,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   recommendationText: {
     flex: 1,
@@ -827,7 +805,6 @@ const styles = StyleSheet.create({
   },
   strategyCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
@@ -843,18 +820,17 @@ const styles = StyleSheet.create({
   strategyTitle: {
     flex: 1,
     fontSize: 17,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginRight: 12,
   },
   strategyImpact: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   strategyImpactText: {
     fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   strategyDescription: {
@@ -882,17 +858,16 @@ const styles = StyleSheet.create({
   },
   strategyMetricValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
   },
   strategyDifficulty: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   strategyDifficultyText: {
     fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   strategySteps: {
@@ -900,7 +875,7 @@ const styles = StyleSheet.create({
   },
   strategyStepsTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 8,
   },
@@ -913,24 +888,22 @@ const styles = StyleSheet.create({
   strategyButton: {
     backgroundColor: ds.camel,
     paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   strategyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   offsetCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
     padding: 20,
     borderWidth: 1,
     borderColor: ds.camel,
   },
   offsetTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#065f46',
     marginBottom: 8,
   },
@@ -951,7 +924,7 @@ const styles = StyleSheet.create({
   },
   offsetStatValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: ds.camel,
     marginBottom: 4,
   },
@@ -963,12 +936,11 @@ const styles = StyleSheet.create({
   offsetButton: {
     backgroundColor: ds.camel,
     paddingVertical: 14,
-    borderRadius: 8,
     alignItems: 'center',
   },
   offsetButtonText: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
 });

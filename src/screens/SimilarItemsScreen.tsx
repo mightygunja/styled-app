@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { ClosetItem } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type SimilarItemsRouteProp = RouteProp<RootStackParamList, 'SimilarItems'>;
 
@@ -48,21 +48,20 @@ export default function SimilarItemsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Similar Items</Text>
         <View style={{ width: 60 }} />
       </View>
 
-      <Text style={styles.subtitle}>
-        Found {similarItems.length} similar {similarItems.length === 1 ? 'item' : 'items'} in your closet
+      <Text style={styles.subtitle}>Found {similarItems.length} similar {similarItems.length === 1 ? 'item' : 'items'} in your closet
       </Text>
 
       <FlatList
         data={similarItems}
         renderItem={renderItem}
-        keyExtractor={(item) => item.item.id}
+        keyExtractor={(item) =>item.item.id}
         contentContainerStyle={styles.listContent}
         numColumns={2}
         columnWrapperStyle={styles.row}
@@ -90,7 +89,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   subtitle: {
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
   },
   itemCategory: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     textTransform: 'capitalize',
     marginBottom: 4,
@@ -147,12 +146,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tobacco,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
     alignSelf: 'flex-start',
   },
   similarityText: {
     fontSize: 11,
     color: '#ffffff',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

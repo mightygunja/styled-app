@@ -17,7 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import { messagingService, Conversation } from '../services/messagingService';
 import { userProfileService } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -43,7 +43,7 @@ export default function MessagesScreen() {
       // Load participant profiles
       const convsWithProfiles = await Promise.all(
         convs.map(async (conv) => {
-          const otherUserId = conv.participants.find(id => id !== getCurrentUserId());
+          const otherUserId = conv.participants.find(id =>id !== getCurrentUserId());
           if (otherUserId) {
             const profile = await userProfileService.getUserProfile(otherUserId);
             return { ...conv, participantProfiles: profile ? [profile] : [] };
@@ -91,7 +91,7 @@ export default function MessagesScreen() {
       <TouchableOpacity
         key={conversation.id}
         style={styles.conversationCard}
-        onPress={() => navigation.navigate('Chat', { conversationId: conversation.id })}
+        onPress={() =>navigation.navigate('Chat', { conversationId: conversation.id })}
       >
         {otherUser?.profileImageUrl ? (
           <Image source={{ uri: otherUser.profileImageUrl }} style={styles.avatar} />
@@ -114,13 +114,13 @@ export default function MessagesScreen() {
           {lastMessage && (
             <View style={styles.messagePreview}>
               <Text
-                style={[styles.lastMessage, unread > 0 && styles.unreadMessage]}
+                style={[styles.lastMessage, unread >0 && styles.unreadMessage]}
                 numberOfLines={1}
               >
                 {lastMessage.senderId === getCurrentUserId() && 'You: '}
                 {lastMessage.content}
               </Text>
-              {unread > 0 && (
+              {unread >0 && (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadCount}>{unread}</Text>
                 </View>
@@ -148,7 +148,7 @@ export default function MessagesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
-        {unreadCount > 0 && (
+        {unreadCount >0 && (
           <View style={styles.headerBadge}>
             <Text style={styles.headerBadgeText}>{unreadCount}</Text>
           </View>
@@ -162,10 +162,8 @@ export default function MessagesScreen() {
       >
         {conversations.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubtext}>
-              Start a conversation by messaging someone from their profile
+                        <Text style={styles.emptyText}>No messages yet</Text>
+            <Text style={styles.emptySubtext}>Start a conversation by messaging someone from their profile
             </Text>
           </View>
         ) : (
@@ -195,12 +193,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   headerBadge: {
     backgroundColor: colors.ink,
-    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginLeft: 8,
@@ -210,7 +207,7 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   conversationCard: {
     flexDirection: 'row',
@@ -235,7 +232,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   conversationContent: {
@@ -250,7 +247,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   time: {
@@ -268,12 +265,11 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   unreadMessage: {
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   unreadBadge: {
     backgroundColor: colors.ink,
-    borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
     minWidth: 20,
@@ -282,7 +278,7 @@ const styles = StyleSheet.create({
   unreadCount: {
     color: '#ffffff',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,
@@ -294,7 +290,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },

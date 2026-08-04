@@ -79,7 +79,7 @@ export default function StylistDashboardScreen() {
     <View style={styles.overviewContainer}>
       {/* Earnings Card */}
       <View style={styles.earningsCard}>
-        <Text style={styles.cardTitle}>💰 Earnings</Text>
+        <Text style={styles.cardTitle}>Earnings</Text>
         <Text style={styles.earningsTotal}>
           ${earnings?.totalEarnings.toFixed(0) || 0}
         </Text>
@@ -112,7 +112,7 @@ export default function StylistDashboardScreen() {
           <Text style={styles.statLabel}>Sessions</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>⭐ {stats?.averageRating.toFixed(1) || 0}</Text>
+          <Text style={styles.statValue}>● {stats?.averageRating.toFixed(1) || 0}</Text>
           <Text style={styles.statLabel}>Rating</Text>
         </View>
         <View style={styles.statCard}>
@@ -123,7 +123,7 @@ export default function StylistDashboardScreen() {
 
       {/* Performance Metrics */}
       <View style={styles.metricsCard}>
-        <Text style={styles.cardTitle}>📊 Performance</Text>
+        <Text style={styles.cardTitle}>Performance</Text>
         <View style={styles.metricRow}>
           <Text style={styles.metricLabel}>Response Rate</Text>
           <Text style={styles.metricValue}>
@@ -151,8 +151,7 @@ export default function StylistDashboardScreen() {
       <Text style={styles.sectionTitle}>Upcoming Sessions ({upcomingSessions.length})</Text>
       {upcomingSessions.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyEmoji}>📅</Text>
-          <Text style={styles.emptyText}>No upcoming sessions</Text>
+                    <Text style={styles.emptyText}>No upcoming sessions</Text>
         </View>
       ) : (
         upcomingSessions.map((session) => (
@@ -243,13 +242,12 @@ export default function StylistDashboardScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.notStylistBox}>
           <Text style={styles.notStylistTitle}>This is for stylists</Text>
-          <Text style={styles.notStylistText}>
-            Earnings, bookings and client tools appear here once you're set up as a stylist on
+          <Text style={styles.notStylistText}>Earnings, bookings and client tools appear here once you're set up as a stylist on
             Styled. If you're looking to work with one, browse stylists from your account.
           </Text>
           <TouchableOpacity
             style={styles.notStylistButton}
-            onPress={() => navigation.navigate('StylistMarketplace')}
+            onPress={() =>navigation.navigate('StylistMarketplace')}
           >
             <Text style={styles.notStylistButtonText}>Find a stylist</Text>
           </TouchableOpacity>
@@ -262,7 +260,7 @@ export default function StylistDashboardScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Stylist Dashboard</Text>
@@ -273,26 +271,23 @@ export default function StylistDashboardScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-          onPress={() => setActiveTab('overview')}
+          onPress={() =>setActiveTab('overview')}
         >
-          <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
-            Overview
+          <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>Overview
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'sessions' && styles.tabActive]}
-          onPress={() => setActiveTab('sessions')}
+          onPress={() =>setActiveTab('sessions')}
         >
-          <Text style={[styles.tabText, activeTab === 'sessions' && styles.tabTextActive]}>
-            Sessions
+          <Text style={[styles.tabText, activeTab === 'sessions' && styles.tabTextActive]}>Sessions
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'clients' && styles.tabActive]}
-          onPress={() => setActiveTab('clients')}
+          onPress={() =>setActiveTab('clients')}
         >
-          <Text style={[styles.tabText, activeTab === 'clients' && styles.tabTextActive]}>
-            Clients
+          <Text style={[styles.tabText, activeTab === 'clients' && styles.tabTextActive]}>Clients
           </Text>
         </TouchableOpacity>
       </View>
@@ -364,7 +359,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   tabs: {
@@ -383,12 +378,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
   },
   tabTextActive: {
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   content: {
     flex: 1,
@@ -398,19 +393,18 @@ const styles = StyleSheet.create({
   },
   earningsCard: {
     backgroundColor: colors.camel,
-    borderRadius: 16,
     padding: 20,
     marginBottom: 20,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
     marginBottom: 12,
   },
   earningsTotal: {
     fontSize: 40,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
     marginBottom: 4,
   },
@@ -427,11 +421,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: 12,
-    borderRadius: 12,
   },
   earningsStatValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
     marginBottom: 4,
   },
@@ -450,12 +443,11 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
   },
@@ -465,7 +457,6 @@ const styles = StyleSheet.create({
   },
   metricsCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -484,7 +475,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   sessionsContainer: {
@@ -492,13 +483,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 16,
   },
   sessionCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -511,7 +501,7 @@ const styles = StyleSheet.create({
   },
   sessionType: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
     textTransform: 'capitalize',
@@ -524,11 +514,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
   },
   priceText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: colors.camel,
   },
   sessionFooter: {
@@ -544,19 +533,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
   },
   viewButtonText: {
     color: '#ffffff',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   clientsContainer: {
     padding: 20,
   },
   clientCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -585,7 +572,7 @@ const styles = StyleSheet.create({
   },
   clientInitial: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   clientInfo: {
@@ -593,7 +580,7 @@ const styles = StyleSheet.create({
   },
   clientName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -609,12 +596,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   clientStatValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -632,7 +618,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
 });
