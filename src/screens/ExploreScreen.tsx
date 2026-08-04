@@ -1,4 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+/**
+ * Explore
+ *
+ * Discovery grounded in the closet the user actually owns. Every section
+ * answers a question about their wardrobe: what it can make today, what is
+ * holding it back, and what would open it up.
+ *
+ * This is deliberately not Shop. Shop has a search box, filters and a sort,
+ * because that is where someone goes when they already know what they want.
+ * Nothing on this screen is user-driven - it is the app making an argument,
+ * and it has to be able to say why every time.
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,94 +19,48 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  TextInput,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
-import Chip from '../components/Chip';
 import { RootStackParamList } from '../navigation/types';
-import { Post } from '../services/socialFeedService';
-import { userProfileService, UserProfile, FollowSuggestion } from '../services/userProfileService';
-import { buildProfileMatchContext, ProfileMatchContext } from '../services/profileMatchContext';
+import { MatchedProduct } from '../models/product';
 import {
-  exploreService,
-  TrendingPost,
-  TrendingHashtag,
-  ExploreCollection,
-} from '../services/exploreService';
-import { getCurrentUserId } from '../services/api';
+  discoveryService,
+  DiscoveryData,
+  MIN_CLOSET_FOR_ARITHMETIC,
+} from '../services/discoveryService';
+import { isMockProvider } from '../services/affiliateNetwork';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - spacing.page * 2 - 8) / 3;
-
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type Tab = 'for-you' | 'trending' | 'hashtags' | 'people';
-
-const TABS: Array<{ value: Tab; label: string }> = [
-  { value: 'for-you', label: 'For you' },
-  { value: 'trending', label: 'Trending' },
-  { value: 'hashtags', label: 'Tags' },
-  { value: 'people', label: 'People' },
-];
 
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [activeTab, setActiveTab] = useState<Tab>('for-you');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [data, setData] = useState<DiscoveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  const [pool, setPool] = useState<Post[]>([]);
-  const [profile, setProfile] = useState<ProfileMatchContext | undefined>();
-  const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [collections, setCollections] = useState<ExploreCollection[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<FollowSuggestion[]>([]);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-
-  const [searchResultPosts, setSearchResultPosts] = useState<Post[] | null>(null);
-  const [searchResultUsers, setSearchResultUsers] = useState<UserProfile[] | null>(null);
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
-      setLoading(true);
-      const userId = getCurrentUserId();
-
-      const [posts, matchContext, following] = await Promise.all([
-        exploreService.fetchExplorePool(200),
-        buildProfileMatchContext(userId),
-        userProfileService.getFollowing(userId).catch(() => []),
-      ]);
-
-      setPool(posts);
-      setProfile(matchContext);
-      setFollowingIds(following.map(u => u.userId));
-
-      // Curation is enrichment, so the screen renders without waiting on it.
-      exploreService.curateCollections(posts).then(setCollections);
-
-      // getFollowSuggestions already ranks by follower count and excludes both
-      // the user and anyone they follow - the same exclusion rankForYou applies
-      // to posts.
-      userProfileService
-        .getFollowSuggestions(userId, 12)
-        .then(setSuggestedUsers)
-        .catch(() => setSuggestedUsers([]));
+      setFailed(false);
+      const result = await discoveryService.loadDiscovery();
+      setData(result);
     } catch (error) {
-      console.error('Error loading explore:', error);
+      console.error('Error loading discovery:', error);
+      setFailed(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -101,116 +68,61 @@ export default function ExploreScreen() {
     setRefreshing(false);
   };
 
-  const handleSearch = async (text: string) => {
-    setSearchQuery(text);
-    if (text.trim().length < 2) {
-      setSearchResultPosts(null);
-      setSearchResultUsers(null);
-      return;
-    }
+  const openProduct = (productId: string) =>
+    navigation.navigate('ProductDetail', { productId });
 
-    const q = text.trim().toLowerCase();
-    setSearchResultPosts(
-      pool.filter(
-        p =>
-          p.caption?.toLowerCase().includes(q) ||
-          (p.hashtags || []).some(t => t.toLowerCase().includes(q))
-      )
+  const renderProductRow = (matched: MatchedProduct, reason: string, emphasis?: string) => {
+    const { product } = matched;
+    return (
+      <TouchableOpacity
+        key={product.id}
+        style={styles.row}
+        activeOpacity={0.85}
+        onPress={() => openProduct(product.id)}
+      >
+        {product.imageUrl ? (
+          <Image source={{ uri: product.imageUrl }} style={styles.thumb} />
+        ) : (
+          <View style={styles.thumb} />
+        )}
+        <View style={styles.rowText}>
+          {!!emphasis && <Text style={styles.emphasis}>{emphasis}</Text>}
+          <Text style={styles.productName} numberOfLines={1}>
+            {product.name}
+          </Text>
+          <Text style={styles.productMeta}>
+            {[product.brand, product.price ? `$${product.price}` : null]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </Text>
+          <Text style={styles.reason} numberOfLines={2}>
+            {reason}
+          </Text>
+          {/* Concerns are shown, not buried. A recommendation that cannot
+              admit a downside is an advert. */}
+          {matched.concerns?.length > 0 && (
+            <Text style={styles.concern} numberOfLines={1}>
+              {matched.concerns[0]}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
     );
-    try {
-      setSearchResultUsers(await userProfileService.searchUsers(text.trim()));
-    } catch {
-      setSearchResultUsers([]);
-    }
   };
 
-  const trending = useMemo(() => exploreService.rankTrending(pool), [pool]);
-  const forYou = useMemo(
-    () => exploreService.rankForYou(pool, profile, followingIds, getCurrentUserId()),
-    [pool, profile, followingIds]
-  );
-  const hashtags = useMemo(() => exploreService.rankHashtags(pool), [pool]);
-  const postsById = useMemo(() => new Map(pool.map(p => [p.id, p])), [pool]);
+  const renderBody = () => {
+    if (!data) return null;
 
-  const tagFiltered = useMemo(
-    () => (activeTag ? pool.filter(p => (p.hashtags || []).some(t => t.toLowerCase() === activeTag)) : []),
-    [pool, activeTag]
-  );
+    const { summary, unlocks, matched, fillsGap, edit, productsById } = data;
+    const closetLine = discoveryService.summaryLine(summary);
+    const thinCloset = summary.totalItems < MIN_CLOSET_FOR_ARITHMETIC;
 
-  const openPost = (postId: string) => navigation.navigate('PostDetail', { postId });
-
-  const renderGrid = (posts: Post[]) => (
-    <View style={styles.grid}>
-      {posts.map(post => (
-        <TouchableOpacity key={post.id} onPress={() => openPost(post.id)} activeOpacity={0.85}>
-          {post.images?.[0] ? (
-            <Image source={{ uri: post.images[0] }} style={styles.gridImage} />
-          ) : (
-            <View style={styles.gridImage} />
-          )}
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  const renderUserCard = (user: UserProfile, reason?: string) => (
-    <TouchableOpacity
-      key={user.id}
-      style={styles.userRow}
-      activeOpacity={0.85}
-      onPress={() => navigation.navigate('UserProfile', { userId: user.userId })}
-    >
-      {user.profileImageUrl ? (
-        <Image source={{ uri: user.profileImageUrl }} style={styles.avatar} />
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarInitial}>
-            {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
-          </Text>
-        </View>
-      )}
-      <View style={styles.userText}>
-        <Text style={styles.userName}>{user.displayName}</Text>
-        <Text style={styles.userMeta}>
-          @{user.username}
-          {reason ? `  ·  ${reason}` : ''}
-        </Text>
-      </View>
-      <Text style={styles.chevron}>›</Text>
-    </TouchableOpacity>
-  );
-
-  const renderPostRow = (post: Post, reason: string) => (
-    <TouchableOpacity
-      key={post.id}
-      style={styles.postRow}
-      activeOpacity={0.85}
-      onPress={() => openPost(post.id)}
-    >
-      {post.images?.[0] ? (
-        <Image source={{ uri: post.images[0] }} style={styles.postThumb} />
-      ) : (
-        <View style={styles.postThumb} />
-      )}
-      <View style={styles.postText}>
-        <Text style={styles.postReason}>{reason}</Text>
-        {!!post.caption && (
-          <Text style={styles.postCaption} numberOfLines={2}>
-            {post.caption}
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderForYou = () => {
-    if (forYou.length === 0 && collections.length === 0) {
+    if (matched.length === 0) {
       return (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyTitle}>Nothing new yet</Text>
+          <Text style={styles.emptyTitle}>Nothing to show yet</Text>
           <Text style={styles.emptyText}>
-            This shows posts from people you don't already follow. As the community grows, so does
-            this.
+            No pieces came back from the retailers we search. Pull down to try again.
           </Text>
         </View>
       );
@@ -218,197 +130,140 @@ export default function ExploreScreen() {
 
     return (
       <>
-        {collections.length > 0 && (
+        {/* The arithmetic comes first because everything below it is an
+            argument from these numbers. */}
+        {closetLine && (
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>YOUR WARDROBE, TODAY</Text>
+            <Text style={styles.summaryText}>{closetLine}</Text>
+          </View>
+        )}
+
+        {thinCloset && (
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>ADD A FEW PIECES</Text>
+            <Text style={styles.summaryText}>
+              With {summary.totalItems} {summary.totalItems === 1 ? 'item' : 'items'} logged we
+              can't yet tell you what a piece would add to your wardrobe. Everything below is
+              matched to your style profile only.
+            </Text>
+            <TouchableOpacity
+              style={styles.summaryAction}
+              onPress={() => navigation.navigate('AddClosetItem')}
+            >
+              <Text style={styles.summaryActionText}>Add to closet</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {edit && (
+          <View style={styles.editSection}>
+            <Text style={styles.sectionLabel}>THE EDIT</Text>
+            <Text style={styles.editTitle}>{edit.title}</Text>
+            {!!edit.standfirst && <Text style={styles.editStandfirst}>{edit.standfirst}</Text>}
+            <View style={styles.editPicks}>
+              {edit.picks.map(pick => {
+                const product = productsById.get(pick.productId);
+                return product ? renderProductRow(product, pick.line) : null;
+              })}
+            </View>
+          </View>
+        )}
+
+        {unlocks.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>CURATED THIS WEEK</Text>
-            {collections.map(collection => {
-              const posts = collection.postIds
-                .map(id => postsById.get(id))
-                .filter((p): p is Post => !!p);
-              if (posts.length === 0) return null;
-              return (
-                <View key={collection.title} style={styles.collection}>
-                  <Text style={styles.collectionTitle}>{collection.title}</Text>
-                  <Text style={styles.collectionRationale}>{collection.rationale}</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.collectionStrip}
-                  >
-                    {posts.map(post => (
-                      <TouchableOpacity
-                        key={post.id}
-                        onPress={() => openPost(post.id)}
-                        activeOpacity={0.85}
-                      >
-                        {post.images?.[0] ? (
-                          <Image source={{ uri: post.images[0] }} style={styles.collectionImage} />
-                        ) : (
-                          <View style={styles.collectionImage} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+            <Text style={styles.sectionLabel}>OPENS UP YOUR CLOSET</Text>
+            <Text style={styles.sectionNote}>
+              Ranked by how many outfits each would create from pieces you already own. Counted,
+              not estimated.
+            </Text>
+            {unlocks.slice(0, 8).map(m => {
+              // unlocks is already filtered on newOutfits > 0, so unlock is
+              // present here - but the type is nullable, so read it once.
+              const unlock = m.unlock;
+              if (!unlock) return null;
+              return renderProductRow(
+                m,
+                unlock.bestPairings.length
+                  ? `Works with your ${unlock.bestPairings.map(p => p.label).join(', ')}`
+                  : m.headline,
+                `+${unlock.newOutfits} ${unlock.newOutfits === 1 ? 'outfit' : 'outfits'}`
               );
             })}
           </>
         )}
 
-        {forYou.length > 0 && (
+        {summary.bottleneckRole && fillsGap.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>MATCHED TO YOUR PROFILE</Text>
-            {forYou.slice(0, 12).map(({ post, reason }) => renderPostRow(post, reason))}
+            <Text style={styles.sectionLabel}>
+              FILLS YOUR GAP · {summary.bottleneckRole === 'top' ? 'TOPS' : 'BOTTOMS'}
+            </Text>
+            <Text style={styles.sectionNote}>
+              You own more {summary.bottleneckRole === 'top' ? 'bottoms than tops' : 'tops than bottoms'}, so
+              this is the side of your wardrobe with the most room in it.
+            </Text>
+            {fillsGap.slice(0, 6).map(m => renderProductRow(m, m.headline))}
           </>
         )}
+
+        <Text style={styles.sectionLabel}>MATCHED TO YOUR PROFILE</Text>
+        <Text style={styles.sectionNote}>
+          Scored against your colours, silhouettes and the season — regardless of what it pairs
+          with.
+        </Text>
+        {matched.slice(0, 10).map(m => renderProductRow(m, m.headline))}
+
+        <TouchableOpacity
+          style={styles.footerLink}
+          onPress={() => navigation.navigate('Shop', undefined)}
+        >
+          <Text style={styles.footerLinkText}>Browse everything in Shop →</Text>
+        </TouchableOpacity>
       </>
     );
   };
 
-  const renderTrending = () =>
-    trending.length === 0 ? (
-      <View style={styles.emptyBox}>
-        <Text style={styles.emptyTitle}>Nothing trending yet</Text>
-        <Text style={styles.emptyText}>
-          Trending ranks by how fast a post gathers likes, comments and saves — so it needs some
-          activity before it can say anything honest.
-        </Text>
-      </View>
-    ) : (
-      <>
-        <Text style={styles.sectionLabel}>MOVING FASTEST</Text>
-        {trending.slice(0, 12).map(({ post, reason }: TrendingPost) => renderPostRow(post, reason))}
-      </>
-    );
-
-  const renderHashtags = () =>
-    hashtags.length === 0 ? (
-      <View style={styles.emptyBox}>
-        <Text style={styles.emptyTitle}>No tags yet</Text>
-        <Text style={styles.emptyText}>Tags appear here once posts start using them.</Text>
-      </View>
-    ) : (
-      <>
-        <Text style={styles.sectionLabel}>MOST USED</Text>
-        {hashtags.map((tag: TrendingHashtag) => (
-          <TouchableOpacity
-            key={tag.tag}
-            style={styles.tagRow}
-            activeOpacity={0.85}
-            onPress={() => setActiveTag(activeTag === tag.tag ? null : tag.tag)}
-          >
-            <View style={styles.userText}>
-              <Text style={styles.tagName}>#{tag.tag}</Text>
-              <Text style={styles.userMeta}>
-                {tag.count} {tag.count === 1 ? 'post' : 'posts'}
-                {/* Real growth: the share of this tag's uses from the last two
-                    days. The previous version hardcoded growth to zero. */}
-                {tag.growth >= 40 ? `  ·  ${tag.growth}% in the last 48h` : ''}
-              </Text>
-            </View>
-            <Text style={styles.chevron}>{activeTag === tag.tag ? '−' : '+'}</Text>
-          </TouchableOpacity>
-        ))}
-        {activeTag && tagFiltered.length > 0 && renderGrid(tagFiltered)}
-      </>
-    );
-
-  const renderPeople = () =>
-    suggestedUsers.length === 0 ? (
-      <View style={styles.emptyBox}>
-        <Text style={styles.emptyTitle}>No one to show yet</Text>
-        <Text style={styles.emptyText}>People appear here as the community grows.</Text>
-      </View>
-    ) : (
-      <>
-        <Text style={styles.sectionLabel}>PEOPLE TO FOLLOW</Text>
-        {suggestedUsers.map(s => renderUserCard(s.user, s.reason))}
-      </>
-    );
-
-  const isSearching = searchQuery.trim().length >= 2;
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+      <View style={styles.headerBar}>
         <BackButton />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
-        <Text style={styles.eyebrow}>COMMUNITY</Text>
+        <Text style={styles.eyebrow}>DISCOVER</Text>
         <Text style={styles.title}>Explore</Text>
         <Text style={styles.subtitle}>
-          What the community is wearing — ranked by what's actually moving, and matched to how you
-          dress.
+          Pieces chosen against the wardrobe you already own — with the reason attached to every
+          one.
         </Text>
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search posts and people…"
-          placeholderTextColor={colors.inkFaint}
-          value={searchQuery}
-          onChangeText={handleSearch}
-          autoCorrect={false}
-        />
-
-        {!isSearching && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tabScroll}
-            contentContainerStyle={styles.tabContent}
-          >
-            {TABS.map(tab => (
-              <Chip
-                key={tab.value}
-                label={tab.label}
-                active={activeTab === tab.value}
-                onPress={() => setActiveTab(tab.value)}
-                style={styles.tabChip}
-              />
-            ))}
-          </ScrollView>
+        {/* Named plainly rather than dressed up. Someone deciding whether to
+            trust a recommendation deserves to know it is a demo catalogue. */}
+        {isMockProvider() && (
+          <View style={styles.noticeBox}>
+            <Text style={styles.noticeText}>
+              Showing a sample catalogue. Connect a retail partner and these become live,
+              purchasable products — the scoring below is already real.
+            </Text>
+          </View>
         )}
 
         {loading ? (
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
-        ) : isSearching ? (
-          <>
-            {!!searchResultUsers?.length && (
-              <>
-                <Text style={styles.sectionLabel}>PEOPLE</Text>
-                {searchResultUsers.map(u => renderUserCard(u))}
-              </>
-            )}
-            {!!searchResultPosts?.length && (
-              <>
-                <Text style={styles.sectionLabel}>POSTS</Text>
-                {renderGrid(searchResultPosts)}
-              </>
-            )}
-            {!searchResultUsers?.length && !searchResultPosts?.length && (
-              <View style={styles.emptyBox}>
-                <Text style={styles.emptyTitle}>Nothing found</Text>
-                <Text style={styles.emptyText}>Try a different word or tag.</Text>
-              </View>
-            )}
-          </>
-        ) : activeTab === 'for-you' ? (
-          renderForYou()
-        ) : activeTab === 'trending' ? (
-          renderTrending()
-        ) : activeTab === 'hashtags' ? (
-          renderHashtags()
+        ) : failed ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Couldn't load</Text>
+            <Text style={styles.emptyText}>Pull down to try again.</Text>
+          </View>
         ) : (
-          renderPeople()
+          renderBody()
         )}
       </ScrollView>
     </SafeAreaView>
@@ -417,102 +272,63 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bone },
-  header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  headerBar: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
   content: { padding: spacing.page, paddingBottom: 60 },
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
   eyebrow: { ...textType.eyebrow, marginBottom: 12 },
   title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
-  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
-  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 14 },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
-  searchInput: {
-    ...textType.body,
-    color: colors.ink,
-    backgroundColor: colors.card,
+  noticeBox: {
+    marginTop: spacing.lg,
     borderWidth: 1,
     borderColor: colors.hair,
-    paddingHorizontal: 14,
+    padding: spacing.md,
+  },
+  noticeText: { ...textType.meta, fontSize: 12, lineHeight: 18 },
+
+  summaryBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  summaryLabel: { ...textType.eyebrow, marginBottom: 10 },
+  summaryText: { ...textType.body, color: colors.ink, lineHeight: 22 },
+  summaryAction: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.md,
+    backgroundColor: colors.ink,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 12,
   },
+  summaryActionText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
 
-  tabScroll: {
-    marginTop: spacing.sm,
-    marginHorizontal: -spacing.page,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  tabContent: { paddingHorizontal: spacing.page, paddingVertical: 6, alignItems: 'center' },
-  tabChip: { marginRight: 8 },
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 10 },
+  sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
-  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
-  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+  // The Edit is the one place on the screen with a voice rather than a
+  // ranking, so it gets the serif treatment and room to breathe.
+  editSection: { marginTop: spacing.section },
+  editTitle: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 30, color: colors.ink },
+  editStandfirst: { ...textType.body, color: colors.inkMuted, marginTop: 10, lineHeight: 22 },
+  editPicks: { marginTop: spacing.lg },
 
-  // Curated collections get the editorial treatment - a serif title and a
-  // written rationale - because that is what separates them from a ranking.
-  collection: { marginBottom: spacing.lg },
-  collectionTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
-  collectionRationale: {
-    ...textType.body,
-    fontSize: 13,
-    color: colors.inkMuted,
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  collectionStrip: {
-    marginTop: spacing.sm,
-    marginHorizontal: -spacing.page,
-    paddingHorizontal: spacing.page,
-  },
-  collectionImage: { width: 150, height: 190, marginRight: 8, backgroundColor: colors.paper },
-
-  postRow: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingBottom: spacing.md,
     marginBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  postThumb: { width: 72, height: 88, backgroundColor: colors.paper },
-  postText: { flex: 1, marginLeft: 14 },
-  // The reason leads. A discovery surface that cannot say why it chose
-  // something is indistinguishable from a random feed.
-  postReason: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
-  postCaption: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 4 },
+  thumb: { width: 76, height: 96, backgroundColor: colors.paper },
+  rowText: { flex: 1, marginLeft: 14 },
+  emphasis: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco, marginBottom: 4 },
+  productName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  productMeta: { ...textType.meta, fontSize: 12, marginTop: 2 },
+  reason: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6, lineHeight: 19 },
+  concern: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkFaint, marginTop: 4 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: spacing.sm },
-  gridImage: { width: GRID_SIZE, height: GRID_SIZE, backgroundColor: colors.paper },
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  tagName: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
-
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.sand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: { fontFamily: fonts.serif, fontSize: 18, color: colors.tobacco },
-  userText: { flex: 1, marginLeft: 12 },
-  userName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
-  userMeta: { ...textType.meta, fontSize: 12, marginTop: 2 },
-  chevron: { fontSize: 20, color: colors.inkFaint },
+  footerLink: { marginTop: spacing.section, paddingVertical: spacing.md },
+  footerLinkText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },
 });

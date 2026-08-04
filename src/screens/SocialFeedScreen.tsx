@@ -16,7 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, Post } from '../services/socialFeedService';
-import { userProfileService } from '../services/userProfileService';
+import { userProfileService, FollowSuggestion } from '../services/userProfileService';
+import { exploreService } from '../services/exploreService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
@@ -31,6 +32,11 @@ export default function SocialFeedScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Finding people to follow lives here, not on Explore. Explore is now about
+  // the user's own wardrobe, and a feed with nothing in it is exactly where
+  // someone needs a way out.
+  const [suggestions, setSuggestions] = useState<FollowSuggestion[]>([]);
+  const [discoverable, setDiscoverable] = useState<Post[]>([]);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -46,11 +52,35 @@ export default function SocialFeedScreen() {
       const postsWithUsers = await Promise.all(
         feedPosts.map(async (post) => {
           const user = await userProfileService.getUserProfile(post.userId);
-          return { ...post, user };
+          // Post.user is optional, not nullable - getUserProfile returns null
+          // when there is no profile, which is not the same type.
+          return { ...post, user: user || undefined };
         })
       );
       
       setPosts(postsWithUsers);
+
+      // Suggestions are enrichment - they load after the feed and never block
+      // it, and they stay empty rather than inventing anyone.
+      const userId = getCurrentUserId();
+      userProfileService
+        .getFollowSuggestions(userId, 8)
+        .then(setSuggestions)
+        .catch(() => setSuggestions([]));
+
+      if (feedPosts.length < 5) {
+        exploreService
+          .fetchExplorePool(120)
+          .then(pool => {
+            const following = postsWithUsers.map(p => p.userId);
+            const trending = exploreService
+              .rankTrending(pool)
+              .map(t => t.post)
+              .filter(p => p.userId !== userId && !following.includes(p.userId));
+            setDiscoverable(trending.slice(0, 9));
+          })
+          .catch(() => setDiscoverable([]));
+      }
     } catch (error) {
       console.error('Error loading feed:', error);
       showToast('Failed to load feed', 'error');
@@ -253,19 +283,72 @@ export default function SocialFeedScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {posts.length === 0 ? (
+        {posts.length === 0 && (
           <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No posts yet</Text>
-            <Text style={styles.emptySubtext}>Follow users to see their posts</Text>
-            <TouchableOpacity
-              style={styles.exploreButton}
-              onPress={() =>navigation.navigate('Explore')}
-            >
-              <Text style={styles.exploreButtonText}>Explore</Text>
-            </TouchableOpacity>
+            <Text style={styles.emptyText}>Your feed is quiet</Text>
+            <Text style={styles.emptySubtext}>
+              Posts from people you follow appear here. Follow a few to get it going.
+            </Text>
           </View>
-        ) : (
-          posts.map(renderPost)
+        )}
+
+        {posts.map(renderPost)}
+
+        {suggestions.length > 0 && (
+          <View style={styles.railSection}>
+            <Text style={styles.railLabel}>PEOPLE TO FOLLOW</Text>
+            {suggestions.map(({ user, reason }) => (
+              <TouchableOpacity
+                key={user.userId}
+                style={styles.suggestionRow}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('UserProfile', { userId: user.userId })}
+              >
+                {user.profileImageUrl ? (
+                  <Image source={{ uri: user.profileImageUrl }} style={styles.suggestionAvatar} />
+                ) : (
+                  <View style={styles.suggestionAvatarPlaceholder}>
+                    <Text style={styles.suggestionInitial}>
+                      {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.suggestionText}>
+                  <Text style={styles.suggestionName}>{user.displayName}</Text>
+                  <Text style={styles.suggestionMeta}>
+                    @{user.username}
+                    {reason ? `  ·  ${reason}` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.suggestionChevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {discoverable.length > 0 && (
+          <View style={styles.railSection}>
+            <Text style={styles.railLabel}>WHAT'S MOVING</Text>
+            <Text style={styles.railNote}>
+              Ranked by how fast each post is gathering likes, comments and saves — not by how
+              recent it is.
+            </Text>
+            <View style={styles.discoverGrid}>
+              {discoverable.map(post => (
+                <TouchableOpacity
+                  key={post.id}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+                >
+                  {post.images?.[0] ? (
+                    <Image source={{ uri: post.images[0] }} style={styles.discoverImage} />
+                  ) : (
+                    <View style={styles.discoverImage} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         )}
       </ScrollView>
 
@@ -430,32 +513,75 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   emptyState: {
-    padding: 60,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.paper,
+    padding: 20,
   },
   emptyText: {
+    fontFamily: fonts.serif,
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
-    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.inkMuted,
-    marginBottom: 24,
+    marginTop: 8,
   },
-  exploreButton: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
+
+  railSection: {
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 20,
   },
-  exploreButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+  railLabel: {
     fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 10,
+  },
+  railNote: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.inkMuted,
+    marginBottom: 16,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
+  },
+  suggestionAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
+  suggestionAvatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionInitial: { fontFamily: fonts.serif, fontSize: 18, color: colors.tobacco },
+  suggestionText: { flex: 1, marginLeft: 12 },
+  suggestionName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  suggestionMeta: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkMuted,
+    marginTop: 2,
+  },
+  suggestionChevron: { fontSize: 20, color: colors.inkFaint },
+
+  discoverGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  discoverImage: {
+    width: (width - 40 - 8) / 3,
+    height: (width - 40 - 8) / 3,
+    backgroundColor: colors.paper,
   },
 });

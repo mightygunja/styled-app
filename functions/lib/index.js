@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1414,6 +1414,115 @@ Return ONLY valid JSON:
         if (error instanceof functions.https.HttpsError)
             throw error;
         console.error('Error curating explore collections:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+/**
+ * The Edit - Explore's editorial voice.
+ *
+ * Writes a short styling piece over candidate products, grounded in a summary
+ * of the user's real closet. The summary is counts and colours only; no item
+ * names, no images, nothing that would put someone's wardrobe contents into a
+ * prompt unnecessarily.
+ *
+ * The model chooses and argues. It never supplies a number - newOutfits and
+ * pairsWith come from computeOutfitUnlock on the client and are passed in, so
+ * the copy can reference them without being able to invent them.
+ */
+exports.curateStyleEdit = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    try {
+        const { season = 'autumn', archetypes = [], palette = [], closet = {}, products = [], } = data;
+        if (products.length < 6) {
+            throw new functions.https.HttpsError('failed-precondition', 'Not enough candidate products to write an edit.');
+        }
+        const productLines = products
+            .map(p => `- ${p.id} | ${p.name}${p.brand ? ` (${p.brand})` : ''} | ${p.category} | ${p.color || 'unspecified colour'} | $${p.price} | makes ${p.newOutfits} new outfits, pairs with ${p.pairsWith} owned pieces`)
+            .join('\n');
+        const closetLine = [
+            closet.totalItems ? `${closet.totalItems} items` : null,
+            closet.outfitsToday ? `${closet.outfitsToday} outfits currently makeable` : null,
+            ((_a = closet.topColors) === null || _a === void 0 ? void 0 : _a.length) ? `mostly ${closet.topColors.join(', ')}` : null,
+            closet.bottleneckRole
+                ? `short on ${closet.bottleneckRole}s (one more would add ${closet.bottleneckGain} outfits)`
+                : null,
+        ]
+            .filter(Boolean)
+            .join('; ');
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are the style editor of a personal styling app. Write this week's Edit for one reader.
+
+What you know about their wardrobe: ${closetLine || 'very little - treat them as starting out'}.
+Season: ${season}.
+${archetypes.length ? `Their style reads as: ${archetypes.join(', ')}.` : ''}
+${palette.length ? `Colours that suit them: ${palette.join(', ')}.` : ''}
+
+Candidate pieces (use these exact ids):
+${productLines}
+
+Choose 3 to 5 pieces that make a coherent argument together, and write the Edit.
+
+What makes this good:
+- One idea, not a list. "Three ways to break up a neutral wardrobe" is an idea. "Autumn picks" is not.
+- Argue from THEIR closet. The numbers above are real and countable - use them when they help ("this alone takes you from 12 outfits to 20").
+- Prefer pieces with high newOutfits when the argument allows it. A beautiful piece that pairs with nothing they own is a bad recommendation.
+
+Rules:
+- Only use ids from the list. Never invent a product.
+- Never invent a number. Only cite newOutfits and pairsWith exactly as given.
+- No emoji. No hashtags. Never use the word "flattering", "must-have", "elevate" or "effortless".
+- title: 3-7 words.
+- standfirst: one or two sentences setting up the idea.
+- line (per pick): one sentence saying why this piece, for this reader. Specific, not generic praise.
+
+Return ONLY valid JSON:
+{ "title": "string", "standfirst": "string", "picks": [{ "productId": "id", "line": "one sentence" }] }`,
+                },
+            ],
+            max_tokens: 900,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_c = (_b = response.choices[0]) === null || _b === void 0 ? void 0 : _b.message) === null || _c === void 0 ? void 0 : _c.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        // Validate ids server-side and drop duplicates. The client validates
+        // again on the way in - this is the cheaper of the two checks, not the
+        // only one.
+        const validIds = new Set(products.map(p => p.id));
+        const used = new Set();
+        const picks = (Array.isArray(result.picks) ? result.picks : [])
+            .filter((p) => {
+            const id = p === null || p === void 0 ? void 0 : p.productId;
+            if (!id || !validIds.has(id) || used.has(id) || !(p === null || p === void 0 ? void 0 : p.line))
+                return false;
+            used.add(id);
+            return true;
+        })
+            .slice(0, 5)
+            .map((p) => ({ productId: p.productId, line: String(p.line) }));
+        if (!result.title || picks.length < 3) {
+            throw new functions.https.HttpsError('internal', 'Edit did not come back with enough valid picks.');
+        }
+        console.log(`Wrote style edit "${result.title}" with ${picks.length} picks`);
+        return {
+            success: true,
+            data: {
+                title: String(result.title),
+                standfirst: String(result.standfirst || ''),
+                picks,
+            },
+        };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error curating style edit:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
