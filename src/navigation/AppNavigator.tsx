@@ -33,7 +33,6 @@ import SessionNotesScreen from '../screens/SessionNotesScreen';
 import MySessionsScreen from '../screens/MySessionsScreen';
 import BeforeAfterPhotosScreen from '../screens/BeforeAfterPhotosScreen';
 import SubmitReviewScreen from '../screens/SubmitReviewScreen';
-import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import StylistDashboardScreen from '../screens/StylistDashboardScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -152,7 +151,6 @@ export default function AppNavigator() {
             <Stack.Screen name="MySessions" component={MySessionsScreen} />
             <Stack.Screen name="BeforeAfterPhotos" component={BeforeAfterPhotosScreen} />
             <Stack.Screen name="SubmitReview" component={SubmitReviewScreen} />
-            <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
             <Stack.Screen name="StylistDashboard" component={StylistDashboardScreen} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />

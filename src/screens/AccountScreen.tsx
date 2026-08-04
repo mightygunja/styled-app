@@ -136,13 +136,10 @@ export default function AccountScreen() {
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('PaymentMethods')}>
-            <View>
-              <Text style={styles.prefTitle}>Payment methods</Text>
-              <Text style={styles.prefSubtitle}>SAVED CARDS</Text>
-            </View>
-            <Text style={styles.prefArrow}>›</Text>
-          </TouchableOpacity>
+          {/* Payment methods removed with the paywall. Styled charges nobody,
+              so a screen collecting card details had nothing to charge them
+              for - and keeping it would mean declaring Payment Info collection
+              to App Review for a feature that does nothing. */}
           <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('Settings')}>
             <View>
               <Text style={styles.prefTitle}>Settings</Text>
