@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { affiliateClicksService } from '../services/firestore';
+import { affiliateClicksService, stylistsService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -55,10 +55,19 @@ export default function AccountScreen() {
   };
   const [loading, setLoading] = useState(true);
   const [marketplaceStats, setMarketplaceStats] = useState<{ clicks: number; estimatedCommission: number } | null>(null);
+  const [isStylist, setIsStylist] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const clicks = await affiliateClicksService.getForUser(getCurrentUserId());
+      const userId = getCurrentUserId();
+      // A stylist record keyed by the user's own uid is what makes them a
+      // stylist. Absent one, the professional section is not rendered at all.
+      stylistsService
+        .getById(userId)
+        .then(record => setIsStylist(!!record))
+        .catch(() => setIsStylist(false));
+
+      const clicks = await affiliateClicksService.getForUser(userId);
       setMarketplaceStats({
         clicks: clicks.length,
         estimatedCommission: clicks.reduce((sum, c) => sum + c.estimatedCommission, 0),
@@ -149,18 +158,31 @@ export default function AccountScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel}>STYLIST MARKETPLACE</Text>
+        {/* Everything here is the CLIENT side: you hiring a stylist. The
+            professional side lives in its own section below and only appears
+            for accounts that are actually stylists. Previously both sat
+            side by side with no signal which was which, so every user was
+            shown "when clients can book you" whether or not they were
+            bookable. */}
+        <Text style={styles.sectionLabel}>WORKING WITH A STYLIST</Text>
         <View style={styles.prefsCard}>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistMarketplace')}>
             <View>
-              <Text style={styles.prefTitle}>Book a stylist</Text>
+              <Text style={styles.prefTitle}>Find a stylist</Text>
               <Text style={styles.prefSubtitle}>BROWSE · SPECIALTIES · RATES</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Edits')}>
+            <View>
+              <Text style={styles.prefTitle}>Your Edits</Text>
+              <Text style={styles.prefSubtitle}>LOOKS BUILT FROM YOUR OWN CLOSET</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('MySessions')}>
             <View>
-              <Text style={styles.prefTitle}>My sessions</Text>
+              <Text style={styles.prefTitle}>Your sessions</Text>
               <Text style={styles.prefSubtitle}>UPCOMING · PAST</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
@@ -198,32 +220,40 @@ export default function AccountScreen() {
           )}
         </View>
 
-        <Text style={styles.sectionLabel}>STYLIST TOOLS</Text>
-        <View style={styles.prefsCard}>
-          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistDashboard')}>
-            <View>
-              <Text style={styles.prefTitle}>Stylist dashboard</Text>
-              <Text style={styles.prefSubtitle}>YOUR BOOKINGS & REVIEWS</Text>
-            </View>
-            <Text style={styles.prefArrow}>›</Text>
-          </TouchableOpacity>
+        {/* Professional side. Rendered only for accounts with a stylist record,
+            so a normal user is never offered "when clients can book you". This
+            is also the role check StylistDashboard never had - it was reachable
+            by anyone, showing earnings and bookings that were not theirs. */}
+        {isStylist && (
+          <>
+            <Text style={styles.sectionLabel}>YOUR STYLIST PRACTICE</Text>
+            <View style={styles.prefsCard}>
+              <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistDashboard')}>
+                <View>
+                  <Text style={styles.prefTitle}>Dashboard</Text>
+                  <Text style={styles.prefSubtitle}>EARNINGS · BOOKINGS · REVIEWS</Text>
+                </View>
+                <Text style={styles.prefArrow}>›</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistAvailability')}>
-            <View>
-              <Text style={styles.prefTitle}>Your availability</Text>
-              <Text style={styles.prefSubtitle}>WHEN CLIENTS CAN BOOK YOU</Text>
-            </View>
-            <Text style={styles.prefArrow}>›</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistAvailability')}>
+                <View>
+                  <Text style={styles.prefTitle}>Your availability</Text>
+                  <Text style={styles.prefSubtitle}>WHEN CLIENTS CAN BOOK YOU</Text>
+                </View>
+                <Text style={styles.prefArrow}>›</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('EditReview')}>
-            <View>
-              <Text style={styles.prefTitle}>Edits to build</Text>
-              <Text style={styles.prefSubtitle}>CLIENT EDIT REQUESTS</Text>
+              <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('EditReview')}>
+                <View>
+                  <Text style={styles.prefTitle}>Edits to build</Text>
+                  <Text style={styles.prefSubtitle}>REQUESTS FROM YOUR CLIENTS</Text>
+                </View>
+                <Text style={styles.prefArrow}>›</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
-          </TouchableOpacity>
-        </View>
+          </>
+        )}
 
         <TouchableOpacity
           style={styles.signOutButton}

@@ -20,7 +20,8 @@ import {
 } from '../services/stylistDashboardService';
 import { StylingSession } from '../types';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { stylistsService } from '../services/firestore';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -32,6 +33,7 @@ export default function StylistDashboardScreen() {
   const [clients, setClients] = useState<ClientInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'clients'>('overview');
+  const [isStylist, setIsStylist] = useState(true);
 
   // A stylist's app account uid doubles as their stylists/{id} doc id -
   // if there's no matching stylist doc, the dashboard is real but empty.
@@ -44,6 +46,17 @@ export default function StylistDashboardScreen() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+
+      // Role check. Without it this screen renders a full earnings dashboard of
+      // zeros to anyone who reaches it, which reads as a broken feature rather
+      // than one that does not apply to them.
+      const stylistRecord = await stylistsService.getById(stylistId);
+      if (!stylistRecord) {
+        setIsStylist(false);
+        return;
+      }
+      setIsStylist(true);
+
       const [earningsData, statsData, sessions, clientsData] = await Promise.all([
         stylistDashboardService.getEarnings(stylistId),
         stylistDashboardService.getDashboardStats(stylistId),
@@ -223,6 +236,28 @@ export default function StylistDashboardScreen() {
     );
   }
 
+  // Reached without a stylist record - explain rather than show a dashboard of
+  // zeros, which reads as broken rather than as not applicable.
+  if (!isStylist) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.notStylistBox}>
+          <Text style={styles.notStylistTitle}>This is for stylists</Text>
+          <Text style={styles.notStylistText}>
+            Earnings, bookings and client tools appear here once you're set up as a stylist on
+            Styled. If you're looking to work with one, browse stylists from your account.
+          </Text>
+          <TouchableOpacity
+            style={styles.notStylistButton}
+            onPress={() => navigation.navigate('StylistMarketplace')}
+          >
+            <Text style={styles.notStylistButtonText}>Find a stylist</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -276,6 +311,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  notStylistBox: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  notStylistTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 28,
+    color: colors.ink,
+  },
+  notStylistText: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.inkMuted,
+    marginTop: 12,
+  },
+  notStylistButton: {
+    backgroundColor: colors.ink,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  notStylistButtonText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: colors.bone,
   },
   loadingContainer: {
     flex: 1,
