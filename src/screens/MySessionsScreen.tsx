@@ -86,7 +86,7 @@ export default function MySessionsScreen() {
         <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>My Sessions</Text>
+        <Text style={styles.title}>Your sessions</Text>
         <View style={{ width: 50 }} />
       </View>
 
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   title: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 26,
     color: colors.ink,
   },
   content: {

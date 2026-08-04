@@ -8,7 +8,7 @@ import { closetAPI, ClosetItem } from '../services/api';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 type ClosetItemDetailRouteProp = RouteProp<RootStackParamList, 'ClosetItemDetail'>;
 
@@ -156,7 +156,7 @@ export default function ClosetItemDetailScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleDelete}>
@@ -171,8 +171,7 @@ export default function ClosetItemDetailScreen() {
         {/* AI Confidence Badge */}
         {item.aiConfidence !== undefined && item.aiConfidence !== null && (
           <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>
-              🤖 AI Detected ({Math.round(item.aiConfidence * 100)}% confident)
+            <Text style={styles.aiBadgeText}>AI Detected ({Math.round(item.aiConfidence * 100)}% confident)
             </Text>
           </View>
         )}
@@ -208,7 +207,7 @@ export default function ClosetItemDetailScreen() {
               <Text style={styles.infoValue}>{item.color}</Text>
             </View>
           </View>
-          {item.secondaryColors && item.secondaryColors.length > 0 && (
+          {item.secondaryColors && item.secondaryColors.length >0 && (
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Secondary:</Text>
               <View style={styles.colorRow}>
@@ -264,7 +263,7 @@ export default function ClosetItemDetailScreen() {
         )}
 
         {/* Tags */}
-        {item.tags && item.tags.length > 0 && (
+        {item.tags && item.tags.length >0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tags</Text>
             <View style={styles.tagsContainer}>
@@ -278,7 +277,7 @@ export default function ClosetItemDetailScreen() {
         )}
 
         {/* Seasons */}
-        {item.seasons && item.seasons.length > 0 && (
+        {item.seasons && item.seasons.length >0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Seasons</Text>
             <View style={styles.tagsContainer}>
@@ -320,13 +319,13 @@ export default function ClosetItemDetailScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={styles.outfitButton} 
-            onPress={() => navigation.navigate('OutfitBuilder', { sourceItemId: closetItemId })}
+            onPress={() =>navigation.navigate('OutfitBuilder', { sourceItemId: closetItemId })}
           >
-            <Text style={styles.outfitButtonText}>👗 Create Outfit</Text>
+            <Text style={styles.outfitButtonText}>Create Outfit</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.similarButton} onPress={handleFindSimilar}>
-            <Text style={styles.similarButtonText}>🔍 Find Similar Items</Text>
+            <Text style={styles.similarButtonText}>Find Similar Items</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.wornButton} onPress={handleMarkWorn}>
@@ -339,7 +338,7 @@ export default function ClosetItemDetailScreen() {
             disabled={removingBackground}
           >
             <Text style={styles.cutoutButtonText}>
-              {removingBackground ? 'Cutting it out…' : '✂  Remove background'}
+              {removingBackground ? 'Cutting it out…' : '  Remove background'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -347,8 +346,8 @@ export default function ClosetItemDetailScreen() {
       
       <SuccessAnimation
         visible={showSuccess}
-        message="Marked as worn! 👔"
-        onComplete={() => setShowSuccess(false)}
+        message="Marked as worn! "
+        onComplete={() =>setShowSuccess(false)}
         duration={1500}
       />
       
@@ -382,7 +381,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     fontSize: 16,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   loadingContainer: {
     flex: 1,
@@ -408,22 +407,27 @@ const styles = StyleSheet.create({
     padding: 12,
     margin: 16,
     marginBottom: 0,
-    borderRadius: 8,
   },
   aiBadgeText: {
     fontSize: 14,
     color: '#991b1b',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.paper,
   },
+  // The eyebrow treatment used for section headings everywhere else. This
+  // screen has no page title - it is led by the garment image - so these are
+  // the only headings it has, and an 18pt semibold sans read as a different
+  // app sitting under a photo.
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.ink,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
     marginBottom: 12,
   },
   infoRow: {
@@ -435,12 +439,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   infoValue: {
     fontSize: 14,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
   },
   colorRow: {
@@ -464,23 +468,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
     color: colors.inkMuted,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   seasonTag: {
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
   },
   seasonTagText: {
     fontSize: 12,
     color: colors.tobacco,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
     textTransform: 'capitalize',
   },
   notesText: {
@@ -495,18 +497,16 @@ const styles = StyleSheet.create({
   outfitButton: {
     backgroundColor: colors.ink,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   outfitButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   cutoutButton: {
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   cutoutButtonBusy: {
@@ -515,28 +515,26 @@ const styles = StyleSheet.create({
   cutoutButtonText: {
     color: colors.ink,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   similarButton: {
     backgroundColor: colors.tobacco,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   similarButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   wornButton: {
     backgroundColor: colors.ink,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   wornButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

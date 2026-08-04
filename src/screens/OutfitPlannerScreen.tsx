@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from '../services/outfitPlannerService';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 import {
   getUpcomingEvents,
   planForSchedule,
@@ -109,7 +109,7 @@ export default function OutfitPlannerScreen() {
       return;
     }
 
-    setSelectedItemIds(plannedOutfits[selectedDate]?.items.map(i => i.id) || []);
+    setSelectedItemIds(plannedOutfits[selectedDate]?.items.map(i =>i.id) || []);
     setPickerOccasion(plannedOutfits[selectedDate]?.occasion || '');
     setShowPicker(true);
   };
@@ -155,8 +155,7 @@ export default function OutfitPlannerScreen() {
   };
 
   const toggleItem = (itemId: string) => {
-    setSelectedItemIds(prev =>
-      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    setSelectedItemIds(prev =>prev.includes(itemId) ? prev.filter(id =>id !== itemId) : [...prev, itemId]
     );
   };
 
@@ -169,7 +168,7 @@ export default function OutfitPlannerScreen() {
     setSaving(true);
     try {
       const items: PlannedOutfitItem[] = selectedItemIds
-        .map(id => closetItems.find(i => i.id === id))
+        .map(id =>closetItems.find(i =>i.id === id))
         .filter(Boolean)
         .map(item => ({
           id: item.id,
@@ -208,13 +207,13 @@ export default function OutfitPlannerScreen() {
       visible={showPicker}
       animationType="slide"
       transparent={true}
-      onRequestClose={() => setShowPicker(false)}
+      onRequestClose={() =>setShowPicker(false)}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Plan {selectedDate}</Text>
-            <TouchableOpacity onPress={() => setShowPicker(false)}>
+            <TouchableOpacity onPress={() =>setShowPicker(false)}>
               <Text style={styles.closeButton}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -224,7 +223,7 @@ export default function OutfitPlannerScreen() {
               <TouchableOpacity
                 key={o}
                 style={[styles.occasionChip, pickerOccasion === o && styles.occasionChipActive]}
-                onPress={() => setPickerOccasion(pickerOccasion === o ? '' : o)}
+                onPress={() =>setPickerOccasion(pickerOccasion === o ? '' : o)}
               >
                 <Text
                   style={[
@@ -246,7 +245,7 @@ export default function OutfitPlannerScreen() {
                   <TouchableOpacity
                     key={item.id}
                     style={[styles.pickerItem, selected && styles.pickerItemSelected]}
-                    onPress={() => toggleItem(item.id)}
+                    onPress={() =>toggleItem(item.id)}
                     activeOpacity={0.8}
                   >
                     <Image source={{ uri: item.imageUrl }} style={styles.pickerImage} />
@@ -270,7 +269,7 @@ export default function OutfitPlannerScreen() {
               <Text style={styles.actionButtonText}>
                 {saving
                   ? 'Saving…'
-                  : `Save outfit${selectedItemIds.length > 0 ? ` (${selectedItemIds.length})` : ''}`}
+                  : `Save outfit${selectedItemIds.length >0 ? ` (${selectedItemIds.length})` : ''}`}
               </Text>
             </TouchableOpacity>
           </View>
@@ -336,13 +335,13 @@ export default function OutfitPlannerScreen() {
         visible={showOutfitModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowOutfitModal(false)}
+        onRequestClose={() =>setShowOutfitModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Outfit for {selectedDate}</Text>
-              <TouchableOpacity onPress={() => setShowOutfitModal(false)}>
+              <TouchableOpacity onPress={() =>setShowOutfitModal(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -374,17 +373,16 @@ export default function OutfitPlannerScreen() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => handleMarkWorn(selectedDate)}
+                onPress={() =>handleMarkWorn(selectedDate)}
               >
                 <Text style={styles.actionButtonText}>✓ Mark as Worn</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => handleDeleteOutfit(selectedDate)}
+                onPress={() =>handleDeleteOutfit(selectedDate)}
               >
-                <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-                  🗑️ Delete
+                <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete
                 </Text>
               </TouchableOpacity>
             </View>
@@ -398,10 +396,10 @@ export default function OutfitPlannerScreen() {
     <SafeAreaView style={styles.container}>
       <BackButton />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Outfit Planner</Text>
+        <Text style={styles.title}>Outfit planner</Text>
         <TouchableOpacity onPress={handleAddOutfit}>
           <Text style={styles.addButton}>+ Add</Text>
         </TouchableOpacity>
@@ -443,8 +441,7 @@ export default function OutfitPlannerScreen() {
           <Text style={styles.planWeekText}>
             {planningWeek ? 'Reading your calendar…' : '✦  Plan my week from my calendar'}
           </Text>
-          <Text style={styles.planWeekSub}>
-            Dresses every event in the next 7 days from your closet, against the forecast
+          <Text style={styles.planWeekSub}>Dresses every event in the next 7 days from your closet, against the forecast
           </Text>
         </TouchableOpacity>
 
@@ -458,7 +455,7 @@ export default function OutfitPlannerScreen() {
             {plannedOutfits[selectedDate] ? (
               <TouchableOpacity
                 style={styles.viewButton}
-                onPress={() => setShowOutfitModal(true)}
+                onPress={() =>setShowOutfitModal(true)}
               >
                 <Text style={styles.viewButtonText}>View Outfit</Text>
               </TouchableOpacity>
@@ -490,7 +487,7 @@ export default function OutfitPlannerScreen() {
         <View style={styles.upcomingSection}>
           <Text style={styles.upcomingTitle}>Upcoming Outfits</Text>
           {Object.entries(plannedOutfits)
-            .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+            .sort(([dateA], [dateB]) =>dateA.localeCompare(dateB))
             .slice(0, 5)
             .map(([date, outfit]) => (
               <TouchableOpacity
@@ -546,7 +543,7 @@ const styles = StyleSheet.create({
   planWeekText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   planWeekSub: {
     color: 'rgba(255,255,255,0.7)',
@@ -563,7 +560,6 @@ const styles = StyleSheet.create({
   occasionChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 999,
     backgroundColor: colors.paper,
   },
   occasionChipActive: {
@@ -611,7 +607,7 @@ const styles = StyleSheet.create({
   pickerCheckText: {
     color: '#fff',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   actionButtonDisabled: {
     opacity: 0.5,
@@ -633,24 +629,24 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.serif,
+    fontSize: 26,
+    color: colors.ink,
   },
   addButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   selectedDateSection: {
     padding: 20,
     backgroundColor: colors.paper,
     margin: 20,
-    borderRadius: 12,
     alignItems: 'center',
   },
   selectedDateTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   selectedDateText: {
@@ -662,28 +658,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   viewButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   planButton: {
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   planButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   statsSection: {
     padding: 20,
   },
   statsTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 16,
   },
   statsGrid: {
@@ -694,12 +688,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 20,
-    borderRadius: 12,
     alignItems: 'center',
   },
   statNumber: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   statLabel: {
@@ -712,14 +705,13 @@ const styles = StyleSheet.create({
   },
   upcomingTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 16,
   },
   upcomingCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     marginBottom: 12,
     alignItems: 'center',
   },
@@ -735,14 +727,14 @@ const styles = StyleSheet.create({
   },
   upcomingDateNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   upcomingInfo: {
     flex: 1,
   },
   upcomingOccasion: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   upcomingItems: {
@@ -756,7 +748,6 @@ const styles = StyleSheet.create({
   upcomingPreviewImage: {
     width: 40,
     height: 40,
-    borderRadius: 6,
   },
   modalOverlay: {
     flex: 1,
@@ -779,7 +770,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   closeButton: {
     fontSize: 24,
@@ -789,14 +780,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
     alignSelf: 'flex-start',
     margin: 20,
     marginBottom: 0,
   },
   occasionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   modalScroll: {
     padding: 20,
@@ -813,23 +803,21 @@ const styles = StyleSheet.create({
   outfitItemImage: {
     width: '100%',
     height: 150,
-    borderRadius: 12,
     marginBottom: 8,
   },
   outfitItemCategory: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
   },
   notesSection: {
     marginTop: 20,
     padding: 16,
     backgroundColor: colors.paper,
-    borderRadius: 12,
   },
   notesLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 8,
   },
   notesText: {
@@ -848,13 +836,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
   },
   actionButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   deleteButton: {
     backgroundColor: '#fff',

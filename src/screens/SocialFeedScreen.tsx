@@ -20,7 +20,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors } from '../theme/designSystem';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -66,19 +66,17 @@ export default function SocialFeedScreen() {
   };
 
   const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find(p =>p.id === postId);
     if (!post) return;
 
     try {
       if (post.isLiked) {
         await socialFeedService.unlikePost(postId, getCurrentUserId());
-        setPosts(posts.map(p => 
-          p.id === postId ? { ...p, isLiked: false, likes: p.likes - 1 } : p
+        setPosts(posts.map(p =>p.id === postId ? { ...p, isLiked: false, likes: p.likes - 1 } : p
         ));
       } else {
         await socialFeedService.likePost(postId, getCurrentUserId());
-        setPosts(posts.map(p => 
-          p.id === postId ? { ...p, isLiked: true, likes: p.likes + 1 } : p
+        setPosts(posts.map(p =>p.id === postId ? { ...p, isLiked: true, likes: p.likes + 1 } : p
         ));
       }
     } catch (error) {
@@ -87,20 +85,18 @@ export default function SocialFeedScreen() {
   };
 
   const handleSave = async (postId: string) => {
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find(p =>p.id === postId);
     if (!post) return;
 
     try {
       if (post.isSaved) {
         await socialFeedService.unsavePost(postId, getCurrentUserId());
-        setPosts(posts.map(p => 
-          p.id === postId ? { ...p, isSaved: false, saves: p.saves - 1 } : p
+        setPosts(posts.map(p =>p.id === postId ? { ...p, isSaved: false, saves: p.saves - 1 } : p
         ));
         showToast('Removed from saved', 'success');
       } else {
         await socialFeedService.savePost(postId, getCurrentUserId());
-        setPosts(posts.map(p => 
-          p.id === postId ? { ...p, isSaved: true, saves: p.saves + 1 } : p
+        setPosts(posts.map(p =>p.id === postId ? { ...p, isSaved: true, saves: p.saves + 1 } : p
         ));
         showToast('Saved!', 'success');
       }
@@ -113,7 +109,7 @@ export default function SocialFeedScreen() {
     try {
       await Share.share({ message: `${post.caption}\n${post.images[0]}` });
       await socialFeedService.sharePost(post.id);
-      setPosts(prev => prev.map(p => (p.id === post.id ? { ...p, shares: p.shares + 1 } : p)));
+      setPosts(prev =>prev.map(p => (p.id === post.id ? { ...p, shares: p.shares + 1 } : p)));
     } catch (error) {
       console.error('Error sharing post:', error);
     }
@@ -124,7 +120,7 @@ export default function SocialFeedScreen() {
       {/* Post Header */}
       <TouchableOpacity
         style={styles.postHeader}
-        onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}
+        onPress={() =>navigation.navigate('UserProfile', { userId: post.userId })}
       >
         {post.user?.profileImageUrl ? (
           <Image source={{ uri: post.user.profileImageUrl }} style={styles.userAvatar} />
@@ -143,7 +139,7 @@ export default function SocialFeedScreen() {
         </View>
         {post.type === 'transformation' && (
           <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>✨ Transformation</Text>
+            <Text style={styles.typeBadgeText}>Transformation</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -158,14 +154,14 @@ export default function SocialFeedScreen() {
         {post.images.map((image, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+            onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
           >
             <Image source={{ uri: image }} style={styles.postImage} />
           </TouchableOpacity>
         ))}
       </ScrollView>
       
-      {post.images.length > 1 && (
+      {post.images.length >1 && (
         <View style={styles.imageIndicator}>
           <Text style={styles.imageCount}>1/{post.images.length}</Text>
         </View>
@@ -175,32 +171,30 @@ export default function SocialFeedScreen() {
       <View style={styles.postActions}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleLike(post.id)}
+          onPress={() =>handleLike(post.id)}
         >
-          <Text style={styles.actionIcon}>{post.isLiked ? '❤️' : '🤍'}</Text>
+          <Text style={styles.actionIcon}>{post.isLiked ? '●' : '○'}</Text>
           <Text style={styles.actionText}>{post.likes}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+          onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
         >
-          <Text style={styles.actionIcon}>💬</Text>
-          <Text style={styles.actionText}>{post.comments}</Text>
+                    <Text style={styles.actionText}>{post.comments}</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleShare(post)}>
-          <Text style={styles.actionIcon}>📤</Text>
-          <Text style={styles.actionText}>{post.shares}</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() =>handleShare(post)}>
+                    <Text style={styles.actionText}>{post.shares}</Text>
         </TouchableOpacity>
         
         <View style={{ flex: 1 }} />
         
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleSave(post.id)}
+          onPress={() =>handleSave(post.id)}
         >
-          <Text style={styles.actionIcon}>{post.isSaved ? '🔖' : '📑'}</Text>
+          <Text style={styles.actionIcon}>{post.isSaved ? '' : ''}</Text>
         </TouchableOpacity>
       </View>
 
@@ -210,7 +204,7 @@ export default function SocialFeedScreen() {
           <Text style={styles.captionUser}>{post.user?.displayName} </Text>
           {post.caption}
         </Text>
-        {post.hashtags.length > 0 && (
+        {post.hashtags.length >0 && (
           <View style={styles.hashtagsContainer}>
             {post.hashtags.map((tag, index) => (
               <TouchableOpacity key={index} onPress={() => {}}>
@@ -222,13 +216,12 @@ export default function SocialFeedScreen() {
       </View>
 
       {/* View Comments */}
-      {post.comments > 0 && (
+      {post.comments >0 && (
         <TouchableOpacity
           style={styles.viewComments}
-          onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+          onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
         >
-          <Text style={styles.viewCommentsText}>
-            View all {post.comments} comments
+          <Text style={styles.viewCommentsText}>View all {post.comments} comments
           </Text>
         </TouchableOpacity>
       )}
@@ -249,8 +242,8 @@ export default function SocialFeedScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Feed</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CreatePost')}>
+        <Text style={styles.title}>The feed</Text>
+        <TouchableOpacity onPress={() =>navigation.navigate('CreatePost')}>
           <Text style={styles.createButton}>+ New Post</Text>
         </TouchableOpacity>
       </View>
@@ -262,12 +255,11 @@ export default function SocialFeedScreen() {
       >
         {posts.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={styles.emptyText}>No posts yet</Text>
+                        <Text style={styles.emptyText}>No posts yet</Text>
             <Text style={styles.emptySubtext}>Follow users to see their posts</Text>
             <TouchableOpacity
               style={styles.exploreButton}
-              onPress={() => navigation.navigate('Explore')}
+              onPress={() =>navigation.navigate('Explore')}
             >
               <Text style={styles.exploreButtonText}>Explore</Text>
             </TouchableOpacity>
@@ -306,13 +298,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.serif,
+    fontSize: 26,
     color: colors.ink,
   },
   createButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postCard: {
@@ -341,7 +333,7 @@ const styles = StyleSheet.create({
   },
   userInitial: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   userInfo: {
@@ -350,7 +342,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postTime: {
@@ -361,11 +353,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   typeBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.tobacco,
   },
   imagesContainer: {
@@ -383,11 +374,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
   },
   imageCount: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: '#ffffff',
   },
   postActions: {
@@ -406,7 +396,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   postCaption: {
@@ -419,7 +409,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   captionUser: {
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   hashtagsContainer: {
     flexDirection: 'row',
@@ -429,7 +419,7 @@ const styles = StyleSheet.create({
   hashtag: {
     fontSize: 14,
     color: colors.tobacco,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   viewComments: {
     paddingHorizontal: 12,
@@ -449,7 +439,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
   },
@@ -462,11 +452,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: 12,
   },
   exploreButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });
