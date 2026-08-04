@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.hair,
   },
   headerTop: {
     marginBottom: 12,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.paper,
   },
   backButtonText: {
     fontSize: 16,

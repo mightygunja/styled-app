@@ -394,41 +394,46 @@ export default function OutfitPlannerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton />
+      {/* One back control. There was a shared BackButton and a hand-rolled
+          "← Back" directly beneath it, and the three-column header pushed the
+          title into the middle where no other screen puts it. */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Outfit planner</Text>
-        <TouchableOpacity onPress={handleAddOutfit}>
-          <Text style={styles.addButton}>+ Add</Text>
-        </TouchableOpacity>
+        <BackButton />
       </View>
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.eyebrow}>WARDROBE</Text>
+        <Text style={styles.title}>Outfit planner</Text>
+        <Text style={styles.subtitle}>
+          Plan what you'll wear before the morning decides for you. Tap a date to build a look,
+          or let your calendar do it.
+        </Text>
+
         <Calendar
           current={new Date().toISOString().split('T')[0]}
           onDayPress={handleDayPress}
           markedDates={markedDates}
           theme={{
-            backgroundColor: '#ffffff',
-            calendarBackground: '#ffffff',
-            textSectionTitleColor: colors.ink,
+            backgroundColor: colors.bone,
+            calendarBackground: colors.bone,
+            textSectionTitleColor: colors.inkFaint,
             selectedDayBackgroundColor: colors.ink,
-            selectedDayTextColor: '#ffffff',
-            todayTextColor: colors.ink,
+            selectedDayTextColor: colors.bone,
+            todayTextColor: colors.tobacco,
             dayTextColor: colors.ink,
-            textDisabledColor: colors.hair,
-            dotColor: colors.ink,
-            selectedDotColor: '#ffffff',
-            arrowColor: colors.ink,
+            textDisabledColor: colors.inkFaint,
+            dotColor: colors.camel,
+            selectedDotColor: colors.bone,
+            arrowColor: colors.tobacco,
             monthTextColor: colors.ink,
-            textDayFontWeight: '400',
-            textMonthFontWeight: 'bold',
-            textDayHeaderFontWeight: '600',
-            textDayFontSize: 16,
-            textMonthFontSize: 18,
-            textDayHeaderFontSize: 14,
+            // The calendar library takes font families directly, so it can
+            // render Playfair and Instrument Sans rather than the system face.
+            textDayFontFamily: fonts.sans,
+            textMonthFontFamily: fonts.serif,
+            textDayHeaderFontFamily: fonts.sansSemiBold,
+            textDayFontSize: 15,
+            textMonthFontSize: 20,
+            textDayHeaderFontSize: 11,
           }}
         />
 
@@ -439,7 +444,7 @@ export default function OutfitPlannerScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.planWeekText}>
-            {planningWeek ? 'Reading your calendar…' : '✦  Plan my week from my calendar'}
+            {planningWeek ? 'Reading your calendar…' : 'Plan my week from my calendar'}
           </Text>
           <Text style={styles.planWeekSub}>Dresses every event in the next 7 days from your closet, against the forecast
           </Text>
@@ -457,35 +462,35 @@ export default function OutfitPlannerScreen() {
                 style={styles.viewButton}
                 onPress={() =>setShowOutfitModal(true)}
               >
-                <Text style={styles.viewButtonText}>View Outfit</Text>
+                <Text style={styles.viewButtonText}>View outfit</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.planButton}
                 onPress={handleAddOutfit}
               >
-                <Text style={styles.planButtonText}>Plan Outfit</Text>
+                <Text style={styles.planButtonText}>Plan an outfit</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         <View style={styles.statsSection}>
-          <Text style={styles.statsTitle}>This Month</Text>
+          <Text style={styles.statsTitle}>THIS MONTH</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{Object.keys(plannedOutfits).length}</Text>
-              <Text style={styles.statLabel}>Outfits Planned</Text>
+              <Text style={styles.statLabel}>PLANNED</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Outfits Worn</Text>
+              <Text style={styles.statLabel}>WORN</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.upcomingSection}>
-          <Text style={styles.upcomingTitle}>Upcoming Outfits</Text>
+          <Text style={styles.upcomingTitle}>UPCOMING</Text>
           {Object.entries(plannedOutfits)
             .sort(([dateA], [dateB]) =>dateA.localeCompare(dateB))
             .slice(0, 5)
@@ -531,6 +536,25 @@ export default function OutfitPlannerScreen() {
 }
 
 const styles = StyleSheet.create({
+  content: { paddingBottom: 60 },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.inkMuted,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 20,
+  },
   planWeekButton: {
     marginHorizontal: 20,
     marginTop: 16,
@@ -541,12 +565,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   planWeekText: {
-    color: '#fff',
+    color: colors.bone,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },
   planWeekSub: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(253, 251, 250, 0.7)',
     fontSize: 12,
     marginTop: 4,
   },
@@ -570,7 +594,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   occasionChipTextActive: {
-    color: '#fff',
+    color: colors.bone,
   },
   pickerGrid: {
     flexDirection: 'row',
@@ -605,7 +629,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pickerCheckText: {
-    color: '#fff',
+    color: colors.bone,
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
   },
@@ -614,24 +638,18 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bone,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
+  header: { paddingHorizontal: 20, paddingTop: 12 },
   backButton: {
     fontSize: 16,
     color: colors.ink,
   },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 26,
+    fontSize: 34,
     color: colors.ink,
+    marginHorizontal: 20,
   },
   addButton: {
     fontSize: 16,
@@ -645,13 +663,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedDateTitle: {
-    fontSize: 18,
     fontFamily: fonts.sansSemiBold,
-    marginBottom: 4,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 6,
   },
   selectedDateText: {
-    fontSize: 14,
-    color: colors.inkMuted,
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.ink,
     marginBottom: 16,
   },
   viewButton: {
@@ -660,7 +682,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   viewButtonText: {
-    color: '#fff',
+    color: colors.bone,
     fontFamily: fonts.sansSemiBold,
   },
   planButton: {
@@ -669,16 +691,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   planButtonText: {
-    color: '#fff',
+    color: colors.bone,
     fontFamily: fonts.sansSemiBold,
   },
   statsSection: {
     padding: 20,
   },
   statsTitle: {
-    fontSize: 18,
     fontFamily: fonts.sansSemiBold,
-    marginBottom: 16,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 14,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -691,22 +716,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
+    fontFamily: fonts.serif,
     fontSize: 32,
-    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
-    color: colors.inkMuted,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.inkFaint,
     textAlign: 'center',
   },
   upcomingSection: {
     padding: 20,
   },
   upcomingTitle: {
-    fontSize: 18,
     fontFamily: fonts.sansSemiBold,
-    marginBottom: 16,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginBottom: 14,
   },
   upcomingCard: {
     flexDirection: 'row',
@@ -755,7 +786,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bone,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -766,7 +797,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.hair,
   },
   modalTitle: {
     fontSize: 18,
@@ -830,7 +861,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.hair,
   },
   actionButton: {
     flex: 1,
@@ -839,12 +870,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: {
-    color: '#fff',
+    color: colors.bone,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
   deleteButton: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bone,
     borderWidth: 1,
     borderColor: colors.ink,
   },
