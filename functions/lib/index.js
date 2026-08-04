@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1332,6 +1332,88 @@ exports.renderTryOn = functions
         if (error instanceof functions.https.HttpsError)
             throw error;
         console.error('Error rendering try-on:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+// ==================== EXPLORE CURATION ====================
+/**
+ * Groups recent community posts into named editorial collections.
+ *
+ * This is the part of Explore that a ranking algorithm cannot do. Velocity can
+ * tell you what is popular and profile-matching can tell you what suits
+ * someone, but neither can notice that eleven unrelated people all posted
+ * neutral layering this week and give that a name.
+ *
+ * The model only ever groups and titles - it is explicitly told not to invent
+ * posts, and every id it returns is validated against the input on the client.
+ */
+exports.curateExploreCollections = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    try {
+        const { posts = [] } = data;
+        if (posts.length < 6) {
+            throw new functions.https.HttpsError('failed-precondition', 'Not enough recent posts to curate collections from.');
+        }
+        const postLines = posts
+            .map(p => { var _a; return `- ${p.id} | ${p.type} | "${p.caption}"${((_a = p.hashtags) === null || _a === void 0 ? void 0 : _a.length) ? ` | #${p.hashtags.join(' #')}` : ''}`; })
+            .join('\n');
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are the editor of a styling app's discovery page. Below are recent posts from its community. Group them into 2-4 collections that a reader would find genuinely interesting.
+
+Posts (use these exact ids):
+${postLines}
+
+What makes a good collection here:
+- A real thread running through the posts - a shared silhouette, palette, occasion, or approach. Not a category label.
+- Specific enough to be worth a title. "Neutral layering, done three ways" beats "Casual looks".
+- At least 3 posts, or it is not a collection.
+
+Rules:
+- Only use ids from the list. Never invent a post.
+- A post may appear in at most one collection.
+- Do not force every post into a collection. Leaving most of them out is correct.
+- title: 2-5 words, no emoji, no hashtags.
+- rationale: one sentence naming what these posts have in common. Write like an editor, not a classifier. Never use the word "flattering".
+- If nothing coherent emerges, return an empty collections array. That is a valid and useful answer.
+
+Return ONLY valid JSON:
+{ "collections": [{ "title": "string", "rationale": "one sentence", "postIds": ["ids"] }] }`,
+                },
+            ],
+            max_tokens: 1200,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        const validIds = new Set(posts.map(p => p.id));
+        const used = new Set();
+        const collections = (Array.isArray(result.collections) ? result.collections : [])
+            .map((c) => {
+            // Enforce the one-collection-per-post rule server-side rather than
+            // trusting the model to have honoured it.
+            const postIds = (Array.isArray(c === null || c === void 0 ? void 0 : c.postIds) ? c.postIds : []).filter((id) => {
+                if (!validIds.has(id) || used.has(id))
+                    return false;
+                used.add(id);
+                return true;
+            });
+            return { title: (c === null || c === void 0 ? void 0 : c.title) || '', rationale: (c === null || c === void 0 ? void 0 : c.rationale) || '', postIds };
+        })
+            .filter((c) => c.title && c.postIds.length >= 3);
+        console.log(`Curated ${collections.length} explore collections from ${posts.length} posts`);
+        return { success: true, data: { collections } };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error curating explore collections:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });

@@ -23,7 +23,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -67,15 +67,14 @@ export default function PostDetailScreen() {
         socialFeedService.getPostComments(postId),
       ]);
 
-      const foundPost = feedPosts.find(p =>p.id === postId);
+      const foundPost = feedPosts.find(p => p.id === postId);
       if (foundPost) {
         const user = await userProfileService.getUserProfile(foundPost.userId);
         setPost({ ...foundPost, user: user || undefined });
       }
 
-      // Load user data for comments
       const commentsWithUsers = await Promise.all(
-        postComments.map(async (comment) => {
+        postComments.map(async comment => {
           const user = await userProfileService.getUserProfile(comment.userId);
           return { ...comment, user: user || undefined };
         })
@@ -92,7 +91,6 @@ export default function PostDetailScreen() {
 
   const handleLike = async () => {
     if (!post) return;
-
     try {
       if (post.isLiked) {
         await socialFeedService.unlikePost(postId, getCurrentUserId());
@@ -108,7 +106,6 @@ export default function PostDetailScreen() {
 
   const handleSave = async () => {
     if (!post) return;
-
     try {
       if (post.isSaved) {
         await socialFeedService.unsavePost(postId, getCurrentUserId());
@@ -117,7 +114,7 @@ export default function PostDetailScreen() {
       } else {
         await socialFeedService.savePost(postId, getCurrentUserId());
         setPost({ ...post, isSaved: true, saves: post.saves + 1 });
-        showToast('Saved!', 'success');
+        showToast('Saved', 'success');
       }
     } catch (error) {
       showToast('Action failed', 'error');
@@ -126,7 +123,6 @@ export default function PostDetailScreen() {
 
   const handleAddComment = async () => {
     if (!commentText.trim()) return;
-
     try {
       setPosting(true);
       const newComment = await socialFeedService.addComment(
@@ -140,23 +136,19 @@ export default function PostDetailScreen() {
       const commentWithUser = { ...newComment, user: user || undefined };
 
       if (replyingTo) {
-        // Add to replies
-        setComments(comments.map(c =>c.id === replyingTo.id 
-            ? { ...c, replies: [...(c.replies || []), commentWithUser] }
-            : c
-        ));
+        setComments(
+          comments.map(c =>
+            c.id === replyingTo.id ? { ...c, replies: [...(c.replies || []), commentWithUser] } : c
+          )
+        );
       } else {
-        // Add as top-level comment
         setComments([commentWithUser, ...comments]);
       }
 
-      if (post) {
-        setPost({ ...post, comments: post.comments + 1 });
-      }
+      if (post) setPost({ ...post, comments: post.comments + 1 });
 
       setCommentText('');
       setReplyingTo(null);
-      showToast('Comment added!', 'success');
     } catch (error) {
       showToast('Failed to add comment', 'error');
     } finally {
@@ -167,12 +159,8 @@ export default function PostDetailScreen() {
   const handleDeleteComment = async (commentId: string) => {
     try {
       await socialFeedService.deleteComment(commentId, getCurrentUserId());
-      setComments(comments.filter(c =>c.id !== commentId));
-      
-      if (post) {
-        setPost({ ...post, comments: post.comments - 1 });
-      }
-      
+      setComments(comments.filter(c => c.id !== commentId));
+      if (post) setPost({ ...post, comments: post.comments - 1 });
       showToast('Comment deleted', 'success');
     } catch (error) {
       showToast('Failed to delete comment', 'error');
@@ -180,16 +168,16 @@ export default function PostDetailScreen() {
   };
 
   const renderComment = (comment: Comment, isReply: boolean = false) => (
-    <View key={comment.id} style={[styles.commentCard, isReply && styles.replyCard]}>
+    <View key={comment.id} style={[styles.commentRow, isReply && styles.replyRow]}>
       <TouchableOpacity
-        onPress={() =>navigation.navigate('UserProfile', { userId: comment.userId })}
+        onPress={() => navigation.navigate('UserProfile', { userId: comment.userId })}
       >
         {comment.user?.profileImageUrl ? (
           <Image source={{ uri: comment.user.profileImageUrl }} style={styles.commentAvatar} />
         ) : (
           <View style={styles.commentAvatarPlaceholder}>
             <Text style={styles.commentInitial}>
-              {comment.user?.displayName.charAt(0) || 'U'}
+              {comment.user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
         )}
@@ -203,22 +191,21 @@ export default function PostDetailScreen() {
           </Text>
         </View>
         <Text style={styles.commentText}>{comment.text}</Text>
-        
+
         <View style={styles.commentActions}>
-          <TouchableOpacity onPress={() =>setReplyingTo(comment)}>
+          <TouchableOpacity onPress={() => setReplyingTo(comment)}>
             <Text style={styles.commentAction}>Reply</Text>
           </TouchableOpacity>
           {comment.userId === getCurrentUserId() && (
-            <TouchableOpacity onPress={() =>handleDeleteComment(comment.id)}>
-              <Text style={[styles.commentAction, styles.deleteAction]}>Delete</Text>
+            <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+              <Text style={styles.commentAction}>Delete</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Replies */}
-        {comment.replies && comment.replies.length >0 && (
+        {comment.replies && comment.replies.length > 0 && (
           <View style={styles.repliesContainer}>
-            {comment.replies.map(reply =>renderComment(reply, true))}
+            {comment.replies.map(reply => renderComment(reply, true))}
           </View>
         )}
       </View>
@@ -227,8 +214,8 @@ export default function PostDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.centred}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </SafeAreaView>
@@ -237,130 +224,147 @@ export default function PostDetailScreen() {
 
   if (!post) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Post not found</Text>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.headerBar}>
+          <BackButton />
+        </View>
+        <View style={styles.centred}>
+          <Text style={styles.emptyTitle}>Post not found</Text>
+          <Text style={styles.emptyText}>It may have been removed or made private.</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      <KeyboardAvoidingView 
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
+      </View>
+
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Post</Text>
-          <View style={{ width: 50 }} />
-        </View>
-
-        <ScrollView>
-          {/* Post */}
-          <View style={styles.postSection}>
-            {/* Post Header */}
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <View style={styles.intro}>
+            <Text style={styles.eyebrow}>POST</Text>
             <TouchableOpacity
               style={styles.postHeader}
-              onPress={() =>navigation.navigate('UserProfile', { userId: post.userId })}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}
             >
               {post.user?.profileImageUrl ? (
                 <Image source={{ uri: post.user.profileImageUrl }} style={styles.userAvatar} />
               ) : (
                 <View style={styles.userAvatarPlaceholder}>
                   <Text style={styles.userInitial}>
-                    {post.user?.displayName.charAt(0) || 'U'}
+                    {post.user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
                   </Text>
                 </View>
               )}
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{post.user?.displayName || 'User'}</Text>
                 <Text style={styles.postTime}>
-                  {new Date(post.createdAt).toLocaleDateString()}
+                  {new Date(post.createdAt).toLocaleDateString(undefined, {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
                 </Text>
               </View>
+              <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
+          </View>
 
-            {/* Post Images */}
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              style={styles.imagesContainer}
-            >
-              {post.images.map((image, index) => (
-                <Image key={index} source={{ uri: image }} style={styles.postImage} />
-              ))}
-            </ScrollView>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.imagesContainer}
+          >
+            {post.images.map((image, index) => (
+              <Image key={index} source={{ uri: image }} style={styles.postImage} />
+            ))}
+          </ScrollView>
 
-            {/* Post Actions */}
-            <View style={styles.postActions}>
-              <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-                <Text style={styles.actionIcon}>{post.isLiked ? '●' : '○'}</Text>
-                <Text style={styles.actionText}>{post.likes}</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.actionButton} onPress={() =>commentInputRef.current?.focus()}>
-                                <Text style={styles.actionText}>{post.comments}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                                <Text style={styles.actionText}>{post.shares}</Text>
-              </TouchableOpacity>
-              
-              <View style={{ flex: 1 }} />
-              
-              <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
-                <Text style={styles.actionIcon}>{post.isSaved ? '●' : '○'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Post Caption */}
-            <View style={styles.postCaption}>
+          <View style={styles.body}>
+            {!!post.caption && (
               <Text style={styles.captionText}>
                 <Text style={styles.captionUser}>{post.user?.displayName} </Text>
                 {post.caption}
               </Text>
-              {post.hashtags.length >0 && (
-                <View style={styles.hashtagsContainer}>
-                  {post.hashtags.map((tag, index) => (
-                    <Text key={index} style={styles.hashtag}>#{tag} </Text>
-                  ))}
-                </View>
-              )}
+            )}
+
+            {post.hashtags.length > 0 && (
+              <View style={styles.hashtagsContainer}>
+                {post.hashtags.map((tag, index) => (
+                  <Text key={index} style={styles.hashtag}>
+                    #{tag}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {/* Every control carries a word. The icon-only version left two of
+                these rendering as a bare number with nothing to tap-label it. */}
+            <View style={styles.postActions}>
+              <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
+                <Text style={[styles.actionLabel, post.isLiked && styles.actionLabelActive]}>
+                  {post.isLiked ? 'Liked' : 'Like'}
+                </Text>
+                <Text style={styles.actionCount}>{post.likes}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => commentInputRef.current?.focus()}
+              >
+                <Text style={styles.actionLabel}>Comment</Text>
+                <Text style={styles.actionCount}>{post.comments}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+                <Text style={styles.actionLabel}>Share</Text>
+                <Text style={styles.actionCount}>{post.shares}</Text>
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }} />
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
+                <Text style={[styles.actionLabel, post.isSaved && styles.actionLabelActive]}>
+                  {post.isSaved ? 'Saved' : 'Save'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Comments ({comments.length})
+            <Text style={styles.sectionLabel}>
+              {comments.length === 0
+                ? 'COMMENTS'
+                : `COMMENTS · ${comments.length}`}
             </Text>
-            
+
             {comments.length === 0 ? (
-              <View style={styles.emptyComments}>
-                <Text style={styles.emptyEmoji}>◎</Text>
-                <Text style={styles.emptyText}>No comments yet</Text>
-                <Text style={styles.emptySubtext}>Be the first to comment!</Text>
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyTitle}>No comments yet</Text>
+                <Text style={styles.emptyText}>Be the first to say something.</Text>
               </View>
             ) : (
-              comments.map(comment =>renderComment(comment))
+              comments.map(comment => renderComment(comment))
             )}
           </View>
         </ScrollView>
 
-        {/* Comment Input */}
         <View style={styles.commentInputContainer}>
           {replyingTo && (
             <View style={styles.replyingToBar}>
-              <Text style={styles.replyingToText}>Replying to {replyingTo.user?.displayName}
+              <Text style={styles.replyingToText}>
+                Replying to {replyingTo.user?.displayName}
               </Text>
-              <TouchableOpacity onPress={() =>setReplyingTo(null)}>
-                <Text style={styles.cancelReply}>✕</Text>
+              <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                <Text style={styles.cancelReply}>Cancel</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -368,7 +372,8 @@ export default function PostDetailScreen() {
             <TextInput
               ref={commentInputRef}
               style={styles.commentInput}
-              placeholder="Add a comment..."
+              placeholder="Add a comment…"
+              placeholderTextColor={colors.inkFaint}
               value={commentText}
               onChangeText={setCommentText}
               multiline
@@ -380,295 +385,146 @@ export default function PostDetailScreen() {
               disabled={!commentText.trim() || posting}
             >
               {posting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.sendButtonText}>Send</Text>
+                <Text style={styles.sendButtonText}>Post</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.inkMuted,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  postSection: {
-    borderBottomWidth: 8,
-    borderBottomColor: colors.paper,
-  },
+  container: { flex: 1, backgroundColor: colors.bone },
+  headerBar: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  centred: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.page },
+
+  intro: { paddingHorizontal: spacing.page },
+  eyebrow: { ...textType.eyebrow, marginBottom: spacing.md },
+
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingBottom: spacing.md,
   },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.paper,
-  },
+  userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
   userAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.ink,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  userInitial: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  userInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  userName: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  postTime: {
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  imagesContainer: {
-    width: width,
-  },
-  postImage: {
-    width: width,
-    height: width,
-    backgroundColor: colors.paper,
-  },
+  userInitial: { fontFamily: fonts.serif, fontSize: 18, color: colors.tobacco },
+  userInfo: { flex: 1, marginLeft: 12 },
+  userName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  postTime: { ...textType.meta, fontSize: 12, marginTop: 2 },
+  chevron: { fontSize: 20, color: colors.inkFaint },
+
+  imagesContainer: { width },
+  postImage: { width, height: width, backgroundColor: colors.paper },
+
+  body: { paddingHorizontal: spacing.page, paddingTop: spacing.md },
+  captionText: { ...textType.body, color: colors.ink },
+  captionUser: { fontFamily: fonts.sansMedium },
+  hashtagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs, gap: 10 },
+  hashtag: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },
+
   postActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 16,
+    gap: spacing.lg,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
   },
-  actionButton: {
+  actionButton: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionLabel: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
+  actionLabelActive: { color: colors.ink, fontFamily: fonts.sansSemiBold },
+  actionCount: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkFaint },
+
+  commentsSection: { padding: spacing.page, paddingBottom: 40 },
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: spacing.md },
+
+  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+
+  commentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  actionIcon: {
-    fontSize: 20,
-  },
-  actionText: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  postCaption: {
-    paddingHorizontal: 12,
-    paddingBottom: 16,
-  },
-  captionText: {
-    fontSize: 14,
-    color: colors.ink,
-    lineHeight: 20,
-  },
-  captionUser: {
-    fontFamily: fonts.sansSemiBold,
-  },
-  hashtagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 4,
-  },
-  hashtag: {
-    fontSize: 14,
-    color: colors.tobacco,
-    fontFamily: fonts.sansMedium,
-  },
-  commentsSection: {
-    padding: 20,
-  },
-  commentsTitle: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 16,
-  },
-  commentCard: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 12,
-  },
-  replyCard: {
-    marginLeft: 20,
-    marginTop: 12,
-  },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.paper,
-  },
+  replyRow: { marginLeft: spacing.lg, borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 },
+  commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.paper },
   commentAvatarPlaceholder: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  commentInitial: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  commentUser: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  commentTime: {
-    fontSize: 12,
-    color: colors.inkFaint,
-  },
-  commentText: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  commentActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  commentAction: {
-    fontSize: 13,
-    fontFamily: fonts.sansMedium,
-    color: colors.inkMuted,
-  },
-  deleteAction: {
-    color: colors.ink,
-  },
-  repliesContainer: {
-    marginTop: 8,
-  },
-  emptyComments: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-    color: colors.ink,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
+  commentInitial: { fontFamily: fonts.serif, fontSize: 15, color: colors.tobacco },
+  commentContent: { flex: 1, marginLeft: 12 },
+  commentHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  commentUser: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+  commentTime: { ...textType.meta, fontSize: 12 },
+  commentText: { ...textType.body, fontSize: 14, color: colors.inkMuted, marginBottom: 8 },
+  commentActions: { flexDirection: 'row', gap: spacing.md },
+  commentAction: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
+  repliesContainer: { marginTop: spacing.sm },
+
   commentInputContainer: {
     borderTopWidth: 1,
     borderTopColor: colors.hair,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bone,
   },
   replyingToBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.page,
+    paddingVertical: spacing.xs,
     backgroundColor: colors.paper,
   },
-  replyingToText: {
-    fontSize: 13,
-    color: colors.inkMuted,
-  },
-  cancelReply: {
-    fontSize: 16,
-    color: colors.inkMuted,
-    fontFamily: fonts.sansSemiBold,
-  },
+  replyingToText: { ...textType.meta, fontSize: 12 },
+  cancelReply: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.tobacco },
   commentInputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
-    gap: 12,
+    padding: spacing.sm,
+    paddingHorizontal: spacing.page,
+    gap: spacing.sm,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: colors.paper,
-    paddingHorizontal: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingHorizontal: 14,
     paddingVertical: 10,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.ink,
     maxHeight: 100,
   },
   sendButton: {
     backgroundColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    minWidth: 70,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    minWidth: 72,
     alignItems: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: colors.hair,
-  },
-  sendButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-  },
+  sendButtonDisabled: { backgroundColor: colors.hair },
+  sendButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
 });

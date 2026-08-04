@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { slideInFromBottom, slideOutToBottom } from '../utils/animations';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -70,16 +71,15 @@ export default function Toast({
     return null;
   }
 
+  // The palette carries no semantic red/green/blue. Ink is the affirmative
+  // ground and tobacco the cautionary one - the same two the rest of the app
+  // uses. The leading glyph is what distinguishes the three cases.
   const getBackgroundColor = () => {
     switch (type) {
-      case 'success':
-        return '#10b981';
       case 'error':
-        return '#ef4444';
-      case 'info':
-        return '#3b82f6';
+        return colors.tobacco;
       default:
-        return '#10b981';
+        return colors.ink;
     }
   };
 
@@ -125,34 +125,31 @@ const styles = StyleSheet.create({
     right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
     elevation: 8,
     zIndex: 9999,
   },
   iconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   icon: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    color: colors.white,
   },
   message: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.white,
   },
 });

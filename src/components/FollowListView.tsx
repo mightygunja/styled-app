@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import BackButton from './BackButton';
 import { RootStackParamList } from '../navigation/types';
 import { userProfileService, UserProfile } from '../services/userProfileService';
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -38,88 +48,105 @@ export default function FollowListView({ userId, mode }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{mode === 'followers' ? 'Followers' : 'Following'}</Text>
-        <View style={{ width: 50 }} />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
-        </View>
-      ) : (
-        <FlatList
-          data={users}
-          keyExtractor={item => item.userId}
-          contentContainerStyle={users.length === 0 ? styles.emptyList : undefined}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => navigation.push('UserProfile', { userId: item.userId })}
-            >
-              {item.profileImageUrl ? (
-                <Image source={{ uri: item.profileImageUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitial}>{item.displayName.charAt(0)}</Text>
-                </View>
-              )}
-              <View style={styles.rowInfo}>
-                <Text style={styles.displayName}>{item.displayName}</Text>
-                <Text style={styles.username}>@{item.username}</Text>
+      <FlatList
+        data={loading ? [] : users}
+        keyExtractor={item => item.userId}
+        contentContainerStyle={styles.content}
+        ListHeaderComponent={
+          <View style={styles.intro}>
+            <Text style={styles.eyebrow}>{mode === 'followers' ? 'AUDIENCE' : 'FOLLOWING'}</Text>
+            <Text style={styles.title}>{mode === 'followers' ? 'Followers' : 'Following'}</Text>
+            {!loading && users.length > 0 && (
+              <Text style={styles.subtitle}>
+                {users.length} {users.length === 1 ? 'person' : 'people'}
+              </Text>
+            )}
+          </View>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.row}
+            activeOpacity={0.85}
+            onPress={() => navigation.push('UserProfile', { userId: item.userId })}
+          >
+            {item.profileImageUrl ? (
+              <Image source={{ uri: item.profileImageUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>
+                  {item.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                </Text>
               </View>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
+            )}
+            <View style={styles.rowInfo}>
+              <Text style={styles.displayName}>{item.displayName}</Text>
+              <Text style={styles.username}>@{item.username}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.busyBox}>
+              <ActivityIndicator size="large" color={colors.ink} />
+            </View>
+          ) : (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>
+                {mode === 'followers' ? 'No followers yet' : 'Not following anyone'}
+              </Text>
               <Text style={styles.emptyText}>
-                {mode === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
+                {mode === 'followers'
+                  ? 'People who follow this profile will appear here.'
+                  : 'Accounts followed from this profile will appear here.'}
               </Text>
             </View>
-          }
-        />
-      )}
+          )
+        }
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  backButton: { fontSize: 16, color: '#64748b' },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.bone },
+  headerBar: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { paddingHorizontal: spacing.page, paddingBottom: 60 },
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  intro: { marginBottom: spacing.lg },
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#f1f5f9' },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#ef4444',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: { fontSize: 18, fontWeight: 'bold', color: '#ffffff' },
-  rowInfo: { marginLeft: 12 },
-  displayName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  username: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  emptyList: { flex: 1 },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 60 },
-  emptyText: { fontSize: 15, color: '#64748b' },
+  avatarInitial: { fontFamily: fonts.serif, fontSize: 18, color: colors.tobacco },
+  rowInfo: { flex: 1, marginLeft: 12 },
+  displayName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  username: { ...textType.meta, fontSize: 12, marginTop: 2 },
+  chevron: { fontSize: 20, color: colors.inkFaint },
+
+  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });
