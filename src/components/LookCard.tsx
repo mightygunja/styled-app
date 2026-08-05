@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Look } from '../types';
 import { scale } from '../utils/animations';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 32;
@@ -124,10 +125,9 @@ export default function LookCard({
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -152,11 +152,10 @@ const styles = StyleSheet.create({
     right: 12,
     width: 44,
     height: 44,
-    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -175,25 +174,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
   },
   sponsoredText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   content: {
     padding: 16,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -204,19 +202,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
+    color: colors.inkMuted,
+    fontFamily: fonts.sansMedium,
   },
   itemCount: {
     fontSize: 12,
-    color: '#94a3b8',
-    fontWeight: '500',
+    color: colors.inkFaint,
+    fontFamily: fonts.sansMedium,
   },
 });

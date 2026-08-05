@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { FilterOptions } from '../types';
 import { PRICE_BANDS, BODY_TYPES, LIFESTYLE_FILTERS } from '../constants';
+import { colors, fonts } from '../theme/designSystem';
 
 interface FilterBarProps {
   onFilterChange: (filters: FilterOptions) => void;
@@ -227,34 +228,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   filterButton: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     marginRight: 8,
   },
   filterButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   filterChip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   filterChipText: {
-    color: '#475569',
+    color: colors.inkMuted,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   filterChipTextActive: {
-    color: '#ffffff',
+    color: colors.white,
   },
   modalOverlay: {
     flex: 1,
@@ -262,7 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
@@ -273,16 +272,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   closeButton: {
     fontSize: 24,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   modalBody: {
     padding: 20,
@@ -292,8 +291,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   chipGrid: {
@@ -302,53 +301,50 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
     marginBottom: 8,
   },
   chipActive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
   },
   chipText: {
-    color: '#475569',
+    color: colors.inkMuted,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.sansMedium,
   },
   chipTextActive: {
-    color: '#ffffff',
+    color: colors.white,
   },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     gap: 12,
   },
   clearButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     alignItems: 'center',
   },
   clearButtonText: {
-    color: '#64748b',
+    color: colors.inkMuted,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   applyButton: {
     flex: 1,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingVertical: 14,
-    borderRadius: 12,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
 });

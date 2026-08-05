@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 import AnimatedModal from './AnimatedModal';
 import { scale } from '../utils/animations';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width, height } = Dimensions.get('window');
 
@@ -270,7 +271,7 @@ export default function PhotoUploadModal({
 
 const styles = StyleSheet.create({
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -286,20 +287,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeText: {
     fontSize: 18,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   backButton: {
     paddingVertical: 8,
@@ -307,28 +308,27 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 16,
-    color: '#ef4444',
-    fontWeight: '600',
+    color: colors.ink,
+    fontFamily: fonts.sansSemiBold,
   },
   placeholder: {
     width: 32,
   },
   guidanceSection: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     marginHorizontal: 24,
     padding: 20,
-    borderRadius: 16,
     marginBottom: 24,
   },
   guidanceTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   guidanceTip: {
     fontSize: 15,
-    color: '#475569',
+    color: colors.inkMuted,
     marginBottom: 8,
     lineHeight: 22,
   },
@@ -337,14 +337,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   actionButton: {
-    backgroundColor: '#ef4444',
-    borderRadius: 16,
+    backgroundColor: colors.ink,
     padding: 24,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
-    shadowColor: '#ef4444',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -355,14 +354,13 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   imagePreview: {
     width: width - 48,
     height: (width - 48) * 1.33,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 16,
+    backgroundColor: colors.paper,
     marginHorizontal: 24,
     marginBottom: 24,
     overflow: 'hidden',
@@ -376,8 +374,8 @@ const styles = StyleSheet.create({
   },
   filtersTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
     paddingHorizontal: 24,
   },
@@ -388,30 +386,30 @@ const styles = StyleSheet.create({
   filterButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   filterButtonActive: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#ef4444',
+    // Ink, not hair. This is the selected state - a hairline against a
+    // transparent-bordered neighbour is not a distinction anyone would see.
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   filterLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
   },
   filterLabelActive: {
-    color: '#ef4444',
+    color: colors.ink,
   },
   doneButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     marginHorizontal: 24,
-    borderRadius: 16,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#ef4444',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -422,7 +420,7 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
 });

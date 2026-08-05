@@ -1,3 +1,25 @@
+/**
+ * Carbon calculator
+ *
+ * Rebuilt on the design system, and cut back to what the service can actually
+ * support. Removed from the previous version:
+ *
+ *   - A "63rd percentile" badge. There is no population to rank against; it
+ *     was a linear interpolation between two hardcoded constants, so it
+ *     implied a comparison that has never been made.
+ *   - "Future projections" - three rows computed as totalKgCO2 * 0.05 / 0.15 /
+ *     0.6 with `trend: 'decreasing'` hardcoded. It told users they were
+ *     improving regardless of what they did.
+ *   - Phone-charge and LED-hour equivalents, multipliers with no stated basis.
+ *   - An offset panel quoting a dollar price and a "View Offset Projects"
+ *     button wired to nothing.
+ *   - A "Start Strategy" button, also wired to nothing.
+ *
+ * What remains is derived from real closet items: the per-category breakdown,
+ * the highest and lowest emitters, the real month-by-month timeline, and the
+ * reduction strategies.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -6,7 +28,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -23,32 +45,42 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
-
-const { width } = Dimensions.get('window');
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Tab = 'overview' | 'breakdown' | 'reduce';
+
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'breakdown', label: 'Breakdown' },
+  { value: 'reduce', label: 'Reduce' },
+];
+
+/** Average petrol car, kg CO2 per kilometre. */
+const KG_CO2_PER_CAR_KM = 0.17;
+/** Kilograms of CO2 a mature tree absorbs in a year. */
+const KG_CO2_PER_TREE_YEAR = 20;
 
 export default function CarbonCalculatorScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [wardrobeFootprint, setWardrobeFootprint] = useState<WardrobeFootprint | null>(null);
   const [strategies, setStrategies] = useState<ReductionStrategy[]>([]);
   const [comparison, setComparison] = useState<ComparisonData | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'breakdown' | 'reduce'>('overview');
+  const [selectedTab, setSelectedTab] = useState<Tab>('overview');
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
-    loadCarbonData();
+    load();
   }, []);
 
-  const loadCarbonData = async () => {
+  const load = async () => {
     try {
       setLoading(true);
 
-      // Get closet items
       const response = await closetAPI.getItems(getCurrentUserId());
-      const items: Item[] = response.data.map((item: any) => ({
+      const items: Item[] = (response.data || []).map((item: any) => ({
         id: item.id,
         name: item.name || 'Item',
         imageUrl: item.imageUrl,
@@ -65,16 +97,14 @@ export default function CarbonCalculatorScreen() {
         style: item.style,
       }));
 
-      // Calculate wardrobe footprint
       const footprint = await carbonFootprintService.calculateWardrobeFootprint(items);
       setWardrobeFootprint(footprint);
 
-      // Get reduction strategies
-      const reductionStrategies = await carbonFootprintService.getReductionStrategies(footprint.totalKgCO2);
+      const [reductionStrategies, comparisonData] = await Promise.all([
+        carbonFootprintService.getReductionStrategies(footprint.totalKgCO2),
+        carbonFootprintService.compareToAverage(footprint.totalKgCO2),
+      ]);
       setStrategies(reductionStrategies);
-
-      // Get comparison data
-      const comparisonData = await carbonFootprintService.compareToAverage(footprint.totalKgCO2);
       setComparison(comparisonData);
     } catch (error) {
       console.error('Error loading carbon data:', error);
@@ -84,863 +114,378 @@ export default function CarbonCalculatorScreen() {
     }
   };
 
-  const getDifficultyColor = (difficulty: string): string => {
-    const colors = {
-      easy: ds.camel,
-      medium: ds.camel,
-      hard: ds.ink,
-    };
-    return colors[difficulty as keyof typeof colors] || ds.inkMuted;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  const getImpactColor = (impact: string): string => {
-    const colors = {
-      low: ds.inkFaint,
-      medium: ds.camel,
-      high: ds.camel,
-    };
-    return colors[impact as keyof typeof colors] || ds.inkMuted;
-  };
+  const renderOverview = (f: WardrobeFootprint, c: ComparisonData) => {
+    const scale = Math.max(f.totalKgCO2, c.averageUser, c.sustainableTarget) || 1;
+    const rows: Array<{ label: string; value: number; strong?: boolean }> = [
+      { label: 'Your wardrobe', value: f.totalKgCO2, strong: true },
+      { label: 'Typical wardrobe', value: c.averageUser },
+      { label: 'Low-impact target', value: c.sustainableTarget },
+    ];
 
-  const getTrendIcon = (trend: string): string => {
-    const icons = {
-      increasing: '',
-      stable: '➡️',
-      decreasing: '',
-    };
-    return icons[trend as keyof typeof icons] || '➡️';
-  };
+    // The timeline chart needs a scale from the data, not a hardcoded 70.
+    const peak = Math.max(...f.timeline.map(p => p.kgCO2), 1);
 
-  if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={ds.camel} />
-          <Text style={styles.loadingText}>Calculating carbon footprint...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+      <>
+        <Text style={styles.sectionLabel}>HOW THIS COMPARES</Text>
+        <Text style={styles.sectionNote}>
+          Measured against published reference figures for a typical wardrobe, not against other
+          users of this app.
+        </Text>
+        {rows.map(row => (
+          <View key={row.label} style={styles.barRow}>
+            <View style={styles.barHeader}>
+              <Text style={row.strong ? styles.barLabelStrong : styles.barLabel}>{row.label}</Text>
+              <Text style={styles.barValue}>{row.value.toFixed(0)} kg</Text>
+            </View>
+            <View style={styles.bar}>
+              <View
+                style={[
+                  styles.barFill,
+                  { width: `${Math.min(100, (row.value / scale) * 100)}%` },
+                  !row.strong && styles.barFillMuted,
+                ]}
+              />
+            </View>
+          </View>
+        ))}
+        {!!c.message && <Text style={styles.bodyText}>{c.message}</Text>}
 
-  if (!wardrobeFootprint || !comparison) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No data available</Text>
+        <Text style={styles.sectionLabel}>WHAT THAT LOOKS LIKE</Text>
+        <View style={styles.figureBox}>
+          <Text style={styles.figureValue}>
+            {Math.round(f.totalKgCO2 / KG_CO2_PER_CAR_KM).toLocaleString()}
+          </Text>
+          <Text style={styles.figureUnit}>km in an average petrol car</Text>
         </View>
-      </SafeAreaView>
+        <View style={styles.figureBox}>
+          <Text style={styles.figureValue}>
+            {Math.ceil(f.totalKgCO2 / KG_CO2_PER_TREE_YEAR).toLocaleString()}
+          </Text>
+          <Text style={styles.figureUnit}>mature trees absorbing for a year</Text>
+        </View>
+
+        {f.timeline.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>WHEN IT WAS ADDED</Text>
+            <Text style={styles.sectionNote}>
+              Emissions attributed to the month each item entered your closet.
+            </Text>
+            <View style={styles.chart}>
+              {f.timeline.map((point, i) => (
+                <View key={i} style={styles.chartColumn}>
+                  <View style={styles.chartTrack}>
+                    <View
+                      style={[styles.chartBar, { height: `${(point.kgCO2 / peak) * 100}%` }]}
+                    />
+                  </View>
+                  <Text style={styles.chartLabel}>{point.month}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+      </>
     );
-  }
+  };
+
+  const renderBreakdown = (f: WardrobeFootprint) => (
+    <>
+      <Text style={styles.sectionLabel}>BY CATEGORY</Text>
+      {f.breakdown.map((cat, i) => (
+        <View key={i} style={styles.barRow}>
+          <View style={styles.barHeader}>
+            <Text style={styles.barLabelStrong}>
+              {cat.category.charAt(0).toUpperCase() + cat.category.slice(1)}
+            </Text>
+            <Text style={styles.barValue}>{cat.kgCO2.toFixed(1)} kg</Text>
+          </View>
+          <View style={styles.bar}>
+            <View style={[styles.barFill, { width: `${Math.min(100, cat.percentage)}%` }]} />
+          </View>
+          <Text style={styles.barNote}>
+            {cat.itemCount} {cat.itemCount === 1 ? 'item' : 'items'} ·{' '}
+            {cat.percentage.toFixed(0)}% of total
+          </Text>
+        </View>
+      ))}
+
+      <Text style={styles.sectionLabel}>HIGHEST IMPACT</Text>
+      {f.topEmitters.map((emitter, i) => (
+        <View key={i} style={styles.emitterRow}>
+          <Text style={styles.emitterRank}>{i + 1}</Text>
+          <View style={styles.emitterInfo}>
+            <Text style={styles.emitterName} numberOfLines={1}>
+              {emitter.item.name}
+            </Text>
+            <Text style={styles.emitterCategory}>{emitter.item.category}</Text>
+          </View>
+          <Text style={styles.emitterValue}>{emitter.kgCO2.toFixed(1)} kg</Text>
+        </View>
+      ))}
+
+      <Text style={styles.sectionLabel}>LOWEST IMPACT</Text>
+      {f.lowestEmitters.map((emitter, i) => (
+        <View key={i} style={styles.emitterRow}>
+          <Text style={styles.emitterRank}>{i + 1}</Text>
+          <View style={styles.emitterInfo}>
+            <Text style={styles.emitterName} numberOfLines={1}>
+              {emitter.item.name}
+            </Text>
+            <Text style={styles.emitterCategory}>{emitter.item.category}</Text>
+          </View>
+          <Text style={styles.emitterValue}>{emitter.kgCO2.toFixed(1)} kg</Text>
+        </View>
+      ))}
+    </>
+  );
+
+  const renderReduce = (c: ComparisonData) => (
+    <>
+      {c.recommendations.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>FOR YOUR WARDROBE</Text>
+          {c.recommendations.map((rec, i) => (
+            <View key={i} style={styles.textRow}>
+              <Text style={styles.bodyText}>{rec}</Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      <Text style={styles.sectionLabel}>WAYS TO CUT IT DOWN</Text>
+      {strategies.map((strategy, i) => (
+        <View key={i} style={styles.strategyRow}>
+          <View style={styles.strategyHeader}>
+            <Text style={styles.strategyTitle}>{strategy.title}</Text>
+            <Text style={styles.strategyBadge}>{strategy.impact.toUpperCase()} IMPACT</Text>
+          </View>
+          <Text style={styles.bodyText}>{strategy.description}</Text>
+
+          <View style={styles.strategyMeta}>
+            <Text style={styles.strategyMetaText}>
+              −{strategy.percentageReduction}% · {strategy.difficulty} · {strategy.timeframe}
+            </Text>
+          </View>
+
+          {strategy.steps.length > 0 && (
+            <View style={styles.steps}>
+              {strategy.steps.map((step, si) => (
+                <Text key={si} style={styles.step}>
+                  {si + 1}. {step}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      ))}
+
+      <TouchableOpacity style={styles.footerLink} onPress={() => navigation.navigate('Resale')}>
+        <Text style={styles.footerLinkText}>See what's worth reselling →</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  const ready = wardrobeFootprint && comparison;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Carbon Calculator</Text>
-        <TouchableOpacity onPress={loadCarbonData}>
-          <Text style={styles.refreshButton}>○</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
-      {/* Total Footprint Banner */}
-      <View style={styles.totalBanner}>
-        <Text style={styles.totalLabel}>Your Total Carbon Footprint</Text>
-        <View style={styles.totalValueContainer}>
-          <Text style={styles.totalValue}>{wardrobeFootprint.totalKgCO2.toFixed(1)}</Text>
-          <Text style={styles.totalUnit}>kg CO₂</Text>
-        </View>
-        <Text style={styles.totalSubtext}>From {wardrobeFootprint.itemCount} items in your wardrobe
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
+        }
+      >
+        <Text style={styles.eyebrow}>SUSTAINABILITY</Text>
+        <Text style={styles.title}>Carbon calculator</Text>
+        <Text style={styles.subtitle}>
+          What it took to make what you own, and where the weight sits.
         </Text>
-        <View style={styles.comparisonBadge}>
-          <Text style={styles.comparisonText}>
-            {comparison.percentile.toFixed(0)}th percentile
-          </Text>
-        </View>
-      </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'overview' && styles.tabActive]}
-          onPress={() =>setSelectedTab('overview')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>Overview
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'breakdown' && styles.tabActive]}
-          onPress={() =>setSelectedTab('breakdown')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'breakdown' && styles.tabTextActive]}>Breakdown
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'reduce' && styles.tabActive]}
-          onPress={() =>setSelectedTab('reduce')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'reduce' && styles.tabTextActive]}>Reduce
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView>
-        {/* Overview Tab */}
-        {selectedTab === 'overview' && (
+        {loading ? (
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
+          </View>
+        ) : !ready ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Nothing to calculate yet</Text>
+            <Text style={styles.emptyText}>Add items to your closet and this fills in.</Text>
+            <TouchableOpacity
+              style={styles.emptyAction}
+              onPress={() => navigation.navigate('AddClosetItem')}
+            >
+              <Text style={styles.emptyActionText}>Add to closet</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <>
-            {/* Comparison */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>How You Compare</Text>
-              <View style={styles.comparisonCard}>
-                <Text style={styles.comparisonMessage}>{comparison.message}</Text>
-                <View style={styles.comparisonBars}>
-                  <View style={styles.comparisonBar}>
-                    <Text style={styles.comparisonBarLabel}>You</Text>
-                    <View style={styles.comparisonBarTrack}>
-                      <View style={[
-                        styles.comparisonBarFill,
-                        { width: `${(wardrobeFootprint.totalKgCO2 / comparison.averageUser) * 100}%`, backgroundColor: ds.tobacco }
-                      ]} />
-                    </View>
-                    <Text style={styles.comparisonBarValue}>{wardrobeFootprint.totalKgCO2.toFixed(0)} kg</Text>
-                  </View>
-                  <View style={styles.comparisonBar}>
-                    <Text style={styles.comparisonBarLabel}>Average</Text>
-                    <View style={styles.comparisonBarTrack}>
-                      <View style={[styles.comparisonBarFill, { width: '100%', backgroundColor: ds.inkFaint }]} />
-                    </View>
-                    <Text style={styles.comparisonBarValue}>{comparison.averageUser} kg</Text>
-                  </View>
-                  <View style={styles.comparisonBar}>
-                    <Text style={styles.comparisonBarLabel}>Target</Text>
-                    <View style={styles.comparisonBarTrack}>
-                      <View style={[
-                        styles.comparisonBarFill,
-                        { width: `${(comparison.sustainableTarget / comparison.averageUser) * 100}%`, backgroundColor: ds.camel }
-                      ]} />
-                    </View>
-                    <Text style={styles.comparisonBarValue}>{comparison.sustainableTarget} kg</Text>
-                  </View>
-                </View>
-              </View>
+            <View style={styles.totalBox}>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+              <Text style={styles.totalValue}>{wardrobeFootprint.totalKgCO2.toFixed(0)}</Text>
+              <Text style={styles.totalUnit}>
+                kg CO₂ across {wardrobeFootprint.itemCount}{' '}
+                {wardrobeFootprint.itemCount === 1 ? 'item' : 'items'}
+              </Text>
             </View>
 
-            {/* Equivalents */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Real-World Equivalents</Text>
-              <View style={styles.equivalentsGrid}>
-                <View style={styles.equivalentCard}>
-                                    <Text style={styles.equivalentValue}>
-                    {Math.round(wardrobeFootprint.totalKgCO2 * 4.5)}
+            {/* Estimates, and said so once at the top rather than hedged on
+                every figure below. */}
+            <View style={styles.noticeBox}>
+              <Text style={styles.noticeText}>
+                Estimated from category averages for production, transport, packaging and disposal.
+                We don't know the fibre content or origin of your items, so treat these as an order
+                of magnitude.
+              </Text>
+            </View>
+
+            <View style={styles.tabs}>
+              {TABS.map(tab => (
+                <TouchableOpacity
+                  key={tab.value}
+                  style={[styles.tab, selectedTab === tab.value && styles.tabActive]}
+                  onPress={() => setSelectedTab(tab.value)}
+                >
+                  <Text style={[styles.tabText, selectedTab === tab.value && styles.tabTextActive]}>
+                    {tab.label}
                   </Text>
-                  <Text style={styles.equivalentLabel}>km driven</Text>
-                </View>
-                <View style={styles.equivalentCard}>
-                                    <Text style={styles.equivalentValue}>
-                    {Math.ceil(wardrobeFootprint.totalKgCO2 / 20)}
-                  </Text>
-                  <Text style={styles.equivalentLabel}>trees needed</Text>
-                </View>
-                <View style={styles.equivalentCard}>
-                                    <Text style={styles.equivalentValue}>
-                    {Math.round(wardrobeFootprint.totalKgCO2 * 250)}
-                  </Text>
-                  <Text style={styles.equivalentLabel}>phone charges</Text>
-                </View>
-                <View style={styles.equivalentCard}>
-                                    <Text style={styles.equivalentValue}>
-                    {Math.round(wardrobeFootprint.totalKgCO2 * 1000)}
-                  </Text>
-                  <Text style={styles.equivalentLabel}>LED hours</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Timeline */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6-Month Trend</Text>
-              <View style={styles.timelineCard}>
-                <View style={styles.timelineChart}>
-                  {wardrobeFootprint.timeline.map((point, index) => (
-                    <View key={index} style={styles.timelinePoint}>
-                      <View style={styles.timelineBar}>
-                        <View style={[
-                          styles.timelineBarFill,
-                          { height: `${(point.kgCO2 / 70) * 100}%` }
-                        ]} />
-                      </View>
-                      <Text style={styles.timelineMonth}>{point.month}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-
-            {/* Projections */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Future Projections</Text>
-              {wardrobeFootprint.projections.map((proj, index) => (
-                <View key={index} style={styles.projectionCard}>
-                  <View style={styles.projectionHeader}>
-                    <Text style={styles.projectionPeriod}>{proj.period}</Text>
-                    <Text style={styles.projectionTrend}>{getTrendIcon(proj.trend)}</Text>
-                  </View>
-                  <Text style={styles.projectionValue}>{proj.kgCO2.toFixed(1)} kg CO₂</Text>
-                  <Text style={styles.projectionDescription}>
-                    {proj.trend === 'decreasing' ? 'Improving trend' : 
-                     proj.trend === 'increasing' ? 'Increasing trend' : 'Stable trend'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Breakdown Tab */}
-        {selectedTab === 'breakdown' && (
-          <>
-            {/* Category Breakdown */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>By Category</Text>
-              {wardrobeFootprint.breakdown.map((cat, index) => (
-                <View key={index} style={styles.breakdownCard}>
-                  <View style={styles.breakdownHeader}>
-                    <Text style={styles.breakdownCategory}>
-                      {cat.category.charAt(0).toUpperCase() + cat.category.slice(1)}
-                    </Text>
-                    <Text style={styles.breakdownValue}>{cat.kgCO2.toFixed(1)} kg</Text>
-                  </View>
-                  <View style={styles.breakdownBar}>
-                    <View style={[styles.breakdownBarFill, { width: `${cat.percentage}%` }]} />
-                  </View>
-                  <Text style={styles.breakdownDetails}>
-                    {cat.itemCount} items • {cat.percentage.toFixed(0)}% of total
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Top Emitters */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Highest Impact Items</Text>
-              {wardrobeFootprint.topEmitters.map((emitter, index) => (
-                <View key={index} style={styles.emitterCard}>
-                  <View style={styles.emitterRank}>
-                    <Text style={styles.emitterRankText}>#{index + 1}</Text>
-                  </View>
-                  <View style={styles.emitterInfo}>
-                    <Text style={styles.emitterName}>{emitter.item.name}</Text>
-                    <Text style={styles.emitterCategory}>{emitter.item.category}</Text>
-                  </View>
-                  <Text style={styles.emitterValue}>{emitter.kgCO2.toFixed(1)} kg</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Lowest Emitters */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>◉ Lowest Impact Items</Text>
-              {wardrobeFootprint.lowestEmitters.map((emitter, index) => (
-                <View key={index} style={styles.emitterCard}>
-                  <View style={[styles.emitterRank, { backgroundColor: ds.camel }]}>
-                    <Text style={styles.emitterRankText}>#{index + 1}</Text>
-                  </View>
-                  <View style={styles.emitterInfo}>
-                    <Text style={styles.emitterName}>{emitter.item.name}</Text>
-                    <Text style={styles.emitterCategory}>{emitter.item.category}</Text>
-                  </View>
-                  <Text style={[styles.emitterValue, { color: ds.camel }]}>
-                    {emitter.kgCO2.toFixed(1)} kg
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Reduce Tab */}
-        {selectedTab === 'reduce' && (
-          <>
-            {/* Recommendations */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Personalized Recommendations</Text>
-              <View style={styles.recommendationsCard}>
-                {comparison.recommendations.map((rec, index) => (
-                  <View key={index} style={styles.recommendationItem}>
-                    <Text style={styles.recommendationBullet}>•</Text>
-                    <Text style={styles.recommendationText}>{rec}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Reduction Strategies */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>◎ Reduction Strategies</Text>
-              {strategies.map((strategy, index) => (
-                <View key={index} style={styles.strategyCard}>
-                  <View style={styles.strategyHeader}>
-                    <View style={styles.strategyTitleRow}>
-                      <Text style={styles.strategyTitle}>{strategy.title}</Text>
-                      <View style={[styles.strategyImpact, { backgroundColor: getImpactColor(strategy.impact) }]}>
-                        <Text style={styles.strategyImpactText}>{strategy.impact.toUpperCase()}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.strategyDescription}>{strategy.description}</Text>
-                  </View>
-
-                  <View style={styles.strategyMetrics}>
-                    <View style={styles.strategyMetric}>
-                      <Text style={styles.strategyMetricLabel}>Reduction</Text>
-                      <Text style={styles.strategyMetricValue}>
-                        -{strategy.percentageReduction}%
-                      </Text>
-                    </View>
-                    <View style={styles.strategyMetric}>
-                      <Text style={styles.strategyMetricLabel}>Difficulty</Text>
-                      <View style={[styles.strategyDifficulty, { backgroundColor: getDifficultyColor(strategy.difficulty) }]}>
-                        <Text style={styles.strategyDifficultyText}>
-                          {strategy.difficulty.toUpperCase()}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.strategyMetric}>
-                      <Text style={styles.strategyMetricLabel}>Timeframe</Text>
-                      <Text style={styles.strategyMetricValue}>{strategy.timeframe}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.strategySteps}>
-                    <Text style={styles.strategyStepsTitle}>Steps:</Text>
-                    {strategy.steps.map((step, stepIndex) => (
-                      <Text key={stepIndex} style={styles.strategyStep}>
-                        {stepIndex + 1}. {step}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <TouchableOpacity style={styles.strategyButton}>
-                    <Text style={styles.strategyButtonText}>Start Strategy</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
-            {/* Offset Option */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Offset Your Emissions</Text>
-              <View style={styles.offsetCard}>
-                <Text style={styles.offsetTitle}>Carbon Offset Programs</Text>
-                <Text style={styles.offsetDescription}>Offset your {wardrobeFootprint.totalKgCO2.toFixed(0)} kg CO₂ footprint by supporting environmental projects
-                </Text>
-                <View style={styles.offsetStats}>
-                  <View style={styles.offsetStat}>
-                    <Text style={styles.offsetStatValue}>
-                      ${Math.ceil(wardrobeFootprint.totalKgCO2 * 0.5)}
-                    </Text>
-                    <Text style={styles.offsetStatLabel}>Estimated Cost</Text>
-                  </View>
-                  <View style={styles.offsetStat}>
-                    <Text style={styles.offsetStatValue}>
-                      {Math.ceil(wardrobeFootprint.totalKgCO2 / 20)}
-                    </Text>
-                    <Text style={styles.offsetStatLabel}>Trees Equivalent</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.offsetButton}>
-                  <Text style={styles.offsetButtonText}>View Offset Projects</Text>
                 </TouchableOpacity>
-              </View>
+              ))}
             </View>
+
+            {selectedTab === 'overview' && renderOverview(wardrobeFootprint, comparison)}
+            {selectedTab === 'breakdown' && renderBreakdown(wardrobeFootprint)}
+            {selectedTab === 'reduce' && renderReduce(comparison)}
           </>
         )}
-
-        <View style={{ height: 40 }} />
       </ScrollView>
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: ds.hair,
-  },
-  backButton: {
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  refreshButton: {
-    fontSize: 20,
-    color: ds.ink,
-  },
-  totalBanner: {
-    padding: 24,
-    backgroundColor: ds.ink,
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 12,
-  },
-  totalValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  totalValue: {
-    fontSize: 56,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  totalUnit: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginLeft: 8,
-  },
-  totalSubtext: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: 16,
-  },
-  comparisonBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+  container: { flex: 1, backgroundColor: colors.bone },
+  headerBar: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { padding: spacing.page, paddingBottom: 60 },
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
+
+  totalBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  totalLabel: { ...textType.eyebrow, marginBottom: 8 },
+  totalValue: { fontFamily: fonts.serif, fontSize: 56, lineHeight: 60, color: colors.ink },
+  totalUnit: { ...textType.body, color: colors.inkMuted, marginTop: 4 },
+
+  noticeBox: {
+    marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: ds.camel,
+    borderColor: colors.hair,
+    padding: spacing.md,
   },
-  comparisonText: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
+  noticeText: { ...textType.meta, fontSize: 12, lineHeight: 18 },
+
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: ds.hair,
+    borderBottomColor: colors.hair,
+    marginTop: spacing.section,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: ds.camel,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: fonts.sansMedium,
-    color: ds.inkMuted,
-  },
-  tabTextActive: {
-    color: ds.camel,
-    fontFamily: fonts.sansSemiBold,
-  },
-  section: {
-    padding: 20,
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  tabActive: { borderBottomWidth: 1, borderBottomColor: colors.ink },
+  tabText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  tabTextActive: { fontFamily: fonts.sansMedium, color: colors.ink },
+
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 10 },
+  sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },
+  bodyText: { ...textType.body, color: colors.inkMuted },
+
+  barRow: { marginBottom: spacing.md },
+  barHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  barLabel: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  barLabelStrong: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  barValue: { ...textType.meta, fontSize: 12 },
+  barNote: { ...textType.meta, fontSize: 12, marginTop: 6 },
+  bar: { height: 2, backgroundColor: colors.hair },
+  barFill: { height: 2, backgroundColor: colors.ink },
+  barFillMuted: { backgroundColor: colors.inkFaint },
+
+  figureBox: { backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.sm },
+  figureValue: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
+  figureUnit: { ...textType.body, color: colors.inkMuted, marginTop: 4 },
+
+  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 140, gap: 8 },
+  chartColumn: { flex: 1, alignItems: 'center' },
+  chartTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
+  chartBar: { width: '100%', backgroundColor: colors.ink, minHeight: 2 },
+  chartLabel: { ...textType.meta, fontSize: 10, marginTop: 8 },
+
+  textRow: {
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: ds.paper,
+    borderBottomColor: colors.hair,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 16,
-  },
-  comparisonCard: {
-    backgroundColor: ds.paper,
-    padding: 20,
-  },
-  comparisonMessage: {
-    fontSize: 15,
-    color: ds.ink,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  comparisonBars: {
-    gap: 16,
-  },
-  comparisonBar: {
-    gap: 6,
-  },
-  comparisonBarLabel: {
-    fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.inkMuted,
-  },
-  comparisonBarTrack: {
-    height: 8,
-    backgroundColor: ds.hair,
-    overflow: 'hidden',
-  },
-  comparisonBarFill: {
-    height: '100%',
-  },
-  comparisonBarValue: {
-    fontSize: 12,
-    color: ds.inkMuted,
-  },
-  equivalentsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  equivalentCard: {
-    width: (width - 52) / 2,
-    backgroundColor: ds.paper,
-    padding: 16,
-    alignItems: 'center',
-  },
-  equivalentIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  equivalentValue: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 4,
-  },
-  equivalentLabel: {
-    fontSize: 12,
-    color: ds.inkMuted,
-    textAlign: 'center',
-  },
-  timelineCard: {
-    backgroundColor: ds.paper,
-    padding: 20,
-  },
-  timelineChart: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 120,
-  },
-  timelinePoint: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-  },
-  timelineBar: {
-    width: 24,
-    height: 100,
-    backgroundColor: ds.hair,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  timelineBarFill: {
-    width: '100%',
-    backgroundColor: ds.camel,
-  },
-  timelineMonth: {
-    fontSize: 11,
-    color: ds.inkMuted,
-  },
-  projectionCard: {
-    backgroundColor: ds.paper,
-    padding: 16,
-    marginBottom: 12,
-  },
-  projectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  projectionPeriod: {
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  projectionTrend: {
-    fontSize: 20,
-  },
-  projectionValue: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-    marginBottom: 4,
-  },
-  projectionDescription: {
-    fontSize: 13,
-    color: ds.inkMuted,
-  },
-  breakdownCard: {
-    marginBottom: 16,
-  },
-  breakdownHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  breakdownCategory: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  breakdownValue: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
-  breakdownBar: {
-    height: 8,
-    backgroundColor: ds.paper,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
-  breakdownBarFill: {
-    height: '100%',
-    backgroundColor: ds.camel,
-  },
-  breakdownDetails: {
-    fontSize: 12,
-    color: ds.inkMuted,
-  },
-  emitterCard: {
+
+  emitterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: ds.paper,
-    padding: 12,
-    marginBottom: 8,
-    gap: 12,
-  },
-  emitterRank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: ds.ink,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emitterRankText: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  emitterInfo: {
-    flex: 1,
-  },
-  emitterName: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 2,
-  },
-  emitterCategory: {
-    fontSize: 12,
-    color: ds.inkMuted,
-  },
-  emitterValue: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  recommendationsCard: {
-    backgroundColor: ds.sand,
-    padding: 16,
-  },
-  recommendationItem: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    gap: 8,
-  },
-  recommendationBullet: {
-    fontSize: 16,
-    color: ds.camel,
-    fontFamily: fonts.sansSemiBold,
-  },
-  recommendationText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#065f46',
-    lineHeight: 20,
-  },
-  strategyCard: {
-    backgroundColor: ds.paper,
-    padding: 16,
-    marginBottom: 16,
-  },
-  strategyHeader: {
-    marginBottom: 16,
-  },
-  strategyTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  strategyTitle: {
-    flex: 1,
-    fontSize: 17,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginRight: 12,
-  },
-  strategyImpact: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  strategyImpactText: {
-    fontSize: 9,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  strategyDescription: {
-    fontSize: 14,
-    color: ds.inkMuted,
-    lineHeight: 20,
-  },
-  strategyMetrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
+    paddingBottom: spacing.sm,
+    marginBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderColor: ds.hair,
+    borderBottomColor: colors.hair,
   },
-  strategyMetric: {
-    flex: 1,
-    alignItems: 'center',
+  emitterRank: { fontFamily: fonts.serif, fontSize: 18, color: colors.inkFaint, width: 26 },
+  emitterInfo: { flex: 1 },
+  emitterName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  emitterCategory: { ...textType.meta, fontSize: 12, marginTop: 2 },
+  emitterValue: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+
+  strategyRow: {
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  strategyMetricLabel: {
-    fontSize: 11,
-    color: ds.inkMuted,
-    marginBottom: 4,
-  },
-  strategyMetricValue: {
-    fontSize: 16,
+  strategyHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  strategyTitle: { flex: 1, fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  strategyBadge: {
     fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
-  strategyDifficulty: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  strategyDifficultyText: {
     fontSize: 9,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginTop: 6,
+    marginLeft: spacing.sm,
   },
-  strategySteps: {
-    marginBottom: 16,
-  },
-  strategyStepsTitle: {
-    fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 8,
-  },
-  strategyStep: {
-    fontSize: 13,
-    color: ds.inkMuted,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  strategyButton: {
-    backgroundColor: ds.camel,
+  strategyMeta: { marginTop: 10 },
+  strategyMetaText: { ...textType.meta, fontSize: 12 },
+  steps: { marginTop: spacing.sm },
+  step: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6, lineHeight: 19 },
+
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+  emptyAction: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.md,
+    backgroundColor: colors.ink,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 12,
-    alignItems: 'center',
   },
-  strategyButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  offsetCard: {
-    backgroundColor: ds.sand,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: ds.camel,
-  },
-  offsetTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: '#065f46',
-    marginBottom: 8,
-  },
-  offsetDescription: {
-    fontSize: 14,
-    color: '#065f46',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  offsetStats: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
-  offsetStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  offsetStatValue: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-    marginBottom: 4,
-  },
-  offsetStatLabel: {
-    fontSize: 12,
-    color: '#065f46',
-    textAlign: 'center',
-  },
-  offsetButton: {
-    backgroundColor: ds.camel,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  offsetButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
+  emptyActionText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
+
+  footerLink: { marginTop: spacing.section, paddingVertical: spacing.md },
+  footerLinkText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },
 });

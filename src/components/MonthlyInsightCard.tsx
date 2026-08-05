@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface MonthlyInsightCardProps {
   insight: string;
@@ -59,12 +60,11 @@ function getCurrentMonth(): string {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     padding: 20,
     marginVertical: 16,
     borderWidth: 2,
-    borderColor: '#2B1F1A',
+    borderColor: colors.ink,
   },
   header: {
     flexDirection: 'row',
@@ -74,28 +74,27 @@ const styles = StyleSheet.create({
   },
   badge: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   date: {
     fontSize: 12,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   insight: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     lineHeight: 28,
     marginBottom: 16,
   },
   premiumTease: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     marginBottom: 12,
     gap: 12,
   },
@@ -105,12 +104,12 @@ const styles = StyleSheet.create({
   teaseText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   footer: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     fontStyle: 'italic',
   },
 });

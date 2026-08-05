@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface ClosetStatsProps {
   totalItems: number;
@@ -74,30 +75,29 @@ export default function ClosetStats({
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 20,
   },
   statCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 24,
-    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   statNumber: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   statLabel: {
     fontSize: 16,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 4,
   },
   section: {
@@ -105,12 +105,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   categoryGrid: {
@@ -120,23 +120,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   categoryCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 8,
     alignItems: 'center',
     minWidth: 100,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   categoryCount: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   categoryName: {
     fontSize: 14,
-    color: '#666',
+    color: colors.inkMuted,
     marginTop: 4,
     textTransform: 'capitalize',
   },
@@ -146,11 +145,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    backgroundColor: colors.paper,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   wornItemName: {
     fontSize: 16,
@@ -158,7 +156,7 @@ const styles = StyleSheet.create({
   },
   wornItemCount: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
   },
 });

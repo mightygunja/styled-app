@@ -12,6 +12,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface TrialStatusCardProps {
   trialEndDate: Date;
@@ -76,12 +77,11 @@ export default function TrialStatusCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F8F6F3',
-    borderRadius: 12,
+    backgroundColor: colors.paper,
     padding: 16,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   outfitsPlacement: {
     marginTop: 24,
@@ -89,21 +89,21 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#5E5A55',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   status: {
     fontSize: 15,
-    color: '#161616',
+    color: colors.ink,
     lineHeight: 22,
     marginBottom: 12,
   },
   transparency: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -113,27 +113,25 @@ const styles = StyleSheet.create({
   primaryButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     alignItems: 'center',
   },
   primaryButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
   },
   secondaryButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#2B1F1A',
+    borderColor: colors.ink,
     backgroundColor: 'transparent',
     alignItems: 'center',
   },
   secondaryButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
 });

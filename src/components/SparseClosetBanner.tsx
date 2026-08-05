@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface SparseClosetBannerProps {
   itemCount: number;
@@ -40,46 +41,44 @@ export default function SparseClosetBanner({ itemCount, onAddItems }: SparseClos
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.paper,
     padding: 20,
-    borderRadius: 12,
     marginVertical: 16,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   headline: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
     textAlign: 'center',
   },
   body: {
     fontSize: 16,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 24,
     textAlign: 'center',
     marginBottom: 16,
   },
   ctaButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#2B1F1A',
+    borderColor: colors.ink,
     alignSelf: 'center',
     marginBottom: 12,
   },
   ctaText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'center',
   },
   note: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
     fontStyle: 'italic',
   },

@@ -12,6 +12,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface TrialReminderBannerProps {
   daysRemaining: number;
@@ -56,13 +57,12 @@ export default function TrialReminderBanner({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: colors.card,
     padding: 20,
     marginHorizontal: 16,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
     position: 'relative',
   },
   dismissButton: {
@@ -76,35 +76,34 @@ const styles = StyleSheet.create({
   },
   dismissIcon: {
     fontSize: 28,
-    color: '#9CA3AF',
-    fontWeight: '300',
+    color: colors.inkFaint,
+    fontFamily: fonts.sans,
   },
   primaryCopy: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     lineHeight: 24,
     marginBottom: 12,
     paddingRight: 32, // Space for dismiss button
   },
   secondaryCopy: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 20,
     marginBottom: 16,
   },
   ctaButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2B1F1A',
+    borderColor: colors.ink,
     backgroundColor: 'transparent',
     alignSelf: 'flex-start',
   },
   ctaText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansMedium,
+    color: colors.ink,
   },
 });

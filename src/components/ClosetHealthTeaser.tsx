@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { colors, fonts } from '../theme/designSystem';
 
 interface ClosetHealthTeaserProps {
   tier: 'free' | 'plus' | 'premium';
@@ -83,17 +84,16 @@ export default function ClosetHealthTeaser({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     padding: 20,
     marginVertical: 16,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   header: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 16,
   },
   teaserContainer: {
@@ -105,7 +105,6 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 12,
   },
   unlockPrompt: {
     position: 'absolute',
@@ -119,21 +118,20 @@ const styles = StyleSheet.create({
   },
   unlockText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'center',
     marginBottom: 16,
   },
   upgradeButton: {
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
   },
   upgradeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
   },
   insightsContainer: {
     gap: 16,
@@ -141,23 +139,22 @@ const styles = StyleSheet.create({
   scoreContainer: {
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor: '#F8F6F3',
-    borderRadius: 12,
+    backgroundColor: colors.paper,
   },
   scoreText: {
     fontSize: 48,
-    fontWeight: '700',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   scoreLabel: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     marginTop: 4,
   },
   mainMessage: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -166,7 +163,7 @@ const styles = StyleSheet.create({
   },
   insightText: {
     fontSize: 15,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 22,
   },
 });

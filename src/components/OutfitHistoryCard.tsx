@@ -9,6 +9,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Outfit } from '../services/generateOutfits';
 import { getOutfitUsageMessage } from '../services/outfitHistory';
+import { colors, fonts } from '../theme/designSystem';
 
 interface OutfitHistoryCardProps {
   outfit: Outfit;
@@ -69,12 +70,11 @@ function formatDate(date: Date): string {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   imagesContainer: {
     flexDirection: 'row',
@@ -85,10 +85,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 100,
     marginRight: -15,
-    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.card,
   },
   itemImage: {
     width: '100%',
@@ -99,25 +98,24 @@ const styles = StyleSheet.create({
   },
   usageMessage: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   dateText: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   occasionTag: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F4F1ED',
-    borderRadius: 12,
+    backgroundColor: colors.paper,
   },
   occasionText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#5E5A55',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
 });

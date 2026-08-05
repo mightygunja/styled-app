@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
+import { colors } from '../theme/designSystem';
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -55,6 +56,6 @@ export default function SkeletonLoader({
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
   },
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { colors, fonts } from '../theme/designSystem';
 
 interface Props {
   onError: (message: string) => void;
@@ -145,7 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    borderRadius: 12,
     marginBottom: 12,
     gap: 10,
   },
@@ -161,38 +161,44 @@ const styles = StyleSheet.create({
     height: 52,
     width: '100%',
   },
+  // The three brand colours below (#000000 Apple, #4285F4 Google, #1877F2
+  // Facebook) are the only hardcoded hexes left in src/components, and they
+  // stay. Apple and Google both publish sign-in button guidelines that
+  // constrain the mark and the button ground; restyling them to the app
+  // palette would put the build at risk of a guideline rejection. Everything
+  // around them - borders, dividers, secondary text - is on the tokens.
   appleFallback: {
     height: 52,
     backgroundColor: '#000000',
     marginBottom: 0,
   },
   googleButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   googleIcon: {
+    fontFamily: fonts.sansSemiBold,
     fontSize: 16,
-    fontWeight: '800',
     color: '#4285F4',
   },
   googleButtonText: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    color: colors.ink,
   },
   facebookButton: {
     backgroundColor: '#1877F2',
   },
   facebookIcon: {
+    fontFamily: fonts.sansSemiBold,
     fontSize: 18,
-    fontWeight: '800',
-    color: '#ffffff',
+    color: colors.white,
   },
   facebookButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    color: colors.white,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -204,10 +210,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
   },
   dividerText: {
-    fontSize: 13,
-    color: '#94a3b8',
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkFaint,
   },
 });

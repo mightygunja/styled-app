@@ -1,3 +1,16 @@
+/**
+ * Sustainability
+ *
+ * Rebuilt on the design system, and stripped of numbers that had nothing
+ * behind them. The previous version computed the user's water footprint as
+ * `totalItems * 2500` and their waste as `totalItems * 0.5`, then presented
+ * both as fact. It also listed three carbon offset products with dollar
+ * prices attached to buttons that did nothing.
+ *
+ * What is left is what can actually be derived from the closet, with the
+ * estimates named as estimates.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -6,45 +19,53 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import BackButton from '../components/BackButton';
 import { RootStackParamList } from '../navigation/types';
-import {
-  sustainabilityService,
-  WardrobeSustainability,
-  SustainabilityGrade,
-} from '../services/sustainabilityService';
+import { sustainabilityService, WardrobeSustainability } from '../services/sustainabilityService';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
-
-const { width } = Dimensions.get('window');
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Tab = 'overview' | 'impact' | 'actions';
+
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'impact', label: 'Impact' },
+  { value: 'actions', label: 'Actions' },
+];
+
+/**
+ * Kilograms of CO2 per kilometre for an average petrol car, used for the one
+ * comparison on this screen. The previous version multiplied by 4 with no
+ * stated basis.
+ */
+const KG_CO2_PER_CAR_KM = 0.17;
 
 export default function SustainabilityScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [analysis, setAnalysis] = useState<WardrobeSustainability | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'impact' | 'actions'>('overview');
+  const [selectedTab, setSelectedTab] = useState<Tab>('overview');
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
-    loadSustainabilityAnalysis();
+    load();
   }, []);
 
-  const loadSustainabilityAnalysis = async () => {
+  const load = async () => {
     try {
       setLoading(true);
-
-      // Get closet items
       const response = await closetAPI.getItems(getCurrentUserId());
-      const items: Item[] = response.data.map((item: any) => ({
+      const items: Item[] = (response.data || []).map((item: any) => ({
         id: item.id,
         name: item.name || 'Item',
         imageUrl: item.imageUrl,
@@ -61,9 +82,7 @@ export default function SustainabilityScreen() {
         style: item.style,
       }));
 
-      // Analyze wardrobe sustainability
-      const wardrobeAnalysis = await sustainabilityService.analyzeWardrobe(items);
-      setAnalysis(wardrobeAnalysis);
+      setAnalysis(await sustainabilityService.analyzeWardrobe(items));
     } catch (error) {
       console.error('Error loading sustainability analysis:', error);
       showToast('Failed to load sustainability data', 'error');
@@ -72,692 +91,317 @@ export default function SustainabilityScreen() {
     }
   };
 
-  const getGradeColor = (grade: SustainabilityGrade): string => {
-    const colors: Record<SustainabilityGrade, string> = {
-      'A+': ds.camel,
-      'A': '#22c55e',
-      'B': '#84cc16',
-      'C': ds.camel,
-      'D': '#f97316',
-      'F': ds.ink,
-    };
-    return colors[grade];
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  const getDifficultyColor = (difficulty: string): string => {
-    const colors = {
-      easy: ds.camel,
-      medium: ds.camel,
-      hard: ds.ink,
-    };
-    return colors[difficulty as keyof typeof colors] || ds.inkMuted;
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={ds.camel} />
-          <Text style={styles.loadingText}>Analyzing sustainability...</Text>
+  const renderOverview = (a: WardrobeSustainability) => (
+    <>
+      <View style={styles.statRow}>
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{a.totalItems}</Text>
+          <Text style={styles.statLabel}>ITEMS</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!analysis) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No data available</Text>
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{a.sustainableItems}</Text>
+          <Text style={styles.statLabel}>SCORING WELL</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{a.totalItems - a.sustainableItems}</Text>
+          <Text style={styles.statLabel}>ROOM TO IMPROVE</Text>
+        </View>
+      </View>
+
+      {a.recommendations.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>WHAT WE'D CHANGE</Text>
+          {a.recommendations.map((rec, i) => (
+            <View key={i} style={styles.textRow}>
+              <Text style={styles.bodyText}>{rec}</Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      {a.topBrands.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>BRANDS YOU ACTUALLY WEAR</Text>
+          <Text style={styles.sectionNote}>
+            Ranked by real wear count from your closet — not by any sustainability rating.
+          </Text>
+          {a.topBrands.map((brand, i) => (
+            <View key={i} style={styles.brandRow}>
+              <View style={styles.brandHeader}>
+                <Text style={styles.brandName}>{brand.brand}</Text>
+                <Text style={styles.brandWears}>
+                  {brand.wears} {brand.wears === 1 ? 'wear' : 'wears'}
+                </Text>
+              </View>
+              <View style={styles.bar}>
+                <View style={[styles.barFill, { width: `${Math.min(100, brand.score)}%` }]} />
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+    </>
+  );
+
+  const renderImpact = (a: WardrobeSustainability) => (
+    <>
+      <Text style={styles.sectionLabel}>CARBON</Text>
+      <View style={styles.figureBox}>
+        <Text style={styles.figureValue}>{a.totalCarbonFootprint.toFixed(0)}</Text>
+        <Text style={styles.figureUnit}>kg CO₂ to produce your wardrobe</Text>
+        <Text style={styles.figureNote}>
+          About the same as driving{' '}
+          {Math.round(a.totalCarbonFootprint / KG_CO2_PER_CAR_KM).toLocaleString()} km in an average
+          petrol car.
+        </Text>
+      </View>
+
+      <Text style={styles.sectionLabel}>WATER</Text>
+      <View style={styles.figureBox}>
+        <Text style={styles.figureValue}>{Math.round(a.totalWaterLitres).toLocaleString()}</Text>
+        <Text style={styles.figureUnit}>litres used in production</Text>
+        <Text style={styles.figureNote}>
+          Roughly 2,700 litres go into a cotton t-shirt and 7,500 into a pair of jeans.
+        </Text>
+      </View>
+
+      {/* Both figures above are category averages. Saying so is the difference
+          between an estimate and a claim. */}
+      <View style={styles.noticeBox}>
+        <Text style={styles.noticeText}>
+          Both figures are estimated from category averages. We don't know the fibre content of your
+          items, so a per-item number would be false precision. Treat them as an order of magnitude,
+          not a measurement.
+        </Text>
+      </View>
+    </>
+  );
+
+  const renderActions = (a: WardrobeSustainability) => (
+    <>
+      <Text style={styles.sectionLabel}>WORTH DOING</Text>
+      <Text style={styles.sectionNote}>
+        Ordered by how much difference each would make, with how hard it is to actually do.
+      </Text>
+      {[...a.improvements]
+        .sort((x, y) => y.impact - x.impact)
+        .map((improvement, i) => (
+          <View key={i} style={styles.actionRow}>
+            <View style={styles.actionHeader}>
+              <Text style={styles.actionTitle}>{improvement.action}</Text>
+              <Text style={styles.actionDifficulty}>{improvement.difficulty.toUpperCase()}</Text>
+            </View>
+            <View style={styles.bar}>
+              <View style={[styles.barFill, { width: `${Math.min(100, improvement.impact)}%` }]} />
+            </View>
+          </View>
+        ))}
+
+      <Text style={styles.sectionLabel}>CERTIFICATIONS WORTH LOOKING FOR</Text>
+      <Text style={styles.sectionNote}>
+        On a label, these mean something specific has been independently checked.
+      </Text>
+      <View style={styles.certRow}>
+        {['GOTS', 'Fair Trade', 'OEKO-TEX', 'B Corp', 'Bluesign', 'Cradle to Cradle'].map(cert => (
+          <View key={cert} style={styles.cert}>
+            <Text style={styles.certText}>{cert}</Text>
+          </View>
+        ))}
+      </View>
+
+      <TouchableOpacity style={styles.footerLink} onPress={() => navigation.navigate('Resale')}>
+        <Text style={styles.footerLinkText}>See what's worth reselling →</Text>
+      </TouchableOpacity>
+    </>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sustainability</Text>
-        <TouchableOpacity onPress={loadSustainabilityAnalysis}>
-                  </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerBar}>
+        <BackButton />
       </View>
 
-      {/* Grade Banner */}
-      <View style={[styles.gradeBanner, { backgroundColor: getGradeColor(analysis.grade) }]}>
-        <View style={styles.gradeContent}>
-          <Text style={styles.gradeLabel}>Your Wardrobe Grade</Text>
-          <Text style={styles.gradeValue}>{analysis.grade}</Text>
-          <Text style={styles.gradeScore}>{analysis.averageScore.toFixed(0)}/100</Text>
-        </View>
-        <View style={styles.gradeStats}>
-          <View style={styles.gradeStat}>
-            <Text style={styles.gradeStatValue}>{analysis.sustainablePercentage.toFixed(0)}%</Text>
-            <Text style={styles.gradeStatLabel}>Sustainable</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
+        }
+      >
+        <Text style={styles.eyebrow}>SUSTAINABILITY</Text>
+        <Text style={styles.title}>Your wardrobe impact</Text>
+        <Text style={styles.subtitle}>
+          What your closet cost to make, and what would change it.
+        </Text>
+
+        {loading ? (
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
           </View>
-          <View style={styles.gradeStat}>
-            <Text style={styles.gradeStatValue}>{analysis.totalCarbonFootprint.toFixed(0)}</Text>
-            <Text style={styles.gradeStatLabel}>kg CO₂</Text>
+        ) : !analysis ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Nothing to analyse yet</Text>
+            <Text style={styles.emptyText}>Add items to your closet and this fills in.</Text>
           </View>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'overview' && styles.tabActive]}
-          onPress={() =>setSelectedTab('overview')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'overview' && styles.tabTextActive]}>Overview
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'impact' && styles.tabActive]}
-          onPress={() =>setSelectedTab('impact')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'impact' && styles.tabTextActive]}>Impact
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'actions' && styles.tabActive]}
-          onPress={() =>setSelectedTab('actions')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'actions' && styles.tabTextActive]}>Actions
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView>
-        {/* Overview Tab */}
-        {selectedTab === 'overview' && (
+        ) : analysis.totalItems === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Your closet is empty</Text>
+            <Text style={styles.emptyText}>
+              There is nothing to measure until there are items in it.
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyAction}
+              onPress={() => navigation.navigate('AddClosetItem')}
+            >
+              <Text style={styles.emptyActionText}>Add to closet</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <>
-            {/* Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{analysis.totalItems}</Text>
-                <Text style={styles.statLabel}>Total Items</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{analysis.sustainableItems}</Text>
-                <Text style={styles.statLabel}>Sustainable</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{analysis.totalItems - analysis.sustainableItems}</Text>
-                <Text style={styles.statLabel}>To Improve</Text>
-              </View>
+            {/* The grade is typographic rather than a coloured banner. The
+                palette carries no semantic green, and a red-to-green scale
+                would be the only place in the app using colour to mean good
+                or bad. */}
+            <View style={styles.gradeBox}>
+              <Text style={styles.gradeLabel}>WARDROBE GRADE</Text>
+              <Text style={styles.gradeValue}>{analysis.grade}</Text>
+              <Text style={styles.gradeScore}>
+                {analysis.averageScore.toFixed(0)} out of 100 ·{' '}
+                {analysis.sustainablePercentage.toFixed(0)}% of items score well
+              </Text>
             </View>
 
-            {/* Recommendations */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recommendations</Text>
-              {analysis.recommendations.map((rec, index) => (
-                <View key={index} style={styles.recommendationCard}>
-                  <Text style={styles.recommendationText}>{rec}</Text>
-                </View>
+            <View style={styles.tabs}>
+              {TABS.map(tab => (
+                <TouchableOpacity
+                  key={tab.value}
+                  style={[styles.tab, selectedTab === tab.value && styles.tabActive]}
+                  onPress={() => setSelectedTab(tab.value)}
+                >
+                  <Text style={[styles.tabText, selectedTab === tab.value && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
 
-            {/* Where the wearing actually goes - real counts, not a brand rating */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Brands you actually wear</Text>
-              {analysis.topBrands.map((brand, index) => (
-                <View key={index} style={styles.brandCard}>
-                  <View style={styles.brandInfo}>
-                    <Text style={styles.brandName}>{brand.brand}</Text>
-                    <Text style={styles.brandScore}>
-                      {brand.wears} {brand.wears === 1 ? 'wear' : 'wears'}
-                    </Text>
-                  </View>
-                  <View style={styles.brandBar}>
-                    <View style={[styles.brandBarFill, { width: `${brand.score}%` }]} />
-                  </View>
-                </View>
-              ))}
-            </View>
+            {selectedTab === 'overview' && renderOverview(analysis)}
+            {selectedTab === 'impact' && renderImpact(analysis)}
+            {selectedTab === 'actions' && renderActions(analysis)}
           </>
         )}
-
-        {/* Impact Tab */}
-        {selectedTab === 'impact' && (
-          <>
-            {/* Carbon Footprint */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Carbon Footprint</Text>
-              <View style={styles.impactCard}>
-                <View style={styles.impactHeader}>
-                  <Text style={styles.impactValue}>{analysis.totalCarbonFootprint.toFixed(1)}</Text>
-                  <Text style={styles.impactUnit}>kg CO₂</Text>
-                </View>
-                <Text style={styles.impactDescription}>Total carbon emissions from your wardrobe
-                </Text>
-                <View style={styles.impactComparison}>
-                  <Text style={styles.impactComparisonText}>Equivalent to driving {(analysis.totalCarbonFootprint * 4).toFixed(0)} km
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Offset Options */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Offset Your Impact</Text>
-              <View style={styles.offsetCard}>
-                <View style={styles.offsetOption}>
-                                    <View style={styles.offsetInfo}>
-                    <Text style={styles.offsetTitle}>Plant Trees</Text>
-                    <Text style={styles.offsetDescription}>
-                      {Math.ceil(analysis.totalCarbonFootprint / 20)} trees needed
-                    </Text>
-                  </View>
-                  <Text style={styles.offsetCost}>
-                    ${Math.ceil(analysis.totalCarbonFootprint * 0.4)}
-                  </Text>
-                </View>
-                <View style={styles.offsetOption}>
-                                    <View style={styles.offsetInfo}>
-                    <Text style={styles.offsetTitle}>Renewable Energy</Text>
-                    <Text style={styles.offsetDescription}>Support clean energy projects
-                    </Text>
-                  </View>
-                  <Text style={styles.offsetCost}>
-                    ${Math.ceil(analysis.totalCarbonFootprint * 0.6)}
-                  </Text>
-                </View>
-                <View style={styles.offsetOption}>
-                                    <View style={styles.offsetInfo}>
-                    <Text style={styles.offsetTitle}>Ocean Cleanup</Text>
-                    <Text style={styles.offsetDescription}>Remove plastic from oceans
-                    </Text>
-                  </View>
-                  <Text style={styles.offsetCost}>
-                    ${Math.ceil(analysis.totalCarbonFootprint * 0.5)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Environmental Impact */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Environmental Impact</Text>
-              <View style={styles.impactGrid}>
-                <View style={styles.impactItem}>
-                                    <Text style={styles.impactItemValue}>
-                    {(analysis.totalItems * 2500).toLocaleString()}L
-                  </Text>
-                  <Text style={styles.impactItemLabel}>Water Used</Text>
-                </View>
-                <View style={styles.impactItem}>
-                                    <Text style={styles.impactItemValue}>
-                    {Math.floor(analysis.sustainablePercentage)}%
-                  </Text>
-                  <Text style={styles.impactItemLabel}>Recyclable</Text>
-                </View>
-                <View style={styles.impactItem}>
-                                    <Text style={styles.impactItemValue}>
-                    {(analysis.totalItems * 0.5).toFixed(1)}kg
-                  </Text>
-                  <Text style={styles.impactItemLabel}>Waste</Text>
-                </View>
-              </View>
-            </View>
-          </>
-        )}
-
-        {/* Actions Tab */}
-        {selectedTab === 'actions' && (
-          <>
-            {/* Improvement Actions */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Improvement Actions</Text>
-              {analysis.improvements.map((improvement, index) => (
-                <View key={index} style={styles.actionCard}>
-                  <View style={styles.actionHeader}>
-                    <View style={styles.actionTitleRow}>
-                      <Text style={styles.actionTitle}>{improvement.action}</Text>
-                      <View style={[styles.actionDifficulty, { backgroundColor: getDifficultyColor(improvement.difficulty) }]}>
-                        <Text style={styles.actionDifficultyText}>
-                          {improvement.difficulty.toUpperCase()}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.actionImpact}>
-                      <Text style={styles.actionImpactLabel}>Impact:</Text>
-                      <View style={styles.actionImpactBar}>
-                        <View style={[styles.actionImpactFill, { width: `${improvement.impact}%` }]} />
-                      </View>
-                      <Text style={styles.actionImpactValue}>+{improvement.impact}%</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>Start Action</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
-            {/* Quick Tips */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Quick Tips</Text>
-              <View style={styles.tipsCard}>
-                <View style={styles.tipItem}>
-                                    <Text style={styles.tipText}>Buy secondhand to reduce environmental impact by 80%
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                                    <Text style={styles.tipText}>Wear items at least 30 times to maximize value
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                                    <Text style={styles.tipText}>Repair and upcycle instead of discarding
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                                    <Text style={styles.tipText}>Choose natural, organic, or recycled materials
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Certifications to Look For */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Certifications to Look For</Text>
-              <View style={styles.certificationsGrid}>
-                {['GOTS', 'Fair Trade', 'OEKO-TEX', 'B Corp', 'Bluesign', 'Cradle to Cradle'].map((cert, index) => (
-                  <View key={index} style={styles.certificationBadge}>
-                    <Text style={styles.certificationText}>{cert}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </>
-        )}
-
-        <View style={{ height: 40 }} />
       </ScrollView>
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: ds.hair,
-  },
-  backButton: {
-    fontSize: 16,
-    color: ds.inkMuted,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  refreshButton: {
-    fontSize: 20,
-    color: ds.ink,
-  },
-  gradeBanner: {
-    padding: 24,
-  },
-  gradeContent: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  gradeLabel: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 8,
-  },
-  gradeValue: {
-    fontSize: 64,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  gradeScore: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  gradeStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  gradeStat: {
-    alignItems: 'center',
-  },
-  gradeStatValue: {
-    fontSize: 28,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  gradeStatLabel: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
+  container: { flex: 1, backgroundColor: colors.bone },
+  headerBar: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
+  content: { padding: spacing.page, paddingBottom: 60 },
+  busyBox: { paddingVertical: 80, alignItems: 'center' },
+
+  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
+  title: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
+  subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
+
+  gradeBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  gradeLabel: { ...textType.eyebrow, marginBottom: 8 },
+  gradeValue: { fontFamily: fonts.serif, fontSize: 56, lineHeight: 60, color: colors.ink },
+  gradeScore: { ...textType.meta, marginTop: 6 },
+
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: ds.hair,
+    borderBottomColor: colors.hair,
+    marginTop: spacing.section,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: ds.camel,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: fonts.sansMedium,
-    color: ds.inkMuted,
-  },
-  tabTextActive: {
-    color: ds.camel,
-    fontFamily: fonts.sansSemiBold,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: ds.paper,
-    padding: 16,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 28,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: ds.inkMuted,
-    textAlign: 'center',
-  },
-  section: {
-    padding: 20,
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  tabActive: { borderBottomWidth: 1, borderBottomColor: colors.ink },
+  tabText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  tabTextActive: { fontFamily: fonts.sansMedium, color: colors.ink },
+
+  sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 10 },
+  sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },
+
+  statRow: { flexDirection: 'row', marginTop: spacing.lg },
+  stat: { flex: 1 },
+  statValue: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink },
+  statLabel: { ...textType.microLabel, fontSize: 9, color: colors.inkFaint, marginTop: 4 },
+
+  textRow: {
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: ds.paper,
+    borderBottomColor: colors.hair,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 16,
+  bodyText: { ...textType.body, color: colors.inkMuted },
+
+  brandRow: { marginBottom: spacing.md },
+  brandHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  brandName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  brandWears: { ...textType.meta, fontSize: 12 },
+  bar: { height: 2, backgroundColor: colors.hair },
+  barFill: { height: 2, backgroundColor: colors.ink },
+
+  figureBox: { backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.md },
+  figureValue: { fontFamily: fonts.serif, fontSize: 40, lineHeight: 44, color: colors.ink },
+  figureUnit: { ...textType.body, color: colors.ink, marginTop: 4 },
+  figureNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: 10 },
+
+  noticeBox: {
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: spacing.md,
   },
-  recommendationCard: {
-    backgroundColor: ds.sand,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: ds.camel,
+  noticeText: { ...textType.meta, fontSize: 12, lineHeight: 18 },
+
+  actionRow: {
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
   },
-  recommendationText: {
-    fontSize: 14,
-    color: '#065f46',
-    lineHeight: 20,
-  },
-  brandCard: {
-    marginBottom: 16,
-  },
-  brandInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  brandName: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  brandScore: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
-  brandBar: {
-    height: 8,
-    backgroundColor: ds.paper,
-    overflow: 'hidden',
-  },
-  brandBarFill: {
-    height: '100%',
-    backgroundColor: ds.camel,
-  },
-  impactCard: {
-    backgroundColor: ds.paper,
-    padding: 24,
-    alignItems: 'center',
-  },
-  impactHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  impactValue: {
-    fontSize: 48,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-  },
-  impactUnit: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.inkMuted,
-    marginLeft: 8,
-  },
-  impactDescription: {
-    fontSize: 14,
-    color: ds.inkMuted,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  impactComparison: {
-    backgroundColor: ds.sand,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  impactComparisonText: {
-    fontSize: 13,
-    color: ds.tobacco,
-    fontFamily: fonts.sansMedium,
-  },
-  offsetCard: {
-    gap: 12,
-  },
-  offsetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: ds.paper,
-    padding: 16,
-    gap: 12,
-  },
-  offsetIcon: {
-    fontSize: 32,
-  },
-  offsetInfo: {
-    flex: 1,
-  },
-  offsetTitle: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 4,
-  },
-  offsetDescription: {
-    fontSize: 13,
-    color: ds.inkMuted,
-  },
-  offsetCost: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
-  impactGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  impactItem: {
-    flex: 1,
-    backgroundColor: ds.paper,
-    padding: 16,
-    alignItems: 'center',
-  },
-  impactItemIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  impactItemValue: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginBottom: 4,
-  },
-  impactItemLabel: {
-    fontSize: 11,
-    color: ds.inkMuted,
-    textAlign: 'center',
-  },
-  actionCard: {
-    backgroundColor: ds.paper,
-    padding: 16,
-    marginBottom: 12,
-  },
-  actionHeader: {
-    marginBottom: 12,
-  },
-  actionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  actionTitle: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.ink,
-    marginRight: 12,
-  },
+  actionHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  actionTitle: { flex: 1, ...textType.body, color: colors.ink, marginRight: spacing.sm },
   actionDifficulty: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  actionDifficultyText: {
+    fontFamily: fonts.sansSemiBold,
     fontSize: 9,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginTop: 4,
   },
-  actionImpact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionImpactLabel: {
-    fontSize: 12,
-    color: ds.inkMuted,
-  },
-  actionImpactBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: ds.hair,
-    overflow: 'hidden',
-  },
-  actionImpactFill: {
-    height: '100%',
-    backgroundColor: ds.camel,
-  },
-  actionImpactValue: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
-  },
-  actionButton: {
-    backgroundColor: ds.camel,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
-  },
-  tipsCard: {
-    backgroundColor: '#fffbeb',
-    padding: 16,
-  },
-  tipItem: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    gap: 12,
-  },
-  tipIcon: {
-    fontSize: 20,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#78350f',
-    lineHeight: 20,
-  },
-  certificationsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  certificationBadge: {
-    backgroundColor: ds.sand,
+
+  certRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cert: {
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: colors.hair,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: ds.camel,
   },
-  certificationText: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: '#065f46',
+  certText: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted },
+
+  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+  emptyAction: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.md,
+    backgroundColor: colors.ink,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
   },
+  emptyActionText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
+
+  footerLink: { marginTop: spacing.section, paddingVertical: spacing.md },
+  footerLinkText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },
 });

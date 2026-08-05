@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { modalFadeIn, modalFadeOut, AnimationConfig } from '../utils/animations';
+import { colors } from '../theme/designSystem';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -95,15 +96,14 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: colors.ink,
   },
   content: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: colors.card,
     padding: 20,
     maxWidth: '90%',
     maxHeight: '80%',
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: {
       width: 0,
       height: 10,

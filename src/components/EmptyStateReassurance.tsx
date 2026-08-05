@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface EmptyStateReassuranceProps {
   type: 'closet' | 'outfits';
@@ -70,40 +71,38 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'center',
     marginBottom: 16,
   },
   message: {
     fontSize: 16,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 24,
   },
   tipContainer: {
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     width: '100%',
     marginBottom: 24,
   },
   tipLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   tipText: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 20,
   },
   actionButton: {
     height: 56,
-    backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -111,12 +110,12 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
   },
   reassurance: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
     fontStyle: 'italic',
   },

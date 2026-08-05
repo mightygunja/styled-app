@@ -67,6 +67,14 @@ export interface WardrobeSustainability {
   averageScore: number;
   grade: SustainabilityGrade;
   totalCarbonFootprint: number;
+  /**
+   * Estimated production water, litres, from category averages.
+   *
+   * Replaces a figure the Sustainability screen was computing inline as
+   * `totalItems * 2500` - a number with nothing behind it presented to users
+   * as their own water footprint.
+   */
+  totalWaterLitres: number;
   sustainableItems: number;
   sustainablePercentage: number;
   recommendations: string[];
@@ -275,6 +283,26 @@ class SustainabilityService {
   /**
    * Calculate carbon footprint
    */
+  /**
+   * Estimated production water for one garment, in litres.
+   *
+   * Category averages from the commonly cited apparel figures - roughly 2,700L
+   * for a cotton t-shirt and 7,500L for a pair of jeans. These are estimates
+   * and the UI says so: we do not know the fibre content of a user's items, so
+   * a per-item figure would be false precision.
+   */
+  waterLitresFor(item: Item): number {
+    const byCategory: Record<string, number> = {
+      tops: 2700,
+      bottoms: 7500,
+      dresses: 5000,
+      outerwear: 6000,
+      shoes: 4400,
+      accessories: 1000,
+    };
+    return byCategory[item.category] || 3000;
+  }
+
   async calculateCarbonFootprint(item: Item): Promise<CarbonFootprint> {
     // Deterministic, category-scaled breakdown (same shape as carbonFootprintService)
     const categoryBase: Record<string, number> = {
@@ -348,12 +376,14 @@ class SustainabilityService {
       items.map(item => this.calculateCarbonFootprint(item))
     );
     const totalCarbonFootprint = carbonFootprints.reduce((sum, cf) => sum + cf.totalKgCO2, 0);
+    const totalWaterLitres = items.reduce((sum, item) => sum + this.waterLitresFor(item), 0);
 
     return {
       totalItems: items.length,
       averageScore,
       grade: this.getGrade(averageScore),
       totalCarbonFootprint,
+      totalWaterLitres,
       sustainableItems,
       sustainablePercentage,
       recommendations: this.getWardrobeRecommendations(averageScore, sustainablePercentage),

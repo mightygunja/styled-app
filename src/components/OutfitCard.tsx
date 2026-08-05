@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { ClosetItem } from '../models/closetItem';
+import { colors, fonts } from '../theme/designSystem';
 
 export interface OutfitCardProps {
   outfit: {
@@ -62,12 +63,11 @@ export default function OutfitCard({ outfit, onPress }: OutfitCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   imagesContainer: {
     flexDirection: 'row',
@@ -78,10 +78,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 120,
     marginRight: -20,
-    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.card,
   },
   itemImage: {
     width: '100%',
@@ -91,7 +90,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -99,39 +98,37 @@ const styles = StyleSheet.create({
   },
   moreItemsText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
   },
   occasionTag: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F4F1ED',
-    borderRadius: 12,
+    backgroundColor: colors.paper,
     marginBottom: 12,
   },
   occasionText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#5E5A55',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   explanationContainer: {
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
   },
   explanationLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#5E5A55',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 6,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   explanationText: {
     fontSize: 15,
-    color: '#161616',
+    color: colors.ink,
     lineHeight: 22,
   },
 });

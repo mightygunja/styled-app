@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface SmartGapSuggestionProps {
   message: string;
@@ -35,12 +36,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.paper,
     padding: 16,
-    borderRadius: 12,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: colors.hair,
   },
   content: {
     flex: 1,
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   message: {
     flex: 1,
     fontSize: 15,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 22,
   },
   dismissButton: {
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   dismissText: {
     fontSize: 28,
-    color: '#9CA3AF',
-    fontWeight: '300',
+    color: colors.inkFaint,
+    fontFamily: fonts.sans,
   },
 });

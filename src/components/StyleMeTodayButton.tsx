@@ -8,6 +8,7 @@
 
 import React, { useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface StyleMeTodayButtonProps {
   onPress: () => Promise<void>;
@@ -52,12 +53,11 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     paddingVertical: 20,
     paddingHorizontal: 24,
-    borderRadius: 16,
     marginVertical: 16,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -72,12 +72,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#DED7CF',
+    color: colors.hair,
   },
 });

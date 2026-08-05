@@ -7,6 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { colors, fonts } from '../theme/designSystem';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -40,26 +41,31 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 8,
+    borderColor: colors.hair,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#0f172a',
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.ink,
   },
+  // The palette has no red, so the error state is carried by a full-strength
+  // ink border against the hairline of the resting state, plus tobacco text.
+  // Mapping the old #ef4444 straight to hair made this identical to `input`
+  // and the error invisible.
   inputError: {
-    borderColor: '#ef4444',
+    borderColor: colors.ink,
   },
   errorText: {
+    fontFamily: fonts.sansMedium,
     fontSize: 12,
-    color: '#ef4444',
-    marginTop: 4,
+    color: colors.tobacco,
+    marginTop: 6,
   },
 });

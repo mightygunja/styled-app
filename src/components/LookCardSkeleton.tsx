@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import SkeletonLoader from './SkeletonLoader';
+import { colors } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 32;
@@ -42,10 +43,9 @@ export default function LookCardSkeleton() {
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: colors.card,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,

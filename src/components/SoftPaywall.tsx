@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, fonts } from '../theme/designSystem';
 
 interface SoftPaywallProps {
   visible: boolean;
@@ -100,7 +101,7 @@ export default function SoftPaywall({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: colors.paper,
   },
   content: {
     flex: 1,
@@ -116,14 +117,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'center',
     marginBottom: 16,
   },
   subtitle: {
     fontSize: 18,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
     lineHeight: 26,
     marginBottom: 32,
@@ -145,38 +146,37 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 15,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 22,
   },
   trustMessage: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
     lineHeight: 20,
     fontStyle: 'italic',
   },
   trialCallout: {
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 24,
   },
   trialText: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
     marginBottom: 4,
   },
   trialSubtext: {
     fontSize: 14,
-    color: '#DED7CF',
+    color: colors.hair,
   },
   footer: {
     padding: 20,
@@ -184,15 +184,14 @@ const styles = StyleSheet.create({
   },
   upgradeButton: {
     height: 56,
-    backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   upgradeButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F1ECE7',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.sand,
   },
   closeButton: {
     height: 48,
@@ -201,7 +200,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#5E5A55',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
   },
 });
