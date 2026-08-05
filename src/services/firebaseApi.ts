@@ -150,12 +150,15 @@ export const closetAPI = {
   },
 
   // Find similar items
+  // minSimilarity is a composite facet score now, not a raw embedding cosine.
+  // The old 0.7 was a cosine floor that filtered almost nothing, because
+  // descriptions from one prompt template all embed close together.
   findSimilar: async (id: string, limit: number = 10) => {
     const result = await findSimilarItemsFn({
       itemId: id,
       userId: getCurrentUserId(),
       limit,
-      minSimilarity: 0.7,
+      minSimilarity: 0.3,
     });
     return result.data as any;
   },

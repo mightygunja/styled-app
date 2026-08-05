@@ -430,55 +430,188 @@ function cosineSimilarity(embedding1, embedding2) {
     }
     return dotProduct / magnitude;
 }
+/**
+ * Similarity, scored on the attributes the classifier already extracted.
+ *
+ * The previous implementation ranked purely on cosine distance between
+ * `text-embedding-3-small` vectors built from a free-prose description of each
+ * garment. That does not work here, for two reasons:
+ *
+ *   1. Every description comes from the same prompt template, so the vectors
+ *      share a large amount of boilerplate and cluster tightly - unrelated
+ *      garments routinely score 0.75-0.90 against each other. A 0.7 floor
+ *      filtered almost nothing, and the ordering inside that band was mostly
+ *      noise.
+ *   2. Prose compresses away exactly the facets that decide whether two
+ *      garments are alike. "A relaxed navy cotton crew-neck" and "a fitted
+ *      cream linen v-neck blouse" read as similar text and are not similar
+ *      clothes.
+ *
+ * Meanwhile classifyGarmentImage already stores category, subcategory,
+ * colour, pattern, neckline, sleeve length, fit, fabric, style, seasons and
+ * tags on every item - precise, discrete, and completely unused by the old
+ * search. This scores on those, keeps the embedding as one modest signal for
+ * tie-breaking, and returns the reasons so the UI can say why.
+ */
+const COLOR_FAMILIES = {
+    neutral: ['black', 'white', 'grey', 'gray', 'ivory', 'cream', 'beige', 'tan', 'stone', 'charcoal', 'camel', 'khaki'],
+    blue: ['blue', 'navy', 'denim', 'indigo', 'cobalt', 'teal', 'turquoise', 'aqua'],
+    red: ['red', 'burgundy', 'maroon', 'crimson', 'wine'],
+    pink: ['pink', 'blush', 'rose', 'fuchsia', 'magenta'],
+    green: ['green', 'olive', 'sage', 'emerald', 'forest', 'mint'],
+    brown: ['brown', 'chocolate', 'rust', 'terracotta', 'coffee'],
+    yellow: ['yellow', 'mustard', 'gold', 'lemon'],
+    orange: ['orange', 'coral', 'peach', 'apricot'],
+    purple: ['purple', 'lilac', 'lavender', 'plum', 'violet'],
+};
+function colorFamily(color) {
+    const c = (color || '').toLowerCase().trim();
+    if (!c)
+        return null;
+    for (const [family, members] of Object.entries(COLOR_FAMILIES)) {
+        if (members.some(m => c.includes(m)))
+            return family;
+    }
+    return null;
+}
+function sameText(a, b) {
+    if (!a || !b)
+        return false;
+    return a.toLowerCase().trim() === b.toLowerCase().trim();
+}
+/**
+ * Weighted facet comparison. Weights reflect how much each attribute actually
+ * tells you two garments are alike: subcategory and colour dominate, brand and
+ * season are tiebreakers.
+ *
+ * `max` accumulates only the facets both items actually have, so an item with
+ * sparse metadata is not penalised for fields nobody filled in.
+ */
+function scoreFacets(target, candidate) {
+    let score = 0;
+    let max = 0;
+    const reasons = [];
+    const consider = (weight, bothPresent, matched, reason) => {
+        if (!bothPresent)
+            return;
+        max += weight;
+        if (matched) {
+            score += weight;
+            if (reason)
+                reasons.push(reason);
+        }
+    };
+    consider(22, !!(target.subcategory && candidate.subcategory), sameText(target.subcategory, candidate.subcategory), candidate.subcategory ? `Also a ${String(candidate.subcategory).toLowerCase()}` : undefined);
+    // Colour scores in two tiers: the same colour is a strong signal, the same
+    // family is a weaker one.
+    const tFam = colorFamily(target.color);
+    const cFam = colorFamily(candidate.color);
+    if (target.color && candidate.color) {
+        max += 18;
+        if (sameText(target.color, candidate.color)) {
+            score += 18;
+            reasons.push(`Same ${String(candidate.color).toLowerCase()}`);
+        }
+        else if (tFam && cFam && tFam === cFam) {
+            score += 9;
+            reasons.push(`Both in the ${tFam} family`);
+        }
+    }
+    consider(12, !!(target.pattern && candidate.pattern), sameText(target.pattern, candidate.pattern), candidate.pattern && String(candidate.pattern).toLowerCase() !== 'solid'
+        ? `Both ${String(candidate.pattern).toLowerCase()}`
+        : 'Both solid');
+    consider(10, !!(target.style && candidate.style), sameText(target.style, candidate.style), candidate.style ? `Same ${String(candidate.style).toLowerCase()} feel` : undefined);
+    consider(10, !!(target.fabricTexture && candidate.fabricTexture), sameText(target.fabricTexture, candidate.fabricTexture), candidate.fabricTexture ? `Both ${String(candidate.fabricTexture).toLowerCase()}` : undefined);
+    consider(8, !!(target.fitType && candidate.fitType), sameText(target.fitType, candidate.fitType), candidate.fitType ? `Same ${String(candidate.fitType).toLowerCase()} fit` : undefined);
+    consider(6, !!(target.neckline && candidate.neckline), sameText(target.neckline, candidate.neckline), candidate.neckline ? `Same ${String(candidate.neckline).toLowerCase()} neckline` : undefined);
+    consider(6, !!(target.sleeveLength && candidate.sleeveLength), sameText(target.sleeveLength, candidate.sleeveLength), undefined);
+    consider(4, !!(target.brand && candidate.brand), sameText(target.brand, candidate.brand), candidate.brand ? `Also ${candidate.brand}` : undefined);
+    // Season and tag overlap are proportional rather than all-or-nothing.
+    const tSeasons = Array.isArray(target.seasons) ? target.seasons : [];
+    const cSeasons = Array.isArray(candidate.seasons) ? candidate.seasons : [];
+    if (tSeasons.length && cSeasons.length) {
+        max += 5;
+        const shared = cSeasons.filter(s => tSeasons.some(t => sameText(t, s)));
+        if (shared.length)
+            score += (shared.length / Math.max(tSeasons.length, cSeasons.length)) * 5;
+    }
+    const tTags = Array.isArray(target.tags) ? target.tags : [];
+    const cTags = Array.isArray(candidate.tags) ? candidate.tags : [];
+    if (tTags.length && cTags.length) {
+        max += 6;
+        const shared = cTags.filter(s => tTags.some(t => sameText(t, s)));
+        if (shared.length) {
+            score += Math.min(1, shared.length / 3) * 6;
+            if (shared.length >= 2)
+                reasons.push(`Shares ${shared.slice(0, 2).join(' and ')}`);
+        }
+    }
+    return { score, max, reasons };
+}
 exports.findSimilarItems = functions
     .runWith({ memory: '1GB', timeoutSeconds: 60, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
     try {
-        const { itemId, userId, limit = 10, minSimilarity = 0.7 } = data;
+        const { itemId, userId, limit = 10, minSimilarity = 0.3 } = data;
         if (!itemId || !userId) {
             throw new functions.https.HttpsError('invalid-argument', 'itemId and userId are required');
         }
-        // Get target item
         const targetDoc = await db.collection('closetItems').doc(itemId).get();
         if (!targetDoc.exists) {
             throw new functions.https.HttpsError('not-found', 'Item not found');
         }
-        const targetItem = targetDoc.data();
-        const targetEmbedding = targetItem === null || targetItem === void 0 ? void 0 : targetItem.embedding;
-        if (!targetEmbedding || targetEmbedding.length === 0) {
-            throw new functions.https.HttpsError('failed-precondition', 'Item does not have an embedding');
-        }
-        // Get all user's items except the target
+        const target = targetDoc.data();
+        const targetEmbedding = target === null || target === void 0 ? void 0 : target.embedding;
         const itemsSnapshot = await db
             .collection('closetItems')
             .where('userId', '==', userId)
             .get();
-        const similarItems = [];
-        itemsSnapshot.forEach((doc) => {
+        const scored = [];
+        itemsSnapshot.forEach(doc => {
+            var _a;
             if (doc.id === itemId)
-                return; // Skip target item
-            const item = doc.data();
-            const embedding = item.embedding;
-            if (embedding && embedding.length > 0) {
-                const similarity = cosineSimilarity(targetEmbedding, embedding);
-                if (similarity >= minSimilarity) {
-                    similarItems.push({
-                        item: Object.assign({ id: doc.id }, item),
-                        similarity,
-                    });
-                }
+                return;
+            const candidate = doc.data();
+            // Hard gate. "Similar" has to mean the same kind of garment - the old
+            // version could rank a scarf against a shoe because their prose
+            // descriptions happened to share adjectives.
+            if (!sameText(target.category, candidate.category))
+                return;
+            const facets = scoreFacets(target, candidate);
+            // If neither item carries usable metadata there is nothing to compare
+            // on; fall back to a neutral half-score rather than inventing one.
+            const facetRatio = facets.max > 0 ? facets.score / facets.max : 0.5;
+            // The embedding stays, at a modest weight, as a tiebreaker for things
+            // the facets cannot express. Raw cosines here occupy roughly 0.7-0.95,
+            // so rescale that band across 0-1 or it contributes almost nothing.
+            let embeddingRatio = null;
+            if ((targetEmbedding === null || targetEmbedding === void 0 ? void 0 : targetEmbedding.length) && ((_a = candidate.embedding) === null || _a === void 0 ? void 0 : _a.length) === targetEmbedding.length) {
+                const raw = cosineSimilarity(targetEmbedding, candidate.embedding);
+                embeddingRatio = Math.max(0, Math.min(1, (raw - 0.7) / 0.25));
             }
+            const similarity = embeddingRatio === null ? facetRatio : facetRatio * 0.85 + embeddingRatio * 0.15;
+            if (similarity < minSimilarity)
+                return;
+            scored.push({
+                item: Object.assign({ id: doc.id }, candidate),
+                similarity,
+                // Strongest first, capped - three reasons is a row of text, ten is a
+                // paragraph nobody reads.
+                reasons: facets.reasons.slice(0, 3),
+            });
         });
-        // Sort by similarity (highest first) and limit
-        similarItems.sort((a, b) => b.similarity - a.similarity);
-        const limitedItems = similarItems.slice(0, limit);
+        scored.sort((a, b) => b.similarity - a.similarity);
+        const limited = scored.slice(0, limit);
+        console.log(`findSimilarItems: ${limited.length} of ${itemsSnapshot.size} items matched ${itemId} (category ${target.category})`);
         return {
             success: true,
-            data: limitedItems,
-            count: limitedItems.length,
+            data: limited,
+            count: limited.length,
         };
     }
     catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
         console.error('Error finding similar items:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }

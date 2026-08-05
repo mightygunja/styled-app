@@ -11,7 +11,8 @@ export type RootStackParamList = {
   ClosetItemDetail: { closetItemId: string };
   SimilarItems: {
     sourceItemId: string;
-    similarItems: Array<{ item: any; similarity: number }>;
+    /** `reasons` names the facets that matched, strongest first. */
+    similarItems: Array<{ item: any; similarity: number; reasons?: string[] }>;
   };
   FilterModal: { occasion?: Occasion };
   StylistList: undefined;

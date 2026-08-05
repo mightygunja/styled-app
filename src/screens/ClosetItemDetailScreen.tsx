@@ -103,13 +103,9 @@ export default function ClosetItemDetailScreen() {
       setLoading(true);
       const response = await closetAPI.findSimilar(closetItemId, 10);
       setLoading(false);
-      
-      if (response.data.length === 0) {
-        Alert.alert('No Similar Items', 'No similar items found in your closet.');
-        return;
-      }
-      
-      // Navigate to similar items screen
+
+      // Navigate even when empty - the screen explains why nothing matched,
+      // which is more use than an alert that just says "none found".
       navigation.navigate('SimilarItems' as any, {
         sourceItemId: closetItemId,
         similarItems: response.data,
