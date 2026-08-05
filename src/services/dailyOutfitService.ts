@@ -581,75 +581,121 @@ export function buildAllOccasions(
   return result;
 }
 
-/**
- * The day's outfits for one tab.
- *
- * Computed once per half-day slot and cached. Previously this re-ran the model
- * on every load, and since the model chose three of six candidates with fresh
- * copy each time, pulling to refresh reshuffled the whole screen.
- */
-export async function getDailyOutfits(
-  items: Item[],
-  options: BuildOptions & { archetypes?: string[]; avoidRules?: string[] }
-): Promise<DailyOutfit[]> {
-  const slot = options.seed ?? slotSeed();
-  const occasion = options.occasion;
-  const byId = new Map(items.map(i => [i.id, i]));
+export interface OutfitCopy {
+  title: string;
+  note: string;
+}
 
+export interface OutfitPools {
+  slot: number;
+  pools: Record<OccasionKey, OutfitCandidate[]>;
+  copy: Partial<Record<OccasionKey, OutfitCopy[]>>;
+}
+
+/**
+ * Loads every tab's outfits for the current slot.
+ *
+ * Called once. Switching tabs afterwards is a lookup in the returned object,
+ * with no await and no network - previously the first visit to each tab in a
+ * slot triggered its own model call, so Work -> Date -> Weekend each paid a
+ * few seconds the first time round.
+ */
+export async function loadOutfitPools(
+  items: Item[],
+  options: { weather?: BuildOptions['weather']; seed?: number }
+): Promise<OutfitPools> {
+  const slot = options.seed ?? slotSeed();
+  const byId = new Map(items.map(i => [i.id, i]));
   const cached = await readCache(slot);
 
-  // Rebuild the pools only when the slot has turned over.
-  let pools = cached?.pools;
-  if (!pools?.[occasion]?.length) {
-    const built = buildAllOccasions(items, { weather: options.weather, seed: slot });
-    pools = {};
-    (Object.keys(built) as OccasionKey[]).forEach(key => {
-      pools![key] = built[key].map(c => c.items.map(i => i.id));
+  // Rehydrate cached pools from the live closet. Ids are cached, garments are
+  // not, so a deleted item drops its outfit rather than rendering a gap.
+  if (cached?.pools) {
+    const rehydrated = {} as Record<OccasionKey, OutfitCandidate[]>;
+    let usable = true;
+
+    HOME_OCCASIONS.forEach(occasion => {
+      const ids = cached.pools[occasion];
+      if (!ids?.length) {
+        usable = false;
+        return;
+      }
+      rehydrated[occasion] = ids
+        .map((outfitIds): OutfitCandidate | null => {
+          const resolved = outfitIds.map(id => byId.get(id)).filter((i): i is Item => !!i);
+          if (resolved.length < outfitIds.length || resolved.length === 0) return null;
+          return {
+            id: outfitIds.join('-'),
+            items: resolved,
+            score: 0,
+            reasons: [],
+            formality:
+              resolved.reduce((sum, i) => sum + formalityOf(i), 0) / Math.max(1, resolved.length),
+          };
+        })
+        .filter((o): o is OutfitCandidate => o !== null);
     });
-    await writeCache({ slot, pools, copy: cached?.copy ?? {} });
+
+    if (usable && HOME_OCCASIONS.every(o => rehydrated[o]?.length)) {
+      return { slot, pools: rehydrated, copy: cached.copy ?? {} };
+    }
   }
 
-  // Rehydrate from the live closet. An id that no longer resolves means the
-  // item was deleted since the slot began; drop the outfit rather than render
-  // a gap.
-  const outfits: OutfitCandidate[] = (pools[occasion] || [])
-    .map((ids): OutfitCandidate | null => {
-      const resolved = ids.map(id => byId.get(id)).filter((i): i is Item => !!i);
-      if (resolved.length < ids.length || resolved.length === 0) return null;
-      return {
-        id: ids.join('-'),
-        items: resolved,
-        score: 0,
-        reasons: [],
-        formality:
-          resolved.reduce((sum, i) => sum + formalityOf(i), 0) / Math.max(1, resolved.length),
-      };
-    })
-    .filter((o): o is OutfitCandidate => o !== null);
+  const pools = buildAllOccasions(items, { weather: options.weather, seed: slot });
+  const idsOnly: SlotCache['pools'] = {};
+  HOME_OCCASIONS.forEach(occasion => {
+    idsOnly[occasion] = pools[occasion].map(c => c.items.map(i => i.id));
+  });
+  await writeCache({ slot, pools: idsOnly, copy: cached?.copy ?? {} });
 
-  if (outfits.length === 0) return [];
+  return { slot, pools, copy: cached?.copy ?? {} };
+}
 
-  const withFallbackCopy = (): DailyOutfit[] =>
-    outfits.map(o => ({
-      ...o,
-      title: deterministicTitle(o, occasion),
-      note: `Works for ${OCCASIONS[occasion].label}.`,
-    }));
+/**
+ * Turns a pool into renderable outfits. Pure and synchronous, so a tab switch
+ * is a state update rather than an await.
+ */
+export function composeOutfits(
+  pool: OutfitCandidate[],
+  occasion: OccasionKey,
+  copy?: OutfitCopy[]
+): DailyOutfit[] {
+  return pool.map((candidate, index) => ({
+    ...candidate,
+    title: copy?.[index]?.title || deterministicTitle(candidate, occasion),
+    note:
+      copy?.[index]?.note ||
+      candidate.reasons[0] ||
+      `Works for ${OCCASIONS[occasion].label}.`,
+  }));
+}
 
-  // Copy is cached alongside the pools, so the wording is stable for the slot
-  // too - re-running the model would reword the same outfit every refresh.
-  const cachedCopy = cached?.copy?.[occasion];
-  if (cachedCopy?.length === outfits.length) {
-    return outfits.map((o, i) => ({ ...o, ...cachedCopy[i] }));
+/**
+ * Asks the model to order and annotate one tab's outfits, and caches the
+ * result for the slot.
+ *
+ * Returns null when unavailable; the caller keeps whatever it is already
+ * showing, which is why the screen can render before this resolves.
+ */
+export async function rankOccasion(
+  pool: OutfitCandidate[],
+  occasion: OccasionKey,
+  context: {
+    slot: number;
+    weather?: BuildOptions['weather'];
+    archetypes?: string[];
+    avoidRules?: string[];
   }
+): Promise<OutfitCopy[] | null> {
+  if (pool.length === 0) return null;
 
   try {
     const result = await curateDailyOutfitsFn({
       occasion: OCCASIONS[occasion].label,
-      weather: options.weather,
-      archetypes: options.archetypes || [],
-      avoidRules: options.avoidRules || [],
-      outfits: outfits.map((c, index) => ({
+      weather: context.weather,
+      archetypes: context.archetypes || [],
+      avoidRules: context.avoidRules || [],
+      outfits: pool.map((c, index) => ({
         index,
         formality: c.formality,
         pieces: c.items.map(i => ({
@@ -667,44 +713,41 @@ export async function getDailyOutfits(
     const picks = (result.data as any)?.data?.picks as
       | Array<{ index: number; title: string; note: string }>
       | undefined;
-    if (!picks?.length) return withFallbackCopy();
+    if (!picks?.length) return null;
 
-    // The model orders and annotates; it does not drop outfits, or the tab
-    // would shrink and the cross-tab de-duplication would be wasted.
-    const copyByIndex = new Map(picks.map(p => [p.index, p]));
-    const ordered = [...picks.map(p => p.index), ...outfits.map((_, i) => i)]
-      .filter((v, i, arr) => arr.indexOf(v) === i)
-      .filter(i => outfits[i]);
+    // Copy is keyed by position so the pool order - and therefore the
+    // cross-tab de-duplication - is preserved. The model annotates; it does
+    // not get to drop or reorder outfits out from under the cache.
+    const byIndex = new Map(picks.map(p => [p.index, p]));
+    const copy: OutfitCopy[] = pool.map((candidate, index) => ({
+      title: byIndex.get(index)?.title || deterministicTitle(candidate, occasion),
+      note:
+        byIndex.get(index)?.note ||
+        candidate.reasons[0] ||
+        `Works for ${OCCASIONS[occasion].label}.`,
+    }));
 
-    const final: DailyOutfit[] = ordered.map(i => {
-      const copy = copyByIndex.get(i);
-      return {
-        ...outfits[i],
-        title: copy?.title || deterministicTitle(outfits[i], occasion),
-        note: copy?.note || `Works for ${OCCASIONS[occasion].label}.`,
-      };
-    });
+    const existing = await readCache(context.slot);
+    if (existing) {
+      await writeCache({
+        ...existing,
+        copy: { ...(existing.copy ?? {}), [occasion]: copy },
+      });
+    }
 
-    await writeCache({
-      slot,
-      pools,
-      copy: {
-        ...(cached?.copy ?? {}),
-        [occasion]: final.map(f => ({ title: f.title, note: f.note })),
-      },
-    });
-
-    return final;
+    return copy;
   } catch (error) {
-    console.log('Outfit ranking unavailable, using deterministic order', error);
-    return withFallbackCopy();
+    console.log(`Outfit ranking unavailable for ${occasion}`, error);
+    return null;
   }
 }
 
 export const dailyOutfitService = {
   buildOutfits,
   buildAllOccasions,
-  getDailyOutfits,
+  loadOutfitPools,
+  composeOutfits,
+  rankOccasion,
   formalityOf,
   daySeed,
   slotSeed,

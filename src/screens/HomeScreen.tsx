@@ -21,7 +21,13 @@ import { outfitsService } from '../services/firestore';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
 import { getStyleVoice } from '../services/styleVoice';
 import { OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
-import { dailyOutfitService, OccasionKey } from '../services/dailyOutfitService';
+import {
+  dailyOutfitService,
+  OccasionKey,
+  OutfitPools,
+  DailyOutfit,
+  HOME_OCCASIONS,
+} from '../services/dailyOutfitService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
@@ -64,16 +70,11 @@ function weatherLine(weather: CurrentWeather): string {
  * same clothes. dailyOutfitService scores pairs jointly and diversifies the
  * set, so the looks are actually different from one another.
  */
-async function buildLooks(
+function toRecommendations(
+  outfits: DailyOutfit[],
   items: Item[],
-  occasionValue: OccasionType,
-  weatherValue: CurrentWeather
-): Promise<OutfitRecommendation[]> {
-  const outfits = await dailyOutfitService.getDailyOutfits(items, {
-    occasion: occasionValue as OccasionKey,
-    weather: { condition: weatherValue.condition, temperature: weatherValue.temperature },
-  });
-
+  occasionValue: OccasionType
+): OutfitRecommendation[] {
   const ownsShoes = items.some(i => (i.category || '').toLowerCase() === 'shoes');
 
   return outfits.map(outfit => ({
@@ -105,16 +106,30 @@ export default function HomeScreen() {
   const [archetype, setArchetype] = useState<string>('Quiet Luxe');
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [lookIndex, setLookIndex] = useState(0);
-  const [switchingOccasion, setSwitchingOccasion] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
-  // Cached across occasion switches so re-picking a chip doesn't refetch weather/closet
-  // or re-run style analysis - only recommendation generation (a pure local computation).
+  // Every tab's outfits are built once per slot and held here, so switching
+  // chips is a synchronous state update. Previously the first visit to each tab
+  // made its own Cloud Function call and waited on the model.
   const closetItemsRef = useRef<Item[]>([]);
   const styleProfileRef = useRef<StyleProfile | null>(null);
   const weatherRef = useRef<CurrentWeather>({ condition: 'sunny', temperature: 72 });
+  const poolsRef = useRef<OutfitPools | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  /** Paints one tab from the already-built pools. Pure lookup. */
+  const showOccasion = (value: OccasionType, items: Item[]) => {
+    const loaded = poolsRef.current;
+    if (!loaded) return;
+    const key = value as OccasionKey;
+    const outfits = dailyOutfitService.composeOutfits(
+      loaded.pools[key] || [],
+      key,
+      loaded.copy[key]
+    );
+    setRecommendations(toRecommendations(outfits, items, value));
+  };
 
   const loadDressMeToday = async (occasionValue: OccasionType) => {
     try {
@@ -154,10 +169,42 @@ export default function HomeScreen() {
       styleProfileRef.current = styleProfile;
       setArchetype(getStyleVoice(styleProfile).archetype);
 
-      setRecommendations(await buildLooks(items, occasionValue, weatherResult));
+      const weatherContext = {
+        condition: weatherResult.condition,
+        temperature: weatherResult.temperature,
+      };
+
+      const loaded = await dailyOutfitService.loadOutfitPools(items, {
+        weather: weatherContext,
+      });
+      poolsRef.current = loaded;
+      showOccasion(occasionValue, items);
       setLookIndex(0);
 
       if (!refreshing) fadeIn(fadeAnim, 300).start();
+
+      // Copy for every tab is fetched in the background, in parallel, and only
+      // for tabs that do not already have it cached for this slot. The screen
+      // is already interactive; each tab's wording upgrades in place as it
+      // arrives.
+      const missing = HOME_OCCASIONS.filter(key => !loaded.copy[key]?.length);
+      missing.forEach(key => {
+        dailyOutfitService
+          .rankOccasion(loaded.pools[key], key, {
+            slot: loaded.slot,
+            weather: weatherContext,
+          })
+          .then(copy => {
+            if (!copy || poolsRef.current !== loaded) return;
+            loaded.copy[key] = copy;
+            // Only repaint if the user is still looking at this tab.
+            setOccasion(current => {
+              if (current === (key as OccasionType)) showOccasion(current, items);
+              return current;
+            });
+          })
+          .catch(() => undefined);
+      });
     } catch (error) {
       console.error('Error loading Dress Me Today:', error);
     } finally {
@@ -176,25 +223,16 @@ export default function HomeScreen() {
     loadDressMeToday(occasion);
   };
 
-  const handleOccasionPress = async (value: OccasionType) => {
+  // Synchronous. No await, no network - the pools for every tab were built on
+  // load, so this is a lookup and a setState.
+  const handleOccasionPress = (value: OccasionType) => {
     setOccasion(value);
-    if (!styleProfileRef.current) {
-      // Cache not warm yet (e.g. tapped mid-initial-load) - fall back to a full load.
-      setLoading(true);
-      loadDressMeToday(value);
+    if (!poolsRef.current) {
+      // Tapped mid-initial-load; the full load will paint the right tab.
       return;
     }
-    setSwitchingOccasion(true);
-    try {
-      setRecommendations(
-        await buildLooks(closetItemsRef.current, value, weatherRef.current)
-      );
-      setLookIndex(0);
-    } catch (error) {
-      console.error('Error switching occasion:', error);
-    } finally {
-      setSwitchingOccasion(false);
-    }
+    showOccasion(value, closetItemsRef.current);
+    setLookIndex(0);
   };
 
   const handleSwap = () => {
@@ -290,9 +328,9 @@ export default function HomeScreen() {
 
           <View style={styles.dressRow}>
             <Text style={styles.sectionLabel}>DRESS ME TODAY</Text>
-            {switchingOccasion ? (
-              <ActivityIndicator size="small" color={colors.tobacco} />
-            ) : recommendations.length > 0 ? (
+            {/* No spinner here any more - switching tabs is synchronous, so
+                there is nothing to wait for. */}
+            {recommendations.length > 0 ? (
               <Text style={styles.lookCounter}>
                 LOOK {String(lookIndex + 1).padStart(2, '0')} OF {String(recommendations.length).padStart(2, '0')}
               </Text>
