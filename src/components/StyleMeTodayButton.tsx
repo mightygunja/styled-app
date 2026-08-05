@@ -35,7 +35,7 @@ export default function StyleMeTodayButton({ onPress, loading = false }: StyleMe
       activeOpacity={0.8}
     >
       {(loading || isGenerating) ? (
-        <ActivityIndicator color="#F1ECE7" />
+        <ActivityIndicator color={colors.sand} />
       ) : (
         <>
           <Text style={styles.icon}>✨</Text>

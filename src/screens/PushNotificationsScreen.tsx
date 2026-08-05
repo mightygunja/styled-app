@@ -23,6 +23,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -122,23 +123,23 @@ export default function PushNotificationsScreen() {
 
   const getCategoryColor = (category: string): string => {
     switch (category) {
-      case 'outfits': return '#8b5cf6';
-      case 'wardrobe': return '#3b82f6';
-      case 'social': return '#ec4899';
-      case 'promotions': return '#f59e0b';
-      case 'reminders': return '#10b981';
-      case 'updates': return '#6366f1';
-      default: return '#64748b';
+      case 'outfits': return colors.ink;
+      case 'wardrobe': return colors.tobacco;
+      case 'social': return colors.tobacco;
+      case 'promotions': return colors.camel;
+      case 'reminders': return colors.tobacco;
+      case 'updates': return colors.ink;
+      default: return colors.inkMuted;
     }
   };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'read': return '#10b981';
-      case 'delivered': return '#3b82f6';
-      case 'sent': return '#8b5cf6';
-      case 'failed': return '#ef4444';
-      default: return '#64748b';
+      case 'read': return colors.tobacco;
+      case 'delivered': return colors.tobacco;
+      case 'sent': return colors.ink;
+      case 'failed': return colors.tobacco;
+      default: return colors.inkMuted;
     }
   };
 
@@ -160,7 +161,7 @@ export default function PushNotificationsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading notifications...</Text>
         </View>
       </SafeAreaView>
@@ -185,13 +186,13 @@ export default function PushNotificationsScreen() {
       </View>
 
       {/* Info Banner */}
-      <View style={[styles.infoBanner, { backgroundColor: settings.enabled ? '#dcfce7' : '#fee2e2' }]}>
+      <View style={[styles.infoBanner, { backgroundColor: settings.enabled ? colors.sand : colors.sand }]}>
         <Text style={styles.infoBannerIcon}>{settings.enabled ? '🔔' : '🔕'}</Text>
         <View style={styles.infoBannerContent}>
-          <Text style={[styles.infoBannerTitle, { color: settings.enabled ? '#166534' : '#991b1b' }]}>
+          <Text style={[styles.infoBannerTitle, { color: settings.enabled ? colors.tobacco : colors.tobacco }]}>
             {settings.enabled ? 'Notifications Enabled' : 'Notifications Disabled'}
           </Text>
-          <Text style={[styles.infoBannerText, { color: settings.enabled ? '#15803d' : '#b91c1c' }]}>
+          <Text style={[styles.infoBannerText, { color: settings.enabled ? colors.tobacco : colors.tobacco }]}>
             {settings.enabled 
               ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
               : 'Enable to receive notifications'}
@@ -367,8 +368,8 @@ export default function PushNotificationsScreen() {
                     <Switch
                       value={schedule.enabled}
                       onValueChange={(value) => handleToggleSchedule(schedule.id, value)}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -414,8 +415,8 @@ export default function PushNotificationsScreen() {
                 <Switch
                   value={settings.enabled}
                   onValueChange={(value) => handleUpdateSettings({ enabled: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -429,8 +430,8 @@ export default function PushNotificationsScreen() {
                 <Switch
                   value={settings.sound}
                   onValueChange={(value) => handleUpdateSettings({ sound: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -444,8 +445,8 @@ export default function PushNotificationsScreen() {
                 <Switch
                   value={settings.vibration}
                   onValueChange={(value) => handleUpdateSettings({ vibration: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -459,8 +460,8 @@ export default function PushNotificationsScreen() {
                 <Switch
                   value={settings.badge}
                   onValueChange={(value) => handleUpdateSettings({ badge: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -474,8 +475,8 @@ export default function PushNotificationsScreen() {
                 <Switch
                   value={settings.preview}
                   onValueChange={(value) => handleUpdateSettings({ preview: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -495,8 +496,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, outfits: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -512,8 +513,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, wardrobe: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -529,8 +530,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, social: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -546,8 +547,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, promotions: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -563,8 +564,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, reminders: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -580,8 +581,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     categories: { ...settings.categories, updates: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -601,8 +602,8 @@ export default function PushNotificationsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     quietHours: { ...settings.quietHours, enabled: value }
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -679,7 +680,7 @@ export default function PushNotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -689,7 +690,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -697,21 +698,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   testButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   infoBanner: {
     flexDirection: 'row',
@@ -727,7 +728,7 @@ const styles = StyleSheet.create({
   },
   infoBannerTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   infoBannerText: {
@@ -740,25 +741,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -769,19 +770,19 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   badge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -791,13 +792,13 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -807,16 +808,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   markAllButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   emptyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
@@ -827,26 +828,26 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   notificationCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   notificationUnread: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
+    borderLeftColor: colors.ink,
   },
   notificationIcon: {
     width: 48,
@@ -871,8 +872,8 @@ const styles = StyleSheet.create({
   notificationTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginRight: 8,
   },
   statusBadge: {
@@ -884,11 +885,11 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 12,
-    color: '#ffffff',
+    color: colors.white,
   },
   notificationBody: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -905,11 +906,11 @@ const styles = StyleSheet.create({
   },
   notificationTime: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   notificationCategory: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -918,18 +919,18 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   scheduleCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -956,13 +957,13 @@ const styles = StyleSheet.create({
   },
   scheduleTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   scheduleBody: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   scheduleDetails: {
     flexDirection: 'row',
@@ -971,7 +972,7 @@ const styles = StyleSheet.create({
   scheduleTime: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -982,24 +983,24 @@ const styles = StyleSheet.create({
   },
   scheduleTimeText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   scheduleFrequency: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   scheduleFrequencyText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1010,16 +1011,16 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   quietHoursCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -1031,15 +1032,15 @@ const styles = StyleSheet.create({
   },
   quietHoursLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   quietHoursValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   analyticsCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -1048,15 +1049,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   analyticsLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   analyticsValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
 });

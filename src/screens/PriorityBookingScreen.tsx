@@ -23,6 +23,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -111,11 +112,11 @@ export default function PriorityBookingScreen() {
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   const getBookingTypeIcon = (type: BookingType): string => {
@@ -133,7 +134,7 @@ export default function PriorityBookingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading priority slots...</Text>
         </View>
       </SafeAreaView>
@@ -553,7 +554,7 @@ export default function PriorityBookingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -571,16 +572,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   tierBanner: {
     flexDirection: 'row',
@@ -590,8 +591,8 @@ const styles = StyleSheet.create({
   },
   tierBannerText: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -601,8 +602,8 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -611,25 +612,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -638,46 +639,46 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   filterContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   filterChip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   filterChipTextActive: {
-    color: '#ffffff',
+    color: ds.white,
   },
   slotsContainer: {
     padding: 16,
   },
   slotCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
@@ -685,7 +686,7 @@ const styles = StyleSheet.create({
   slotImage: {
     width: '100%',
     height: 160,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   slotInfo: {
     padding: 16,
@@ -702,12 +703,12 @@ const styles = StyleSheet.create({
   slotTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   slotDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -716,7 +717,7 @@ const styles = StyleSheet.create({
   },
   slotMetaText: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   slotHost: {
@@ -729,16 +730,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   hostName: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   hostTitle: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   slotFooter: {
     flexDirection: 'row',
@@ -751,78 +752,78 @@ const styles = StyleSheet.create({
   },
   slotSpotsText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   slotFullText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   slotWaitlistText: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginTop: 2,
   },
   slotPrice: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   earlyAccessBanner: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: ds.sand,
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
   },
   earlyAccessText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     textAlign: 'center',
   },
   slotActions: {
     marginBottom: 12,
   },
   bookButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   bookButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: ds.hair,
   },
   bookButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   waitlistButton: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   waitlistButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   tagContainer: {
     flexDirection: 'row',
     gap: 6,
   },
   tag: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#7c3aed',
+    fontFamily: fonts.sansMedium,
+    color: ds.tobacco,
   },
   emptyState: {
     padding: 40,
@@ -830,37 +831,37 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#cbd5e1',
+    color: ds.hair,
     marginBottom: 16,
   },
   emptyStateButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   emptyStateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   benefitsContainer: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   benefitCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -870,7 +871,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -883,13 +884,13 @@ const styles = StyleSheet.create({
   },
   benefitName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 18,
   },
   benefitStatus: {
@@ -897,7 +898,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   upgradeCard: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     borderRadius: 16,
     padding: 24,
     marginTop: 16,
@@ -905,21 +906,21 @@ const styles = StyleSheet.create({
   },
   upgradeCardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 8,
   },
   upgradeCardText: {
     fontSize: 14,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
     marginBottom: 16,
     textAlign: 'center',
   },
   upgradeCardButton: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   bookingsContainer: {
     padding: 20,

@@ -25,6 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -71,28 +72,28 @@ export default function MLTrendPredictionScreen() {
 
   const getConfidenceColor = (level: string): string => {
     const colors = {
-      'very-high': '#10b981',
-      'high': '#22c55e',
-      'medium': '#f59e0b',
-      'low': '#ef4444',
+      'very-high': ds.tobacco,
+      'high': ds.tobacco,
+      'medium': ds.camel,
+      'low': ds.tobacco,
     };
-    return colors[level as keyof typeof colors] || '#64748b';
+    return colors[level as keyof typeof colors] || ds.inkMuted;
   };
 
   const getAlertColor = (type: string): string => {
     const colors = {
-      emerging: '#10b981',
-      peaking: '#3b82f6',
-      declining: '#f59e0b',
+      emerging: ds.tobacco,
+      peaking: ds.tobacco,
+      declining: ds.camel,
     };
-    return colors[type as keyof typeof colors] || '#64748b';
+    return colors[type as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && trends.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#f59e0b" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Analyzing trends with ML...</Text>
         </View>
       </SafeAreaView>
@@ -279,19 +280,19 @@ export default function MLTrendPredictionScreen() {
                   <Text style={styles.overviewLabel}>Total Trends</Text>
                 </View>
                 <View style={styles.overviewCard}>
-                  <Text style={[styles.overviewValue, { color: '#10b981' }]}>
+                  <Text style={[styles.overviewValue, { color: ds.tobacco }]}>
                     {analysis.overview.emergingTrends}
                   </Text>
                   <Text style={styles.overviewLabel}>Emerging</Text>
                 </View>
                 <View style={styles.overviewCard}>
-                  <Text style={[styles.overviewValue, { color: '#3b82f6' }]}>
+                  <Text style={[styles.overviewValue, { color: ds.tobacco }]}>
                     {analysis.overview.stableTrends}
                   </Text>
                   <Text style={styles.overviewLabel}>Stable</Text>
                 </View>
                 <View style={styles.overviewCard}>
-                  <Text style={[styles.overviewValue, { color: '#f59e0b' }]}>
+                  <Text style={[styles.overviewValue, { color: ds.tobacco }]}>
                     {analysis.overview.decliningTrends}
                   </Text>
                   <Text style={styles.overviewLabel}>Declining</Text>
@@ -441,7 +442,7 @@ export default function MLTrendPredictionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -459,38 +460,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   modelInfo: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: ds.sand,
     padding: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#fef3c7',
+    borderBottomColor: ds.sand,
   },
   modelInfoText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 2,
   },
   modelInfoSubtext: {
     fontSize: 11,
-    color: '#b45309',
+    color: ds.tobacco,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -499,35 +500,35 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#f59e0b',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#f59e0b',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   recommendationCard: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#fef3c7',
+    borderColor: ds.sand,
   },
   recommendationHeader: {
     flexDirection: 'row',
@@ -537,24 +538,24 @@ const styles = StyleSheet.create({
   },
   recommendationName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     flex: 1,
   },
   relevanceScore: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   relevanceScoreText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   recommendationReason: {
     fontSize: 13,
-    color: '#b45309',
+    color: ds.tobacco,
     marginBottom: 8,
   },
   recommendationTiming: {
@@ -562,11 +563,11 @@ const styles = StyleSheet.create({
   },
   recommendationTimingText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   trendCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
   trendImage: {
     width: '100%',
     height: 150,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   trendInfo: {
     padding: 16,
@@ -587,8 +588,8 @@ const styles = StyleSheet.create({
   },
   trendName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     flex: 1,
   },
   confidenceBadge: {
@@ -598,18 +599,18 @@ const styles = StyleSheet.create({
   },
   confidenceBadgeText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   trendCategory: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 8,
   },
   trendDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -621,21 +622,21 @@ const styles = StyleSheet.create({
   trendMetric: {},
   trendMetricLabel: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     marginBottom: 2,
   },
   trendMetricValue: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   trendSources: {
     marginBottom: 12,
   },
   trendSourcesTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   trendSourceBars: {
@@ -649,31 +650,31 @@ const styles = StyleSheet.create({
   trendSourceLabel: {
     width: 60,
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   trendSourceBarBg: {
     flex: 1,
     height: 6,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 3,
     overflow: 'hidden',
   },
   trendSourceBarFill: {
     height: '100%',
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
   },
   trendSourceValue: {
     width: 30,
     fontSize: 11,
-    fontWeight: '600',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     textAlign: 'right',
   },
   relatedTrends: {},
   relatedTrendsTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   relatedTrendsTags: {
@@ -682,17 +683,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   relatedTrendTag: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fef3c7',
+    borderColor: ds.sand,
   },
   relatedTrendText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#b45309',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   overviewGrid: {
     flexDirection: 'row',
@@ -702,26 +703,26 @@ const styles = StyleSheet.create({
   overviewCard: {
     flex: 1,
     minWidth: (width - 52) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },
   overviewValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 4,
   },
   overviewLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -731,41 +732,41 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   categoryRankText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   categoryInfo: {
     flex: 1,
   },
   categoryName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 2,
   },
   categoryCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   categoryGrowth: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
   },
   categoryGrowthText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   alignmentCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
   },
@@ -775,52 +776,52 @@ const styles = StyleSheet.create({
   },
   alignmentScoreValue: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 4,
   },
   alignmentScoreLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   alignmentMatching: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
   alignmentRecommendations: {},
   alignmentRecommendationsTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   alignmentRecommendationItem: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   forecastCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
   },
   forecastTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 12,
   },
   forecastTrend: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
     lineHeight: 20,
   },
   colorCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -831,36 +832,36 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   colorInfo: {
     flex: 1,
   },
   colorName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   colorPantone: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 6,
   },
   colorDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
     lineHeight: 18,
   },
   colorConfidence: {},
   colorConfidenceText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#f59e0b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   alertCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     borderLeftWidth: 4,
     padding: 16,
@@ -879,16 +880,16 @@ const styles = StyleSheet.create({
   },
   alertTypeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   alertTime: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: ds.inkFaint,
   },
   alertMessage: {
     fontSize: 14,
-    color: '#0f172a',
+    color: ds.ink,
     lineHeight: 20,
   },
 });

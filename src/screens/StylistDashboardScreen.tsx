@@ -305,7 +305,7 @@ export default function StylistDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   notStylistBox: {
     flex: 1,
@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
     marginBottom: 12,
   },
   earningsTotal: {
     fontSize: 40,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
     marginBottom: 4,
   },
   earningsLabel: {
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   earningsStatValue: {
     fontSize: 20,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
     marginBottom: 4,
   },
   earningsStatLabel: {
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   metricsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 20,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sessionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   sessionPrice: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   viewButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
   },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   clientCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   clientInitial: {
     fontSize: 20,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
   },
   clientInfo: {
     flex: 1,

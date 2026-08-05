@@ -27,7 +27,7 @@ export default function Input({
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
         style={[styles.input, error && styles.inputError, style]}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={colors.inkFaint}
         {...props}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}

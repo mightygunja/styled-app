@@ -73,7 +73,7 @@ export default function SimilarItemsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   header: {
     flexDirection: 'row',
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: colors.ink,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   similarityText: {
     fontSize: 11,
-    color: '#ffffff',
+    color: colors.white,
     fontFamily: fonts.sansSemiBold,
   },
 });

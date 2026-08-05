@@ -257,7 +257,7 @@ export default function PhotoUploadModal({
               disabled={processing}
             >
               {processing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.doneButtonText}>Use Photo</Text>
               )}

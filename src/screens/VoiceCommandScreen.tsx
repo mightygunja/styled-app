@@ -22,6 +22,7 @@ import {
 } from '../services/voiceCommandService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -149,7 +150,7 @@ export default function VoiceCommandScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading voice assistant...</Text>
         </View>
       </SafeAreaView>
@@ -366,8 +367,8 @@ export default function VoiceCommandScreen() {
               <Switch
                 value={settings.enabled}
                 onValueChange={(value) => handleSettingChange('enabled', value)}
-                trackColor={{ false: '#cbd5e1', true: '#93c5fd' }}
-                thumbColor={settings.enabled ? '#3b82f6' : '#f1f5f9'}
+                trackColor={{ false: colors.hair, true: colors.ink }}
+                thumbColor={colors.white}
               />
             </View>
 
@@ -379,8 +380,8 @@ export default function VoiceCommandScreen() {
               <Switch
                 value={settings.continuousListening}
                 onValueChange={(value) => handleSettingChange('continuousListening', value)}
-                trackColor={{ false: '#cbd5e1', true: '#93c5fd' }}
-                thumbColor={settings.continuousListening ? '#3b82f6' : '#f1f5f9'}
+                trackColor={{ false: colors.hair, true: colors.ink }}
+                thumbColor={colors.white}
               />
             </View>
 
@@ -392,8 +393,8 @@ export default function VoiceCommandScreen() {
               <Switch
                 value={settings.feedbackSound}
                 onValueChange={(value) => handleSettingChange('feedbackSound', value)}
-                trackColor={{ false: '#cbd5e1', true: '#93c5fd' }}
-                thumbColor={settings.feedbackSound ? '#3b82f6' : '#f1f5f9'}
+                trackColor={{ false: colors.hair, true: colors.ink }}
+                thumbColor={colors.white}
               />
             </View>
 
@@ -405,8 +406,8 @@ export default function VoiceCommandScreen() {
               <Switch
                 value={settings.voiceResponse}
                 onValueChange={(value) => handleSettingChange('voiceResponse', value)}
-                trackColor={{ false: '#cbd5e1', true: '#93c5fd' }}
-                thumbColor={settings.voiceResponse ? '#3b82f6' : '#f1f5f9'}
+                trackColor={{ false: colors.hair, true: colors.ink }}
+                thumbColor={colors.white}
               />
             </View>
 
@@ -442,7 +443,7 @@ export default function VoiceCommandScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -460,21 +461,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -483,16 +484,16 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#3b82f6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#3b82f6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   voiceContainer: {
     padding: 40,
@@ -505,44 +506,46 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
+  // The listening state has to read differently from the resting one. Both
+  // sides mapped to ink, which would have made "listening" invisible.
   voiceButtonActive: {
-    backgroundColor: '#ef4444',
-    shadowColor: '#ef4444',
+    backgroundColor: colors.tobacco,
+    shadowColor: colors.tobacco,
   },
   voiceIcon: {
     fontSize: 48,
   },
   voiceStatus: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 20,
   },
   transcriptContainer: {
     width: '100%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   transcriptLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   transcriptText: {
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 24,
   },
   resultContainer: {
@@ -554,14 +557,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   resultSuccess: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: colors.sand,
     borderWidth: 1,
-    borderColor: '#10b981',
+    borderColor: colors.ink,
   },
   resultError: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: colors.ink,
   },
   resultIcon: {
     fontSize: 20,
@@ -569,13 +572,13 @@ const styles = StyleSheet.create({
   resultText: {
     flex: 1,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 20,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -585,19 +588,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 16,
   },
   clearButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   suggestionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -609,14 +612,14 @@ const styles = StyleSheet.create({
   suggestionText: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
   },
   suggestionArrow: {
     fontSize: 16,
-    color: '#3b82f6',
+    color: colors.tobacco,
   },
   helpCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     gap: 16,
@@ -626,13 +629,13 @@ const styles = StyleSheet.create({
   },
   helpCategory: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#3b82f6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   helpExample: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     paddingLeft: 12,
   },
   statsGrid: {
@@ -641,26 +644,26 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#3b82f6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   topCommandCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -670,27 +673,27 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   topCommandRankText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   topCommandText: {
     flex: 1,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
   topCommandCount: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#3b82f6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   historyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -702,17 +705,17 @@ const styles = StyleSheet.create({
   },
   historyType: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#3b82f6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     textTransform: 'uppercase',
   },
   historyTime: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   historyTranscript: {
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 8,
     lineHeight: 22,
   },
@@ -722,7 +725,7 @@ const styles = StyleSheet.create({
   },
   historyConfidence: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emptyState: {
     padding: 40,
@@ -730,20 +733,20 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textAlign: 'center',
   },
   settingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -753,12 +756,12 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
 });

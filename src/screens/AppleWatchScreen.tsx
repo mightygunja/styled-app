@@ -25,6 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -117,9 +118,9 @@ export default function AppleWatchScreen() {
   };
 
   const getBatteryColor = (level: number): string => {
-    if (level > 50) return '#10b981';
-    if (level > 20) return '#f59e0b';
-    return '#ef4444';
+    if (level > 50) return colors.tobacco;
+    if (level > 20) return colors.camel;
+    return colors.tobacco;
   };
 
   const formatTimeAgo = (dateString: string): string => {
@@ -140,7 +141,7 @@ export default function AppleWatchScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading Apple Watch...</Text>
         </View>
       </SafeAreaView>
@@ -218,7 +219,7 @@ export default function AppleWatchScreen() {
       </View>
 
       {/* Watch Status */}
-      <View style={[styles.statusBanner, { backgroundColor: isConnected ? '#10b981' : '#ef4444' }]}>
+      <View style={[styles.statusBanner, { backgroundColor: isConnected ? colors.tobacco : colors.tobacco }]}>
         <Text style={styles.statusIcon}>⌚</Text>
         <View style={styles.statusInfo}>
           <Text style={styles.statusText}>
@@ -408,8 +409,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     complications: { ...settings.complications, enabled: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -425,8 +426,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     complications: { ...settings.complications, showOutfit: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -442,8 +443,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     complications: { ...settings.complications, showWeather: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -464,8 +465,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     notifications: { ...settings.notifications, enabled: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -481,8 +482,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     notifications: { ...settings.notifications, outfitReminders: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -498,8 +499,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     notifications: { ...settings.notifications, weatherAlerts: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -520,8 +521,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     standalone: { ...settings.standalone, enabled: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -537,8 +538,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     standalone: { ...settings.standalone, cacheOutfits: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -554,8 +555,8 @@ export default function AppleWatchScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     standalone: { ...settings.standalone, cacheImages: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -578,7 +579,7 @@ export default function AppleWatchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -596,21 +597,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   syncButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   statusBanner: {
     flexDirection: 'row',
@@ -626,13 +627,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     marginBottom: 4,
   },
   statusSubtext: {
     fontSize: 13,
-    color: '#ffffff',
+    color: colors.white,
     opacity: 0.9,
   },
   batteryContainer: {
@@ -643,19 +644,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.card,
     padding: 2,
     marginBottom: 4,
   },
   batteryFill: {
     height: '100%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 2,
   },
   batteryText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -664,25 +665,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -691,35 +692,35 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   outfitCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
@@ -733,13 +734,13 @@ const styles = StyleSheet.create({
   },
   outfitName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   outfitOccasion: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   weatherInfo: {
@@ -753,7 +754,7 @@ const styles = StyleSheet.create({
   },
   weatherText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -765,18 +766,18 @@ const styles = StyleSheet.create({
   },
   ratingValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   itemsList: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
   itemsTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   itemRow: {
@@ -784,20 +785,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   itemName: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
   itemCategory: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   activityCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -806,7 +807,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -819,17 +820,17 @@ const styles = StyleSheet.create({
   },
   activityType: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   activityTime: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   suggestionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
@@ -844,13 +845,13 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 6,
   },
   suggestionReason: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   suggestionWeather: {
@@ -858,10 +859,10 @@ const styles = StyleSheet.create({
   },
   suggestionTemp: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: colors.tobacco,
   },
   matchBadge: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingHorizontal: 12,
     paddingVertical: 8,
     justifyContent: 'center',
@@ -869,19 +870,19 @@ const styles = StyleSheet.create({
   },
   matchScore: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     marginBottom: 2,
   },
   matchLabel: {
     fontSize: 10,
-    color: '#ffffff',
+    color: colors.white,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -892,13 +893,13 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   pairingContainer: {
     flex: 1,
@@ -912,14 +913,14 @@ const styles = StyleSheet.create({
   },
   pairingTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
     textAlign: 'center',
   },
   pairingDescription: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
@@ -935,16 +936,16 @@ const styles = StyleSheet.create({
   },
   pairingFeatureIcon: {
     fontSize: 20,
-    color: '#10b981',
+    color: colors.tobacco,
     marginRight: 12,
     width: 24,
   },
   pairingFeatureText: {
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
   },
   pairButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -952,12 +953,12 @@ const styles = StyleSheet.create({
   },
   pairButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   pairingFooter: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textAlign: 'center',
   },
 });

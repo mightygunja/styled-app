@@ -26,6 +26,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width, height } = Dimensions.get('window');
 
@@ -122,10 +123,10 @@ export default function ARTryOnScreen() {
 
   const getFitRatingColor = (rating: FitRating): string => {
     const colors = {
-      perfect: '#10b981',
-      good: '#3b82f6',
-      loose: '#f59e0b',
-      tight: '#ef4444',
+      perfect: ds.tobacco,
+      good: ds.tobacco,
+      loose: ds.camel,
+      tight: ds.tobacco,
     };
     return colors[rating];
   };
@@ -142,11 +143,11 @@ export default function ARTryOnScreen() {
 
   const getMeasurementStatusColor = (status: string): string => {
     const colors = {
-      perfect: '#10b981',
-      good: '#3b82f6',
-      check: '#f59e0b',
+      perfect: ds.tobacco,
+      good: ds.tobacco,
+      check: ds.camel,
     };
-    return colors[status as keyof typeof colors] || '#64748b';
+    return colors[status as keyof typeof colors] || ds.inkMuted;
   };
 
   const getMeasurementStatusIcon = (status: string): string => {
@@ -162,7 +163,7 @@ export default function ARTryOnScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading AR Try-On...</Text>
           <Text style={styles.loadingSubtext}>Analyzing fit and measurements</Text>
         </View>
@@ -249,7 +250,7 @@ export default function ARTryOnScreen() {
                   <Text style={styles.measurementValueLabel}>Difference</Text>
                   <Text style={[
                     styles.measurementValueNumber,
-                    { color: Math.abs(measurement.difference) < 5 ? '#10b981' : '#f59e0b' }
+                    { color: Math.abs(measurement.difference) < 5 ? ds.tobacco : ds.camel }
                   ]}>
                     {measurement.difference > 0 ? '+' : ''}{measurement.difference.toFixed(1)} cm
                   </Text>
@@ -425,7 +426,7 @@ export default function ARTryOnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -435,13 +436,13 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   loadingSubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emptyContainer: {
     flex: 1,
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -458,16 +459,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   measureButton: {
     fontSize: 24,
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     height: height * 0.5,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
   },
   previewImage: {
     width: '100%',
@@ -494,8 +495,8 @@ const styles = StyleSheet.create({
   },
   fitBadgeText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   arLabel: {
     position: 'absolute',
@@ -508,33 +509,33 @@ const styles = StyleSheet.create({
   },
   arLabelText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   scoreContainer: {
     flexDirection: 'row',
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
     gap: 20,
   },
   scoreCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   scoreValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   scoreLabel: {
     fontSize: 12,
-    color: '#ffffff',
+    color: ds.white,
     marginTop: 4,
   },
   scoreDetails: {
@@ -543,33 +544,33 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   itemBrand: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   suggestedSize: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   measurementCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -582,8 +583,8 @@ const styles = StyleSheet.create({
   },
   measurementName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   measurementStatus: {
     width: 28,
@@ -594,8 +595,8 @@ const styles = StyleSheet.create({
   },
   measurementStatusText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   measurementValues: {
     flexDirection: 'row',
@@ -606,16 +607,16 @@ const styles = StyleSheet.create({
   },
   measurementValueLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   measurementValueNumber: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   recommendationsCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
   },
@@ -626,13 +627,13 @@ const styles = StyleSheet.create({
   },
   recommendationBullet: {
     fontSize: 16,
-    color: '#3b82f6',
-    fontWeight: 'bold',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   recommendationText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
+    color: ds.tobacco,
     lineHeight: 20,
   },
   sizesGrid: {
@@ -643,33 +644,33 @@ const styles = StyleSheet.create({
     width: 100,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     alignItems: 'center',
   },
   sizeCardActive: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: ds.sand,
+    borderColor: ds.ink,
   },
   sizeLabel: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   sizeLabelActive: {
-    color: '#ef4444',
+    color: ds.tobacco,
   },
   sizeFitScore: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   sizeBestFit: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     textTransform: 'uppercase',
   },
   actions: {
@@ -682,20 +683,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     alignItems: 'center',
   },
   actionButtonPrimary: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: ds.ink,
+    borderColor: ds.ink,
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   actionButtonTextPrimary: {
-    color: '#ffffff',
+    color: ds.white,
   },
   modalOverlay: {
     flex: 1,
@@ -703,7 +704,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: height * 0.8,
@@ -717,31 +718,31 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   modalClose: {
     fontSize: 24,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   inputGroup: {
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: ds.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   fitOptions: {
     flexDirection: 'row',
@@ -751,25 +752,25 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     alignItems: 'center',
   },
   fitOptionActive: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: ds.sand,
+    borderColor: ds.ink,
   },
   fitOptionText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   fitOptionTextActive: {
-    color: '#ef4444',
+    color: ds.tobacco,
   },
   saveButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -777,7 +778,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
 });

@@ -305,7 +305,7 @@ export default function SmartRecommendationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   occasionTextActive: {
-    color: '#ffffff',
+    color: colors.white,
   },
   recCount: {
     padding: 20,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   recCard: {
     margin: 20,
     marginTop: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   acceptButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },
@@ -540,15 +540,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: colors.sand,
   },
   badgeText: {
     fontSize: 12,
-    color: '#166534',
+    color: colors.tobacco,
     fontFamily: fonts.sansSemiBold,
   },
   emptyState: {

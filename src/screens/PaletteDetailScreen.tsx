@@ -164,7 +164,7 @@ export default function PaletteDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   content: {
     flex: 1,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   colorCode: {
     fontSize: 10,
-    color: '#ffffff',
+    color: colors.white,
     fontFamily: fonts.sansSemiBold,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   occasionText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },

@@ -398,7 +398,7 @@ export default function StylistDetailScreen() {
               disabled={!selectedDate || !selectedTime || bookingLoading}
             >
               {bookingLoading ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.confirmButtonText}>
                   Confirm Booking - ${sessionPrice.toFixed(0)}

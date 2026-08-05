@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 interface TrendingColor {
   name: string;
@@ -215,7 +216,7 @@ export default function ColorPaletteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: ds.paper,
   },
   header: {
     flexDirection: 'row',
@@ -224,54 +225,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   monthBanner: {
     padding: 24,
-    backgroundColor: '#EEE9E3',
+    backgroundColor: ds.sand,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: ds.hair,
   },
   monthTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   monthSubtitle: {
     fontSize: 16,
-    color: '#5E5A55',
+    color: ds.inkMuted,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     marginBottom: 20,
   },
   colorCard: {
-    backgroundColor: '#EEE9E3',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   colorHeader: {
     flexDirection: 'row',
@@ -284,47 +285,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 16,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   colorInfo: {
     flex: 1,
   },
   colorName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   colorHex: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     fontFamily: 'monospace',
     marginBottom: 2,
   },
   colorPantone: {
     fontSize: 12,
-    color: '#7B665A',
+    color: ds.tobacco,
   },
   colorDescription: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   patternCard: {
-    backgroundColor: '#EEE9E3',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#DED7CF',
+    borderColor: ds.hair,
   },
   patternHeader: {
     marginBottom: 12,
   },
   patternName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   popularityContainer: {
@@ -335,30 +336,30 @@ const styles = StyleSheet.create({
   popularityBarBg: {
     flex: 1,
     height: 8,
-    backgroundColor: '#DED7CF',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
   popularityBarFill: {
     height: '100%',
-    backgroundColor: '#2B1F1A',
+    backgroundColor: ds.ink,
     borderRadius: 4,
   },
   popularityText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#2B1F1A',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     width: 40,
   },
   patternDescription: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   tipCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#EEE9E3',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -366,12 +367,12 @@ const styles = StyleSheet.create({
   },
   tipIcon: {
     fontSize: 24,
-    color: '#2B1F1A',
+    color: ds.ink,
   },
   tipText: {
     flex: 1,
     fontSize: 13,
-    color: '#5E5A55',
+    color: ds.inkMuted,
     lineHeight: 18,
   },
 });

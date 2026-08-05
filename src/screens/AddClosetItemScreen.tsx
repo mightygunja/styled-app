@@ -165,7 +165,7 @@ export default function AddClosetItemScreen() {
                 style={[
                   styles.colorOption,
                   { backgroundColor: col.hex },
-                  col.hex === '#FFFFFF' && styles.colorOptionWhite,
+                  col.hex === colors.white && styles.colorOptionWhite,
                   color === col.id && styles.colorOptionSelected,
                 ]}
                 onPress={() =>setColor(col.id)}
@@ -246,7 +246,7 @@ export default function AddClosetItemScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   content: {
     flex: 1,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   changeImageText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   colorCheckmark: {
     fontSize: 24,
-    color: '#ffffff',
+    color: colors.white,
     fontFamily: fonts.sansSemiBold,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },

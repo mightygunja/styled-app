@@ -325,7 +325,7 @@ export default function RecommendationsScreen() {
               Alert.alert('Touch Works!', 'Touch is working on this screen');
             }}
           >
-            <Text style={{ color: '#fff', textAlign: 'center' }}>Test Touch (Tap Me)</Text>
+            <Text style={{ color: colors.white, textAlign: 'center' }}>Test Touch (Tap Me)</Text>
           </TouchableOpacity>
         </View>
 
@@ -388,7 +388,7 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   emptyStateButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },

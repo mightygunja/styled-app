@@ -22,6 +22,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -64,18 +65,18 @@ export default function AdFreeExperienceScreen() {
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && !experience) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading ad-free settings...</Text>
         </View>
       </SafeAreaView>
@@ -105,7 +106,7 @@ export default function AdFreeExperienceScreen() {
       </View>
 
       {/* Status Banner */}
-      <View style={[styles.statusBanner, { backgroundColor: experience.isAdFree ? '#10b981' : '#64748b' }]}>
+      <View style={[styles.statusBanner, { backgroundColor: experience.isAdFree ? ds.tobacco : ds.inkMuted }]}>
         <Text style={styles.statusText}>
           {experience.isAdFree ? '✓ AD-FREE ACTIVE' : 'ADS ENABLED'}
         </Text>
@@ -477,7 +478,7 @@ export default function AdFreeExperienceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: ds.tobacco,
   },
   header: {
     flexDirection: 'row',
@@ -504,16 +505,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   statusBanner: {
     padding: 16,
@@ -521,19 +522,19 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 4,
   },
   statusSubtext: {
     fontSize: 12,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -542,29 +543,29 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   benefitCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -587,13 +588,13 @@ const styles = StyleSheet.create({
   },
   benefitName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 18,
   },
   benefitStatus: {
@@ -603,35 +604,35 @@ const styles = StyleSheet.create({
   restrictionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#fef3c7',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   restrictionLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#92400e',
+    fontFamily: fonts.sansMedium,
+    color: ds.tobacco,
   },
   restrictionValue: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   upgradeCard: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     borderRadius: 16,
     padding: 24,
   },
   upgradeTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 8,
   },
   upgradeDescription: {
     fontSize: 14,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
     marginBottom: 16,
   },
@@ -640,18 +641,18 @@ const styles = StyleSheet.create({
   },
   upgradeFeature: {
     fontSize: 13,
-    color: '#ffffff',
+    color: ds.white,
     marginBottom: 6,
   },
   upgradeButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     textAlign: 'center',
   },
   statCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -674,103 +675,103 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   insightCard: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 20,
     marginTop: 8,
   },
   insightTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e40af',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 8,
   },
   insightText: {
     fontSize: 14,
-    color: '#1e40af',
+    color: ds.tobacco,
     lineHeight: 20,
   },
   noStatsCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
   },
   noStatsText: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
   noStatsButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   noStatsButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   comparisonTable: {
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   comparisonHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     padding: 12,
     borderBottomWidth: 2,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   comparisonHeaderText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   comparisonRow: {
     flexDirection: 'row',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   comparisonText: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   comparisonFeature: {
     flex: 2,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   comparisonTier: {
     flex: 1,
     textAlign: 'center',
   },
   comparisonFree: {
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   comparisonPremium: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   comparisonPro: {
-    color: '#f59e0b',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   comparisonUpgradeButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -778,7 +779,7 @@ const styles = StyleSheet.create({
   },
   comparisonUpgradeText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
 });

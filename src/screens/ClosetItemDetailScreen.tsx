@@ -364,7 +364,7 @@ export default function ClosetItemDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   header: {
     flexDirection: 'row',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   aiBadgeText: {
     fontSize: 14,
-    color: '#991b1b',
+    color: colors.tobacco,
     fontFamily: fonts.sansSemiBold,
   },
   section: {
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   outfitButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   similarButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   wornButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },

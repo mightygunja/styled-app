@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     fontSize: 13,
     letterSpacing: 0.6,
-    color: '#C62828',
+    color: colors.tobacco,
   },
   deleteButton: {
     alignItems: 'center',

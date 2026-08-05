@@ -21,6 +21,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -97,29 +98,29 @@ export default function WhiteLabelScreen() {
 
   const getStatusColor = (status: string): string => {
     const colors = {
-      active: '#10b981',
-      deploying: '#f59e0b',
-      pending: '#64748b',
-      failed: '#ef4444',
-      suspended: '#64748b',
+      active: ds.tobacco,
+      deploying: ds.camel,
+      pending: ds.inkMuted,
+      failed: ds.tobacco,
+      suspended: ds.inkMuted,
     };
-    return colors[status as keyof typeof colors] || '#64748b';
+    return colors[status as keyof typeof colors] || ds.inkMuted;
   };
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && !config) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading white-label settings...</Text>
         </View>
       </SafeAreaView>
@@ -585,7 +586,7 @@ export default function WhiteLabelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -595,7 +596,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -603,21 +604,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   deployButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   statusBanner: {
     padding: 16,
@@ -625,13 +626,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 4,
   },
   statusSubtext: {
     fontSize: 11,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
   },
   statsContainer: {
@@ -641,25 +642,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -668,63 +669,63 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   configCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   configLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 6,
   },
   configValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   platformTags: {
     flexDirection: 'row',
     gap: 8,
   },
   platformTag: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   platformTagText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   featureCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -739,20 +740,20 @@ const styles = StyleSheet.create({
   },
   featureName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   featureStatus: {
     fontSize: 20,
     marginLeft: 8,
   },
   usageCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -764,40 +765,40 @@ const styles = StyleSheet.create({
   },
   usageLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   usageValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
   },
   urlCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   urlLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   urlValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 12,
   },
   urlButton: {
@@ -805,29 +806,28 @@ const styles = StyleSheet.create({
   },
   urlButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   apiCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   apiLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 6,
   },
   apiValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    color: ds.ink,
     fontFamily: 'monospace',
   },
   generateButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -835,8 +835,8 @@ const styles = StyleSheet.create({
   },
   generateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   docsButton: {
     alignItems: 'center',
@@ -844,11 +844,11 @@ const styles = StyleSheet.create({
   },
   docsButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   actionButton: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -856,13 +856,13 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   settingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -873,57 +873,57 @@ const styles = StyleSheet.create({
   },
   settingName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   toggle: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: ds.hair,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   toggleActive: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
   },
   toggleText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   legalCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   legalLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 6,
   },
   legalValue: {
     fontSize: 13,
-    color: '#0f172a',
+    color: ds.ink,
   },
   dangerButton: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: ds.sand,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: ds.sand,
   },
   dangerButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#dc2626',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   upgradeContainer: {
     flex: 1,
@@ -937,14 +937,14 @@ const styles = StyleSheet.create({
   },
   upgradeTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 12,
     textAlign: 'center',
   },
   upgradeDescription: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
@@ -960,16 +960,16 @@ const styles = StyleSheet.create({
   },
   upgradeFeatureIcon: {
     fontSize: 20,
-    color: '#10b981',
+    color: ds.tobacco,
     marginRight: 12,
     width: 24,
   },
   upgradeFeatureText: {
     fontSize: 15,
-    color: '#0f172a',
+    color: ds.ink,
   },
   upgradeButton: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -977,12 +977,12 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeFooter: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     textAlign: 'center',
   },
 });

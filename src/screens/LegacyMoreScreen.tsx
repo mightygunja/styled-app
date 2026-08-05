@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrentUserName, getCurrentUserEmail } from '../utils/auth';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -114,15 +115,15 @@ export default function LegacyMoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   content: {
     padding: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 24,
   },
   menuContainer: {
@@ -132,28 +133,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   menuItemContent: {
     flex: 1,
   },
   menuItemTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   menuItemSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   chevron: {
     fontSize: 24,
-    color: '#cbd5e1',
+    color: colors.hair,
     marginLeft: 12,
   },
 });

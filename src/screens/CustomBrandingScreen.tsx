@@ -24,6 +24,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -111,18 +112,18 @@ export default function CustomBrandingScreen() {
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && !branding) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading branding...</Text>
         </View>
       </SafeAreaView>
@@ -486,7 +487,7 @@ export default function CustomBrandingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -504,24 +505,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   exportButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   exportButtonDisabled: {
-    color: '#cbd5e1',
+    color: ds.hair,
   },
   tierBanner: {
     flexDirection: 'row',
@@ -531,8 +532,8 @@ const styles = StyleSheet.create({
   },
   tierBannerText: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -542,13 +543,13 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -557,47 +558,47 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 16,
   },
   brandCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   brandLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   brandValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   valueContainer: {
     flexDirection: 'row',
@@ -606,8 +607,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   editContainer: {
     flexDirection: 'row',
@@ -615,17 +616,17 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#0f172a',
+    color: ds.ink,
   },
   saveButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -633,14 +634,14 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   logoPreview: {
     width: 120,
     height: 120,
     borderRadius: 12,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -657,18 +658,18 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginBottom: 6,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   colorName: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     textTransform: 'capitalize',
     marginBottom: 2,
   },
   colorHex: {
     fontSize: 10,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   fontList: {
     gap: 8,
@@ -679,25 +680,25 @@ const styles = StyleSheet.create({
   },
   fontLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   fontValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   messagingContainer: {
     gap: 8,
   },
   tagline: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     fontStyle: 'italic',
-    color: '#0f172a',
+    color: ds.ink,
   },
   description: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   toneContainer: {
@@ -706,17 +707,17 @@ const styles = StyleSheet.create({
   },
   toneLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   toneValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     textTransform: 'capitalize',
   },
   featureCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -731,20 +732,20 @@ const styles = StyleSheet.create({
   },
   featureName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   featureStatus: {
     fontSize: 20,
     marginLeft: 8,
   },
   templateCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
@@ -752,7 +753,7 @@ const styles = StyleSheet.create({
   templateImage: {
     width: '100%',
     height: 160,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   templateInfo: {
     padding: 16,
@@ -765,23 +766,23 @@ const styles = StyleSheet.create({
   },
   templateName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   premiumBadge: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   premiumBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   templateDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   templateColors: {
@@ -794,45 +795,45 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   applyButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
   },
   applyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeCard: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
   },
   upgradeCardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 8,
   },
   upgradeCardText: {
     fontSize: 14,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
     marginBottom: 16,
     textAlign: 'center',
   },
   upgradeCardButton: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   lockedCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
@@ -843,53 +844,53 @@ const styles = StyleSheet.create({
   },
   lockedTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   lockedText: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
     marginBottom: 20,
   },
   lockedButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   lockedButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   customizeCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   customizeLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   customizeDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   customizeButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   customizeButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
 });

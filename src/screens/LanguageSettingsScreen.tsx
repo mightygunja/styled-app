@@ -21,6 +21,7 @@ import {
 } from '../services/i18nService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -98,7 +99,7 @@ export default function LanguageSettingsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading languages...</Text>
         </View>
       </SafeAreaView>
@@ -372,7 +373,7 @@ export default function LanguageSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -390,21 +391,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   currentBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     padding: 20,
     gap: 12,
   },
@@ -416,13 +417,13 @@ const styles = StyleSheet.create({
   },
   currentName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     marginBottom: 4,
   },
   currentSubtext: {
     fontSize: 13,
-    color: '#ffffff',
+    color: colors.white,
     opacity: 0.9,
   },
   rtlBadge: {
@@ -433,13 +434,13 @@ const styles = StyleSheet.create({
   },
   rtlBadgeText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -448,37 +449,37 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   languageCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -486,8 +487,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   languageCardSelected: {
-    backgroundColor: '#ede9fe',
-    borderColor: '#8b5cf6',
+    backgroundColor: colors.sand,
+    borderColor: colors.ink,
   },
   languageFlag: {
     fontSize: 32,
@@ -498,13 +499,13 @@ const styles = StyleSheet.create({
   },
   languageName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   languageEnglishName: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   translationProgress: {
@@ -512,33 +513,33 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
   },
   progressText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   selectedBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   selectedBadgeText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: colors.white,
   },
   directionBadge: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: colors.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -546,12 +547,12 @@ const styles = StyleSheet.create({
   },
   directionBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#dbeafe',
+    backgroundColor: colors.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -565,13 +566,13 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1e40af',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   infoText: {
     fontSize: 13,
-    color: '#1e40af',
+    color: colors.tobacco,
     lineHeight: 18,
   },
   statsGrid: {
@@ -580,26 +581,26 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   settingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -609,27 +610,27 @@ const styles = StyleSheet.create({
   },
   settingName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   settingValue: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   settingButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   settingButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   previewCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -638,16 +639,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   previewLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   previewValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
 });

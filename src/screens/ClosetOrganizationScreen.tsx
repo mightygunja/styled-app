@@ -453,7 +453,7 @@ export default function ClosetOrganizationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     color: ds.inkMuted,
   },
   methodTextActive: {
-    color: '#ffffff',
+    color: ds.white,
   },
   section: {
     padding: 20,
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   tipPriorityText: {
     fontSize: 9,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: ds.white,
   },
   tipText: {
     fontSize: 14,
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   },
   declutterCard: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
   declutterReasonText: {
     fontSize: 11,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: ds.white,
   },
   declutterExplanation: {
     fontSize: 13,
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     color: ds.inkMuted,
   },
   declutterActionTextPrimary: {
-    color: '#ffffff',
+    color: ds.white,
   },
   capsuleContainer: {
     padding: 20,
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   },
   personalizedBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#eef2ff',
+    backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginTop: 8,
@@ -817,22 +817,22 @@ const styles = StyleSheet.create({
   personalizedBadgeText: {
     fontSize: 12,
     fontFamily: fonts.sansSemiBold,
-    color: '#4338ca',
+    color: ds.tobacco,
   },
   gapsBox: {
     marginTop: 16,
-    backgroundColor: '#fff7ed',
+    backgroundColor: ds.sand,
     padding: 14,
   },
   gapText: {
     fontSize: 13,
-    color: '#9a3412',
+    color: ds.tobacco,
     marginBottom: 2,
   },
   gapShopLink: {
     fontSize: 12,
     fontFamily: fonts.sansSemiBold,
-    color: '#9a3412',
+    color: ds.tobacco,
     marginBottom: 8,
   },
   capsuleEssentials: {

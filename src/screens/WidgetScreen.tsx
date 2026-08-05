@@ -24,6 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -119,10 +120,10 @@ export default function WidgetScreen() {
 
   const getSizeBadgeColor = (size: string): string => {
     switch (size) {
-      case 'small': return '#3b82f6';
-      case 'medium': return '#8b5cf6';
-      case 'large': return '#ec4899';
-      default: return '#64748b';
+      case 'small': return colors.tobacco;
+      case 'medium': return colors.ink;
+      case 'large': return colors.tobacco;
+      default: return colors.inkMuted;
     }
   };
 
@@ -142,7 +143,7 @@ export default function WidgetScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading widgets...</Text>
         </View>
       </SafeAreaView>
@@ -165,13 +166,13 @@ export default function WidgetScreen() {
       </View>
 
       {/* Info Banner */}
-      <View style={[styles.infoBanner, { backgroundColor: '#fff3cd' }]}>
+      <View style={[styles.infoBanner, { backgroundColor: colors.sand }]}>
         <Text style={styles.infoBannerIcon}>⚠️</Text>
         <View style={styles.infoBannerContent}>
-          <Text style={[styles.infoBannerTitle, { color: '#856404' }]}>
+          <Text style={[styles.infoBannerTitle, { color: colors.tobacco }]}>
             Widget Preview Mode
           </Text>
-          <Text style={[styles.infoBannerText, { color: '#856404' }]}>
+          <Text style={[styles.infoBannerText, { color: colors.tobacco }]}>
             This screen shows widget preferences. Actual home screen widgets require native iOS/Android implementation.
           </Text>
         </View>
@@ -257,8 +258,8 @@ export default function WidgetScreen() {
                   <Switch
                     value={widget.enabled}
                     onValueChange={(value) => handleToggleWidget(widget.id, value)}
-                    trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                    thumbColor="#ffffff"
+                    trackColor={{ false: colors.hair, true: colors.ink }}
+                    thumbColor={colors.white}
                   />
                 </View>
               ))}
@@ -415,8 +416,8 @@ export default function WidgetScreen() {
                 <Switch
                   value={settings.autoRefresh}
                   onValueChange={(value) => handleUpdateSettings({ autoRefresh: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -430,8 +431,8 @@ export default function WidgetScreen() {
                 <Switch
                   value={settings.showImages}
                   onValueChange={(value) => handleUpdateSettings({ showImages: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -445,8 +446,8 @@ export default function WidgetScreen() {
                 <Switch
                   value={settings.showWeather}
                   onValueChange={(value) => handleUpdateSettings({ showWeather: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -617,7 +618,7 @@ export default function WidgetScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -627,7 +628,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -635,26 +636,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   refreshButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     padding: 16,
     gap: 12,
   },
@@ -666,13 +667,13 @@ const styles = StyleSheet.create({
   },
   infoBannerTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#5b21b6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   infoBannerText: {
     fontSize: 13,
-    color: '#7c3aed',
+    color: colors.tobacco,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -681,25 +682,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -708,37 +709,37 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   widgetCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -747,7 +748,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -765,8 +766,8 @@ const styles = StyleSheet.create({
   },
   widgetName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginRight: 8,
   },
   sizeBadge: {
@@ -776,21 +777,21 @@ const styles = StyleSheet.create({
   },
   sizeBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   widgetDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   widgetUpdated: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: colors.tobacco,
   },
   instructionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -804,21 +805,21 @@ const styles = StyleSheet.create({
   },
   instructionTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   instructionText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   previewSection: {
     marginBottom: 24,
   },
   previewTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   previewCard: {
@@ -826,8 +827,8 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   widgetPreviewSmall: {
@@ -835,7 +836,7 @@ const styles = StyleSheet.create({
     height: 155,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   widgetPreviewMedium: {
     width: '100%',
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
     height: 155,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     flexDirection: 'row',
   },
   previewImage: {
@@ -864,8 +865,8 @@ const styles = StyleSheet.create({
   },
   previewOutfitName: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   previewContentMedium: {
     flex: 1,
@@ -874,13 +875,13 @@ const styles = StyleSheet.create({
   },
   previewOutfitNameMedium: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   previewOccasion: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   previewWeather: {
@@ -893,8 +894,8 @@ const styles = StyleSheet.create({
   },
   previewWeatherText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   statsPreviewContent: {
     flex: 1,
@@ -904,19 +905,19 @@ const styles = StyleSheet.create({
   },
   statsPreviewTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   statsPreviewValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   statsPreviewLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   statsPreviewGrid: {
     flex: 1,
@@ -930,19 +931,19 @@ const styles = StyleSheet.create({
   },
   statsPreviewItemValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   statsPreviewItemLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -953,16 +954,16 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   optionCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 8,
   },
@@ -974,7 +975,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   optionButtonActive: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
   },
   optionIcon: {
     fontSize: 20,
@@ -983,19 +984,19 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   optionTextActive: {
-    color: '#7c3aed',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   optionCheck: {
     fontSize: 16,
-    color: '#7c3aed',
+    color: colors.tobacco,
   },
   actionCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1003,18 +1004,18 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   actionCardActive: {
-    borderColor: '#8b5cf6',
-    backgroundColor: '#faf5ff',
+    borderColor: colors.ink,
+    backgroundColor: colors.sand,
   },
   actionName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   actionDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   actionCheck: {
     position: 'absolute',
@@ -1023,16 +1024,16 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionCheckText: {
     fontSize: 14,
-    color: '#ffffff',
+    color: colors.white,
   },
   analyticsCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -1041,15 +1042,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   analyticsLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   analyticsValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
 });

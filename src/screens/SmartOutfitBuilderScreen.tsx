@@ -259,7 +259,7 @@ export default function SmartOutfitBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   emptyPreview: {
     padding: 40,
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderWidth: 2,
     borderColor: colors.hair,
     borderStyle: 'dashed',
@@ -345,14 +345,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 18,
     fontFamily: fonts.sansSemiBold,
   },
   clearButton: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     alignItems: 'center',
   },
   clearButtonText: {
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   occasionTextActive: {
-    color: '#ffffff',
+    color: colors.white,
   },
   suggestionsSection: {
     padding: 20,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   suggestionCard: {
     width: 200,
     marginRight: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 12,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     marginLeft: -10,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.card,
   },
   suggestionInfo: {
     marginBottom: 8,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: ITEM_SIZE,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderWidth: 2,
     borderColor: colors.hair,
   },
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedBadgeText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },

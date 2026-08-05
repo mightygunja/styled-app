@@ -24,6 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -148,29 +149,29 @@ export default function SubscriptionScreen() {
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   const getStatusColor = (status: string): string => {
     const colors = {
-      active: '#10b981',
-      trial: '#3b82f6',
-      canceled: '#ef4444',
-      expired: '#94a3b8',
-      past_due: '#f59e0b',
+      active: ds.tobacco,
+      trial: ds.tobacco,
+      canceled: ds.tobacco,
+      expired: ds.inkFaint,
+      past_due: ds.camel,
     };
-    return colors[status as keyof typeof colors] || '#64748b';
+    return colors[status as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && plans.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading subscription plans...</Text>
         </View>
       </SafeAreaView>
@@ -553,7 +554,7 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -571,16 +572,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   tierBadge: {
     flexDirection: 'row',
@@ -590,19 +591,19 @@ const styles = StyleSheet.create({
   },
   tierBadgeText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   tierBadgeStatus: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     opacity: 0.9,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -611,29 +612,29 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   billingToggle: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 4,
     gap: 4,
@@ -645,8 +646,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   billingOptionActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
+    backgroundColor: ds.card,
+    shadowColor: ds.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -654,15 +655,15 @@ const styles = StyleSheet.create({
   },
   billingOptionText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   billingOptionTextActive: {
-    color: '#0f172a',
-    fontWeight: '600',
+    color: ds.ink,
+    fontFamily: fonts.sansSemiBold,
   },
   savingsBadge: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -670,11 +671,11 @@ const styles = StyleSheet.create({
   },
   savingsBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   planCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     padding: 24,
     marginBottom: 16,
@@ -682,37 +683,37 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   planCardPopular: {
-    borderColor: '#8b5cf6',
+    borderColor: ds.ink,
   },
   planCardCurrent: {
-    borderColor: '#10b981',
+    borderColor: ds.ink,
   },
   popularBadge: {
     position: 'absolute',
     top: -10,
     right: 20,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   popularBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   planHeader: {
     marginBottom: 16,
   },
   planName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   planDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   planPricing: {
     flexDirection: 'row',
@@ -721,18 +722,18 @@ const styles = StyleSheet.create({
   },
   planPrice: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   planPeriod: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginLeft: 4,
   },
   planSavings: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 16,
   },
   planFeatures: {
@@ -746,35 +747,35 @@ const styles = StyleSheet.create({
   },
   planFeatureIcon: {
     fontSize: 16,
-    color: '#10b981',
-    fontWeight: 'bold',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   planFeatureText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: ds.ink,
     flex: 1,
   },
   currentPlanButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   currentPlanButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   freePlanButton: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   freePlanButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   subscribeButton: {
     paddingVertical: 14,
@@ -783,8 +784,8 @@ const styles = StyleSheet.create({
   },
   subscribeButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeButton: {
     paddingVertical: 14,
@@ -793,11 +794,11 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   infoCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -809,12 +810,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -823,11 +824,11 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   usageCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     gap: 16,
@@ -837,48 +838,48 @@ const styles = StyleSheet.create({
   },
   usageLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   usageValue: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   usageBar: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
   usageBarFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
   },
   cancelButton: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: ds.sand,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: ds.sand,
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#dc2626',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   reactivateButton: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#a7f3d0',
+    borderColor: ds.sand,
   },
   reactivateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#059669',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   emptyState: {
     padding: 40,
@@ -886,10 +887,10 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: ds.inkFaint,
   },
   billingCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -902,8 +903,8 @@ const styles = StyleSheet.create({
   },
   billingDate: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   billingStatus: {
     paddingHorizontal: 10,
@@ -912,12 +913,12 @@ const styles = StyleSheet.create({
   },
   billingStatusText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   billingDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   billingFooter: {
@@ -927,12 +928,12 @@ const styles = StyleSheet.create({
   },
   billingAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   billingInvoice: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
 });

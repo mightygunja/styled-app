@@ -25,6 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -222,19 +223,19 @@ export default function SmartMirrorScreen() {
 
   const getFitColor = (fit: string): string => {
     const colors = {
-      perfect: '#10b981',
-      good: '#22c55e',
-      loose: '#f59e0b',
-      tight: '#ef4444',
+      perfect: ds.tobacco,
+      good: ds.tobacco,
+      loose: ds.camel,
+      tight: ds.tobacco,
     };
-    return colors[fit as keyof typeof colors] || '#64748b';
+    return colors[fit as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && mirrors.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Discovering mirrors...</Text>
         </View>
       </SafeAreaView>
@@ -555,8 +556,8 @@ export default function SmartMirrorScreen() {
               <Switch
                 value={settings.autoCapture}
                 onValueChange={(value) => handleSettingChange('autoCapture', value)}
-                trackColor={{ false: '#cbd5e1', true: '#c4b5fd' }}
-                thumbColor={settings.autoCapture ? '#8b5cf6' : '#f1f5f9'}
+                trackColor={{ false: ds.hair, true: ds.ink }}
+                thumbColor={ds.white}
               />
             </View>
 
@@ -568,8 +569,8 @@ export default function SmartMirrorScreen() {
               <Switch
                 value={settings.gestureControl}
                 onValueChange={(value) => handleSettingChange('gestureControl', value)}
-                trackColor={{ false: '#cbd5e1', true: '#c4b5fd' }}
-                thumbColor={settings.gestureControl ? '#8b5cf6' : '#f1f5f9'}
+                trackColor={{ false: ds.hair, true: ds.ink }}
+                thumbColor={ds.white}
               />
             </View>
 
@@ -581,8 +582,8 @@ export default function SmartMirrorScreen() {
               <Switch
                 value={settings.voiceControl}
                 onValueChange={(value) => handleSettingChange('voiceControl', value)}
-                trackColor={{ false: '#cbd5e1', true: '#c4b5fd' }}
-                thumbColor={settings.voiceControl ? '#8b5cf6' : '#f1f5f9'}
+                trackColor={{ false: ds.hair, true: ds.ink }}
+                thumbColor={ds.white}
               />
             </View>
 
@@ -594,8 +595,8 @@ export default function SmartMirrorScreen() {
               <Switch
                 value={settings.backgroundBlur}
                 onValueChange={(value) => handleSettingChange('backgroundBlur', value)}
-                trackColor={{ false: '#cbd5e1', true: '#c4b5fd' }}
-                thumbColor={settings.backgroundBlur ? '#8b5cf6' : '#f1f5f9'}
+                trackColor={{ false: ds.hair, true: ds.ink }}
+                thumbColor={ds.white}
               />
             </View>
 
@@ -624,7 +625,7 @@ export default function SmartMirrorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -634,7 +635,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -642,26 +643,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   disconnectButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     padding: 12,
     gap: 8,
   },
@@ -669,17 +670,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#065f46',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -688,24 +689,24 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   tabTextDisabled: {
-    color: '#cbd5e1',
+    color: ds.hair,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -715,19 +716,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   endButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   mirrorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -737,7 +738,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -749,18 +750,18 @@ const styles = StyleSheet.create({
   },
   mirrorName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   mirrorModel: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 4,
   },
   mirrorLocation: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     marginBottom: 8,
   },
   mirrorFeatures: {
@@ -768,29 +769,29 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   featureTag: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   featureText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   connectButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   connectButtonConnected: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
   },
   connectButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -800,26 +801,26 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: (width - 52) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   sessionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -833,30 +834,30 @@ const styles = StyleSheet.create({
   },
   sessionButtonTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   sessionButtonDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   sessionInfo: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   sessionMode: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
     textTransform: 'capitalize',
   },
   sessionTime: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -864,7 +865,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -875,18 +876,18 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   resultCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     overflow: 'hidden',
   },
   resultImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   resultInfo: {
     padding: 16,
@@ -900,20 +901,20 @@ const styles = StyleSheet.create({
   },
   fitBadgeText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   resultConfidence: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   resultAdjustment: {
     fontSize: 14,
-    color: '#0f172a',
+    color: ds.ink,
   },
   styleCheckCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
   },
@@ -923,13 +924,13 @@ const styles = StyleSheet.create({
   },
   overallScoreValue: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 4,
   },
   overallScoreLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   categoryScores: {
     gap: 16,
@@ -943,25 +944,25 @@ const styles = StyleSheet.create({
   categoryName: {
     width: 80,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   categoryBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
   categoryBarFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
   },
   categoryValue: {
     width: 40,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     textAlign: 'right',
   },
   feedback: {
@@ -969,21 +970,21 @@ const styles = StyleSheet.create({
   },
   feedbackTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginTop: 8,
     marginBottom: 4,
   },
   feedbackItem: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   settingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -993,17 +994,17 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   settingValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
 });

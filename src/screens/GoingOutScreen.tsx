@@ -8,6 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { Look } from '../types';
 import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -65,7 +66,7 @@ export default function GoingOutScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading going-out looks...</Text>
         </View>
       </SafeAreaView>
@@ -113,20 +114,20 @@ export default function GoingOutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   content: {
     padding: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 24,
   },
   loadingContainer: {
@@ -137,13 +138,13 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   looksContainer: {
     alignItems: 'center',
   },
   placeholder: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     padding: 48,
     borderRadius: 12,
     alignItems: 'center',
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     textAlign: 'center',
   },
 });

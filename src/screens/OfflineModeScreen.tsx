@@ -25,6 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -120,9 +121,9 @@ export default function OfflineModeScreen() {
   };
 
   const getConnectionColor = (status: NetworkStatus | null): string => {
-    if (!status || !status.isConnected) return '#ef4444';
-    if (status.isWifi) return '#10b981';
-    return '#f59e0b';
+    if (!status || !status.isConnected) return colors.tobacco;
+    if (status.isWifi) return colors.tobacco;
+    return colors.camel;
   };
 
   const getConnectionIcon = (status: NetworkStatus | null): string => {
@@ -151,7 +152,7 @@ export default function OfflineModeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading offline mode...</Text>
         </View>
       </SafeAreaView>
@@ -251,8 +252,8 @@ export default function OfflineModeScreen() {
                 <Switch
                   value={settings.enabled}
                   onValueChange={(value) => handleUpdateSettings({ enabled: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -266,8 +267,8 @@ export default function OfflineModeScreen() {
                 <Switch
                   value={settings.autoSync}
                   onValueChange={(value) => handleUpdateSettings({ autoSync: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -281,8 +282,8 @@ export default function OfflineModeScreen() {
                 <Switch
                   value={settings.syncOnWifi}
                   onValueChange={(value) => handleUpdateSettings({ syncOnWifi: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -296,8 +297,8 @@ export default function OfflineModeScreen() {
                 <Switch
                   value={settings.cacheImages}
                   onValueChange={(value) => handleUpdateSettings({ cacheImages: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -311,8 +312,8 @@ export default function OfflineModeScreen() {
                 <Switch
                   value={settings.cacheVideos}
                   onValueChange={(value) => handleUpdateSettings({ cacheVideos: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -407,7 +408,7 @@ export default function OfflineModeScreen() {
                     </Text>
                   </View>
 
-                  <View style={[styles.statusBadge, { backgroundColor: '#10b981' }]}>
+                  <View style={[styles.statusBadge, { backgroundColor: colors.ink }]}>
                     <Text style={styles.statusBadgeText}>✓</Text>
                   </View>
                 </View>
@@ -459,8 +460,8 @@ export default function OfflineModeScreen() {
                     <View style={[
                       styles.syncTypeBadge,
                       { backgroundColor: 
-                        item.type === 'create' ? '#10b981' :
-                        item.type === 'update' ? '#3b82f6' : '#ef4444'
+                        item.type === 'create' ? colors.tobacco :
+                        item.type === 'update' ? colors.tobacco : colors.tobacco
                       }
                     ]}>
                       <Text style={styles.syncTypeText}>
@@ -513,7 +514,7 @@ export default function OfflineModeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -531,21 +532,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   syncButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   statusBanner: {
     flexDirection: 'row',
@@ -561,13 +562,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     marginBottom: 4,
   },
   statusSubtext: {
     fontSize: 13,
-    color: '#ffffff',
+    color: colors.white,
     opacity: 0.9,
   },
   statsContainer: {
@@ -577,25 +578,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -604,33 +605,33 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 16,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -641,16 +642,16 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   storageCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -662,31 +663,31 @@ const styles = StyleSheet.create({
   },
   storageLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
   },
   storageValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
   },
   storageSubtext: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   actionButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -694,24 +695,24 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   dangerButton: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.sand,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: colors.sand,
   },
   dangerButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#dc2626',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   infoCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -720,21 +721,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   infoLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   cacheCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -743,7 +744,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -756,18 +757,18 @@ const styles = StyleSheet.create({
   },
   cacheName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   cacheDetails: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   cacheExpiry: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: colors.tobacco,
   },
   statusBadge: {
     width: 32,
@@ -778,13 +779,13 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: colors.white,
   },
   downloadCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -794,38 +795,38 @@ const styles = StyleSheet.create({
   },
   downloadName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   downloadSize: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   downloadedBadge: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   downloadedText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#166534',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   downloadButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   downloadButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   emptyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
@@ -836,19 +837,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   syncCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -861,27 +862,27 @@ const styles = StyleSheet.create({
   },
   syncTypeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   syncInfo: {
     flex: 1,
   },
   syncDataType: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   syncTimestamp: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   syncStatus: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -889,7 +890,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   syncNowButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -897,7 +898,7 @@ const styles = StyleSheet.create({
   },
   syncNowButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
 });

@@ -300,7 +300,7 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: colors.card },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: { fontSize: 36, fontFamily: fonts.sansSemiBold, color: '#ffffff' },
+  avatarInitial: { fontSize: 36, fontFamily: fonts.sansSemiBold, color: colors.white },
   changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontFamily: fonts.sansSemiBold },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   emailSection: {

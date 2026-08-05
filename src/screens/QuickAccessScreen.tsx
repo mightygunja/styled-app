@@ -18,6 +18,7 @@ import {
 } from '../services/quickAccessService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -92,7 +93,7 @@ export default function QuickAccessScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
@@ -243,7 +244,7 @@ export default function QuickAccessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F1ED',
+    backgroundColor: colors.paper,
   },
   loadingContainer: {
     flex: 1,
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -261,63 +262,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   resetButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#7B665A',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#EEE9E3',
+    backgroundColor: colors.sand,
     gap: 12,
   },
   infoBannerIcon: {
     fontSize: 24,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   infoBannerContent: {
     flex: 1,
   },
   infoBannerTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   infoBannerText: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#DED7CF',
+    borderBottomColor: colors.hair,
   },
   sectionHeader: {
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   itemsGrid: {
@@ -340,13 +341,13 @@ const styles = StyleSheet.create({
   },
   itemIconText: {
     fontSize: 28,
-    color: '#ffffff',
+    color: colors.white,
     textAlign: 'center',
   },
   itemTitle: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#161616',
+    fontFamily: fonts.sansMedium,
+    color: colors.ink,
     textAlign: 'center',
   },
   removeButton: {
@@ -356,14 +357,14 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   availableList: {
     gap: 12,
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   availableItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEE9E3',
+    backgroundColor: colors.sand,
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
   },
   availableIconText: {
     fontSize: 24,
-    color: '#ffffff',
+    color: colors.white,
     textAlign: 'center',
   },
   availableInfo: {
@@ -393,26 +394,26 @@ const styles = StyleSheet.create({
   },
   availableTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 2,
   },
   availableSubtitle: {
     fontSize: 12,
-    color: '#5E5A55',
+    color: colors.inkMuted,
   },
   addButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2B1F1A',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addButtonText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -423,23 +424,23 @@ const styles = StyleSheet.create({
   emptyStateIcon: {
     fontSize: 48,
     marginBottom: 16,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   emptyStateTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#161616',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   tipCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#EEE9E3',
+    backgroundColor: colors.sand,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -447,12 +448,12 @@ const styles = StyleSheet.create({
   },
   tipIcon: {
     fontSize: 24,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   tipText: {
     flex: 1,
     fontSize: 13,
-    color: '#5E5A55',
+    color: colors.inkMuted,
     lineHeight: 18,
   },
 });

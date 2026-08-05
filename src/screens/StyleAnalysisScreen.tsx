@@ -367,7 +367,7 @@ export default function StyleAnalysisScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   styleCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
   colorCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   brandCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   categoryCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   insightCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   statsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.hair,

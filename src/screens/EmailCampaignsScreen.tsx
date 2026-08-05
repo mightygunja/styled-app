@@ -24,6 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -110,23 +111,23 @@ export default function EmailCampaignsScreen() {
 
   const getCampaignTypeColor = (type: string): string => {
     switch (type) {
-      case 'newsletter': return '#3b82f6';
-      case 'promotional': return '#f59e0b';
-      case 'transactional': return '#10b981';
-      case 'announcement': return '#8b5cf6';
-      default: return '#64748b';
+      case 'newsletter': return colors.tobacco;
+      case 'promotional': return colors.camel;
+      case 'transactional': return colors.tobacco;
+      case 'announcement': return colors.ink;
+      default: return colors.inkMuted;
     }
   };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'sent': return '#10b981';
-      case 'sending': return '#3b82f6';
-      case 'scheduled': return '#8b5cf6';
-      case 'draft': return '#64748b';
-      case 'paused': return '#f59e0b';
-      case 'failed': return '#ef4444';
-      default: return '#64748b';
+      case 'sent': return colors.tobacco;
+      case 'sending': return colors.tobacco;
+      case 'scheduled': return colors.ink;
+      case 'draft': return colors.inkMuted;
+      case 'paused': return colors.camel;
+      case 'failed': return colors.tobacco;
+      default: return colors.inkMuted;
     }
   };
 
@@ -149,7 +150,7 @@ export default function EmailCampaignsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading campaigns...</Text>
         </View>
       </SafeAreaView>
@@ -173,13 +174,13 @@ export default function EmailCampaignsScreen() {
       </View>
 
       {/* Info Banner */}
-      <View style={[styles.infoBanner, { backgroundColor: settings.subscribed ? '#dcfce7' : '#fee2e2' }]}>
+      <View style={[styles.infoBanner, { backgroundColor: settings.subscribed ? colors.sand : colors.sand }]}>
         <Text style={styles.infoBannerIcon}>{settings.subscribed ? '✉️' : '📪'}</Text>
         <View style={styles.infoBannerContent}>
-          <Text style={[styles.infoBannerTitle, { color: settings.subscribed ? '#166534' : '#991b1b' }]}>
+          <Text style={[styles.infoBannerTitle, { color: settings.subscribed ? colors.tobacco : colors.tobacco }]}>
             {settings.subscribed ? 'Email Subscribed' : 'Email Unsubscribed'}
           </Text>
-          <Text style={[styles.infoBannerText, { color: settings.subscribed ? '#15803d' : '#b91c1c' }]}>
+          <Text style={[styles.infoBannerText, { color: settings.subscribed ? colors.tobacco : colors.tobacco }]}>
             {settings.subscribed 
               ? `${settings.emailAddress} • ${settings.frequency} emails`
               : 'Subscribe to receive email updates'}
@@ -418,8 +419,8 @@ export default function EmailCampaignsScreen() {
                 <Switch
                   value={settings.subscribed}
                   onValueChange={(value) => handleUpdateSettings({ subscribed: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -522,8 +523,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         categories: { ...settings.categories, newsletter: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -539,8 +540,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         categories: { ...settings.categories, promotional: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -556,8 +557,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         categories: { ...settings.categories, transactional: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -573,8 +574,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         categories: { ...settings.categories, announcement: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
                 </View>
@@ -594,8 +595,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         preferences: { ...settings.preferences, htmlEmails: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -611,8 +612,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         preferences: { ...settings.preferences, personalizedContent: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -628,8 +629,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         preferences: { ...settings.preferences, productRecommendations: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -645,8 +646,8 @@ export default function EmailCampaignsScreen() {
                       onValueChange={(value) => handleUpdateSettings({
                         preferences: { ...settings.preferences, styleInsights: value }
                       })}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
                 </View>
@@ -671,7 +672,7 @@ export default function EmailCampaignsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -681,7 +682,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -689,21 +690,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   testButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   infoBanner: {
     flexDirection: 'row',
@@ -719,7 +720,7 @@ const styles = StyleSheet.create({
   },
   infoBannerTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   infoBannerText: {
@@ -727,8 +728,8 @@ const styles = StyleSheet.create({
   },
   verifyButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -737,25 +738,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -764,35 +765,35 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   campaignCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -818,13 +819,13 @@ const styles = StyleSheet.create({
   },
   campaignName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   campaignSubject: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -833,12 +834,12 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   campaignPreview: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
     lineHeight: 18,
   },
@@ -853,18 +854,18 @@ const styles = StyleSheet.create({
   },
   campaignStatValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 2,
   },
   campaignStatLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   scheduledInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     padding: 8,
     borderRadius: 8,
     marginBottom: 8,
@@ -875,15 +876,15 @@ const styles = StyleSheet.create({
   },
   scheduledText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   campaignDate: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   analyticsCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -892,19 +893,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   analyticsLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   analyticsValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   templateCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
@@ -924,8 +925,8 @@ const styles = StyleSheet.create({
   },
   templateName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   templateBadge: {
     paddingHorizontal: 8,
@@ -934,30 +935,30 @@ const styles = StyleSheet.create({
   },
   templateBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   templateDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   useTemplateButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   useTemplateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -968,19 +969,19 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emailCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -990,72 +991,72 @@ const styles = StyleSheet.create({
   },
   emailLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   emailValue: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.ink,
   },
   verifiedBadge: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   verifiedText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#166534',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   verifyEmailButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   verifyEmailButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   frequencyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   frequencyLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   frequencyOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
   frequencyOptionActive: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     borderWidth: 2,
-    borderColor: '#8b5cf6',
+    borderColor: colors.ink,
   },
   frequencyOptionText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   frequencyOptionTextActive: {
-    color: '#7c3aed',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   frequencyCheck: {
     fontSize: 16,
-    color: '#7c3aed',
+    color: colors.tobacco,
   },
 });

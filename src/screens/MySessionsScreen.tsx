@@ -59,7 +59,7 @@ export default function MySessionsScreen() {
     switch (status) {
       case 'confirmed': return colors.camel;
       case 'pending': return colors.camel;
-      case 'completed': return '#6366f1';
+      case 'completed': return colors.ink;
       case 'cancelled': return colors.ink;
       default: return colors.inkMuted;
     }
@@ -201,7 +201,7 @@ export default function MySessionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   bookButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sessionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
   },
   sessionDetails: {
     backgroundColor: colors.paper,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   joinButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },

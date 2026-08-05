@@ -24,6 +24,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -110,18 +111,18 @@ export default function ExclusiveContentScreen() {
 
   const getAccessLevelColor = (level: string): string => {
     const colors = {
-      free: '#64748b',
-      premium: '#8b5cf6',
-      pro: '#f59e0b',
+      free: ds.inkMuted,
+      premium: ds.ink,
+      pro: ds.camel,
     };
-    return colors[level as keyof typeof colors] || '#64748b';
+    return colors[level as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && content.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading exclusive content...</Text>
         </View>
       </SafeAreaView>
@@ -358,7 +359,7 @@ export default function ExclusiveContentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -376,16 +377,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   tierBanner: {
     flexDirection: 'row',
@@ -395,8 +396,8 @@ const styles = StyleSheet.create({
   },
   tierBannerText: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   upgradeButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -406,8 +407,8 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -416,25 +417,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -443,47 +444,47 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   filterContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   filterChip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   filterChipTextActive: {
-    color: '#ffffff',
+    color: ds.white,
   },
   contentGrid: {
     padding: 16,
     gap: 16,
   },
   contentCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
   contentImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   badgeContainer: {
     position: 'absolute',
@@ -501,18 +502,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   newBadge: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   newBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   featuredBadge: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -527,8 +528,8 @@ const styles = StyleSheet.create({
   },
   accessBadgeText: {
     fontSize: 9,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   contentInfo: {
     padding: 16,
@@ -545,12 +546,12 @@ const styles = StyleSheet.create({
   contentTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   contentDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -564,19 +565,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   authorInfo: {
     flex: 1,
   },
   authorName: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   authorTitle: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   contentFooter: {
     flexDirection: 'row',
@@ -590,34 +591,34 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   likeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     justifyContent: 'center',
     alignItems: 'center',
   },
   likeButtonText: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   tagContainer: {
     flexDirection: 'row',
     gap: 6,
   },
   tag: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#7c3aed',
+    fontFamily: fonts.sansMedium,
+    color: ds.tobacco,
   },
   emptyState: {
     padding: 40,
@@ -625,18 +626,18 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     marginBottom: 16,
   },
   emptyStateButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   emptyStateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
 });

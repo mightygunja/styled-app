@@ -75,7 +75,7 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
         <View style={styles.appleWrap}>
           {appleLoading ? (
             <View style={[styles.button, styles.appleFallback]}>
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.white} />
             </View>
           ) : (
             <AppleAuth.AppleAuthenticationButton
@@ -100,7 +100,7 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
         accessibilityLabel="Continue with Google"
       >
         {googleLoading ? (
-          <ActivityIndicator color="#0f172a" />
+          <ActivityIndicator color={colors.ink} />
         ) : (
           <>
             <Text style={styles.googleIcon}>G</Text>
@@ -118,7 +118,7 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
           accessibilityLabel="Continue with Facebook"
         >
           {facebookLoading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <>
               <Text style={styles.facebookIcon}>f</Text>

@@ -25,6 +25,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -122,18 +123,18 @@ export default function PremiumStylistScreen() {
 
   const getTierColor = (tier: string): string => {
     const colors = {
-      standard: '#64748b',
-      premium: '#8b5cf6',
-      vip: '#f59e0b',
+      standard: ds.inkMuted,
+      premium: ds.ink,
+      vip: ds.camel,
     };
-    return colors[tier as keyof typeof colors] || '#64748b';
+    return colors[tier as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && stylists.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading premium stylists...</Text>
         </View>
       </SafeAreaView>
@@ -494,7 +495,7 @@ export default function PremiumStylistScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -504,7 +505,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -512,16 +513,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   tierBanner: {
     padding: 12,
@@ -529,13 +530,13 @@ const styles = StyleSheet.create({
   },
   tierBannerText: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -544,29 +545,29 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   stylistCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -576,7 +577,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 12,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   stylistInfo: {
     flex: 1,
@@ -588,8 +589,8 @@ const styles = StyleSheet.create({
   },
   stylistName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     flex: 1,
   },
   featuredBadge: {
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
   },
   stylistTitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   stylistRating: {
@@ -612,12 +613,12 @@ const styles = StyleSheet.create({
   },
   stylistRatingText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   stylistSessions: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: ds.inkFaint,
   },
   stylistSpecialties: {
     flexDirection: 'row',
@@ -625,15 +626,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   specialtyTag: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   specialtyTagText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   stylistPricing: {
     flexDirection: 'row',
@@ -642,8 +643,8 @@ const styles = StyleSheet.create({
   },
   stylistPrice: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   viewButton: {
     paddingHorizontal: 16,
@@ -652,20 +653,20 @@ const styles = StyleSheet.create({
   },
   viewButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   detailHeader: {
     padding: 20,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   detailImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     marginBottom: 16,
   },
   detailInfo: {
@@ -673,13 +674,13 @@ const styles = StyleSheet.create({
   },
   detailName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   detailTitle: {
     fontSize: 15,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   detailRating: {
@@ -689,31 +690,31 @@ const styles = StyleSheet.create({
   },
   detailRatingText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   detailSessions: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   detailBadges: {
     flexDirection: 'row',
     gap: 8,
   },
   detailBadge: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   detailBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#7c3aed',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   detailBio: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 22,
   },
   tagContainer: {
@@ -722,15 +723,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
   },
   tagText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#0f172a',
+    fontFamily: fonts.sansMedium,
+    color: ds.ink,
   },
   pricingGrid: {
     flexDirection: 'row',
@@ -740,29 +741,29 @@ const styles = StyleSheet.create({
   pricingCard: {
     flex: 1,
     minWidth: (width - 52) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   pricingType: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   pricingDuration: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   pricingPrice: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   reviewCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -774,22 +775,22 @@ const styles = StyleSheet.create({
   },
   reviewName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   reviewRating: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   reviewComment: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
     marginBottom: 8,
   },
   reviewDate: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: ds.inkFaint,
   },
   bookButton: {
     paddingVertical: 16,
@@ -798,8 +799,8 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   emptyState: {
     padding: 40,
@@ -807,22 +808,22 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     marginBottom: 16,
   },
   emptyStateButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   emptyStateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   bookingCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -837,32 +838,32 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
   },
   bookingInfo: {
     flex: 1,
   },
   bookingName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 2,
   },
   bookingType: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
     textTransform: 'capitalize',
   },
   priorityBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   priorityBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   bookingDetails: {
     gap: 6,
@@ -870,16 +871,16 @@ const styles = StyleSheet.create({
   },
   bookingDate: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   bookingDuration: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   bookingPrice: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   bookingActions: {
     flexDirection: 'row',
@@ -887,32 +888,32 @@ const styles = StyleSheet.create({
   },
   bookingActionButton: {
     flex: 1,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   bookingActionText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   bookingActionButtonSecondary: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   bookingActionTextSecondary: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   benefitCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -929,39 +930,39 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
     textTransform: 'capitalize',
   },
   benefitDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 18,
   },
   benefitUpgrade: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginTop: 4,
   },
   benefitEnabled: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   benefitEnabledText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: ds.white,
   },
   benefitDisabled: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -969,7 +970,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   upgradeButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -977,7 +978,7 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
 });

@@ -22,6 +22,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -128,11 +129,11 @@ export default function SiriShortcutsScreen() {
 
   const getCategoryColor = (category: string): string => {
     switch (category) {
-      case 'wardrobe': return '#3b82f6';
-      case 'outfits': return '#8b5cf6';
-      case 'planning': return '#ec4899';
-      case 'quick-actions': return '#10b981';
-      default: return '#64748b';
+      case 'wardrobe': return colors.tobacco;
+      case 'outfits': return colors.ink;
+      case 'planning': return colors.tobacco;
+      case 'quick-actions': return colors.tobacco;
+      default: return colors.inkMuted;
     }
   };
 
@@ -163,7 +164,7 @@ export default function SiriShortcutsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Loading Siri Shortcuts...</Text>
         </View>
       </SafeAreaView>
@@ -267,8 +268,8 @@ export default function SiriShortcutsScreen() {
                     <Switch
                       value={shortcut.enabled}
                       onValueChange={(value) => handleToggleShortcut(shortcut.id, value)}
-                      trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: colors.hair, true: colors.ink }}
+                      thumbColor={colors.white}
                     />
                   </View>
 
@@ -412,11 +413,11 @@ export default function SiriShortcutsScreen() {
 
                       <View style={[
                         styles.historyStatus,
-                        { backgroundColor: execution.success ? '#dcfce7' : '#fee2e2' }
+                        { backgroundColor: execution.success ? colors.sand : colors.sand }
                       ]}>
                         <Text style={[
                           styles.historyStatusText,
-                          { color: execution.success ? '#166534' : '#991b1b' }
+                          { color: execution.success ? colors.tobacco : colors.tobacco }
                         ]}>
                           {execution.success ? '✓' : '✗'}
                         </Text>
@@ -478,8 +479,8 @@ export default function SiriShortcutsScreen() {
                 <Switch
                   value={settings.enabled}
                   onValueChange={(value) => handleUpdateSettings({ enabled: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -493,8 +494,8 @@ export default function SiriShortcutsScreen() {
                 <Switch
                   value={settings.allowSuggestions}
                   onValueChange={(value) => handleUpdateSettings({ allowSuggestions: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -508,8 +509,8 @@ export default function SiriShortcutsScreen() {
                 <Switch
                   value={settings.voiceConfirmation}
                   onValueChange={(value) => handleUpdateSettings({ voiceConfirmation: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
 
@@ -523,8 +524,8 @@ export default function SiriShortcutsScreen() {
                 <Switch
                   value={settings.hapticFeedback}
                   onValueChange={(value) => handleUpdateSettings({ hapticFeedback: value })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.hair, true: colors.ink }}
+                  thumbColor={colors.white}
                 />
               </View>
             </View>
@@ -591,7 +592,7 @@ export default function SiriShortcutsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -609,21 +610,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     padding: 16,
     gap: 12,
   },
@@ -635,13 +636,13 @@ const styles = StyleSheet.create({
   },
   infoBannerTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#5b21b6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 4,
   },
   infoBannerText: {
     fontSize: 13,
-    color: '#7c3aed',
+    color: colors.tobacco,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -650,25 +651,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -677,35 +678,35 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   shortcutCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -719,7 +720,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -732,8 +733,8 @@ const styles = StyleSheet.create({
   },
   shortcutTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 6,
   },
   categoryBadge: {
@@ -744,46 +745,46 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   shortcutDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   phraseContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
   },
   phraseLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   phraseText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   suggestedPhrases: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
   },
   suggestedLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 6,
   },
   suggestedPhrase: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   shortcutStats: {
@@ -793,7 +794,7 @@ const styles = StyleSheet.create({
   },
   shortcutStat: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   shortcutActions: {
     flexDirection: 'row',
@@ -801,33 +802,33 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   testButton: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#8b5cf6',
+    borderColor: colors.ink,
   },
   testButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   instructionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -841,16 +842,16 @@ const styles = StyleSheet.create({
   },
   instructionTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   instructionText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   emptyCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
@@ -861,19 +862,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   historyCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -882,7 +883,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -895,8 +896,8 @@ const styles = StyleSheet.create({
   },
   historyTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   historyMeta: {
@@ -906,15 +907,15 @@ const styles = StyleSheet.create({
   },
   historyTrigger: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   historyTime: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   historyDuration: {
     fontSize: 11,
-    color: '#8b5cf6',
+    color: colors.tobacco,
   },
   historyStatus: {
     width: 32,
@@ -925,10 +926,10 @@ const styles = StyleSheet.create({
   },
   historyStatusText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   analyticsCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
   },
@@ -937,22 +938,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   analyticsLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   analyticsValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -963,17 +964,17 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -987,12 +988,12 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   tipText: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
 });

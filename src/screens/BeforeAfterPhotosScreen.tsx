@@ -295,7 +295,7 @@ export default function BeforeAfterPhotosScreen() {
           disabled={uploading}
         >
           {uploading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <>
                             <Text style={styles.uploadText}>Add Before</Text>
@@ -308,7 +308,7 @@ export default function BeforeAfterPhotosScreen() {
           disabled={uploading}
         >
           {uploading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <>
                             <Text style={styles.uploadText}>Add After</Text>
@@ -336,7 +336,7 @@ export default function BeforeAfterPhotosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   pairCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.camel,
   },
   photoLabelText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 11,
     fontFamily: fonts.sansSemiBold,
   },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.camel,
   },
   typeTagText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 11,
     fontFamily: fonts.sansSemiBold,
     textTransform: 'capitalize',
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   uploadText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },

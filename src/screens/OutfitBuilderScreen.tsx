@@ -433,7 +433,7 @@ export default function OutfitBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 18,
     fontFamily: fonts.sansSemiBold,
   },
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedBadgeText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -629,6 +629,6 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   occasionButtonTextActive: {
-    color: '#F1ECE7',
+    color: colors.sand,
   },
 });

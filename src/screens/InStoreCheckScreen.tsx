@@ -19,10 +19,19 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type ScreenState = 'intro' | 'analyzing' | 'results';
 
-const VERDICT_COPY: Record<StoreCheckResult['overallVerdict'], { label: string; bg: string }> = {
-  buy: { label: 'BUY IT', bg: '#DCE8DC' },
-  maybe: { label: 'MAYBE', bg: '#F2EBE3' },
-  skip: { label: 'SKIP IT', bg: '#F0DCD8' },
+/**
+ * The three verdicts were pale green / sand / pale pink - a semantic ramp the
+ * palette does not have. They read as a tonal one instead: the stronger the
+ * recommendation, the heavier the ground. The label still carries the meaning,
+ * which is what someone actually reads.
+ */
+const VERDICT_COPY: Record<
+  StoreCheckResult['overallVerdict'],
+  { label: string; bg: string; fg: string }
+> = {
+  buy: { label: 'BUY IT', bg: colors.ink, fg: colors.white },
+  maybe: { label: 'MAYBE', bg: colors.sand, fg: colors.ink },
+  skip: { label: 'SKIP IT', bg: colors.paper, fg: colors.inkMuted },
 };
 
 export default function InStoreCheckScreen() {
@@ -132,7 +141,9 @@ export default function InStoreCheckScreen() {
         {screenState === 'results' && result && verdictMeta && (
           <>
             <View style={[styles.verdictBadge, { backgroundColor: verdictMeta.bg }]}>
-              <Text style={styles.verdictLabel}>{verdictMeta.label}</Text>
+              <Text style={[styles.verdictLabel, { color: verdictMeta.fg }]}>
+                {verdictMeta.label}
+              </Text>
             </View>
 
             <Text style={styles.itemSummary}>

@@ -26,6 +26,7 @@ import { shoppingListService, ShoppingListEntry } from '../services/firestore';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40;
@@ -162,11 +163,11 @@ export default function ShoppingAssistantScreen() {
 
   const getPriorityColor = (priority: string): string => {
     const colors = {
-      essential: '#ef4444',
-      recommended: '#f59e0b',
-      'nice-to-have': '#10b981',
+      essential: ds.tobacco,
+      recommended: ds.camel,
+      'nice-to-have': ds.tobacco,
     };
-    return colors[priority as keyof typeof colors] || '#64748b';
+    return colors[priority as keyof typeof colors] || ds.inkMuted;
   };
 
   const getPriorityLabel = (priority: string): string => {
@@ -286,7 +287,7 @@ export default function ShoppingAssistantScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Analyzing your wardrobe...</Text>
         </View>
       </SafeAreaView>
@@ -328,7 +329,7 @@ export default function ShoppingAssistantScreen() {
             <Text style={styles.budgetSummaryText}>
               Total: ${totalCost.toFixed(0)} / ${budgetNum.toFixed(0)}
             </Text>
-            <Text style={[styles.budgetRemaining, { color: remaining >= 0 ? '#10b981' : '#ef4444' }]}>
+            <Text style={[styles.budgetRemaining, { color: remaining >= 0 ? ds.tobacco : ds.tobacco }]}>
               {remaining >= 0 ? `$${remaining.toFixed(0)} remaining` : `$${Math.abs(remaining).toFixed(0)} over budget`}
             </Text>
           </View>
@@ -490,7 +491,7 @@ export default function ShoppingAssistantScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -500,7 +501,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -508,22 +509,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   budgetInput: {
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   budgetInputRow: {
     flexDirection: 'row',
@@ -532,30 +533,30 @@ const styles = StyleSheet.create({
   },
   budgetLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   budgetField: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#0f172a',
+    color: ds.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   applyButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   applyButtonText: {
-    color: '#ffffff',
+    color: ds.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   budgetSummary: {
     flexDirection: 'row',
@@ -564,17 +565,17 @@ const styles = StyleSheet.create({
   },
   budgetSummaryText: {
     fontSize: 14,
-    color: '#64748b',
-    fontWeight: '500',
+    color: ds.inkMuted,
+    fontFamily: fonts.sansMedium,
   },
   budgetRemaining: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -583,39 +584,39 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 20,
   },
   recCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderRadius: 16,
     marginBottom: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
+    borderColor: ds.hair,
+    shadowColor: ds.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -624,7 +625,7 @@ const styles = StyleSheet.create({
   recImage: {
     width: '100%',
     height: 250,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
   },
   recContent: {
     padding: 16,
@@ -641,8 +642,8 @@ const styles = StyleSheet.create({
   recName: {
     flex: 1,
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginRight: 12,
   },
   priorityBadge: {
@@ -652,13 +653,13 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     textTransform: 'uppercase',
   },
   recBrand: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   recMeta: {
     flexDirection: 'row',
@@ -667,7 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   recPrice: {
     flexDirection: 'row',
@@ -676,12 +677,12 @@ const styles = StyleSheet.create({
   },
   recPriceAmount: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   recRetailer: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   recRating: {
     flexDirection: 'row',
@@ -690,11 +691,11 @@ const styles = StyleSheet.create({
   },
   recRatingStars: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   recReviews: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   recStats: {
     marginBottom: 16,
@@ -705,39 +706,39 @@ const styles = StyleSheet.create({
   },
   recStatLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   recStatBar: {
     height: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 4,
     overflow: 'hidden',
   },
   recStatFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     borderRadius: 4,
   },
   recStatValue: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   recStatNumber: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   recReasons: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   recReasonsTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   recReasonItem: {
@@ -747,13 +748,13 @@ const styles = StyleSheet.create({
   },
   recReasonBullet: {
     fontSize: 14,
-    color: '#ef4444',
-    fontWeight: 'bold',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   recReasonText: {
     flex: 1,
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 18,
   },
   recActions: {
@@ -766,30 +767,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     alignItems: 'center',
   },
   recActionButtonPrimary: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: ds.ink,
+    borderColor: ds.ink,
   },
   recActionText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   recActionTextPrimary: {
-    color: '#ffffff',
+    color: ds.white,
   },
   recAlternatives: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: ds.paper,
   },
   recAlternativesTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     marginBottom: 12,
   },
   altCard: {
@@ -800,26 +801,26 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     marginBottom: 6,
   },
   altPrice: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 2,
   },
   altBrand: {
     fontSize: 11,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   budgetCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   budgetHeader: {
     flexDirection: 'row',
@@ -829,24 +830,24 @@ const styles = StyleSheet.create({
   },
   budgetCategory: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   budgetAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   budgetBar: {
     height: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
     borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 8,
   },
   budgetFill: {
     height: '100%',
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     borderRadius: 6,
   },
   budgetFooter: {
@@ -856,8 +857,8 @@ const styles = StyleSheet.create({
   },
   budgetPercentage: {
     fontSize: 13,
-    color: '#64748b',
-    fontWeight: '500',
+    color: ds.inkMuted,
+    fontFamily: fonts.sansMedium,
   },
   budgetPriority: {
     paddingHorizontal: 8,
@@ -866,20 +867,20 @@ const styles = StyleSheet.create({
   },
   budgetPriorityText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     textTransform: 'uppercase',
   },
   budgetTips: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
   },
   budgetTipsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e40af',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 12,
   },
   budgetTip: {
@@ -889,13 +890,13 @@ const styles = StyleSheet.create({
   },
   budgetTipBullet: {
     fontSize: 14,
-    color: '#1e40af',
-    fontWeight: 'bold',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   budgetTipText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
+    color: ds.tobacco,
     lineHeight: 20,
   },
   emptyState: {
@@ -908,13 +909,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
 });

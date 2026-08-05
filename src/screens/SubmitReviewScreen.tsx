@@ -170,7 +170,7 @@ export default function SubmitReviewScreen() {
           disabled={rating === 0 || submitting}
         >
           {submitting ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <Text style={styles.submitButtonText}>Submit Review</Text>
           )}
@@ -199,7 +199,7 @@ export default function SubmitReviewScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   header: {
     flexDirection: 'row',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   tipsSection: {
     margin: 20,
     padding: 16,
-    backgroundColor: '#fffbeb',
+    backgroundColor: colors.sand,
     borderWidth: 1,
     borderColor: colors.sand,
   },
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 13,
-    color: '#78350f',
+    color: colors.tobacco,
     marginBottom: 6,
     lineHeight: 18,
   },
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.hair,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },

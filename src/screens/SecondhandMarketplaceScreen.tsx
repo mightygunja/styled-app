@@ -23,6 +23,7 @@ import {
 } from '../services/secondhandMarketplaceService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -91,13 +92,13 @@ export default function SecondhandMarketplaceScreen() {
 
   const getConditionColor = (condition: string): string => {
     const colors = {
-      'new-with-tags': '#10b981',
-      'like-new': '#22c55e',
-      'excellent': '#84cc16',
-      'good': '#f59e0b',
-      'fair': '#f97316',
+      'new-with-tags': ds.tobacco,
+      'like-new': ds.tobacco,
+      'excellent': ds.tobacco,
+      'good': ds.camel,
+      'fair': ds.camel,
     };
-    return colors[condition as keyof typeof colors] || '#64748b';
+    return colors[condition as keyof typeof colors] || ds.inkMuted;
   };
 
   const getConditionLabel = (condition: string): string => {
@@ -198,7 +199,7 @@ export default function SecondhandMarketplaceScreen() {
             {/* Loading */}
             {loading && (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#10b981" />
+                <ActivityIndicator size="large" color={ds.tobacco} />
                 <Text style={styles.loadingText}>Searching marketplaces...</Text>
               </View>
             )}
@@ -458,7 +459,7 @@ export default function SecondhandMarketplaceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   header: {
     flexDirection: 'row',
@@ -466,37 +467,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   searchContainer: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0f172a',
+    color: ds.ink,
   },
   searchButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -507,7 +508,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -516,24 +517,24 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#10b981',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#10b981',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 16,
   },
   platformFilters: {
@@ -546,25 +547,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
     gap: 6,
   },
   platformFilterActive: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#10b981',
+    backgroundColor: ds.sand,
+    borderColor: ds.ink,
   },
   platformFilterIcon: {
     fontSize: 16,
   },
   platformFilterText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
   },
   platformFilterTextActive: {
-    color: '#10b981',
+    color: ds.tobacco,
   },
   loadingContainer: {
     padding: 40,
@@ -573,7 +574,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   itemsGrid: {
     flexDirection: 'row',
@@ -582,16 +583,16 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: (width - 52) / 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   itemImage: {
     width: '100%',
     height: 180,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: ds.paper,
   },
   platformBadge: {
     position: 'absolute',
@@ -609,29 +610,29 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   discountBadgeText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   itemInfo: {
     padding: 12,
   },
   itemBrand: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.inkMuted,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   itemTitle: {
     fontSize: 13,
-    color: '#0f172a',
+    color: ds.ink,
     marginBottom: 8,
     height: 32,
   },
@@ -643,12 +644,12 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   itemOriginalPrice: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: ds.inkFaint,
     textDecorationLine: 'line-through',
   },
   itemCondition: {
@@ -660,27 +661,27 @@ const styles = StyleSheet.create({
   },
   itemConditionText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   itemSustainability: {
     marginBottom: 6,
   },
   itemSustainabilityText: {
     fontSize: 10,
-    color: '#10b981',
+    color: ds.tobacco,
   },
   itemShipping: {
     marginBottom: 6,
   },
   itemShippingText: {
     fontSize: 10,
-    color: '#3b82f6',
+    color: ds.tobacco,
   },
   itemSeller: {},
   itemSellerText: {
     fontSize: 10,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   emptyState: {
     padding: 60,
@@ -692,17 +693,17 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
   platformCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -721,28 +722,28 @@ const styles = StyleSheet.create({
   },
   platformName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 2,
   },
   platformUsers: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   platformRating: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   platformRatingText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   platformDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -756,20 +757,20 @@ const styles = StyleSheet.create({
   },
   platformDetailLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   platformDetailValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   platformSpecialties: {
     marginBottom: 16,
   },
   platformSpecialtiesTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   platformSpecialtiesTags: {
@@ -778,31 +779,31 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   platformSpecialtyTag: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#10b981',
+    borderColor: ds.ink,
   },
   platformSpecialtyText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#065f46',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   platformButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   platformButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   trendCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -815,23 +816,23 @@ const styles = StyleSheet.create({
   },
   trendCategory: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   trendGrowth: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   trendGrowthText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   trendPrice: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   trendBrands: {
@@ -840,20 +841,20 @@ const styles = StyleSheet.create({
   },
   trendBrandsLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   trendBrandsText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   dealCard: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: ds.ink,
   },
   dealHeader: {
     flexDirection: 'row',
@@ -863,23 +864,23 @@ const styles = StyleSheet.create({
   },
   dealCategory: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#7f1d1d',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
   },
   dealDiscount: {
-    backgroundColor: '#ef4444',
+    backgroundColor: ds.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   dealDiscountText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   dealDescription: {
     fontSize: 13,
-    color: '#991b1b',
+    color: ds.tobacco,
   },
   popularSearches: {
     flexDirection: 'row',
@@ -887,20 +888,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   popularSearchTag: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ds.hair,
   },
   popularSearchText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#475569',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   impactCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
     gap: 20,
@@ -914,13 +915,13 @@ const styles = StyleSheet.create({
   },
   impactTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   impactDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     textAlign: 'center',
   },
 });

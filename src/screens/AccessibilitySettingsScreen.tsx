@@ -24,6 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors as ds, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -96,19 +97,19 @@ export default function AccessibilitySettingsScreen() {
 
   const getSeverityColor = (severity: string): string => {
     const colors = {
-      critical: '#dc2626',
-      serious: '#f59e0b',
-      moderate: '#3b82f6',
-      minor: '#64748b',
+      critical: ds.tobacco,
+      serious: ds.camel,
+      moderate: ds.tobacco,
+      minor: ds.inkMuted,
     };
-    return colors[severity as keyof typeof colors] || '#64748b';
+    return colors[severity as keyof typeof colors] || ds.inkMuted;
   };
 
   if (loading && !settings) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={ds.tobacco} />
           <Text style={styles.loadingText}>Loading accessibility settings...</Text>
         </View>
       </SafeAreaView>
@@ -290,8 +291,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     visual: { ...settings.visual, boldText: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -307,8 +308,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     visual: { ...settings.visual, underlineLinks: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
             </View>
@@ -334,8 +335,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     screenReader: { ...settings.screenReader, enabled: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -351,8 +352,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     screenReader: { ...settings.screenReader, announceChanges: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -368,8 +369,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     screenReader: { ...settings.screenReader, speakHints: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
             </View>
@@ -390,8 +391,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     motion: { ...settings.motion, reduceMotion: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -407,8 +408,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     motion: { ...settings.motion, disableAnimations: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -424,8 +425,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     motion: { ...settings.motion, disableParallax: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
             </View>
@@ -446,8 +447,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     interaction: { ...settings.interaction, largerTouchTargets: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
 
@@ -463,8 +464,8 @@ export default function AccessibilitySettingsScreen() {
                   onValueChange={(value) => handleUpdateSettings({
                     interaction: { ...settings.interaction, hapticFeedback: value },
                   })}
-                  trackColor={{ false: '#cbd5e1', true: '#8b5cf6' }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: ds.hair, true: ds.ink }}
+                  thumbColor={ds.white}
                 />
               </View>
             </View>
@@ -571,7 +572,7 @@ export default function AccessibilitySettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: ds.card,
   },
   loadingContainer: {
     flex: 1,
@@ -581,7 +582,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -589,21 +590,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   wcagBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
     padding: 16,
     gap: 12,
   },
@@ -617,27 +618,27 @@ const styles = StyleSheet.create({
   },
   wcagLevel: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   wcagInfo: {
     flex: 1,
   },
   wcagScore: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
     marginBottom: 4,
   },
   wcagText: {
     fontSize: 13,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.9,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: ds.hair,
   },
   tab: {
     flex: 1,
@@ -646,36 +647,36 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: ds.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: ds.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: ds.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 16,
   },
   optionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -683,48 +684,48 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   optionCardSelected: {
-    backgroundColor: '#ede9fe',
-    borderColor: '#8b5cf6',
+    backgroundColor: ds.sand,
+    borderColor: ds.ink,
   },
   optionInfo: {
     flex: 1,
   },
   optionName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   optionDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
     marginBottom: 8,
   },
   optionMeta: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: ds.tobacco,
   },
   previewText: {
-    color: '#0f172a',
+    color: ds.ink,
     marginTop: 8,
   },
   selectedIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedIconText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: ds.white,
   },
   toggleCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -735,13 +736,13 @@ const styles = StyleSheet.create({
   },
   toggleName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: ds.inkMuted,
   },
   auditHeader: {
     flexDirection: 'row',
@@ -750,19 +751,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   runButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   runButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   scoreCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
@@ -773,18 +774,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   scoreValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   scoreMax: {
     fontSize: 14,
-    color: '#ffffff',
+    color: ds.white,
     opacity: 0.8,
   },
   scoreInfo: {
@@ -792,38 +793,38 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 4,
   },
   scoreStatus: {
     fontSize: 14,
-    color: '#10b981',
-    fontWeight: '600',
+    color: ds.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   checksCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
   },
   checksText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
     marginBottom: 8,
   },
   checksBar: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: ds.hair,
     borderRadius: 4,
     overflow: 'hidden',
   },
   checksBarFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: ds.ink,
   },
   issueCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: ds.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -837,45 +838,45 @@ const styles = StyleSheet.create({
   },
   severityText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.white,
   },
   issueContent: {
     gap: 8,
   },
   issueType: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.ink,
   },
   issueDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: ds.inkMuted,
     lineHeight: 20,
   },
   issueLocation: {
     fontSize: 13,
-    color: '#8b5cf6',
+    color: ds.tobacco,
   },
   recommendationCard: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: ds.sand,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
   },
   recommendationLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#1e40af',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 4,
   },
   recommendationText: {
     fontSize: 13,
-    color: '#1e40af',
+    color: ds.tobacco,
     lineHeight: 18,
   },
   noIssuesCard: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: ds.sand,
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
@@ -886,13 +887,13 @@ const styles = StyleSheet.create({
   },
   noIssuesText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#166534',
+    fontFamily: fonts.sansSemiBold,
+    color: ds.tobacco,
     marginBottom: 8,
   },
   noIssuesSubtext: {
     fontSize: 14,
-    color: '#166534',
+    color: ds.tobacco,
     textAlign: 'center',
   },
 });

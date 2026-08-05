@@ -18,6 +18,7 @@ import { socialFeedService, FeedPreferences, PostType } from '../services/social
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -107,7 +108,7 @@ export default function FeedPreferencesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
         </View>
       </SafeAreaView>
     );
@@ -178,7 +179,7 @@ export default function FeedPreferencesScreen() {
             <TextInput
               style={styles.input}
               placeholder="Add hashtag..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.inkFaint}
               value={newHashtag}
               onChangeText={setNewHashtag}
               onSubmitEditing={addHashtag}
@@ -224,8 +225,8 @@ export default function FeedPreferencesScreen() {
               onValueChange={(value) =>
                 setPreferences({ ...preferences, showTrending: value })
               }
-              trackColor={{ false: '#cbd5e1', true: '#fecaca' }}
-              thumbColor={preferences.showTrending ? '#ef4444' : '#f1f5f9'}
+              trackColor={{ false: colors.hair, true: colors.ink }}
+              thumbColor={colors.white}
             />
           </View>
 
@@ -241,8 +242,8 @@ export default function FeedPreferencesScreen() {
               onValueChange={(value) =>
                 setPreferences({ ...preferences, showFollowingOnly: value })
               }
-              trackColor={{ false: '#cbd5e1', true: '#fecaca' }}
-              thumbColor={preferences.showFollowingOnly ? '#ef4444' : '#f1f5f9'}
+              trackColor={{ false: colors.hair, true: colors.ink }}
+              thumbColor={colors.white}
             />
           </View>
         </View>
@@ -272,7 +273,7 @@ export default function FeedPreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
@@ -294,21 +295,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   saveButton: {
     fontSize: 16,
-    color: '#ef4444',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -316,17 +317,17 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 16,
   },
   contentTypeItem: {
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   contentTypeInfo: {
     flexDirection: 'row',
@@ -347,25 +348,25 @@ const styles = StyleSheet.create({
   },
   contentTypeLabel: {
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#cbd5e1',
+    borderColor: colors.hair,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   checkmark: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: fonts.sansSemiBold,
   },
   hashtagInput: {
     flexDirection: 'row',
@@ -374,29 +375,29 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   addButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     justifyContent: 'center',
   },
   addButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   addButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   hashtagsList: {
     flexDirection: 'row',
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   hashtagChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.sand,
     paddingLeft: 12,
     paddingRight: 8,
     paddingVertical: 6,
@@ -415,17 +416,17 @@ const styles = StyleSheet.create({
   },
   hashtagText: {
     fontSize: 14,
-    color: '#1e40af',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   removeButton: {
     fontSize: 16,
-    color: '#64748b',
-    fontWeight: 'bold',
+    color: colors.inkMuted,
+    fontFamily: fonts.sansSemiBold,
   },
   emptyText: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     fontStyle: 'italic',
   },
   settingItem: {
@@ -434,7 +435,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   settingInfo: {
     flex: 1,
@@ -442,19 +443,19 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#0f172a',
+    fontFamily: fonts.sansMedium,
+    color: colors.ink,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     lineHeight: 18,
   },
   infoSection: {
     flexDirection: 'row',
     padding: 20,
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.sand,
     margin: 20,
     borderRadius: 12,
     gap: 12,
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
+    color: colors.tobacco,
     lineHeight: 20,
   },
 });

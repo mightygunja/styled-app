@@ -364,7 +364,7 @@ export default function SessionNotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   recommendationCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -505,10 +505,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
   },
   prioritymedium: {
-    backgroundColor: '#fef9c3',
+    backgroundColor: colors.sand,
   },
   prioritylow: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.sand,
   },
   priorityText: {
     fontSize: 11,
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   deliverableCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   downloadButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },
@@ -629,12 +629,12 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 32,
-    color: '#ffffff',
+    color: colors.white,
     fontFamily: fonts.sans,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   modalHeader: {
     flexDirection: 'row',

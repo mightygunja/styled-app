@@ -20,6 +20,7 @@ import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
+import { colors, fonts } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -217,7 +218,7 @@ export default function PaymentMethodsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
         </View>
       </SafeAreaView>
     );
@@ -363,7 +364,7 @@ export default function PaymentMethodsScreen() {
               disabled={adding}
             >
               {adding ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.submitButtonText}>Add Card</Text>
               )}
@@ -391,7 +392,7 @@ export default function PaymentMethodsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -404,21 +405,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -427,16 +428,16 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#ef4444',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   content: {
     flex: 1,
@@ -445,12 +446,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   methodCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   methodHeader: {
     flexDirection: 'row',
@@ -468,28 +469,28 @@ const styles = StyleSheet.create({
   },
   methodBrand: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 2,
   },
   methodNumber: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   defaultBadge: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   defaultText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   methodExpiry: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   methodActions: {
@@ -499,55 +500,55 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     padding: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   deleteButton: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
+    backgroundColor: colors.sand,
+    borderColor: colors.sand,
   },
   actionText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   deleteText: {
-    color: '#ef4444',
+    color: colors.tobacco,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     borderStyle: 'dashed',
   },
   addIcon: {
     fontSize: 24,
     marginRight: 8,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   addText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
   },
   historyContainer: {
     padding: 20,
   },
   transactionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   transactionHeader: {
     flexDirection: 'row',
@@ -560,21 +561,21 @@ const styles = StyleSheet.create({
   },
   transactionDescription: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   transactionDate: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   transactionAmount: {
     alignItems: 'flex-end',
   },
   amountText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   statusBadge: {
@@ -583,26 +584,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   statuscompleted: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: colors.sand,
   },
   statuspending: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.sand,
   },
   statusrefunded: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: colors.sand,
   },
   statusfailed: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.sand,
   },
   statusText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textTransform: 'capitalize',
   },
   transactionMethod: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.inkFaint,
   },
   emptyState: {
     padding: 60,
@@ -614,12 +615,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -627,16 +628,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   modalClose: {
     fontSize: 24,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   modalContent: {
     flex: 1,
@@ -644,18 +645,18 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.ink,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
     marginBottom: 16,
   },
   row: {
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
   securityNote: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.sand,
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
@@ -680,25 +681,25 @@ const styles = StyleSheet.create({
   securityText: {
     flex: 1,
     fontSize: 12,
-    color: '#166534',
+    color: colors.tobacco,
   },
   modalFooter: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
   },
   submitButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
 });

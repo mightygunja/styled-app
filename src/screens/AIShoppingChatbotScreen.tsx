@@ -26,6 +26,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -159,7 +160,7 @@ export default function AIShoppingChatbotScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ef4444" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Starting AI assistant...</Text>
         </View>
       </SafeAreaView>
@@ -266,7 +267,7 @@ export default function AIShoppingChatbotScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
   },
   loadingContainer: {
     flex: 1,
@@ -276,20 +277,20 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerInfo: {
     flex: 1,
@@ -297,17 +298,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#10b981',
+    color: colors.tobacco,
     marginTop: 2,
   },
   refreshButton: {
     fontSize: 20,
-    color: '#2B1F1A',
+    color: colors.ink,
   },
   keyboardView: {
     flex: 1,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -357,24 +358,24 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   assistantBubble: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderBottomLeftRadius: 4,
   },
   userBubble: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     borderBottomRightRadius: 4,
   },
   messageText: {
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     lineHeight: 22,
   },
   userMessageText: {
-    color: '#ffffff',
+    color: colors.white,
   },
   messageTime: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.inkFaint,
     marginTop: 6,
   },
   userMessageTime: {
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: 140,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     marginRight: 8,
     overflow: 'hidden',
@@ -393,32 +394,32 @@ const styles = StyleSheet.create({
   productImage: {
     width: '100%',
     height: 140,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
   },
   productName: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     padding: 8,
     paddingBottom: 4,
     height: 40,
   },
   productPrice: {
     fontSize: 15,
-    fontWeight: 'bold',
-    color: '#ef4444',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     paddingHorizontal: 8,
     paddingBottom: 8,
   },
   productButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     paddingVertical: 8,
     alignItems: 'center',
   },
   productButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   suggestionsContainer: {
     flexDirection: 'row',
@@ -427,16 +428,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   suggestionChip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   suggestionText: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.inkMuted,
   },
   typingContainer: {
     flexDirection: 'row',
@@ -444,7 +445,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   typingBubble: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderBottomLeftRadius: 4,
     padding: 16,
@@ -457,12 +458,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#94a3b8',
+    backgroundColor: colors.inkFaint,
   },
   quickRepliesContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     paddingVertical: 12,
   },
   quickReplies: {
@@ -471,49 +472,49 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickReplyButton: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   quickReplyText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#475569',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.hair,
     gap: 12,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.ink,
     maxHeight: 100,
   },
   sendButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.hair,
   },
   sendButtonText: {
     fontSize: 20,
-    color: '#ffffff',
+    color: colors.white,
   },
 });

@@ -21,6 +21,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { colors, fonts } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -54,7 +55,7 @@ export default function AdvancedAnalyticsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
+          <ActivityIndicator size="large" color={colors.tobacco} />
           <Text style={styles.loadingText}>Analyzing your wardrobe...</Text>
         </View>
       </SafeAreaView>
@@ -507,7 +508,7 @@ export default function AdvancedAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -517,7 +518,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   errorContainer: {
     flex: 1,
@@ -526,11 +527,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: colors.tobacco,
   },
   emptyHint: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.inkMuted,
     textAlign: 'center',
     paddingVertical: 12,
   },
@@ -540,35 +541,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   backButton: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   exportButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   updateBanner: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     padding: 12,
     alignItems: 'center',
   },
   updateText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.hair,
   },
   tab: {
     flex: 1,
@@ -577,26 +578,26 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#8b5cf6',
+    borderBottomColor: colors.ink,
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   tabTextActive: {
-    color: '#8b5cf6',
-    fontWeight: '600',
+    color: colors.tobacco,
+    fontFamily: fonts.sansSemiBold,
   },
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.paper,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 16,
   },
   metricsGrid: {
@@ -607,20 +608,20 @@ const styles = StyleSheet.create({
   metricCard: {
     flex: 1,
     minWidth: (width - 52) / 2,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   metricValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   metricLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -632,13 +633,13 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 2,
   },
   categoryCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   categoryStats: {
     flex: 1,
@@ -646,25 +647,25 @@ const styles = StyleSheet.create({
   },
   categoryValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   progressBar: {
     width: '100%',
     height: 6,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
     borderRadius: 3,
     marginBottom: 4,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     borderRadius: 3,
   },
   categoryPercentage: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -681,23 +682,23 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginBottom: 8,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.hair,
   },
   colorName: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 2,
   },
   colorCount: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 2,
   },
   colorPercentage: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#8b5cf6',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   wearInsights: {
     flexDirection: 'row',
@@ -705,34 +706,34 @@ const styles = StyleSheet.create({
   },
   wearCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   wearLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.inkMuted,
     marginBottom: 12,
   },
   wearImage: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
     marginBottom: 12,
   },
   wearName: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
     textAlign: 'center',
   },
   wearCount: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   frequencyGrid: {
     flexDirection: 'row',
@@ -740,20 +741,20 @@ const styles = StyleSheet.create({
   },
   frequencyCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   frequencyValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   frequencyLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   dayRow: {
     flexDirection: 'row',
@@ -763,26 +764,26 @@ const styles = StyleSheet.create({
   dayName: {
     width: 80,
     fontSize: 13,
-    fontWeight: '500',
-    color: '#0f172a',
+    fontFamily: fonts.sansMedium,
+    color: colors.ink,
   },
   dayBar: {
     flex: 1,
     height: 24,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     overflow: 'hidden',
     marginRight: 12,
   },
   dayBarFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
   },
   dayCount: {
     width: 30,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'right',
   },
   occasionRow: {
@@ -793,26 +794,26 @@ const styles = StyleSheet.create({
   occasionName: {
     width: 80,
     fontSize: 13,
-    fontWeight: '500',
-    color: '#0f172a',
+    fontFamily: fonts.sansMedium,
+    color: colors.ink,
   },
   occasionBar: {
     flex: 1,
     height: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.paper,
     borderRadius: 10,
     overflow: 'hidden',
     marginRight: 12,
   },
   occasionBarFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: colors.ink,
   },
   occasionPercentage: {
     width: 40,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     textAlign: 'right',
   },
   trendChart: {
@@ -827,35 +828,35 @@ const styles = StyleSheet.create({
   },
   trendBarFill: {
     width: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     borderRadius: 4,
     minHeight: 20,
   },
   trendLabel: {
     fontSize: 10,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginTop: 4,
   },
   cpwCard: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.ink,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
   },
   cpwValue: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
     marginBottom: 4,
   },
   cpwLabel: {
     fontSize: 14,
-    color: '#ffffff',
+    color: colors.white,
     opacity: 0.9,
   },
   valueCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.hair,
     marginRight: 12,
   },
   valueInfo: {
@@ -873,60 +874,60 @@ const styles = StyleSheet.create({
   },
   valueName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   valueStats: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   valueCPW: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
   },
   valueCPWHigh: {
-    color: '#f59e0b',
+    color: colors.tobacco,
   },
   valueBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#10b981',
+    backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
   },
   valueBadgeWarning: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: colors.ink,
   },
   valueBadgeText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   opportunityCard: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.sand,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   opportunityMessage: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 8,
   },
   opportunitySavings: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#92400e',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginBottom: 8,
   },
   opportunityRec: {
     fontSize: 13,
-    color: '#92400e',
+    color: colors.tobacco,
   },
   budgetGrid: {
     flexDirection: 'row',
@@ -934,31 +935,31 @@ const styles = StyleSheet.create({
   },
   budgetCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   budgetValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   budgetLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   timelineCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   timelinePeriod: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 12,
   },
   timelineContent: {
@@ -967,17 +968,17 @@ const styles = StyleSheet.create({
   },
   timelineLabel: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
     width: 120,
   },
   timelineValue: {
     flex: 1,
     fontSize: 13,
-    color: '#0f172a',
+    color: colors.ink,
   },
   shiftCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -990,19 +991,19 @@ const styles = StyleSheet.create({
   shiftFrom: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    fontFamily: fonts.sansMedium,
+    color: colors.inkMuted,
   },
   shiftArrow: {
     fontSize: 16,
-    color: '#8b5cf6',
+    color: colors.tobacco,
     marginHorizontal: 8,
   },
   shiftTo: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   shiftMeta: {
     flexDirection: 'row',
@@ -1010,15 +1011,15 @@ const styles = StyleSheet.create({
   },
   shiftConfidence: {
     fontSize: 12,
-    color: '#10b981',
+    color: colors.tobacco,
   },
   shiftDate: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
   sustainabilityCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     gap: 16,
@@ -1027,17 +1028,17 @@ const styles = StyleSheet.create({
     width: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10b981',
+    backgroundColor: colors.ink,
     borderRadius: 12,
   },
   sustainabilityValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.white,
   },
   sustainabilityLabel: {
     fontSize: 11,
-    color: '#ffffff',
+    color: colors.white,
   },
   sustainabilityStats: {
     flex: 1,
@@ -1045,13 +1046,13 @@ const styles = StyleSheet.create({
   },
   sustainabilityStat: {
     fontSize: 13,
-    color: '#0f172a',
+    color: colors.ink,
     marginBottom: 4,
   },
   sustainabilityComparison: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#10b981',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.tobacco,
     marginTop: 4,
   },
   outfitGrid: {
@@ -1060,19 +1061,19 @@ const styles = StyleSheet.create({
   },
   outfitCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   outfitValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   outfitLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.inkMuted,
   },
 });

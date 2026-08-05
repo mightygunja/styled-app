@@ -363,7 +363,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
   backButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.card,
   },
   tapToExplore: {
     fontSize: 14,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   heroBadgeText: {
     fontSize: 10,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
   },
   budgetBadge: {
     backgroundColor: colors.camel,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   budgetBadgeText: {
     fontSize: 10,
     fontFamily: fonts.sansSemiBold,
-    color: '#ffffff',
+    color: colors.white,
   },
   itemBrand: {
     fontSize: 14,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   shopButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   shopAllButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   miniLookCard: {
     width: 140,
     marginRight: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   viewAllText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
     textAlign: 'center',
@@ -659,13 +659,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shopMyClosetText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   shopMyClosetSubtext: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 12,
     opacity: 0.9,
   },
