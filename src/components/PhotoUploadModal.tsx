@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
   ScrollView,
   Animated,
   ActivityIndicator,
@@ -15,8 +14,6 @@ import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 import AnimatedModal from './AnimatedModal';
 import { scale } from '../utils/animations';
 import { colors, fonts } from '../theme/designSystem';
-
-const { width, height } = Dimensions.get('window');
 
 interface PhotoUploadModalProps {
   visible: boolean;
@@ -34,11 +31,10 @@ const FILTERS = [
 ];
 
 const GUIDANCE_TIPS = [
-  '📸 Use natural lighting',
-  '🎯 Center the item in frame',
-  '🧹 Remove background clutter',
-  '📐 Keep camera level',
-  '✨ Ensure item is clean',
+  'Natural light, or the colour will read wrong',
+  'Centre the item and keep the camera level',
+  'Plain background — clutter confuses the tagging',
+  'Make sure the item is clean and uncreased',
 ];
 
 export default function PhotoUploadModal({
@@ -159,17 +155,15 @@ export default function PhotoUploadModal({
       <View style={styles.modalContent}>
         {step === 'choose' ? (
           <>
-            {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Add Photo</Text>
+              <Text style={styles.title}>Add a photo</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Guidance Tips */}
             <View style={styles.guidanceSection}>
-              <Text style={styles.guidanceTitle}>📋 Photo Tips</Text>
+              <Text style={styles.guidanceTitle}>WHAT WORKS</Text>
               {GUIDANCE_TIPS.map((tip, index) => (
                 <Text key={index} style={styles.guidanceTip}>
                   {tip}
@@ -177,58 +171,62 @@ export default function PhotoUploadModal({
               ))}
             </View>
 
-            {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => handleButtonPress(takePhoto)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={styles.actionButtonEmoji}>📷</Text>
-                <Text style={styles.actionButtonText}>Take Photo</Text>
+                <Text style={styles.actionButtonText}>Take photo</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={styles.actionButtonSecondary}
                 onPress={() => handleButtonPress(pickFromLibrary)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={styles.actionButtonEmoji}>🖼️</Text>
-                <Text style={styles.actionButtonText}>Choose from Library</Text>
+                <Text style={styles.actionButtonSecondaryText}>Choose from library</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <>
-            {/* Edit Header */}
+            {/* Title left, action right. The previous header put "← Retake"
+                on the left of a space-between row with a 32pt spacer on the
+                right, so the title was never actually centred. */}
             <View style={styles.header}>
+              <Text style={styles.title}>Edit photo</Text>
               <TouchableOpacity onPress={handleRetake} style={styles.backButton}>
-                <Text style={styles.backText}>← Retake</Text>
+                <Text style={styles.backText}>Retake</Text>
               </TouchableOpacity>
-              <Text style={styles.title}>Edit Photo</Text>
-              <View style={styles.placeholder} />
             </View>
 
-            {/* Image Preview */}
-            <View style={styles.imagePreview}>
-              {imageUri && (
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.previewImage}
-                  resizeMode="contain"
-                />
-              )}
-            </View>
+            {/* The preview and filters scroll; the action button does not, so
+                it stays reachable on short screens. Without this the button
+                was pushed off the bottom of the dialog. */}
+            <ScrollView
+              style={styles.editScroll}
+              contentContainerStyle={styles.editScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.imagePreview}>
+                {imageUri && (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.previewImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
 
-            {/* Filters */}
-            <View style={styles.filtersSection}>
-              <Text style={styles.filtersTitle}>Filters</Text>
+              <Text style={styles.filtersTitle}>FILTERS</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.filtersScroll}
+                style={styles.filtersRow}
               >
-                {FILTERS.map((filter) => (
+                {FILTERS.map(filter => (
                   <TouchableOpacity
                     key={filter.id}
                     style={[
@@ -248,9 +246,8 @@ export default function PhotoUploadModal({
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-            </View>
+            </ScrollView>
 
-            {/* Done Button */}
             <TouchableOpacity
               style={[styles.doneButton, processing && styles.doneButtonDisabled]}
               onPress={applyFilter}
@@ -259,7 +256,7 @@ export default function PhotoUploadModal({
               {processing ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Text style={styles.doneButtonText}>Use Photo</Text>
+                <Text style={styles.doneButtonText}>Use photo</Text>
               )}
             </TouchableOpacity>
           </>
@@ -269,25 +266,30 @@ export default function PhotoUploadModal({
   );
 }
 
+/**
+ * All horizontal insets are zero here on purpose.
+ *
+ * This content renders inside AnimatedModal, which is a CENTRED dialog with
+ * `padding: 20` and `maxWidth: '90%'` - not a full-bleed bottom sheet. The
+ * previous styles assumed the sheet: children were sized `width - 48` and
+ * inset a further 24, which on a 390pt screen made the preview 342pt wide
+ * inside a 311pt container. It overflowed by 31pt, and the fixed-height
+ * preview pushed the "Use photo" button past the parent's 80% height cap.
+ */
 const styles = StyleSheet.create({
   modalContent: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
-    maxHeight: height * 0.9,
+    // No width, no margins, no radius - the parent supplies all three.
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
+    fontFamily: fonts.serif,
     fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   closeButton: {
@@ -299,128 +301,120 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 18,
+    fontFamily: fonts.sans,
+    fontSize: 15,
     color: colors.inkMuted,
   },
   backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   backText: {
-    fontSize: 16,
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.tobacco,
   },
-  placeholder: {
-    width: 32,
-  },
+
   guidanceSection: {
     backgroundColor: colors.paper,
-    marginHorizontal: 24,
-    padding: 20,
-    marginBottom: 24,
+    padding: 16,
+    marginBottom: 20,
   },
   guidanceTitle: {
-    fontSize: 18,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 12,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginBottom: 10,
   },
   guidanceTip: {
-    fontSize: 15,
+    fontFamily: fonts.sans,
+    fontSize: 14,
     color: colors.inkMuted,
-    marginBottom: 8,
-    lineHeight: 22,
+    marginBottom: 6,
+    lineHeight: 20,
   },
-  actionButtons: {
-    paddingHorizontal: 24,
-    gap: 16,
-  },
+
+  actionButtons: { gap: 10 },
   actionButton: {
     backgroundColor: colors.ink,
-    padding: 24,
+    paddingVertical: 16,
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  actionButtonEmoji: {
-    fontSize: 32,
   },
   actionButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
     color: colors.white,
   },
+  actionButtonSecondary: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  actionButtonSecondaryText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    color: colors.ink,
+  },
+
+  // flexShrink, not flexGrow. React Native defaults flexShrink to 0, so
+  // without this the ScrollView refuses to shrink below its content height
+  // and overflows the parent's 80% cap rather than scrolling inside it.
+  editScroll: { flexShrink: 1 },
+  editScrollContent: { paddingBottom: 16 },
+
+  // Percentage width plus aspectRatio, so the preview fits whatever the
+  // parent gives it instead of assuming the screen width.
   imagePreview: {
-    width: width - 48,
-    height: (width - 48) * 1.33,
+    width: '100%',
+    aspectRatio: 3 / 4,
     backgroundColor: colors.paper,
-    marginHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 20,
     overflow: 'hidden',
   },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  filtersSection: {
-    marginBottom: 24,
-  },
+  previewImage: { width: '100%', height: '100%' },
+
   filtersTitle: {
-    fontSize: 16,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 12,
-    paddingHorizontal: 24,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginBottom: 10,
   },
-  filtersScroll: {
-    paddingHorizontal: 24,
-    gap: 12,
-  },
+  filtersRow: { marginHorizontal: -20 },
+  filtersScroll: { paddingHorizontal: 20, gap: 8 },
   filterButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: colors.paper,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
   },
   filterButtonActive: {
-    // Ink, not hair. This is the selected state - a hairline against a
-    // transparent-bordered neighbour is not a distinction anyone would see.
-    backgroundColor: colors.sand,
+    backgroundColor: colors.ink,
     borderColor: colors.ink,
   },
   filterLabel: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sans,
+    fontSize: 13,
     color: colors.inkMuted,
   },
   filterLabelActive: {
-    color: colors.ink,
+    fontFamily: fonts.sansMedium,
+    color: colors.white,
   },
+
   doneButton: {
     backgroundColor: colors.ink,
-    marginHorizontal: 24,
-    padding: 18,
+    paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 4,
   },
-  doneButtonDisabled: {
-    opacity: 0.6,
-  },
+  doneButtonDisabled: { backgroundColor: colors.hair },
   doneButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
     color: colors.white,
   },
 });
