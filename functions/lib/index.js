@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1656,6 +1656,101 @@ Return ONLY valid JSON:
         if (error instanceof functions.https.HttpsError)
             throw error;
         console.error('Error curating style edit:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+/**
+ * Ranks and writes up the day's outfit suggestions.
+ *
+ * The client builds the candidates deterministically - real garments, real
+ * pairings, colour and formality already checked - and sends a shortlist. The
+ * model's job is judgement and voice: which of these actually works best for
+ * this occasion, and why, in a sentence a person would read.
+ *
+ * It cannot invent an outfit. It returns indices into the shortlist, which are
+ * validated on the way out, so a hallucinated garment is impossible by
+ * construction rather than by hoping the prompt held.
+ */
+exports.curateDailyOutfits = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    try {
+        const { occasion = 'casual', weather, archetypes = [], avoidRules = [], outfits = [], } = data;
+        if (outfits.length < 2) {
+            throw new functions.https.HttpsError('failed-precondition', 'Not enough candidate outfits to rank.');
+        }
+        const described = outfits
+            .map(o => `[${o.index}] ${o.pieces
+            .map(p => [p.fit, p.color, p.pattern !== 'solid' ? p.pattern : null, p.fabric, p.subcategory || p.category]
+            .filter(Boolean)
+            .join(' '))
+            .join(' + ')} (formality ${o.formality.toFixed(1)}/5)`)
+            .join('\n');
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are a personal stylist choosing what someone should wear today for: ${occasion}.
+
+${weather ? `Weather: ${weather.condition}, ${Math.round(weather.temperature)}°F.` : ''}
+${archetypes.length ? `Their style reads as: ${archetypes.join(', ')}.` : ''}
+${avoidRules.length ? `They do not wear: ${avoidRules.join('; ')}.` : ''}
+
+Candidate outfits, all built from garments they already own:
+${described}
+
+Pick the best 3 for this occasion, in order, and say why each one works.
+
+What makes a good answer:
+- Judge the outfit as an outfit. Does it hold together, and is it right for ${occasion} specifically?
+- Be concrete about what makes it work: the cut, the colour relationship, the level it is pitched at.
+- If a candidate is wrong for the occasion, do not pick it, even if it appears high in the list.
+- Reject anything that breaks their stated rules.
+
+Rules:
+- Only use the numeric indices shown. Never describe a garment that is not listed.
+- Never invent a colour, brand or fabric that was not given.
+- note: one sentence, max 20 words. No emoji. Never use "effortless", "elevate", "must-have", "flattering" or "pop of colour".
+- title: 2-4 words naming the look, not the occasion.
+
+Return ONLY valid JSON:
+{ "picks": [{ "index": 0, "title": "string", "note": "one sentence" }] }`,
+                },
+            ],
+            max_tokens: 700,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        const validIndices = new Set(outfits.map(o => o.index));
+        const seen = new Set();
+        const picks = (Array.isArray(result.picks) ? result.picks : [])
+            .filter((p) => {
+            const i = Number(p === null || p === void 0 ? void 0 : p.index);
+            if (!Number.isInteger(i) || !validIndices.has(i) || seen.has(i) || !(p === null || p === void 0 ? void 0 : p.note))
+                return false;
+            seen.add(i);
+            return true;
+        })
+            .slice(0, 3)
+            .map((p) => ({
+            index: Number(p.index),
+            title: String(p.title || 'Today'),
+            note: String(p.note),
+        }));
+        if (picks.length === 0) {
+            throw new functions.https.HttpsError('internal', 'No valid picks returned.');
+        }
+        console.log(`curateDailyOutfits: ranked ${picks.length} of ${outfits.length} for ${occasion}`);
+        return { success: true, data: { picks } };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error curating daily outfits:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });

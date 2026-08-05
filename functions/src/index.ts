@@ -1984,6 +1984,138 @@ Return ONLY valid JSON:
     }
   });
 
+/**
+ * Ranks and writes up the day's outfit suggestions.
+ *
+ * The client builds the candidates deterministically - real garments, real
+ * pairings, colour and formality already checked - and sends a shortlist. The
+ * model's job is judgement and voice: which of these actually works best for
+ * this occasion, and why, in a sentence a person would read.
+ *
+ * It cannot invent an outfit. It returns indices into the shortlist, which are
+ * validated on the way out, so a hallucinated garment is impossible by
+ * construction rather than by hoping the prompt held.
+ */
+export const curateDailyOutfits = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const {
+        occasion = 'casual',
+        weather,
+        archetypes = [],
+        avoidRules = [],
+        outfits = [],
+      }: {
+        occasion: string;
+        weather?: { condition: string; temperature: number };
+        archetypes: string[];
+        avoidRules: string[];
+        outfits: Array<{
+          index: number;
+          pieces: Array<{
+            category: string;
+            subcategory?: string;
+            color?: string;
+            pattern?: string;
+            fabric?: string;
+            fit?: string;
+            brand?: string;
+          }>;
+          formality: number;
+        }>;
+      } = data;
+
+      if (outfits.length < 2) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Not enough candidate outfits to rank.'
+        );
+      }
+
+      const described = outfits
+        .map(
+          o =>
+            `[${o.index}] ${o.pieces
+              .map(p =>
+                [p.fit, p.color, p.pattern !== 'solid' ? p.pattern : null, p.fabric, p.subcategory || p.category]
+                  .filter(Boolean)
+                  .join(' ')
+              )
+              .join(' + ')} (formality ${o.formality.toFixed(1)}/5)`
+        )
+        .join('\n');
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `You are a personal stylist choosing what someone should wear today for: ${occasion}.
+
+${weather ? `Weather: ${weather.condition}, ${Math.round(weather.temperature)}°F.` : ''}
+${archetypes.length ? `Their style reads as: ${archetypes.join(', ')}.` : ''}
+${avoidRules.length ? `They do not wear: ${avoidRules.join('; ')}.` : ''}
+
+Candidate outfits, all built from garments they already own:
+${described}
+
+Pick the best 3 for this occasion, in order, and say why each one works.
+
+What makes a good answer:
+- Judge the outfit as an outfit. Does it hold together, and is it right for ${occasion} specifically?
+- Be concrete about what makes it work: the cut, the colour relationship, the level it is pitched at.
+- If a candidate is wrong for the occasion, do not pick it, even if it appears high in the list.
+- Reject anything that breaks their stated rules.
+
+Rules:
+- Only use the numeric indices shown. Never describe a garment that is not listed.
+- Never invent a colour, brand or fabric that was not given.
+- note: one sentence, max 20 words. No emoji. Never use "effortless", "elevate", "must-have", "flattering" or "pop of colour".
+- title: 2-4 words naming the look, not the occasion.
+
+Return ONLY valid JSON:
+{ "picks": [{ "index": 0, "title": "string", "note": "one sentence" }] }`,
+          },
+        ],
+        max_tokens: 700,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(content);
+
+      const validIndices = new Set(outfits.map(o => o.index));
+      const seen = new Set<number>();
+      const picks = (Array.isArray(result.picks) ? result.picks : [])
+        .filter((p: any) => {
+          const i = Number(p?.index);
+          if (!Number.isInteger(i) || !validIndices.has(i) || seen.has(i) || !p?.note) return false;
+          seen.add(i);
+          return true;
+        })
+        .slice(0, 3)
+        .map((p: any) => ({
+          index: Number(p.index),
+          title: String(p.title || 'Today'),
+          note: String(p.note),
+        }));
+
+      if (picks.length === 0) {
+        throw new functions.https.HttpsError('internal', 'No valid picks returned.');
+      }
+
+      console.log(`curateDailyOutfits: ranked ${picks.length} of ${outfits.length} for ${occasion}`);
+
+      return { success: true, data: { picks } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error curating daily outfits:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
 // ==================== STYLIST APPLICATIONS ====================
 //
 // Approving a stylist is the one action in this app that grants a user a role

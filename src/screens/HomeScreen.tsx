@@ -20,7 +20,8 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
 import { getStyleVoice } from '../services/styleVoice';
-import { recommendationEngine, OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
+import { OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
+import { dailyOutfitService, OccasionKey } from '../services/dailyOutfitService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
@@ -52,6 +53,46 @@ function weatherLine(weather: CurrentWeather): string {
     hot: 'a day made for breathable fabrics',
   };
   return `${temp}${place} — ${moodByCondition[weather.condition]}.`;
+}
+
+/**
+ * Builds the day's looks and adapts them to the shape this screen renders.
+ *
+ * The old recommendationEngine produced four "variants" that all called the
+ * same deterministic item picker with the same arguments, so they were the
+ * same garments under different headlines - which is why swapping cycled the
+ * same clothes. dailyOutfitService scores pairs jointly and diversifies the
+ * set, so the looks are actually different from one another.
+ */
+async function buildLooks(
+  items: Item[],
+  occasionValue: OccasionType,
+  weatherValue: CurrentWeather
+): Promise<OutfitRecommendation[]> {
+  const outfits = await dailyOutfitService.getDailyOutfits(items, {
+    occasion: occasionValue as OccasionKey,
+    weather: { condition: weatherValue.condition, temperature: weatherValue.temperature },
+  });
+
+  const ownsShoes = items.some(i => (i.category || '').toLowerCase() === 'shoes');
+
+  return outfits.map(outfit => ({
+    id: outfit.id,
+    title: outfit.title,
+    description: outfit.note,
+    occasion: occasionValue,
+    items: outfit.items,
+    suitabilityScore: Math.round(Math.max(0, Math.min(100, outfit.score))),
+    // The model's sentence leads; the countable pairing reasons back it up.
+    reasoning: [outfit.note, ...outfit.reasons].filter(Boolean),
+    weatherSuitable: true,
+    styleMatch: 0,
+    missingPieces:
+      !ownsShoes && !outfit.items.some(i => (i.category || '').toLowerCase() === 'shoes')
+        ? ['shoes']
+        : [],
+    tags: [occasionValue],
+  }));
 }
 
 export default function HomeScreen() {
@@ -100,6 +141,12 @@ export default function HomeScreen() {
         seasons: item.seasons,
         style: item.style,
         occasion: item.occasion,
+        // Carried through so formality can be read off real garment
+        // attributes rather than inferred from keyword regexes.
+        subcategory: item.subcategory,
+        pattern: item.pattern,
+        fabricTexture: item.fabricTexture,
+        fitType: item.fitType,
       }));
       closetItemsRef.current = items;
 
@@ -107,11 +154,7 @@ export default function HomeScreen() {
       styleProfileRef.current = styleProfile;
       setArchetype(getStyleVoice(styleProfile).archetype);
 
-      const recs = await recommendationEngine.generateRecommendations(items, styleProfile, {
-        occasion: occasionValue,
-        weather: weatherResult,
-      });
-      setRecommendations(recs);
+      setRecommendations(await buildLooks(items, occasionValue, weatherResult));
       setLookIndex(0);
 
       if (!refreshing) fadeIn(fadeAnim, 300).start();
@@ -143,12 +186,9 @@ export default function HomeScreen() {
     }
     setSwitchingOccasion(true);
     try {
-      const recs = await recommendationEngine.generateRecommendations(
-        closetItemsRef.current,
-        styleProfileRef.current,
-        { occasion: value, weather: weatherRef.current }
+      setRecommendations(
+        await buildLooks(closetItemsRef.current, value, weatherRef.current)
       );
-      setRecommendations(recs);
       setLookIndex(0);
     } catch (error) {
       console.error('Error switching occasion:', error);

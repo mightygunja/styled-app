@@ -34,6 +34,13 @@ export interface Item {
   seasons?: string[];
   style?: string;
   occasion?: string;
+  // Garment attributes that classifyGarmentImage already extracts and stores.
+  // They were being dropped on the way into recommendations, which left the
+  // engine guessing formality from keyword regexes over free-text tags.
+  subcategory?: string;
+  pattern?: string;
+  fabricTexture?: string;
+  fitType?: string;
 }
 
 export type ItemCategory = 
