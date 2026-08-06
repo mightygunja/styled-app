@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,171 +19,229 @@ import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { fadeIn } from '../utils/animations';
 import SocialAuthButtons from '../components/SocialAuthButtons';
-import { colors, fonts } from '../theme/designSystem';
+import LoginHero from '../components/LoginHero';
+import RotatingLine from '../components/RotatingLine';
+import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const PROPOSITIONS = [
+  'A stylist that has actually seen your wardrobe.',
+  'Know what a new piece adds before you buy it.',
+  'Every recommendation comes with its reason.',
+  'Dress for the day, the weather and the occasion.',
+];
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signIn } = useAuth();
   const { toast, showToast, hideToast } = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  
+  const [focused, setFocused] = useState<'email' | 'password' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Staged entrance: the stack settles, then the wordmark, then the form.
+  const heroIn = useRef(new Animated.Value(0)).current;
+  const titleIn = useRef(new Animated.Value(0)).current;
+  const formIn = useRef(new Animated.Value(0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
-    fadeIn(fadeAnim, 500).start();
-  }, []);
+    Animated.stagger(140, [
+      Animated.timing(heroIn, {
+        toValue: 1,
+        duration: 700,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleIn, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(formIn, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [heroIn, titleIn, formIn]);
+
+  const rise = (value: Animated.Value, distance = 22) => ({
+    opacity: value,
+    transform: [
+      { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) },
+    ],
+  });
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+    setError(null);
+    if (!email.trim() || !password) {
+      // Inline rather than an Alert - a modal for a missing field is a heavy
+      // interruption, and it cannot be styled to match anything.
+      setError('Enter your email and password.');
       return;
     }
 
     try {
       setLoading(true);
-      await signIn(email, password);
-      showToast('Welcome back! ', 'success');
-      // Navigation will be handled by auth state change
-    } catch (error: any) {
-      showToast(error.message || 'Login failed', 'error');
+      await signIn(email.trim(), password);
+      // Navigation is handled by the auth state change.
+    } catch (err: any) {
+      setError(err?.message || 'That did not work. Check your details and try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const pressIn = () =>
+    Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
+  const pressOut = () =>
+    Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 40 }).start();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <Animated.View style={rise(heroIn, 32)}>
+            <LoginHero />
+          </Animated.View>
 
-        <View style={styles.form}>
-          <SocialAuthButtons
-            disabled={loading}
-            onError={(message) =>showToast(message, 'error')}
-          />
+          <Animated.View style={[styles.intro, rise(titleIn)]}>
+            <Text style={styles.eyebrow}>PERSONAL STYLING</Text>
+            <Text style={styles.wordmark}>Styled</Text>
+            <RotatingLine lines={PROPOSITIONS} style={styles.proposition} />
+          </Animated.View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
+          <Animated.View style={[styles.form, rise(formIn)]}>
+            <SocialAuthButtons disabled={loading} onError={message => showToast(message, 'error')} />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+            <TextInput
+              style={[styles.input, focused === 'email' && styles.inputFocused]}
+              placeholder="Email"
+              placeholderTextColor={colors.inkFaint}
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocused('email')}
+              onBlur={() => setFocused(null)}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              editable={!loading}
+            />
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            <TextInput
+              style={[styles.input, focused === 'password' && styles.inputFocused]}
+              placeholder="Password"
+              placeholderTextColor={colors.inkFaint}
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocused('password')}
+              onBlur={() => setFocused(null)}
+              secureTextEntry
+              autoComplete="password"
+              editable={!loading}
+              onSubmitEditing={handleLogin}
+              returnKeyType="go"
+            />
 
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() =>navigation.navigate('Signup')}
-            disabled={loading}
-          >
-            <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+            <Animated.View style={{ transform: [{ scale: pressScale }] }}>
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleLogin}
+                onPressIn={pressIn}
+                onPressOut={pressOut}
+                disabled={loading}
+                activeOpacity={1}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.buttonText}>Sign in</Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+
+            <TouchableOpacity
+              style={styles.linkButton}
+              onPress={() => navigation.navigate('Signup')}
+              disabled={loading}
+            >
+              <Text style={styles.linkText}>
+                New here? <Text style={styles.linkTextBold}>Create an account</Text>
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
       </KeyboardAvoidingView>
-      
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.card,
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  header: {
-    marginBottom: 48,
-  },
-  title: {
-    fontSize: 32,
-    fontFamily: fonts.sansSemiBold,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
+  container: { flex: 1, backgroundColor: colors.bone },
+  content: { paddingHorizontal: spacing.page, paddingBottom: 48, paddingTop: spacing.sm },
+
+  intro: { marginTop: spacing.lg },
+  eyebrow: { ...textType.eyebrow, marginBottom: 10 },
+  // The wordmark is the largest type in the app. It should be.
+  wordmark: { fontFamily: fonts.serif, fontSize: 52, lineHeight: 56, color: colors.ink },
+  proposition: {
+    ...textType.body,
     color: colors.inkMuted,
+    marginTop: 12,
+    minHeight: 44,
   },
-  form: {
-    gap: 16,
-  },
+
+  form: { marginTop: spacing.section, gap: 12 },
   input: {
-    backgroundColor: colors.paper,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
-  },
-  button: {
-    backgroundColor: colors.ink,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-  },
-  linkButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
-  linkTextBold: {
-    fontFamily: fonts.sansSemiBold,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    fontFamily: fonts.sans,
+    fontSize: 15,
     color: colors.ink,
   },
+  // Focus is a full-strength border against the hairline of the resting
+  // state - the same distinction the rest of the app uses.
+  inputFocused: { borderColor: colors.ink },
+  errorText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.tobacco },
+
+  button: {
+    backgroundColor: colors.ink,
+    paddingVertical: 17,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  buttonDisabled: { backgroundColor: colors.hair },
+  buttonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: colors.white,
+  },
+
+  linkButton: { paddingVertical: 14, alignItems: 'center' },
+  linkText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  linkTextBold: { fontFamily: fonts.sansMedium, color: colors.ink },
 });
