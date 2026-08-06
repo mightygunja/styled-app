@@ -687,7 +687,11 @@ export async function rankOccasion(
     avoidRules?: string[];
   }
 ): Promise<OutfitCopy[] | null> {
-  if (pool.length === 0) return null;
+  // The function needs at least two outfits to have anything to rank between.
+  // A closet that cannot fill a tab is an ordinary situation, not a failure -
+  // calling anyway spent a round trip to be told so, and logged it as an
+  // error. The deterministic copy is a complete answer here.
+  if (pool.length < 2) return null;
 
   try {
     const result = await curateDailyOutfitsFn({

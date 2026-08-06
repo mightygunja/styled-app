@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Animated,
-  SafeAreaView,
   Image,
   ActivityIndicator,
 } from 'react-native';
+// react-native-safe-area-context, not the core SafeAreaView, which is
+// deprecated and warns on every render.
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
