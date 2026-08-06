@@ -27,6 +27,30 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [AppleAuth, setAppleAuth] = useState<any>(null);
+  const [nativeAuthLinked, setNativeAuthLinked] = useState(true);
+
+  /**
+   * Whether this runtime actually has the native sign-in modules.
+   *
+   * Expo Go ships its own binary, so neither RNGoogleSignin nor a matching
+   * Apple bundle identifier exists inside it. Tapping either button there
+   * produced a raw Invariant Violation for Google, and for Apple an identity
+   * token whose audience is `host.exp.Exponent` - which Firebase rejects with
+   * "the audience in ID token does not match".
+   *
+   * Probing the Google module is the honest test: it asks whether the native
+   * binary has our modules linked, rather than guessing at the environment.
+   * Any real build has it, because it is declared in app.json plugins.
+   */
+  useEffect(() => {
+    try {
+      const mod = require('@react-native-google-signin/google-signin');
+      if (!mod?.GoogleSignin) throw new Error('GoogleSignin missing');
+      setNativeAuthLinked(true);
+    } catch {
+      setNativeAuthLinked(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -71,7 +95,7 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
 
   return (
     <View style={styles.container}>
-      {Platform.OS === 'ios' && appleAvailable && AppleAuth && (
+      {nativeAuthLinked && Platform.OS === 'ios' && appleAvailable && AppleAuth && (
         <View style={styles.appleWrap}>
           {appleLoading ? (
             <View style={[styles.button, styles.appleFallback]}>
@@ -92,24 +116,40 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
         </View>
       )}
 
-      <TouchableOpacity
-        style={[styles.button, styles.googleButton, busy && styles.buttonDisabled]}
-        onPress={() => run(signInWithGoogle, setGoogleLoading, 'Google')}
-        disabled={busy}
-        accessibilityRole="button"
-        accessibilityLabel="Continue with Google"
-      >
-        {googleLoading ? (
-          <ActivityIndicator color={colors.ink} />
-        ) : (
-          <>
-            <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {nativeAuthLinked && (
+        <TouchableOpacity
+          style={[styles.button, styles.googleButton, busy && styles.buttonDisabled]}
+          onPress={() => run(signInWithGoogle, setGoogleLoading, 'Google')}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Google"
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={colors.ink} />
+          ) : (
+            <>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
 
-      {isFacebookConfigured && (
+      {/* Development only. In any real build the modules are linked, so this
+          never renders for a user - it exists so the absence of the buttons
+          in Expo Go reads as deliberate rather than broken. */}
+      {!nativeAuthLinked && __DEV__ && (
+        <View style={styles.devNotice}>
+          <Text style={styles.devNoticeText}>
+            Apple and Google sign-in are hidden because this runtime has no native sign-in modules.
+            They need a development build — in Expo Go the bundle identifier is Expo's own, so
+            Apple's token audience never matches and RNGoogleSignin does not exist. Email and
+            password work here.
+          </Text>
+        </View>
+      )}
+
+      {nativeAuthLinked && isFacebookConfigured && (
         <TouchableOpacity
           style={[styles.button, styles.facebookButton, busy && styles.buttonDisabled]}
           onPress={() => run(signInWithFacebook, setFacebookLoading, 'Facebook')}
@@ -128,11 +168,14 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
         </TouchableOpacity>
       )}
 
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or use email</Text>
-        <View style={styles.dividerLine} />
-      </View>
+      {/* "or use email" only makes sense when there is something above it. */}
+      {nativeAuthLinked && (
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or use email</Text>
+          <View style={styles.dividerLine} />
+        </View>
+      )}
     </View>
   );
 }
@@ -199,6 +242,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: 15,
     color: colors.white,
+  },
+  devNotice: {
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: 14,
+    marginBottom: 12,
+  },
+  devNoticeText: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.inkMuted,
   },
   dividerRow: {
     flexDirection: 'row',
