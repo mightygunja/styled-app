@@ -20,6 +20,7 @@ import {
 } from 'firebase/auth';
 import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
+import { authErrorMessage } from '../utils/authErrors';
 
 interface AuthContextType {
   user: User | null;
@@ -149,23 +150,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error: any) {
-      throw new Error(error.message);
+      throw new Error(authErrorMessage(error));
     }
   };
 
   const signUp = async (email: string, password: string, displayName: string) => {
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      // Trimmed here rather than trusting every caller. A trailing space from
+      // an autocomplete or a paste produces auth/invalid-email, which reads to
+      // the user as "my email is wrong" when it is not.
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
 
-      // Update profile with display name
       if (result.user) {
-        await updateProfile(result.user, { displayName });
+        await updateProfile(result.user, { displayName: displayName.trim() });
       }
       setIsNewUser(true);
     } catch (error: any) {
-      throw new Error(error.message);
+      // Rethrowing error.message discarded the code and surfaced
+      // "Firebase: Error (auth/email-already-in-use)." to the user.
+      throw new Error(authErrorMessage(error));
     }
   };
 

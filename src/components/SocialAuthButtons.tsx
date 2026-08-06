@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  TurboModuleRegistry,
+  NativeModules,
+} from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts } from '../theme/designSystem';
 
@@ -43,13 +52,16 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
    * Any real build has it, because it is declared in app.json plugins.
    */
   useEffect(() => {
-    try {
-      const mod = require('@react-native-google-signin/google-signin');
-      if (!mod?.GoogleSignin) throw new Error('GoogleSignin missing');
-      setNativeAuthLinked(true);
-    } catch {
-      setNativeAuthLinked(false);
-    }
+    // TurboModuleRegistry.get, never require. Requiring the package runs
+    // getEnforcing at module scope, which THROWS when the module is absent -
+    // and React Native logs that native exception to the console even when it
+    // is caught, which is why the Invariant Violation kept appearing despite
+    // the try/catch. `get` returns null instead, silently.
+    const linked =
+      TurboModuleRegistry.get('RNGoogleSignin') != null ||
+      // Old architecture fallback.
+      (NativeModules as any)?.RNGoogleSignin != null;
+    setNativeAuthLinked(linked);
   }, []);
 
   useEffect(() => {
