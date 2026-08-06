@@ -7,6 +7,33 @@
  * shape that reads like a crash.
  */
 
+/**
+ * Apple's own failures, which arrive as opaque strings from the system.
+ *
+ * "Sign Up Not Completed" in particular tells the user nothing - it is what
+ * iOS shows when Sign in with Apple cannot proceed, and in practice that is
+ * almost always the signed-in Apple ID lacking two-factor authentication
+ * (Apple requires it), account changes being blocked under Screen Time, or
+ * the App ID missing the Sign In with Apple capability.
+ */
+export function appleErrorMessage(error: any): string | null {
+  const raw: string = error?.message || '';
+  const code: string = error?.code || '';
+
+  if (code === 'ERR_REQUEST_CANCELED' || /canceled|cancelled/i.test(raw)) return null;
+
+  if (/sign\s*up not completed/i.test(raw)) {
+    return 'Apple could not complete the sign-in. This usually means the Apple ID on this device does not have two-factor authentication turned on, which Apple requires — or that account changes are blocked under Screen Time.';
+  }
+  if (/not handled|unknown/i.test(raw)) {
+    return 'Apple could not complete the sign-in. Check that you are signed into iCloud on this device and try again.';
+  }
+  if (/not available|unsupported/i.test(raw)) {
+    return 'Sign in with Apple is not available on this device.';
+  }
+  return null;
+}
+
 export function authErrorMessage(error: any): string {
   const code: string = error?.code || '';
 

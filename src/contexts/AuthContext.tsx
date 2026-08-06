@@ -20,7 +20,7 @@ import {
 } from 'firebase/auth';
 import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
-import { authErrorMessage } from '../utils/authErrors';
+import { authErrorMessage, appleErrorMessage } from '../utils/authErrors';
 
 interface AuthContextType {
   user: User | null;
@@ -278,7 +278,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error?.code === 'auth/account-exists-with-different-credential') {
         throw new Error(await describeAccountCollision(error));
       }
-      throw new Error(error.message || 'Apple sign-in failed');
+
+      // Apple's own failures come through as opaque system strings like
+      // "Sign Up Not Completed", which was being surfaced verbatim and told
+      // nobody anything. Firebase codes still map through authErrorMessage.
+      const appleMessage = appleErrorMessage(error);
+      if (appleMessage === null && /canceled|cancelled/i.test(error?.message || '')) {
+        return;
+      }
+      throw new Error(appleMessage || authErrorMessage(error));
     }
   };
 
