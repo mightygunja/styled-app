@@ -128,7 +128,9 @@ export default function LoginScreen() {
           </Animated.View>
 
           <Animated.View style={[styles.form, rise(formIn)]}>
-            <SocialAuthButtons disabled={loading} onError={message => showToast(message, 'error')} />
+            {/* Into the error box, not a Toast. Toast truncates at two lines and
+                these messages now carry instructions. */}
+            <SocialAuthButtons disabled={loading} onError={setError} />
 
             <TextInput
               style={[styles.input, focused === 'email' && styles.inputFocused]}
@@ -159,7 +161,13 @@ export default function LoginScreen() {
               returnKeyType="go"
             />
 
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
+            {/* A boxed block, not a single line. Sign-in failures now carry
+                actual instructions, and 12pt tobacco on bone loses them. */}
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
             <Animated.View style={{ transform: [{ scale: pressScale }] }}>
               <TouchableOpacity
@@ -225,7 +233,16 @@ const styles = StyleSheet.create({
   // Focus is a full-strength border against the hairline of the resting
   // state - the same distinction the rest of the app uses.
   inputFocused: { borderColor: colors.ink },
-  errorText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.tobacco },
+  errorBox: {
+    backgroundColor: colors.sand,
+    padding: 14,
+  },
+  errorText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.ink,
+  },
 
   button: {
     backgroundColor: colors.ink,

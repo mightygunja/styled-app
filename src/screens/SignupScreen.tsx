@@ -142,7 +142,9 @@ export default function SignupScreen() {
           </Animated.View>
 
           <Animated.View style={[styles.form, rise(formIn)]}>
-            <SocialAuthButtons disabled={loading} onError={message => showToast(message, 'error')} />
+            {/* Into the error box, not a Toast. Toast truncates at two lines and
+                these messages now carry instructions. */}
+            <SocialAuthButtons disabled={loading} onError={setError} />
 
             {field('name', 'NAME', {
               placeholder: 'Your name',
@@ -201,7 +203,11 @@ export default function SignupScreen() {
               confirmRef
             )}
 
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
@@ -256,11 +262,16 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   inputFocused: { borderColor: colors.ink },
-  errorText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 12,
-    color: colors.tobacco,
+  errorBox: {
+    backgroundColor: colors.sand,
+    padding: 14,
     marginBottom: 10,
+  },
+  errorText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.ink,
   },
 
   button: {

@@ -22,15 +22,40 @@ export function appleErrorMessage(error: any): string | null {
 
   if (code === 'ERR_REQUEST_CANCELED' || /canceled|cancelled/i.test(raw)) return null;
 
+  // Apple's failures are indistinguishable from each other in the UI, so the
+  // identifying detail is appended. It is not sensitive - it names the failure
+  // mode, not the account - and without it every report is "it said sign up
+  // not completed", which fits four different causes.
+  const detail = [code, error?.domain, error?.nativeStackIOS ? null : undefined]
+    .filter(Boolean)
+    .join(' ');
+  const suffix = detail ? `\n\n(${detail})` : '';
+
   if (/sign\s*up not completed/i.test(raw)) {
-    return 'Apple could not complete the sign-in. This usually means the Apple ID on this device does not have two-factor authentication turned on, which Apple requires — or that account changes are blocked under Screen Time.';
+    return (
+      'Apple could not complete the sign-in.\n\n' +
+      'Three things cause this, in order of likelihood:\n' +
+      '1. The Apple ID on this device has no two-factor authentication. Apple requires it. ' +
+      'Settings → your name → Sign-In & Security.\n' +
+      '2. Screen Time is blocking account changes. Settings → Screen Time → Content & Privacy ' +
+      'Restrictions → Account Changes → Allow.\n' +
+      '3. This app is already listed under Settings → your name → Sign in with Apple. ' +
+      'Choose it and Stop Using Apple ID, then try again.' +
+      suffix
+    );
   }
   if (/not handled|unknown/i.test(raw)) {
-    return 'Apple could not complete the sign-in. Check that you are signed into iCloud on this device and try again.';
+    return (
+      'Apple could not complete the sign-in. Check that you are signed into iCloud on this ' +
+      'device and try again.' + suffix
+    );
   }
   if (/not available|unsupported/i.test(raw)) {
-    return 'Sign in with Apple is not available on this device.';
+    return 'Sign in with Apple is not available on this device.' + suffix;
   }
+
+  // Anything unmapped still carries its code, so a report is actionable.
+  if (raw) return `${raw}${suffix}`;
   return null;
 }
 

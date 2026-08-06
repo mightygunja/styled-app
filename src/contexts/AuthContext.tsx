@@ -279,6 +279,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(await describeAccountCollision(error));
       }
 
+      // Everything Apple gave us, logged in full. The on-screen message has
+      // to stay readable, but a failure nobody can reproduce needs the raw
+      // shape of the error somewhere.
+      console.log('Apple sign-in failed', {
+        code: error?.code,
+        message: error?.message,
+        domain: error?.domain,
+        keys: Object.keys(error || {}),
+      });
+
       // Apple's own failures come through as opaque system strings like
       // "Sign Up Not Completed", which was being surfaced verbatim and told
       // nobody anything. Firebase codes still map through authErrorMessage.
