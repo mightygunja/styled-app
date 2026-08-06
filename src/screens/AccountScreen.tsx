@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { affiliateClicksService, stylistsService } from '../services/firestore';
 import { stylistApplicationService, ApplicationStatus } from '../services/stylistApplicationService';
+import { adminService } from '../services/adminService';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -58,6 +59,7 @@ export default function AccountScreen() {
   const [marketplaceStats, setMarketplaceStats] = useState<{ clicks: number; estimatedCommission: number } | null>(null);
   const [isStylist, setIsStylist] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +77,13 @@ export default function AccountScreen() {
         .getMine(userId)
         .then(application => setApplicationStatus(application?.status ?? null))
         .catch(() => setApplicationStatus(null));
+
+      // Hides the entry for everyone else. The gate that matters is
+      // server-side - this only decides whether the row is drawn.
+      adminService
+        .isAdmin()
+        .then(setShowAdmin)
+        .catch(() => setShowAdmin(false));
 
       const clicks = await affiliateClicksService.getForUser(userId);
       setMarketplaceStats({
@@ -219,6 +228,24 @@ export default function AccountScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {showAdmin && (
+          <>
+            <Text style={styles.sectionLabel}>STYLED</Text>
+            <View style={styles.prefsCard}>
+              <TouchableOpacity
+                style={[styles.prefRow, styles.prefRowLast]}
+                onPress={() => navigation.navigate('Admin')}
+              >
+                <View>
+                  <Text style={styles.prefTitle}>Admin</Text>
+                  <Text style={styles.prefSubtitle}>REVENUE · STYLIST APPLICATIONS</Text>
+                </View>
+                <Text style={styles.prefArrow}>›</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         <Text style={styles.sectionLabel}>SHOPPING</Text>
         <View style={styles.prefsCard}>

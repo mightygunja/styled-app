@@ -412,4 +412,9 @@ export function isMockProvider(): boolean {
   return MARKETPLACE_PROVIDER === 'mock';
 }
 
+/** Recorded on outbound clicks so mock traffic is never mistaken for real. */
+export function activeProviderName(): MarketplaceProvider {
+  return MARKETPLACE_PROVIDER;
+}
+
 export const DEFAULT_PRODUCT_PAGE_SIZE = DEFAULT_PAGE_SIZE;

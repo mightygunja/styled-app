@@ -641,6 +641,9 @@ export const wishlistService = {
   },
 };
 
+/** Where in the app the outbound click originated. */
+export type AffiliateSurface = 'shop' | 'explore' | 'similar' | 'chat' | 'wishlist' | 'unknown';
+
 export interface AffiliateClickDoc {
   id: string;
   userId: string;
@@ -650,6 +653,15 @@ export interface AffiliateClickDoc {
   price: number;
   estimatedCommission: number;
   clickedAt: string;
+  /** Which surface sent the click. Without this you cannot tell whether
+   *  Explore or Shop is earning, which is the first question worth asking. */
+  surface?: AffiliateSurface;
+  /** The headline reason shown next to the product when it was tapped, so
+   *  reason types can be compared against each other. */
+  reason?: string;
+  matchScore?: number;
+  /** mock | sovrn | rakuten - which provider supplied the product. */
+  provider?: string;
 }
 
 // Commission rate used for the earnings estimate shown in Advanced Analytics.
@@ -657,15 +669,33 @@ export interface AffiliateClickDoc {
 // this is a passive, order-of-magnitude estimate, not a reconciled figure.
 const ESTIMATED_COMMISSION_RATE = 0.08;
 
+export interface AffiliateClickContext {
+  surface?: AffiliateSurface;
+  reason?: string;
+  matchScore?: number;
+  provider?: string;
+}
+
 export const affiliateClicksService = {
-  record: async (userId: string, product: Product): Promise<void> => {
+  record: async (
+    userId: string,
+    product: Product,
+    context: AffiliateClickContext = {}
+  ): Promise<void> => {
     await addDoc(collection(db, 'affiliateClicks'), {
       userId,
       productId: product.id,
       productName: product.name,
       retailer: product.retailer,
       price: product.price,
+      // An estimate at a flat rate, and named as one. Real commission varies
+      // by advertiser and is reversed on returns; only the network's own
+      // report is authoritative. Reconcile against recordAffiliateRevenue.
       estimatedCommission: Math.round(product.price * ESTIMATED_COMMISSION_RATE * 100) / 100,
+      surface: context.surface || 'unknown',
+      reason: context.reason || null,
+      matchScore: typeof context.matchScore === 'number' ? context.matchScore : null,
+      provider: context.provider || null,
       clickedAt: Timestamp.now(),
     });
   },

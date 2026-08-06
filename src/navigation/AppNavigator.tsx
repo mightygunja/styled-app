@@ -26,6 +26,8 @@ import EditReviewScreen from '../screens/EditReviewScreen';
 import StylistAvailabilityScreen from '../screens/StylistAvailabilityScreen';
 import StylistApplicationScreen from '../screens/StylistApplicationScreen';
 import StylistApplicationsAdminScreen from '../screens/StylistApplicationsAdminScreen';
+import AdminScreen from '../screens/AdminScreen';
+import AffiliateAnalyticsScreen from '../screens/AffiliateAnalyticsScreen';
 import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
 import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
 import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
@@ -146,6 +148,8 @@ export default function AppNavigator() {
             <Stack.Screen name="StylistAvailability" component={StylistAvailabilityScreen} />
             <Stack.Screen name="StylistApplication" component={StylistApplicationScreen} />
             <Stack.Screen name="StylistApplicationsAdmin" component={StylistApplicationsAdminScreen} />
+            <Stack.Screen name="Admin" component={AdminScreen} />
+            <Stack.Screen name="AffiliateAnalytics" component={AffiliateAnalyticsScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
             <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />

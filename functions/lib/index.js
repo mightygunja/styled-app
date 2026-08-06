@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -1753,6 +1753,181 @@ Return ONLY valid JSON:
         console.error('Error curating daily outfits:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
+});
+// ==================== ADMIN ====================
+/**
+ * Whether the caller is an admin.
+ *
+ * The client needs this to decide whether to show the admin entry at all.
+ * It is a convenience, not a security boundary - every admin action
+ * re-checks server-side via requireAdmin, because anything the client
+ * decides can be lied about.
+ */
+exports.getAdminStatus = functions
+    .runWith({ memory: '128MB', timeoutSeconds: 15, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    const uid = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid;
+    if (!uid)
+        return { success: true, data: { isAdmin: false } };
+    const configured = ((_b = functions.config().admin) === null || _b === void 0 ? void 0 : _b.uids) || '';
+    const isAdmin = configured
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .includes(uid);
+    return { success: true, data: { isAdmin } };
+});
+/**
+ * Affiliate performance.
+ *
+ * An important limit, stated here because the UI states it too: this can
+ * measure impressions and outbound clicks, and nothing beyond them. Whether a
+ * click became an order, survived the return window, and paid out is known
+ * only to Sovrn and Rakuten. Those figures arrive through their reports and
+ * are recorded via recordAffiliateRevenue - they are never inferred here.
+ *
+ * `estimatedCommission` on a click doc is a flat-rate guess and is reported
+ * as "potential", never as earnings.
+ */
+exports.getAffiliateAnalytics = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    const days = Math.min(180, Math.max(1, Number(data === null || data === void 0 ? void 0 : data.days) || 30));
+    const since = new Date(Date.now() - days * 86400000);
+    const [clicksSnap, dailySnap, revenueSnap] = await Promise.all([
+        db.collection('affiliateClicks').where('clickedAt', '>=', since).get(),
+        db.collection('affiliateDaily').get(),
+        db.collection('affiliateRevenue').orderBy('period', 'desc').limit(24).get(),
+    ]);
+    const bySurface = {};
+    const ensure = (surface) => {
+        if (!bySurface[surface]) {
+            bySurface[surface] = {
+                clicks: 0,
+                clickValue: 0,
+                potential: 0,
+                impressions: 0,
+                impressionValue: 0,
+            };
+        }
+        return bySurface[surface];
+    };
+    const byReason = {};
+    const byRetailer = {};
+    const uniqueUsers = new Set();
+    let mockClicks = 0;
+    clicksSnap.forEach(doc => {
+        var _a, _b;
+        const c = doc.data();
+        const bucket = ensure(c.surface || 'unknown');
+        bucket.clicks += 1;
+        bucket.clickValue += Number(c.price) || 0;
+        bucket.potential += Number(c.estimatedCommission) || 0;
+        if (c.userId)
+            uniqueUsers.add(c.userId);
+        if (!c.provider || c.provider === 'mock')
+            mockClicks += 1;
+        if (c.reason) {
+            const r = (byReason[_a = c.reason] || (byReason[_a] = { clicks: 0, clickValue: 0 }));
+            r.clicks += 1;
+            r.clickValue += Number(c.price) || 0;
+        }
+        if (c.retailer) {
+            const r = (byRetailer[_b = c.retailer] || (byRetailer[_b] = { clicks: 0, clickValue: 0 }));
+            r.clicks += 1;
+            r.clickValue += Number(c.price) || 0;
+        }
+    });
+    const sinceDay = since.toISOString().slice(0, 10);
+    dailySnap.forEach(doc => {
+        const d = doc.data();
+        if (!d.day || d.day < sinceDay)
+            return;
+        Object.entries(d.impressions || {}).forEach(([surface, count]) => {
+            ensure(surface).impressions += Number(count) || 0;
+        });
+        Object.entries(d.impressionValue || {}).forEach(([surface, value]) => {
+            ensure(surface).impressionValue += Number(value) || 0;
+        });
+    });
+    const surfaces = Object.entries(bySurface)
+        .map(([surface, v]) => (Object.assign(Object.assign({ surface }, v), { 
+        // Null rather than zero when there is no denominator - a rate of 0%
+        // and "not measurable yet" are different statements.
+        tapThrough: v.impressions > 0 ? v.clicks / v.impressions : null })))
+        .sort((a, b) => b.clicks - a.clicks);
+    const totals = surfaces.reduce((acc, s) => ({
+        clicks: acc.clicks + s.clicks,
+        impressions: acc.impressions + s.impressions,
+        clickValue: acc.clickValue + s.clickValue,
+        potential: acc.potential + s.potential,
+    }), { clicks: 0, impressions: 0, clickValue: 0, potential: 0 });
+    const revenue = revenueSnap.docs.map(d => (Object.assign({ id: d.id }, d.data())));
+    const recordedNet = revenue.reduce((sum, r) => sum + (Number(r.net) || 0), 0);
+    const recordedOrders = revenue.reduce((sum, r) => sum + (Number(r.orders) || 0), 0);
+    return {
+        success: true,
+        data: {
+            days,
+            totals: Object.assign(Object.assign({}, totals), { uniqueUsers: uniqueUsers.size, 
+                // Share of clicks that came from the placeholder catalogue. Non-zero
+                // means the numbers above are a rehearsal, not a business.
+                mockShare: totals.clicks > 0 ? mockClicks / totals.clicks : null }),
+            surfaces,
+            reasons: Object.entries(byReason)
+                .map(([reason, v]) => (Object.assign({ reason }, v)))
+                .sort((a, b) => b.clicks - a.clicks)
+                .slice(0, 12),
+            retailers: Object.entries(byRetailer)
+                .map(([retailer, v]) => (Object.assign({ retailer }, v)))
+                .sort((a, b) => b.clicks - a.clicks)
+                .slice(0, 12),
+            revenue,
+            // Real, reconciled figures. Everything else on this screen is activity.
+            recorded: {
+                net: recordedNet,
+                orders: recordedOrders,
+                conversion: totals.clicks > 0 && recordedOrders > 0 ? recordedOrders / totals.clicks : null,
+                revenuePerClick: totals.clicks > 0 && recordedNet > 0 ? recordedNet / totals.clicks : null,
+            },
+        },
+    };
+});
+/**
+ * Records an actual payout from a network report.
+ *
+ * This is the only source of truth for money on the affiliate screen. Entered
+ * by hand because Sovrn and Rakuten report on their own schedules and in their
+ * own formats, and a wrong automated import is worse than a manual one.
+ */
+exports.recordAffiliateRevenue = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    const uid = requireAdmin(context);
+    const { period, network, gross, returns, net, orders, note } = data || {};
+    if (!/^\d{4}-\d{2}$/.test(String(period || ''))) {
+        throw new functions.https.HttpsError('invalid-argument', 'period must be YYYY-MM.');
+    }
+    if (!network) {
+        throw new functions.https.HttpsError('invalid-argument', 'network is required.');
+    }
+    const num = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+    const id = `${period}_${String(network).toLowerCase()}`;
+    await db.collection('affiliateRevenue').doc(id).set({
+        period,
+        network,
+        gross: num(gross),
+        returns: num(returns),
+        net: num(net) || num(gross) - num(returns),
+        orders: num(orders),
+        note: note || null,
+        recordedBy: uid,
+        recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    console.log(`recordAffiliateRevenue: ${id} net=${num(net)} by ${uid}`);
+    return { success: true, data: { id } };
 });
 // ==================== STYLIST APPLICATIONS ====================
 //

@@ -75,7 +75,12 @@ export default function WishlistScreen() {
             <View style={styles.card}>
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('ProductDetail', { productId: item.productId })}
+                onPress={() =>
+                  navigation.navigate('ProductDetail', {
+                    productId: item.productId,
+                    surface: 'wishlist',
+                  })
+                }
               >
                 <View style={styles.cardImageWrap}>
                   <Image source={{ uri: item.product.imageUrl }} style={styles.cardImage} resizeMode="cover" />

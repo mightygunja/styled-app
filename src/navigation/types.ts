@@ -67,6 +67,8 @@ export type RootStackParamList = {
   StylistAvailability: undefined;
   StylistApplication: undefined;
   StylistApplicationsAdmin: undefined;
+  Admin: undefined;
+  AffiliateAnalytics: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;
@@ -76,7 +78,13 @@ export type RootStackParamList = {
   InStoreCheck: undefined;
   Account: undefined;
   Shop: { category?: ItemCategory; matchedOnly?: boolean; secondhandOnly?: boolean } | undefined;
-  ProductDetail: { productId: string };
+  /** `surface` attributes the eventual outbound click to where the product was
+   *  found, which is the only way to tell which surface actually earns. */
+  ProductDetail: {
+    productId: string;
+    surface?: 'shop' | 'explore' | 'similar' | 'chat' | 'wishlist';
+    reason?: string;
+  };
   Wishlist: undefined;
   Login: undefined;
   Signup: undefined;

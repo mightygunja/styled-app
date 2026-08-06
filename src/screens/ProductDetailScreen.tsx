@@ -16,7 +16,7 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
-import { getActiveAdapter } from '../services/affiliateNetwork';
+import { getActiveAdapter, activeProviderName } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import {
   spendProfile,
@@ -38,7 +38,7 @@ type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 export default function ProductDetailScreen() {
   const route = useRoute<ProductDetailRouteProp>();
   const navigation = useNavigation();
-  const { productId } = route.params;
+  const { productId, surface, reason } = route.params;
 
   const [loading, setLoading] = useState(true);
   const [matched, setMatched] = useState<MatchedProduct | null>(null);
@@ -135,7 +135,14 @@ export default function ProductDetailScreen() {
         getActiveAdapter().wrapLink(product),
         // Two separate records on purpose: Firestore for revenue accounting,
         // local signals for ranking. Different lifetimes, different costs.
-        affiliateClicksService.record(userId, product),
+        // Attributed so the admin view can say which surface and which kind of
+        // reason actually produced the click.
+        affiliateClicksService.record(userId, product, {
+          surface: surface || 'unknown',
+          reason,
+          matchScore: (product as any).matchScore,
+          provider: activeProviderName(),
+        }),
         shopperSignals.recordTap(product),
       ]);
       await Linking.openURL(wrappedUrl);

@@ -34,6 +34,7 @@ import {
   MIN_CLOSET_FOR_ARITHMETIC,
 } from '../services/discoveryService';
 import { isMockProvider } from '../services/affiliateNetwork';
+import { affiliateImpressions } from '../services/affiliateImpressions';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -50,6 +51,17 @@ export default function ExploreScreen() {
       setFailed(false);
       const result = await discoveryService.loadDiscovery();
       setData(result);
+      // What the user will actually scroll past on this screen, so Explore's
+      // tap-through can be compared against Shop's rather than just its
+      // raw click count.
+      affiliateImpressions.recordImpressions(
+        'explore',
+        [
+          ...result.unlocks.slice(0, 8),
+          ...result.fillsGap.slice(0, 6),
+          ...result.matched.slice(0, 10),
+        ].map(m => m.product.price || 0)
+      );
     } catch (error) {
       console.error('Error loading discovery:', error);
       setFailed(true);
@@ -68,8 +80,8 @@ export default function ExploreScreen() {
     setRefreshing(false);
   };
 
-  const openProduct = (productId: string) =>
-    navigation.navigate('ProductDetail', { productId });
+  const openProduct = (productId: string, reason?: string) =>
+    navigation.navigate('ProductDetail', { productId, surface: 'explore', reason });
 
   const renderProductRow = (matched: MatchedProduct, reason: string, emphasis?: string) => {
     const { product } = matched;
@@ -78,7 +90,7 @@ export default function ExploreScreen() {
         key={product.id}
         style={styles.row}
         activeOpacity={0.85}
-        onPress={() => openProduct(product.id)}
+        onPress={() => openProduct(product.id, emphasis || reason)}
       >
         {product.imageUrl ? (
           <Image source={{ uri: product.imageUrl }} style={styles.thumb} />

@@ -238,6 +238,23 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Per-day, per-surface impression counters. Signed-in clients increment
+    // them; nobody reads them from the client. The admin analytics function
+    // runs with admin credentials and bypasses these rules, so there is no
+    // reason to expose aggregate traffic to every user of the app.
+    match /affiliateDaily/{day} {
+      allow read: if false;
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    // Recorded network payouts. Written only through recordAffiliateRevenue,
+    // which checks the admin allowlist server-side - the client has no path
+    // to this collection at all.
+    match /affiliateRevenue/{recordId} {
+      allow read, write: if false;
+    }
+
     // ==================== GROUPS & EVENTS ====================
 
     match /groups/{groupId} {

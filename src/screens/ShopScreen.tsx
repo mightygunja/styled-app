@@ -24,6 +24,7 @@ import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../model
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { shopperSignals } from '../services/shopperSignals';
+import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
@@ -111,6 +112,12 @@ export default function ShopScreen() {
       // Only the first screenful counts as seen. Recording the whole result set
       // would decay products the user never actually scrolled to.
       shopperSignals.recordImpressions(ranked.slice(0, 12).map(r => r.product.id));
+      // Same first-screenful rule, counted centrally so tap-through has a
+      // denominator. Counts only - no product or user identity leaves here.
+      affiliateImpressions.recordImpressions(
+        'shop',
+        ranked.slice(0, 12).map(r => r.product.price || 0)
+      );
       setProducts(ranked);
     } catch (error) {
       console.error('Error loading marketplace products:', error);
@@ -253,7 +260,13 @@ export default function ShopScreen() {
             <TouchableOpacity
               style={styles.card}
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('ProductDetail', { productId: item.product.id })}
+              onPress={() =>
+                navigation.navigate('ProductDetail', {
+                  productId: item.product.id,
+                  surface: 'shop',
+                  reason: item.headline,
+                })
+              }
             >
               <View style={styles.cardImageWrap}>
                 <Image source={{ uri: item.product.imageUrl }} style={styles.cardImage} resizeMode="cover" />
