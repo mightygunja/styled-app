@@ -47,10 +47,34 @@ interface HeroCard {
  * drawn. Grounds walk the palette from deepest to lightest.
  */
 const CARDS: HeroCard[] = [
-  { label: 'Tailored', meta: 'STRUCTURE', ground: colors.ink, ink: colors.bone },
-  { label: 'Knitwear', meta: 'TEXTURE', ground: colors.tobacco, ink: colors.bone },
-  { label: 'Denim', meta: 'EVERY DAY', ground: colors.camel, ink: colors.ink },
-  { label: 'Linen', meta: 'WARM WEATHER', ground: colors.sand, ink: colors.ink },
+  {
+    label: 'Tailored',
+    meta: 'HERRINGBONE',
+    ground: colors.ink,
+    ink: colors.bone,
+    image: require('../../assets/textures/tailored.png'),
+  },
+  {
+    label: 'Knitwear',
+    meta: 'RIB',
+    ground: colors.tobacco,
+    ink: colors.bone,
+    image: require('../../assets/textures/knit.png'),
+  },
+  {
+    label: 'Twill',
+    meta: 'EVERY DAY',
+    ground: colors.camel,
+    ink: colors.ink,
+    image: require('../../assets/textures/twill.png'),
+  },
+  {
+    label: 'Linen',
+    meta: 'WARM WEATHER',
+    ground: colors.sand,
+    ink: colors.ink,
+    image: require('../../assets/textures/linen.png'),
+  },
 ];
 
 const REST_OFFSET = 26;
@@ -135,16 +159,19 @@ function HeroLayer({ card, index, total, dragX, dragY, drift }: LayerProps) {
 
   return (
     <Animated.View style={[styles.card, { backgroundColor: card.ground }, animatedStyle]}>
-      {card.image ? (
+      {/* The weave sits behind the type rather than replacing it. The
+          background colour underneath is the same hue the texture was
+          generated from, so a slow-decoding image never flashes a wrong
+          colour. */}
+      {card.image && (
         <Image source={card.image} style={styles.cardImage} resizeMode="cover" />
-      ) : (
-        <View style={styles.cardFace}>
-          <Text style={[styles.cardMeta, { color: card.ink }]}>{card.meta}</Text>
-          <View style={{ flex: 1 }} />
-          <View style={[styles.cardRule, { backgroundColor: card.ink }]} />
-          <Text style={[styles.cardLabel, { color: card.ink }]}>{card.label}</Text>
-        </View>
       )}
+      <View style={styles.cardFace}>
+        <Text style={[styles.cardMeta, { color: card.ink }]}>{card.meta}</Text>
+        <View style={{ flex: 1 }} />
+        <View style={[styles.cardRule, { backgroundColor: card.ink }]} />
+        <Text style={[styles.cardLabel, { color: card.ink }]}>{card.label}</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -167,7 +194,7 @@ const styles = StyleSheet.create({
     shadowRadius: 28,
     elevation: 12,
   },
-  cardImage: { width: '100%', height: '100%' },
+  cardImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   cardFace: { flex: 1, padding: 20 },
   cardMeta: {
     fontFamily: fonts.sansSemiBold,
