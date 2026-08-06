@@ -1756,6 +1756,36 @@ Return ONLY valid JSON:
 });
 // ==================== ADMIN ====================
 /**
+ * The admin allowlist, as Firebase uids.
+ *
+ * Read from ADMIN_UIDS in functions/.env first, falling back to the legacy
+ * runtime config. The Firebase CLI now refuses `functions:config:set` without
+ * enabling a deprecated experiment, and functions.config() is removed in 2027,
+ * so .env is the path forward - but reading both means an existing runtime
+ * config keeps working and a lost .env cannot silently empty the list.
+ *
+ * An empty result denies everyone. A misconfiguration should lock admins out,
+ * never open the door.
+ */
+function adminUids() {
+    const fromEnv = process.env.ADMIN_UIDS || '';
+    const fromConfig = (() => {
+        var _a;
+        try {
+            return ((_a = functions.config().admin) === null || _a === void 0 ? void 0 : _a.uids) || '';
+        }
+        catch (_b) {
+            // functions.config() throws rather than returning empty when no runtime
+            // config exists at all.
+            return '';
+        }
+    })();
+    return `${fromEnv},${fromConfig}`
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+}
+/**
  * Whether the caller is an admin.
  *
  * The client needs this to decide whether to show the admin entry at all.
@@ -1766,17 +1796,11 @@ Return ONLY valid JSON:
 exports.getAdminStatus = functions
     .runWith({ memory: '128MB', timeoutSeconds: 15, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
-    var _a, _b;
+    var _a;
     const uid = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid;
     if (!uid)
         return { success: true, data: { isAdmin: false } };
-    const configured = ((_b = functions.config().admin) === null || _b === void 0 ? void 0 : _b.uids) || '';
-    const isAdmin = configured
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .includes(uid);
-    return { success: true, data: { isAdmin } };
+    return { success: true, data: { isAdmin: adminUids().includes(uid) } };
 });
 /**
  * Affiliate performance.
@@ -1942,19 +1966,14 @@ exports.recordAffiliateRevenue = functions
 // of admins and no self-serve admin signup. If that changes, move to custom
 // claims - the check is isolated in requireAdmin() below.
 function requireAdmin(context) {
-    var _a, _b;
+    var _a;
     const uid = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid;
     if (!uid) {
         throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
     }
-    const configured = ((_b = functions.config().admin) === null || _b === void 0 ? void 0 : _b.uids) || '';
-    const admins = configured
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
     // An empty allowlist denies everyone rather than allowing everyone. A
     // misconfiguration should lock admins out, not let the world in.
-    if (!admins.includes(uid)) {
+    if (!adminUids().includes(uid)) {
         throw new functions.https.HttpsError('permission-denied', 'Admins only.');
     }
     return uid;

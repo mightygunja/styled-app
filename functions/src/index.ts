@@ -2119,6 +2119,36 @@ Return ONLY valid JSON:
 // ==================== ADMIN ====================
 
 /**
+ * The admin allowlist, as Firebase uids.
+ *
+ * Read from ADMIN_UIDS in functions/.env first, falling back to the legacy
+ * runtime config. The Firebase CLI now refuses `functions:config:set` without
+ * enabling a deprecated experiment, and functions.config() is removed in 2027,
+ * so .env is the path forward - but reading both means an existing runtime
+ * config keeps working and a lost .env cannot silently empty the list.
+ *
+ * An empty result denies everyone. A misconfiguration should lock admins out,
+ * never open the door.
+ */
+function adminUids(): string[] {
+  const fromEnv = process.env.ADMIN_UIDS || '';
+  const fromConfig = (() => {
+    try {
+      return functions.config().admin?.uids || '';
+    } catch {
+      // functions.config() throws rather than returning empty when no runtime
+      // config exists at all.
+      return '';
+    }
+  })();
+
+  return `${fromEnv},${fromConfig}`
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+/**
  * Whether the caller is an admin.
  *
  * The client needs this to decide whether to show the admin entry at all.
@@ -2132,14 +2162,7 @@ export const getAdminStatus = functions
     const uid = context.auth?.uid;
     if (!uid) return { success: true, data: { isAdmin: false } };
 
-    const configured: string = functions.config().admin?.uids || '';
-    const isAdmin = configured
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean)
-      .includes(uid);
-
-    return { success: true, data: { isAdmin } };
+    return { success: true, data: { isAdmin: adminUids().includes(uid) } };
   });
 
 /**
@@ -2341,15 +2364,9 @@ function requireAdmin(context: functions.https.CallableContext): string {
     throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
   }
 
-  const configured: string = functions.config().admin?.uids || '';
-  const admins = configured
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-
   // An empty allowlist denies everyone rather than allowing everyone. A
   // misconfiguration should lock admins out, not let the world in.
-  if (!admins.includes(uid)) {
+  if (!adminUids().includes(uid)) {
     throw new functions.https.HttpsError('permission-denied', 'Admins only.');
   }
   return uid;
