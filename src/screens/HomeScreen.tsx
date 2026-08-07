@@ -30,6 +30,7 @@ import {
   DailyOutfit,
   HOME_OCCASIONS,
 } from '../services/dailyOutfitService';
+import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
@@ -136,9 +137,13 @@ export default function HomeScreen() {
 
   const loadDressMeToday = async (occasionValue: OccasionType) => {
     try {
-      const [weatherResult, itemsResponse] = await Promise.all([
+      const [weatherResult, itemsResponse, matchContext] = await Promise.all([
         getCurrentWeather(),
         closetAPI.getItems(getCurrentUserId()),
+        // The onboarding survey's answers - archetypes, avoid rules, body
+        // guidance. Without this the day-one profile never reached the most
+        // visible surface in the app.
+        buildProfileMatchContext(getCurrentUserId()).catch(() => undefined),
       ]);
       setWeather(weatherResult);
       weatherRef.current = weatherResult;
@@ -166,7 +171,20 @@ export default function HomeScreen() {
         fabricTexture: item.fabricTexture,
         fitType: item.fitType,
       }));
-      closetItemsRef.current = items;
+      // A veto is a veto for owned clothes too. "I don't wear dresses" means
+      // the daily looks should not build outfits around the one dress still
+      // hanging in the closet.
+      const avoidRules = matchContext?.avoidRules ?? [];
+      const wearable =
+        avoidRules.length === 0
+          ? items
+          : items.filter(item => {
+              const haystack = [item.name, item.subcategory, item.category, ...(item.tags || [])]
+                .join(' ')
+                .toLowerCase();
+              return !avoidRules.some(rule => haystack.includes(rule.toLowerCase()));
+            });
+      closetItemsRef.current = wearable;
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
       styleProfileRef.current = styleProfile;
@@ -177,11 +195,11 @@ export default function HomeScreen() {
         temperature: weatherResult.temperature,
       };
 
-      const loaded = await dailyOutfitService.loadOutfitPools(items, {
+      const loaded = await dailyOutfitService.loadOutfitPools(wearable, {
         weather: weatherContext,
       });
       poolsRef.current = loaded;
-      showOccasion(occasionValue, items);
+      showOccasion(occasionValue, wearable);
       setLookIndex(0);
 
       if (!refreshing) fadeIn(fadeAnim, 300).start();
@@ -196,6 +214,8 @@ export default function HomeScreen() {
           .rankOccasion(loaded.pools[key], key, {
             slot: loaded.slot,
             weather: weatherContext,
+            archetypes: matchContext?.styleArchetypes,
+            avoidRules,
           })
           .then(copy => {
             if (!copy || poolsRef.current !== loaded) return;
