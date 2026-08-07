@@ -121,8 +121,12 @@ export default function LoginScreen() {
             <BrandWordmark variant="hero" />
             {/* One fixed thesis. The stage above carries the rotating story
                 now; two competing lines of moving text is noise. */}
+            {/* The two pains the research ranked highest: the 84% who stare
+                at a full closet with nothing to wear, and the quarter of
+                every closet that money bought and nobody wears. */}
             <Text style={styles.standfirst}>
-              A personal stylist built on the clothes you already own.{' '}
+              You own more than you think. 33 Trends turns it into outfits every morning — and
+              stops you buying pieces you'll never wear.{' '}
               <Text style={styles.standfirstFree}>Free — all of it.</Text>
             </Text>
           </Animated.View>
@@ -201,21 +205,25 @@ export default function LoginScreen() {
                 that is the actual product loop. */}
             <View style={styles.howSection}>
               <Text style={styles.howLabel}>HOW IT WORKS</Text>
+              {/* Ordered by the research: the cataloguing barrier is why
+                  people abandon competitor apps, so ease goes first; the
+                  never-worn money pain carries the sharpest number and
+                  closes. */}
               {[
                 {
                   n: '01',
-                  title: 'Photograph your closet',
-                  line: 'Every piece becomes data — colour, cut, fabric, fit.',
+                  title: 'Your closet, in minutes',
+                  line: 'Snap a photo — the AI reads colour, cut, fabric and fit. Import a receipt and add a whole haul at once.',
                 },
                 {
                   n: '02',
-                  title: 'Get dressed, daily',
-                  line: 'Looks for work, weekends and the weather, made from what you own.',
+                  title: 'Never "nothing to wear"',
+                  line: 'A look every morning for the day you actually have — work, weekend, weather — from clothes you own.',
                 },
                 {
                   n: '03',
-                  title: 'Shop with proof',
-                  line: 'See how many new outfits a piece unlocks before you pay for it.',
+                  title: "Buy nothing that won't earn its place",
+                  line: 'The average closet is a quarter never-worn. See how many outfits a piece unlocks before you pay.',
                 },
               ].map(step => (
                 <View key={step.n} style={styles.howRow}>
@@ -233,10 +241,13 @@ export default function LoginScreen() {
               <View style={styles.freeBox}>
                 <Text style={styles.freeLabel}>FREE, ACTUALLY</Text>
                 <Text style={styles.freeTitle}>Every feature. No subscription, no trial clock.</Text>
+                {/* "Your wear stats included" is aimed at a specific,
+                    documented resentment: competitors charge $60 a year to
+                    see your own most- and least-worn pieces. */}
                 <Text style={styles.freeLine}>
-                  Nothing in 33 Trends is locked behind a tier. When you buy a piece we recommended,
-                  the retailer pays us a small commission — so the only way we make money is by
-                  being right about what suits you.
+                  Nothing in 33 Trends is locked behind a tier — your wear stats included. When you
+                  buy a piece we recommended, the retailer pays us a small commission, so the only
+                  way we make money is by being right about what suits you.
                 </Text>
               </View>
             </View>
