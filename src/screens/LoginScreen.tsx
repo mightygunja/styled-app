@@ -122,7 +122,8 @@ export default function LoginScreen() {
             {/* One fixed thesis. The stage above carries the rotating story
                 now; two competing lines of moving text is noise. */}
             <Text style={styles.standfirst}>
-              A personal stylist built on the clothes you already own.
+              A personal stylist built on the clothes you already own.{' '}
+              <Text style={styles.standfirstFree}>Free — all of it.</Text>
             </Text>
           </Animated.View>
 
@@ -191,7 +192,7 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.linkText}>
-                New here? <Text style={styles.linkTextBold}>Create an account</Text>
+                New here? <Text style={styles.linkTextBold}>Create a free account</Text>
               </Text>
             </TouchableOpacity>
 
@@ -225,6 +226,19 @@ export default function LoginScreen() {
                   </View>
                 </View>
               ))}
+
+              {/* "Free" is only credible with the why attached. Naming the
+                  business model turns the claim from bait into a promise -
+                  the only way this app earns is by recommending well. */}
+              <View style={styles.freeBox}>
+                <Text style={styles.freeLabel}>FREE, ACTUALLY</Text>
+                <Text style={styles.freeTitle}>Every feature. No subscription, no trial clock.</Text>
+                <Text style={styles.freeLine}>
+                  Nothing in 33 Trends is locked behind a tier. When you buy a piece we recommended,
+                  the retailer pays us a small commission — so the only way we make money is by
+                  being right about what suits you.
+                </Text>
+              </View>
             </View>
           </Animated.View>
         </ScrollView>
@@ -316,4 +330,17 @@ const styles = StyleSheet.create({
   howText: { flex: 1 },
   howTitle: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   howLine: { ...textType.body, fontSize: 13, lineHeight: 19, color: colors.inkMuted, marginTop: 3 },
+
+  // Emphasis by weight, not colour or size - the register this system
+  // stresses things in.
+  standfirstFree: { fontFamily: fonts.sansSemiBold, color: colors.ink },
+
+  freeBox: {
+    backgroundColor: colors.paper,
+    padding: spacing.lg,
+    marginTop: spacing.xs,
+  },
+  freeLabel: { ...textType.eyebrow, marginBottom: 10 },
+  freeTitle: { fontFamily: fonts.serif, fontSize: 20, lineHeight: 24, color: colors.ink },
+  freeLine: { ...textType.body, fontSize: 13, lineHeight: 20, color: colors.inkMuted, marginTop: 8 },
 });
