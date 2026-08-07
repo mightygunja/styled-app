@@ -42,6 +42,7 @@ import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, type as textType } from '../theme/designSystem';
+import { useIsDesktopWeb } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -107,6 +108,7 @@ function toRecommendations(
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const isDesktop = useIsDesktopWeb();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -358,8 +360,9 @@ export default function HomeScreen() {
             Left-aligned like a masthead: every other screen in this system
             sets its title on the left edge, and the old centred version was
             never actually centred anyway (40px spacer against two 40px
-            buttons). */}
-        <BrandWordmark variant="header" />
+            buttons). On desktop web the site header already carries the
+            wordmark, so repeating it here would brand the page twice. */}
+        {isDesktop ? <View /> : <BrandWordmark variant="header" />}
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
             <Ionicons name="bag-outline" size={20} color={colors.ink} />

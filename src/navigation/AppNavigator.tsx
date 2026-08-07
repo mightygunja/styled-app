@@ -80,14 +80,62 @@ import SignupScreen from '../screens/SignupScreen';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme/designSystem';
 import FloatingTabBar from './FloatingTabBar';
+import { useIsDesktopWeb } from '../theme/responsive';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+/**
+ * Desktop web content widths, per surface. Grids earn the full width;
+ * column screens get a reading width so a phone-first layout never
+ * stretches across a monitor. Native and mobile web are untouched.
+ */
+const TAB_CONTENT_WIDTH: Record<string, number> = {
+  Home: 760,
+  Closet: 1240,
+  StyleProfile: 800,
+  StylistChat: 860,
+  More: 800,
+};
+
+const STACK_CONTENT_WIDTH: Record<string, number> = {
+  Shop: 1240,
+  Explore: 1240,
+  Wishlist: 1240,
+  Signup: 560,
+  Onboarding: 640,
+  ProfileSurvey: 640,
+  SocialFeed: 720,
+  PostDetail: 720,
+};
+
+const STACK_CONTENT_DEFAULT = 880;
+
+function ContentFrame({ maxWidth, children }: { maxWidth: number; children: React.ReactNode }) {
+  const isDesktop = useIsDesktopWeb();
+  if (!isDesktop) return <>{children}</>;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bone, alignItems: 'center' }}>
+      <View style={{ flex: 1, width: '100%', maxWidth }}>{children}</View>
+    </View>
+  );
+}
+
 function MainTabs() {
+  const isDesktop = useIsDesktopWeb();
   return (
     <Tab.Navigator
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        // On desktop the bar is a site header, so the navigator must lay
+        // content out below it rather than above it.
+        tabBarPosition: isDesktop ? 'top' : 'bottom',
+      }}
+      screenLayout={({ route, children }) => (
+        <ContentFrame maxWidth={TAB_CONTENT_WIDTH[route.name] ?? STACK_CONTENT_DEFAULT}>
+          {children}
+        </ContentFrame>
+      )}
       tabBar={props => <FloatingTabBar {...props} />}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
@@ -205,6 +253,16 @@ export default function AppNavigator() {
           headerShown: false,
           animation: 'slide_from_right',
           animationDuration: 300,
+        }}
+        screenLayout={({ route, children }) => {
+          // MainTabs frames its own screens (the top bar must span the full
+          // window); Login owns a split-pane landing layout on desktop.
+          if (route.name === 'MainTabs' || route.name === 'Login') return <>{children}</>;
+          return (
+            <ContentFrame maxWidth={STACK_CONTENT_WIDTH[route.name] ?? STACK_CONTENT_DEFAULT}>
+              {children}
+            </ContentFrame>
+          );
         }}
       >
         {user && isNewUser ? (

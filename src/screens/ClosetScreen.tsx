@@ -10,6 +10,7 @@ import ClosetStats from '../components/ClosetStats';
 import { fadeIn } from '../utils/animations';
 import { ClosetGridSkeleton } from '../components/ClosetItemSkeleton';
 import { colors, fonts, type as textType } from '../theme/designSystem';
+import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,6 +37,7 @@ const CATEGORIES = [
 
 export default function ClosetScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const gridColumns = useGridColumns();
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -221,10 +223,13 @@ export default function ClosetScreen() {
         </ScrollView>
       ) : (
         <Animated.FlatList
+          // numColumns can't change on a mounted list, so the key remounts it
+          // when a browser resize crosses a breakpoint.
+          key={`closet-grid-${gridColumns}`}
           style={[styles.content, { opacity: fadeAnim }]}
-          data={filteredItems}
+          data={padToColumns(filteredItems, gridColumns)}
           keyExtractor={(item: ClosetItem) =>item.id}
-          numColumns={2}
+          numColumns={gridColumns}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
@@ -253,12 +258,13 @@ export default function ClosetScreen() {
             </View>
           }
           renderItem={({ item }: { item: ClosetItem }) => {
+            if (isGridSpacer(item)) return <View style={{ width: gridItemWidth(gridColumns) }} />;
             const costPerWear = item.price
               ? (item.price / Math.max(item.wornCount || 1, 1)).toFixed(2)
               : undefined;
             return (
               <TouchableOpacity
-                style={styles.gridItem}
+                style={[styles.gridItem, { width: gridItemWidth(gridColumns) }]}
                 onPress={() =>handleItemPress(item)}
                 activeOpacity={0.85}
               >

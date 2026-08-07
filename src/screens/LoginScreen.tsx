@@ -23,6 +23,7 @@ import SocialAuthButtons from '../components/SocialAuthButtons';
 import LoginHero from '../components/LoginHero';
 import BrandWordmark from '../components/BrandWordmark';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { useIsDesktopWeb } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signIn } = useAuth();
   const { toast, showToast, hideToast } = useToast();
+  const isDesktop = useIsDesktopWeb();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,23 +100,8 @@ export default function LoginScreen() {
   const pressOut = () =>
     Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 40 }).start();
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          <Animated.View style={rise(heroIn, 32)}>
-            <LoginHero />
-          </Animated.View>
-
-          <Animated.View style={[styles.intro, rise(titleIn)]}>
+  const intro = (
+    <Animated.View style={[styles.intro, rise(titleIn)]}>
             <Text style={styles.eyebrow}>PERSONAL STYLING</Text>
             {/* The brand lockup - the same drawing as the splash, so the
                 handoff from splash to login reads as one screen settling. */}
@@ -129,9 +116,11 @@ export default function LoginScreen() {
               stops you buying pieces you'll never wear.{' '}
               <Text style={styles.standfirstFree}>Free — all of it.</Text>
             </Text>
-          </Animated.View>
+    </Animated.View>
+  );
 
-          <Animated.View style={[styles.form, rise(formIn)]}>
+  const formBlock = (
+    <Animated.View style={[styles.form, rise(formIn)]}>
             {/* Into the error box, not a Toast. Toast truncates at two lines and
                 these messages now carry instructions. */}
             <SocialAuthButtons disabled={loading} onError={setError} />
@@ -249,9 +238,51 @@ export default function LoginScreen() {
                   buy a piece we recommended, the retailer pays us a small commission, so the only
                   way we make money is by being right about what suits you.
                 </Text>
-              </View>
-            </View>
+      </View>
+      </View>
+    </Animated.View>
+  );
+
+  // Desktop web: a split landing — the story stage owns the left half on a
+  // paper ground, the pitch and form sit in a fixed-width column on the
+  // right. The phone layout stacks the same blocks vertically.
+  if (isDesktop) {
+    return (
+      <View style={styles.splitPage}>
+        <Animated.View style={[styles.splitLeft, rise(heroIn, 32)]}>
+          <LoginHero />
+        </Animated.View>
+        <ScrollView
+          style={styles.splitRight}
+          contentContainerStyle={styles.splitRightContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {intro}
+          {formBlock}
+        </ScrollView>
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <Animated.View style={rise(heroIn, 32)}>
+            <LoginHero />
           </Animated.View>
+          {intro}
+          {formBlock}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -263,6 +294,34 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bone },
   content: { paddingHorizontal: spacing.page, paddingBottom: 48, paddingTop: spacing.sm },
+
+  // Desktop split landing. The stage centres in the left half on paper —
+  // the garment cards were composed against that ground — and the right
+  // half scrolls the pitch and form as a fixed reading column.
+  splitPage: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.bone,
+  },
+  splitLeft: {
+    flex: 1.1,
+    backgroundColor: colors.paper,
+    borderRightWidth: 1,
+    borderRightColor: colors.hair,
+    justifyContent: 'center',
+    paddingHorizontal: 48,
+  },
+  splitRight: {
+    flex: 1,
+  },
+  splitRightContent: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.page,
+    paddingTop: 72,
+    paddingBottom: 64,
+  },
 
   intro: { marginTop: spacing.lg },
   eyebrow: { ...textType.eyebrow, marginBottom: 10 },

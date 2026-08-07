@@ -26,6 +26,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { shopperSignals } from '../services/shopperSignals';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
+import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
   { value: 'match', label: 'Best match' },
@@ -50,6 +51,7 @@ const CATEGORY_FILTERS: { label: string; value: ItemCategory | 'all' }[] = [
 export default function ShopScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ShopRouteProp>();
+  const gridColumns = useGridColumns();
 
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -242,9 +244,12 @@ export default function ShopScreen() {
         </View>
       ) : (
         <FlatList
-          data={visibleProducts}
-          keyExtractor={m => m.product.id}
-          numColumns={2}
+          // numColumns can't change on a mounted list; the key remounts it
+          // when a browser resize crosses a breakpoint.
+          key={`shop-grid-${gridColumns}`}
+          data={padToColumns(visibleProducts as any[], gridColumns)}
+          keyExtractor={(m: any) => m.product?.id ?? m.id}
+          numColumns={gridColumns}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContent}
           removeClippedSubviews
@@ -257,8 +262,9 @@ export default function ShopScreen() {
             </View>
           }
           renderItem={({ item }) => (
+            isGridSpacer(item) ? <View style={{ width: gridItemWidth(gridColumns) }} /> :
             <TouchableOpacity
-              style={styles.card}
+              style={[styles.card, { width: gridItemWidth(gridColumns) }]}
               activeOpacity={0.85}
               onPress={() =>
                 navigation.navigate('ProductDetail', {
