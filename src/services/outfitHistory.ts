@@ -22,7 +22,7 @@ export interface OutfitUsageStats {
   totalOutfitsWorn: number;
   favoriteItems: string[]; // Item IDs worn most often
   wearRate: number; // Percentage of generated outfits actually worn
-  streakDays: number; // Consecutive days using Styled
+  streakDays: number; // Consecutive days using 33 Trends
 }
 
 /**
@@ -109,7 +109,7 @@ export function getConfidenceInsights(
   // Total outfits worn
   if (stats.totalOutfitsWorn > 0) {
     insights.push(
-      `You've worn ${stats.totalOutfitsWorn} Styled ${stats.totalOutfitsWorn === 1 ? 'outfit' : 'outfits'}`
+      `You've worn ${stats.totalOutfitsWorn} 33 Trends ${stats.totalOutfitsWorn === 1 ? 'outfit' : 'outfits'}`
     );
   }
 

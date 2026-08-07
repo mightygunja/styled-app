@@ -56,7 +56,7 @@ export default function OnboardingScreen() {
         <ImageBackground source={{ uri: WELCOME_BG }} style={styles.heroBg} imageStyle={styles.heroBgImage}>
           <View style={styles.heroOverlay} />
           <View style={styles.heroContent}>
-            <Text style={styles.chapterLabel}>STYLED · CHAPTER ONE</Text>
+            <Text style={styles.chapterLabel}>33 TRENDS · CHAPTER ONE</Text>
             <Text style={styles.heroTitle}>
               Meet your <Text style={styles.heroTitleAccent}>stylist</Text>.
             </Text>

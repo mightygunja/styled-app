@@ -1,4 +1,4 @@
-// Core domain types for the Styled app
+// Core domain types for the 33 Trends app
 
 export type Occasion = 'home' | 'work' | 'going-out';
 

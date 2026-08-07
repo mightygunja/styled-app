@@ -243,7 +243,7 @@ export default function StylistDashboardScreen() {
         <View style={styles.notStylistBox}>
           <Text style={styles.notStylistTitle}>This is for stylists</Text>
           <Text style={styles.notStylistText}>Earnings, bookings and client tools appear here once you're set up as a stylist on
-            Styled. If you're looking to work with one, browse stylists from your account.
+            33 Trends. If you're looking to work with one, browse stylists from your account.
           </Text>
           <TouchableOpacity
             style={styles.notStylistButton}

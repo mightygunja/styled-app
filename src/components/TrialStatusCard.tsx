@@ -55,10 +55,10 @@ export default function TrialStatusCard({
       <View style={styles.ctaContainer}>
         <TouchableOpacity 
           style={styles.primaryButton}
-          onPress={() => {/* Continue with Styled - dismiss card */}}
+          onPress={() => {/* Continue with 33 Trends - dismiss card */}}
         >
           <Text style={styles.primaryButtonText}>
-            Continue with Styled
+            Continue with 33 Trends
           </Text>
         </TouchableOpacity>
 

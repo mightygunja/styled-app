@@ -51,7 +51,7 @@ export interface StylistApplication {
   languages: string[];
   location: string;
   portfolioUrls: string[];
-  /** Free text: why they want to work on Styled. Read by a human, not parsed. */
+  /** Free text: why they want to work on 33 Trends. Read by a human, not parsed. */
   statement: string;
   status: ApplicationStatus;
   /** Set by the reviewer when declining, so the applicant gets a real answer. */

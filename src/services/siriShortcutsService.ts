@@ -1,7 +1,7 @@
 /**
  * Siri Shortcuts Service
  * 
- * Manages Siri shortcuts and voice commands for the Styled app.
+ * Manages Siri shortcuts and voice commands for the 33 Trends app.
  */
 
 export type ShortcutCategory = 'wardrobe' | 'outfits' | 'planning' | 'quick-actions';

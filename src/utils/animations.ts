@@ -1,7 +1,7 @@
 import { Animated, Easing } from 'react-native';
 
 /**
- * Professional animation utilities for the Styled app
+ * Professional animation utilities for the 33 Trends app
  */
 
 export const AnimationConfig = {

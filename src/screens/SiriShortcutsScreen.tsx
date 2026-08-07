@@ -190,7 +190,7 @@ export default function SiriShortcutsScreen() {
         <View style={styles.infoBannerContent}>
           <Text style={styles.infoBannerTitle}>Voice Control</Text>
           <Text style={styles.infoBannerText}>
-            Use Siri to control Styled with your voice
+            Use Siri to control 33 Trends with your voice
           </Text>
         </View>
       </View>
@@ -361,7 +361,7 @@ export default function SiriShortcutsScreen() {
                 <View style={styles.instructionContent}>
                   <Text style={styles.instructionTitle}>Enjoy hands-free control</Text>
                   <Text style={styles.instructionText}>
-                    Access Styled features with your voice
+                    Access 33 Trends features with your voice
                   </Text>
                 </View>
               </View>

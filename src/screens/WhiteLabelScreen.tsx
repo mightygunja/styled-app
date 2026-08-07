@@ -153,7 +153,7 @@ export default function WhiteLabelScreen() {
             </View>
             <View style={styles.upgradeFeature}>
               <Text style={styles.upgradeFeatureIcon}>✓</Text>
-              <Text style={styles.upgradeFeatureText}>Remove Styled branding</Text>
+              <Text style={styles.upgradeFeatureText}>Remove 33 Trends branding</Text>
             </View>
             <View style={styles.upgradeFeature}>
               <Text style={styles.upgradeFeatureIcon}>✓</Text>
@@ -319,7 +319,7 @@ export default function WhiteLabelScreen() {
                 <Text style={styles.featureIcon}>🎨</Text>
                 <View style={styles.featureInfo}>
                   <Text style={styles.featureName}>Remove Branding</Text>
-                  <Text style={styles.featureDescription}>Hide Styled branding</Text>
+                  <Text style={styles.featureDescription}>Hide 33 Trends branding</Text>
                 </View>
                 <Text style={styles.featureStatus}>
                   {config.features.removeStyledBranding ? '✓' : '✗'}

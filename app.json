@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "styled-app",
+    "name": "33 Trends",
     "slug": "styled-app-tf",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FDFBFA"
     },
     "scheme": "styledapp",
     "ios": {
@@ -17,14 +17,15 @@
       "bundleIdentifier": "com.adilgunja.styledapp",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "33 Trends"
       }
     },
     "android": {
       "package": "com.adilgunja.styledapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1C1C1C"
       }
     },
     "web": {
@@ -35,20 +36,20 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Styled uses your location to show accurate local weather for outfit recommendations."
+          "locationWhenInUsePermission": "33 Trends uses your location to show accurate local weather for outfit recommendations."
         }
       ],
       [
         "expo-calendar",
         {
-          "calendarPermission": "Styled reads your calendar so it can plan outfits around what you actually have on."
+          "calendarPermission": "33 Trends reads your calendar so it can plan outfits around what you actually have on."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Styled needs access to your photos so you can add clothes to your closet and check items before you buy them.",
-          "cameraPermission": "Styled uses your camera to photograph clothes for your closet, receipts, and items you're considering in a store."
+          "photosPermission": "33 Trends needs access to your photos so you can add clothes to your closet and check items before you buy them.",
+          "cameraPermission": "33 Trends uses your camera to photograph clothes for your closet, receipts, and items you're considering in a store."
         }
       ],
       [

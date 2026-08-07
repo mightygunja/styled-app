@@ -101,7 +101,7 @@ export default function StylistApplicationsAdminScreen() {
         <View style={styles.content}>
           <Text style={styles.title}>Not your queue</Text>
           <Text style={styles.subtitle}>
-            Reviewing stylist applications is limited to Styled admins.
+            Reviewing stylist applications is limited to 33 Trends admins.
           </Text>
         </View>
       </SafeAreaView>
@@ -135,7 +135,7 @@ export default function StylistApplicationsAdminScreen() {
             <Text style={styles.blockLabel}>BIO</Text>
             <Text style={styles.body}>{application.bio}</Text>
 
-            <Text style={styles.blockLabel}>WHY STYLED</Text>
+            <Text style={styles.blockLabel}>WHY 33 TRENDS</Text>
             <Text style={styles.body}>{application.statement}</Text>
 
             {application.specialties?.length > 0 && (

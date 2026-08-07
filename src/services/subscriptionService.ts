@@ -234,7 +234,7 @@ class SubscriptionService {
    * This used to wait 1.5 seconds and then write `status: 'active'` with a paid
    * tier straight to Firestore, with no payment processor anywhere in the path
    * - handing anyone who tapped Subscribe the top tier permanently, for
-   * nothing. Styled is now free by design, so there is no tier to sell and no
+   * nothing. 33 Trends is now free by design, so there is no tier to sell and no
    * correct behaviour here other than refusing.
    *
    * Kept rather than deleted because several unreachable legacy screens still
@@ -242,7 +242,7 @@ class SubscriptionService {
    * instead of quietly re-introducing a fake billing state.
    */
   async subscribe(): Promise<UserSubscription> {
-    throw new Error('Styled has no paid tiers. Every feature is free.');
+    throw new Error('33 Trends has no paid tiers. Every feature is free.');
   }
 
   private async legacySubscribe(
@@ -418,7 +418,7 @@ class SubscriptionService {
    * Get billing history
    */
   /**
-   * Always empty. Styled charges nobody, so there is nothing to bill for.
+   * Always empty. 33 Trends charges nobody, so there is nothing to bill for.
    *
    * This previously synthesised three invoices marked `paid`, with invented
    * invoice URLs, and rendered them to the user as a billing record. Fabricated

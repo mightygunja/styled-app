@@ -25,7 +25,7 @@ import { db } from '../config/firebase';
 import { closetService } from './firestore';
 
 /** Domain the inbound MX record points at. Must match the Mailgun route. */
-export const RECEIPT_INBOX_DOMAIN = 'inbox.styled.app';
+export const RECEIPT_INBOX_DOMAIN = 'inbox.thirtythreetrends.com';
 
 export interface PendingReceiptItem {
   description: string;

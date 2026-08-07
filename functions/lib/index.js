@@ -736,7 +736,7 @@ exports.chatWithStylist = functions
             guided: 'They prefer GUIDED advice: give one clear recommendation with a brief explanation of why.',
             directive: 'They prefer DIRECTIVE advice: give one confident, specific pick with minimal hedging - tell them exactly what to wear.',
         }[(styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.guidanceLevel) || 'guided'];
-        const systemPrompt = `You are a fast, sharp personal fashion stylist inside a wardrobe app called Styled. You know the user's real closet inventory below and give specific, confident outfit advice grounded in what they actually own - never generic platitudes.
+        const systemPrompt = `You are a fast, sharp personal fashion stylist inside a wardrobe app called 33 Trends. You know the user's real closet inventory below and give specific, confident outfit advice grounded in what they actually own - never generic platitudes.
 
 ${contextLines.length > 0 ? `Today's context:\n${contextLines.join('\n')}\n` : ''}
 ${styleProfileLines.length > 0 ? `What you know about their personal style (from their saved Style Profile):\n${styleProfileLines.join('\n')}\n` : ''}
@@ -999,7 +999,7 @@ const SOVRN_PRODUCTS_URL = 'https://shopping-gallery.prd-commerce.sovrnservices.
  * what the user is looking at and returns products relevant to it. There is no
  * `query` parameter to pass a search box into.
  *
- * That is a better fit here than it first appears. Styled always knows more
+ * That is a better fit here than it first appears. 33 Trends always knows more
  * than a search term - the category being browsed, the user's colour season,
  * their archetypes - so this composes a natural-language brief from all of it.
  * A keyword API would have thrown that context away.
@@ -2072,7 +2072,7 @@ exports.reviewStylistApplication = functions
     await db.collection('notifications').add({
         userId: applicationId,
         type: 'system',
-        title: "You're approved as a Styled stylist",
+        title: "You're approved as a 33 Trends stylist",
         body: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
         read: false,
         createdAt: admin.firestore.Timestamp.now(),
@@ -2454,9 +2454,9 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
 // Inbound Parse posts multipart/form-data and would need a busboy parser
 // added here first):
 //
-//   1. Point an MX record for a subdomain (e.g. inbox.styled.app) at Mailgun.
+//   1. Point an MX record for a subdomain (e.g. inbox.thirtythreetrends.com) at Mailgun.
 //   2. firebase functions:config:set mailgun.signing_key="..."
-//   3. Create a Mailgun route matching  match_recipient(".*@inbox.styled.app")
+//   3. Create a Mailgun route matching  match_recipient(".*@inbox.thirtythreetrends.com")
 //      with action  forward("https://<region>-<project>.cloudfunctions.net/receiptInbox")
 //   4. Deploy: firebase deploy --only functions:receiptInbox
 //

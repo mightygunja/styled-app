@@ -43,7 +43,7 @@ export function getSparseClosetMessage(closet: ClosetItem[]): {
   if (itemCount === 0) {
     return {
       title: "You're off to a great start.",
-      message: "Styled works with what you already own. As your closet grows, your outfits will too.",
+      message: "33 Trends works with what you already own. As your closet grows, your outfits will too.",
       actionText: "Add 1–2 more pieces when you're ready",
     };
   }
@@ -51,7 +51,7 @@ export function getSparseClosetMessage(closet: ClosetItem[]): {
   if (itemCount < 5) {
     return {
       title: "You're off to a great start.",
-      message: "Styled works with what you already own. As your closet grows, your outfits will too.",
+      message: "33 Trends works with what you already own. As your closet grows, your outfits will too.",
       actionText: "Add 1–2 more pieces when you're ready",
     };
   }
@@ -59,7 +59,7 @@ export function getSparseClosetMessage(closet: ClosetItem[]): {
   if (categoryCount < 3) {
     return {
       title: "You're off to a great start.",
-      message: "Styled works with what you already own. As your closet grows, your outfits will too.",
+      message: "33 Trends works with what you already own. As your closet grows, your outfits will too.",
       actionText: "Add 1–2 more pieces when you're ready",
     };
   }

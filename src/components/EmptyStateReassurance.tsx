@@ -1,7 +1,7 @@
 /**
  * Empty State Reassurance Component
  * 
- * Reassures users they don't need a perfect closet for Styled to work.
+ * Reassures users they don't need a perfect closet for 33 Trends to work.
  * Avoids suggesting shopping - focuses on what they already have.
  */
 
@@ -23,7 +23,7 @@ export default function EmptyStateReassurance({
   const content = type === 'closet' ? {
     icon: '👕',
     title: 'You\'re off to a great start.',
-    message: 'Styled works with what you already own. As your closet grows, your outfits will too.',
+    message: '33 Trends works with what you already own. As your closet grows, your outfits will too.',
     tip: 'Add 1–2 more pieces when you\'re ready',
   } : {
     icon: '✨',

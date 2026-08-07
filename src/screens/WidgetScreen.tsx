@@ -292,9 +292,9 @@ export default function WidgetScreen() {
               <View style={styles.instructionCard}>
                 <Text style={styles.instructionStep}>3️⃣</Text>
                 <View style={styles.instructionContent}>
-                  <Text style={styles.instructionTitle}>Search for Styled</Text>
+                  <Text style={styles.instructionTitle}>Search for 33 Trends</Text>
                   <Text style={styles.instructionText}>
-                    Find the Styled app in the widget gallery
+                    Find the 33 Trends app in the widget gallery
                   </Text>
                 </View>
               </View>
@@ -526,7 +526,7 @@ export default function WidgetScreen() {
                 onPress={() => handleUpdateSettings({ tapAction: 'open-app' })}
               >
                 <Text style={styles.actionName}>Open App</Text>
-                <Text style={styles.actionDescription}>Launch Styled app</Text>
+                <Text style={styles.actionDescription}>Launch 33 Trends app</Text>
                 {settings.tapAction === 'open-app' && (
                   <View style={styles.actionCheck}>
                     <Text style={styles.actionCheckText}>✓</Text>

@@ -282,7 +282,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>STYLED</Text>
+        <Text style={styles.headerTitle}>33 TRENDS</Text>
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
             <Ionicons name="bag-outline" size={20} color={colors.ink} />

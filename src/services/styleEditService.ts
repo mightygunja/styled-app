@@ -1,7 +1,7 @@
 /**
  * Edits
  *
- * Styled's answer to Indyx's Lookbooks, and deliberately a different shape.
+ * 33 Trends's answer to Indyx's Lookbooks, and deliberately a different shape.
  *
  * Indyx sells a stylist ten looks built from scratch for $110-150, delivered
  * over days. An Edit is drafted by AI from the client's real closet in about a

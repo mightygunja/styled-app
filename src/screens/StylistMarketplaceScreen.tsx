@@ -109,10 +109,10 @@ export default function StylistMarketplaceScreen() {
               ? `${stylist.rating.toFixed(1)} · ${stylist.reviewCount} ${
                   stylist.reviewCount === 1 ? 'review' : 'reviews'
                 }`
-              : 'New to Styled'}
+              : 'New to 33 Trends'}
             {stylist.location ? `  ·  ${stylist.location}` : ''}
           </Text>
-          {stylist.isVerified && <Text style={styles.verified}>VERIFIED BY STYLED</Text>}
+          {stylist.isVerified && <Text style={styles.verified}>VERIFIED BY 33 TRENDS</Text>}
         </View>
       </View>
 

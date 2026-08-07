@@ -65,7 +65,7 @@ class VoiceCommandService {
   private settings: VoiceSettings = {
     enabled: true,
     language: 'en-US',
-    wakeWord: 'Hey Styled',
+    wakeWord: 'Hey 33 Trends',
     continuousListening: false,
     feedbackSound: true,
     voiceResponse: true,

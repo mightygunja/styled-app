@@ -1,8 +1,8 @@
 /**
- * Styled — Design System v2.0
+ * 33 Trends — Design System v2.0
  * "A quietly luxurious system for a personal stylist."
  * Warm heritage neutrals meet stark Swiss discipline.
- * Source: STYLED_Business_Strategy_v2.docx + Styled-Design-System.html v2.0
+ * Source: STYLED_Business_Strategy_v2.docx + 33 Trends-Design-System.html v2.0
  */
 
 export const colors = {

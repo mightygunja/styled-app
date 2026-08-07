@@ -131,17 +131,17 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {/* Styled is free. There is no paid tier, no upgrade path and nothing
+        {/* 33 Trends is free. There is no paid tier, no upgrade path and nothing
             to charge for - the business runs on affiliate revenue. This card
             replaced a plan/upgrade panel that advertised $9 and $28 tiers,
             granted them for $0, and rendered invented invoices. */}
         <View style={styles.planCard}>
           <View style={styles.planCardTop}>
-            <Text style={styles.planCardEyebrow}>STYLED</Text>
+            <Text style={styles.planCardEyebrow}>33 TRENDS</Text>
           </View>
           <Text style={styles.planPrice}>Free</Text>
           <Text style={styles.planDescription}>
-            Every feature, with no subscription. When you buy something through Styled we may
+            Every feature, with no subscription. When you buy something through 33 Trends we may
             earn a commission from the retailer — that's how it stays free, and it never
             changes what we recommend.
           </Text>
@@ -163,7 +163,7 @@ export default function AccountScreen() {
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>
-          {/* Payment methods removed with the paywall. Styled charges nobody,
+          {/* Payment methods removed with the paywall. 33 Trends charges nobody,
               so a screen collecting card details had nothing to charge them
               for - and keeping it would mean declaring Payment Info collection
               to App Review for a feature that does nothing. */}
@@ -231,7 +231,7 @@ export default function AccountScreen() {
 
         {showAdmin && (
           <>
-            <Text style={styles.sectionLabel}>STYLED</Text>
+            <Text style={styles.sectionLabel}>33 TRENDS</Text>
             <View style={styles.prefsCard}>
               <TouchableOpacity
                 style={[styles.prefRow, styles.prefRowLast]}
@@ -271,7 +271,7 @@ export default function AccountScreen() {
               <View>
                 <Text style={styles.prefTitle}>Your shopping activity</Text>
                 <Text style={styles.prefSubtitle}>
-                  {marketplaceStats.clicks} {marketplaceStats.clicks === 1 ? 'CLICK' : 'CLICKS'} · ~${marketplaceStats.estimatedCommission.toFixed(2)} EARNED FOR STYLED
+                  {marketplaceStats.clicks} {marketplaceStats.clicks === 1 ? 'CLICK' : 'CLICKS'} · ~${marketplaceStats.estimatedCommission.toFixed(2)} EARNED FOR 33 TRENDS
                 </Text>
               </View>
             </View>

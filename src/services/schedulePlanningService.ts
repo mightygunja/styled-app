@@ -42,7 +42,7 @@ export interface PlannedAssignment {
 
 export class CalendarPermissionError extends Error {
   constructor() {
-    super('Styled needs calendar access to plan around your schedule. You can grant it in Settings.');
+    super('33 Trends needs calendar access to plan around your schedule. You can grant it in Settings.');
     this.name = 'CalendarPermissionError';
   }
 }

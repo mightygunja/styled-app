@@ -123,7 +123,7 @@ export default function LoginScreen() {
 
           <Animated.View style={[styles.intro, rise(titleIn)]}>
             <Text style={styles.eyebrow}>PERSONAL STYLING</Text>
-            <Text style={styles.wordmark}>Styled</Text>
+            <Text style={styles.wordmark}>33 Trends</Text>
             <RotatingLine lines={PROPOSITIONS} style={styles.proposition} />
           </Animated.View>
 

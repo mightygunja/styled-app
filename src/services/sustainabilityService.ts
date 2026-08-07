@@ -9,7 +9,7 @@ import { Item } from '../types';
 
 export type SustainabilityGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 /**
- * 'longevity' and 'materials' are the only two Styled can evidence. 'carbon',
+ * 'longevity' and 'materials' are the only two 33 Trends can evidence. 'carbon',
  * 'water', 'waste' and 'labor' are retained for the carbon tab and for future
  * use once a real supply-chain data source exists - nothing scores them today.
  */
@@ -198,7 +198,7 @@ class SustainabilityService {
    *
    * Longevity and circularity come from real wear data the user generated.
    * Materials are scored only when the fibre was identified. Water use, labour
-   * conditions and factory waste are deliberately NOT scored - Styled has no
+   * conditions and factory waste are deliberately NOT scored - 33 Trends has no
    * source for any of them, and inventing a number for a brand's labour
    * practices is a claim about real companies we cannot stand behind.
    */
@@ -251,7 +251,7 @@ class SustainabilityService {
 
   /**
    * Certifications are a factual claim about a real product and a real company.
-   * Styled has no certification data source, so it asserts none. Wiring this up
+   * 33 Trends has no certification data source, so it asserts none. Wiring this up
    * means integrating a real registry (GOTS, Fair Trade, B Corp and Bluesign all
    * publish searchable directories) - never inferring one from a brand name.
    */
@@ -447,7 +447,7 @@ class SustainabilityService {
   /**
    * The brands the user actually wears, by real wear count.
    *
-   * This deliberately does NOT rate brands on sustainability - Styled has no
+   * This deliberately does NOT rate brands on sustainability - 33 Trends has no
    * source for that (see getBrandRating). What it can honestly show is where
    * the wearing actually goes, which is the more actionable number anyway:
    * the brand you own six of and wear twice is the real problem.

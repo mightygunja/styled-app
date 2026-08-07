@@ -1,6 +1,6 @@
 /**
  * Style Voice — maps the real wardrobe analysis (aiStyleService.StyleProfile) to the
- * archetype naming and voice from the Styled Business Strategy v2.0 style-profile feature.
+ * archetype naming and voice from the 33 Trends Business Strategy v2.0 style-profile feature.
  */
 
 import { StyleProfile, StyleCategory } from './aiStyleService';

@@ -69,7 +69,7 @@ export default function SubscriptionScreen() {
   };
 
   /**
-   * This screen is no longer registered in AppNavigator - Styled is free and
+   * This screen is no longer registered in AppNavigator - 33 Trends is free and
    * has no paid tiers. It is kept only so the file continues to type-check,
    * matching how the other retired screens are handled.
    *

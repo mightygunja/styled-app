@@ -1,6 +1,6 @@
 // App-wide constants
 
-export const APP_NAME = 'Styled';
+export const APP_NAME = '33 Trends';
 
 export const OCCASIONS = {
   HOME: 'home',

@@ -1,7 +1,7 @@
 /**
  * Admin hub.
  *
- * One place for the things only Styled staff do. Built as a hub rather than a
+ * One place for the things only 33 Trends staff do. Built as a hub rather than a
  * single screen because the list will grow - stylist approvals and affiliate
  * performance are the first two, ops actions and moderation will follow.
  *
@@ -63,7 +63,7 @@ export default function AdminScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>STYLED</Text>
+        <Text style={styles.eyebrow}>33 TRENDS</Text>
         <Text style={styles.title}>Admin</Text>
         <Text style={styles.subtitle}>Internal tools. Not visible to anyone else.</Text>
 
@@ -75,7 +75,7 @@ export default function AdminScreen() {
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Not an admin</Text>
             <Text style={styles.emptyText}>
-              This area is limited to Styled admins. If that should be you, your uid needs adding to
+              This area is limited to 33 Trends admins. If that should be you, your uid needs adding to
               the admin allowlist.
             </Text>
           </View>

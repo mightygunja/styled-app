@@ -56,7 +56,7 @@ class VideoCallService {
       this.startDurationCounter();
       
       // In production, this would return actual Twilio/Zoom room URL
-      const roomUrl = `https://styled.app/call/${config.roomName}`;
+      const roomUrl = `https://thirtythreetrends.com/call/${config.roomName}`;
       
       return { success: true, roomUrl };
     } catch (error) {
@@ -186,7 +186,7 @@ class VideoCallService {
    */
   generateMeetingLink(sessionId: string): string {
     // In production, would call Twilio/Zoom API
-    return `https://styled.app/session/${sessionId}/call`;
+    return `https://thirtythreetrends.com/session/${sessionId}/call`;
   }
 
   /**

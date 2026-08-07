@@ -2,7 +2,7 @@
  * In-Store Snap-to-Check
  *
  * Photograph an item before buying it and get a verdict grounded in three
- * things Styled already knows about the user: their color season, their
+ * things 33 Trends already knows about the user: their color season, their
  * body/fit guidance, and their style profile - plus a check against what
  * they already own, which no photo-only competitor can do.
  */

@@ -39,7 +39,7 @@ export default function SoftPaywall({
           <Text style={styles.title}>You're getting the hang of this!</Text>
 
           <Text style={styles.subtitle}>
-            Based on {userStylePreferences}, Styled can keep refining this.
+            Based on {userStylePreferences}, 33 Trends can keep refining this.
           </Text>
 
           <View style={styles.trialCallout}>

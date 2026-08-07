@@ -247,7 +247,7 @@ class UserProfileService {
       .slice(0, limitCount)
       .map(user => ({
         user,
-        reason: user.stats.followers > 100 ? 'Popular in the community' : 'New to Styled',
+        reason: user.stats.followers > 100 ? 'Popular in the community' : 'New to 33 Trends',
         mutualFollowers: 0,
       }));
 

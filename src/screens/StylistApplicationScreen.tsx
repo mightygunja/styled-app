@@ -135,7 +135,7 @@ export default function StylistApplicationScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.eyebrow}>YOUR APPLICATION</Text>
           <Text style={styles.title}>
-            {existing.status === 'approved' ? "You're a Styled stylist" : 'With our team'}
+            {existing.status === 'approved' ? "You're a 33 Trends stylist" : 'With our team'}
           </Text>
           <Text style={styles.subtitle}>
             {existing.status === 'approved'
@@ -175,7 +175,7 @@ export default function StylistApplicationScreen() {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>APPLY</Text>
-        <Text style={styles.title}>Work as a stylist on Styled</Text>
+        <Text style={styles.title}>Work as a stylist on 33 Trends</Text>
         <Text style={styles.subtitle}>
           Every stylist is reviewed by a person before they appear in the marketplace. It is the
           reason clients trust the ones who are there.
@@ -286,7 +286,7 @@ export default function StylistApplicationScreen() {
           placeholderTextColor={colors.inkFaint}
         />
 
-        <Text style={styles.sectionLabel}>WHY STYLED</Text>
+        <Text style={styles.sectionLabel}>WHY 33 TRENDS</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={statement}

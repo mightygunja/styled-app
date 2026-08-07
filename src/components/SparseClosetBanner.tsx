@@ -22,7 +22,7 @@ export default function SparseClosetBanner({ itemCount, onAddItems }: SparseClos
       <Text style={styles.headline}>You're off to a great start.</Text>
       
       <Text style={styles.body}>
-        Styled works with what you already own.{'\n'}
+        33 Trends works with what you already own.{'\n'}
         As your closet grows, your outfits will too.
       </Text>
 

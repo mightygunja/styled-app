@@ -248,15 +248,15 @@ class I18nService {
     // Mock translations for common keys
     const mockTranslations: Record<string, Record<SupportedLanguage, string>> = {
       'app.name': {
-        en: 'Styled',
-        es: 'Styled',
-        fr: 'Styled',
-        de: 'Styled',
-        it: 'Styled',
-        ja: 'Styled',
-        ko: 'Styled',
-        zh: 'Styled',
-        ar: 'Styled',
+        en: '33 Trends',
+        es: '33 Trends',
+        fr: '33 Trends',
+        de: '33 Trends',
+        it: '33 Trends',
+        ja: '33 Trends',
+        ko: '33 Trends',
+        zh: '33 Trends',
+        ar: '33 Trends',
       },
       'common.welcome': {
         en: 'Welcome',
