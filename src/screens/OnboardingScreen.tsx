@@ -29,6 +29,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrentUserId } from '../services/api';
@@ -87,6 +88,11 @@ const MAX_WORDS = 3;
 
 export default function OnboardingScreen() {
   const { user, clearIsNewUser } = useAuth();
+  const navigation = useNavigation();
+  // First-run renders this as the whole stack (nothing to go back to);
+  // existing users arrive as a pushed modal from the Home prompt. That one
+  // bit decides the closing copy and whether completion pops or swaps stacks.
+  const presentedAsRoute = navigation.canGoBack();
   const [step, setStep] = useState<Step>('welcome');
   const [bodyType, setBodyType] = useState<BodyType | null>(null);
   const [words, setWords] = useState<string[]>([]);
@@ -147,7 +153,11 @@ export default function OnboardingScreen() {
       }
     } finally {
       setFinishing(false);
-      clearIsNewUser();
+      if (presentedAsRoute) {
+        navigation.goBack();
+      } else {
+        clearIsNewUser();
+      }
     }
   };
 
@@ -216,6 +226,11 @@ export default function OnboardingScreen() {
             fullWidth
             onPress={() => setStep('body')}
           />
+          {presentedAsRoute && (
+            <TouchableOpacity style={styles.notNow} onPress={() => navigation.goBack()}>
+              <Text style={styles.notNowText}>Not now</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -428,7 +443,13 @@ export default function OnboardingScreen() {
 
         <View style={styles.stepFooter}>
           <Button
-            title={finishing ? 'One moment…' : 'Add my first closet items'}
+            title={
+              finishing
+                ? 'One moment…'
+                : presentedAsRoute
+                  ? 'Done — style me sharper'
+                  : 'Add my first closet items'
+            }
             variant="primary"
             fullWidth
             disabled={finishing}
@@ -464,6 +485,8 @@ const styles = StyleSheet.create({
   },
   footer: { padding: spacing.page, paddingTop: spacing.lg },
   timeLabel: { ...textType.eyebrow, marginBottom: 12, textAlign: 'center' },
+  notNow: { alignItems: 'center', paddingVertical: 14 },
+  notNowText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
 
   surveyContent: { padding: spacing.page, paddingBottom: 48, flexGrow: 1 },
   progressWrap: {

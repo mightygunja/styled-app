@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import {
 // deprecated and warns on every render.
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
@@ -42,6 +43,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+/** "Not now" on the survey prompt is permanent. An offer that nags is not an offer. */
+const PROFILE_PROMPT_DISMISSED_KEY = 'profilePrompt:dismissed';
 
 const OCCASION_OPTIONS: { label: string; value: OccasionType }[] = [
   { label: 'Work', value: 'work' },
@@ -110,6 +114,7 @@ export default function HomeScreen() {
   const [archetype, setArchetype] = useState<string>('Quiet Luxe');
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [lookIndex, setLookIndex] = useState(0);
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Every tab's outfits are built once per slot and held here, so switching
@@ -121,6 +126,25 @@ export default function HomeScreen() {
   const poolsRef = useRef<OutfitPools | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const dismissProfilePrompt = () => {
+    setShowProfilePrompt(false);
+    AsyncStorage.setItem(PROFILE_PROMPT_DISMISSED_KEY, '1').catch(() => {});
+  };
+
+  // Coming back from the survey modal: if a profile now exists, the offer has
+  // been taken and the card should not still be sitting there. Checked only
+  // while the prompt is visible, so this costs nothing in the normal case.
+  useFocusEffect(
+    useCallback(() => {
+      if (!showProfilePrompt) return;
+      buildProfileMatchContext(getCurrentUserId())
+        .then(context => {
+          if (context) setShowProfilePrompt(false);
+        })
+        .catch(() => {});
+    }, [showProfilePrompt])
+  );
 
   /** Paints one tab from the already-built pools. Pure lookup. */
   const showOccasion = (value: OccasionType, items: Item[]) => {
@@ -171,6 +195,12 @@ export default function HomeScreen() {
         fabricTexture: item.fabricTexture,
         fitType: item.fitType,
       }));
+      // No saved profile at all means this account predates the survey -
+      // offer it once, unless the user has already said not now.
+      AsyncStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY)
+        .then(dismissed => setShowProfilePrompt(!dismissed && !matchContext))
+        .catch(() => setShowProfilePrompt(false));
+
       // A veto is a veto for owned clothes too. "I don't wear dresses" means
       // the daily looks should not build outfits around the one dress still
       // hanging in the closet.
@@ -341,6 +371,31 @@ export default function HomeScreen() {
             <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>
           </View>
 
+          {/* One-time offer of the survey to accounts that predate it. Only
+              renders when no style profile exists, and "Not now" dismisses it
+              permanently - a prompt that nags stops being an offer. */}
+          {showProfilePrompt && (
+            <View style={styles.profilePrompt}>
+              <Text style={styles.profilePromptEyebrow}>TWO MINUTES</Text>
+              <Text style={styles.profilePromptTitle}>Help your stylist know you</Text>
+              <Text style={styles.profilePromptLine}>
+                Four questions — your build, your taste, your hard nos — and every recommendation
+                sharpens from today.
+              </Text>
+              <View style={styles.profilePromptActions}>
+                <TouchableOpacity
+                  style={styles.profilePromptButton}
+                  onPress={() => navigation.navigate('Onboarding')}
+                >
+                  <Text style={styles.profilePromptButtonText}>Take the survey</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.profilePromptDismiss} onPress={dismissProfilePrompt}>
+                  <Text style={styles.profilePromptDismissText}>Not now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           <Text style={styles.sectionLabel}>DRESSING FOR</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow} contentContainerStyle={styles.chipRowContent}>
             {OCCASION_OPTIONS.map(opt => (
@@ -500,6 +555,30 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 40,
   },
+  profilePrompt: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: colors.paper,
+    padding: 20,
+  },
+  profilePromptEyebrow: { ...textType.eyebrow, marginBottom: 10 },
+  profilePromptTitle: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 26, color: colors.ink },
+  profilePromptLine: {
+    ...textType.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+    marginTop: 8,
+  },
+  profilePromptActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 16 },
+  profilePromptButton: {
+    backgroundColor: colors.ink,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  profilePromptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
+  profilePromptDismiss: { paddingVertical: 12 },
+  profilePromptDismissText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',

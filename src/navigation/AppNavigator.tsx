@@ -129,6 +129,14 @@ export default function AppNavigator() {
         ) : user || DEV_SKIP_AUTH ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
+            {/* Also reachable from inside the app, so existing accounts that
+                predate the survey can take it from the Home prompt. The
+                isNewUser branch above still owns the first-run flow. */}
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{ presentation: 'modal' }}
+            />
             <Stack.Screen name="LookDetail" component={LookDetailScreen} />
             <Stack.Screen name="PaletteDetail" component={PaletteDetailScreen} />
             <Stack.Screen name="AddClosetItem" component={AddClosetItemScreen} options={{ presentation: 'modal' }} />
