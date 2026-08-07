@@ -21,6 +21,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import LoginHero from '../components/LoginHero';
+import BrandWordmark from '../components/BrandWordmark';
 import RotatingLine from '../components/RotatingLine';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
@@ -123,7 +124,9 @@ export default function LoginScreen() {
 
           <Animated.View style={[styles.intro, rise(titleIn)]}>
             <Text style={styles.eyebrow}>PERSONAL STYLING</Text>
-            <Text style={styles.wordmark}>33 Trends</Text>
+            {/* The brand lockup - the same drawing as the splash, so the
+                handoff from splash to login reads as one screen settling. */}
+            <BrandWordmark variant="hero" />
             <RotatingLine lines={PROPOSITIONS} style={styles.proposition} />
           </Animated.View>
 
@@ -210,8 +213,6 @@ const styles = StyleSheet.create({
 
   intro: { marginTop: spacing.lg },
   eyebrow: { ...textType.eyebrow, marginBottom: 10 },
-  // The wordmark is the largest type in the app. It should be.
-  wordmark: { fontFamily: fonts.serif, fontSize: 52, lineHeight: 56, color: colors.ink },
   proposition: {
     ...textType.body,
     color: colors.inkMuted,

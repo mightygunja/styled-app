@@ -34,6 +34,7 @@ import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
 import Button from '../components/Button';
+import BrandWordmark from '../components/BrandWordmark';
 import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../contexts/AuthContext';
@@ -281,8 +282,13 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>33 TRENDS</Text>
+        {/* The wordmark component, not a letterspaced string - same lockup as
+            the app icon and splash, so the brand is one drawing everywhere.
+            Left-aligned like a masthead: every other screen in this system
+            sets its title on the left edge, and the old centred version was
+            never actually centred anyway (40px spacer against two 40px
+            buttons). */}
+        <BrandWordmark variant="header" />
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
             <Ionicons name="bag-outline" size={20} color={colors.ink} />
