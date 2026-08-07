@@ -113,9 +113,42 @@ const STACK_CONTENT_DEFAULT = 880;
 
 function ContentFrame({ maxWidth, children }: { maxWidth: number; children: React.ReactNode }) {
   const isDesktop = useIsDesktopWeb();
+  const frameRef = React.useRef<View>(null);
+
+  // The screen scrolls inside the centred column, so a wheel over the side
+  // gutters would hit dead space. Forward those wheel events to the first
+  // scrollable descendant — the whole window then behaves like one page.
+  React.useEffect(() => {
+    if (!isDesktop) return;
+    const node = frameRef.current as unknown as HTMLElement | null;
+    if (!node || typeof node.addEventListener !== 'function') return;
+
+    const findScroller = (): HTMLElement | null => {
+      for (const el of Array.from(node.querySelectorAll<HTMLElement>('*'))) {
+        const overflowY = getComputedStyle(el).overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+          return el;
+        }
+      }
+      return null;
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      const scroller = findScroller();
+      if (!scroller) return;
+      // Inside the column the browser already handles it natively.
+      if (scroller.contains(event.target as Node)) return;
+      scroller.scrollTop += event.deltaY;
+      event.preventDefault();
+    };
+
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [isDesktop]);
+
   if (!isDesktop) return <>{children}</>;
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bone, alignItems: 'center' }}>
+    <View ref={frameRef} style={{ flex: 1, backgroundColor: colors.bone, alignItems: 'center' }}>
       <View style={{ flex: 1, width: '100%', maxWidth }}>{children}</View>
     </View>
   );

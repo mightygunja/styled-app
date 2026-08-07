@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,6 +29,23 @@ export default function App() {
   // tap-through would be measured against a denominator missing those views.
   useEffect(() => {
     affiliateImpressions.flush().catch(() => {});
+  }, []);
+
+  // Web: hide native scrollbars. Screens scroll inside centred columns, so
+  // the browser would paint its scrollbar at the column edge — a bar floating
+  // mid-page. Scrolling itself is untouched (wheel, trackpad, keys, touch);
+  // the gutters forward wheel events too (see ContentFrame in AppNavigator).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const style = document.createElement('style');
+    style.textContent = `
+      * { scrollbar-width: none; -ms-overflow-style: none; }
+      *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   if (!fontsLoaded && !fontError) {
