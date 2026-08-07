@@ -22,17 +22,9 @@ import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import LoginHero from '../components/LoginHero';
 import BrandWordmark from '../components/BrandWordmark';
-import RotatingLine from '../components/RotatingLine';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const PROPOSITIONS = [
-  'A stylist that has actually seen your wardrobe.',
-  'Know what a new piece adds before you buy it.',
-  'Every recommendation comes with its reason.',
-  'Dress for the day, the weather and the occasion.',
-];
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -127,7 +119,11 @@ export default function LoginScreen() {
             {/* The brand lockup - the same drawing as the splash, so the
                 handoff from splash to login reads as one screen settling. */}
             <BrandWordmark variant="hero" />
-            <RotatingLine lines={PROPOSITIONS} style={styles.proposition} />
+            {/* One fixed thesis. The stage above carries the rotating story
+                now; two competing lines of moving text is noise. */}
+            <Text style={styles.standfirst}>
+              A personal stylist built on the clothes you already own.
+            </Text>
           </Animated.View>
 
           <Animated.View style={[styles.form, rise(formIn)]}>
@@ -198,6 +194,38 @@ export default function LoginScreen() {
                 New here? <Text style={styles.linkTextBold}>Create an account</Text>
               </Text>
             </TouchableOpacity>
+
+            {/* The consumable version of what the app does, for anyone who
+                scrolls past the form before committing. Three steps, because
+                that is the actual product loop. */}
+            <View style={styles.howSection}>
+              <Text style={styles.howLabel}>HOW IT WORKS</Text>
+              {[
+                {
+                  n: '01',
+                  title: 'Photograph your closet',
+                  line: 'Every piece becomes data — colour, cut, fabric, fit.',
+                },
+                {
+                  n: '02',
+                  title: 'Get dressed, daily',
+                  line: 'Looks for work, weekends and the weather, made from what you own.',
+                },
+                {
+                  n: '03',
+                  title: 'Shop with proof',
+                  line: 'See how many new outfits a piece unlocks before you pay for it.',
+                },
+              ].map(step => (
+                <View key={step.n} style={styles.howRow}>
+                  <Text style={styles.howNumber}>{step.n}</Text>
+                  <View style={styles.howText}>
+                    <Text style={styles.howTitle}>{step.title}</Text>
+                    <Text style={styles.howLine}>{step.line}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -213,12 +241,6 @@ const styles = StyleSheet.create({
 
   intro: { marginTop: spacing.lg },
   eyebrow: { ...textType.eyebrow, marginBottom: 10 },
-  proposition: {
-    ...textType.body,
-    color: colors.inkMuted,
-    marginTop: 12,
-    minHeight: 44,
-  },
 
   form: { marginTop: spacing.section, gap: 12 },
   input: {
@@ -262,4 +284,36 @@ const styles = StyleSheet.create({
   linkButton: { paddingVertical: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
   linkTextBold: { fontFamily: fonts.sansMedium, color: colors.ink },
+
+  standfirst: {
+    ...textType.body,
+    color: colors.inkMuted,
+    marginTop: 14,
+  },
+
+  howSection: {
+    marginTop: spacing.section,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    paddingTop: spacing.lg,
+  },
+  howLabel: { ...textType.eyebrow, marginBottom: spacing.md },
+  howRow: {
+    flexDirection: 'row',
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
+  },
+  // The serif number is the design system's list voice - same treatment as
+  // the emitter rankings on the carbon screen.
+  howNumber: {
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.camel,
+    width: 44,
+  },
+  howText: { flex: 1 },
+  howTitle: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  howLine: { ...textType.body, fontSize: 13, lineHeight: 19, color: colors.inkMuted, marginTop: 3 },
 });

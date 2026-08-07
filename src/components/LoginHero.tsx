@@ -1,105 +1,140 @@
 /**
- * The login hero.
+ * The login stage: the product loop, acted out.
  *
- * A stack of cards sitting in real perspective space: each layer drifts on its
- * own timing, tilts to a drag, and settles with spring. Depth comes from
- * `perspective` plus per-layer rotateY/rotateX, scale and opacity, which is
- * the one approach that behaves identically on both platforms - React Native's
- * translateZ is unreliable on Android, so nothing here depends on it.
+ * Four fabric cards - a blazer, a sweater, trousers, a shirt - play a scene
+ * on repeat: they sit as a closet, compose themselves into a work outfit,
+ * recompose into a weekend one, then regroup while the caption makes the
+ * point that every look arrives with its reason. That IS the app: your own
+ * pieces, recombined per occasion, explained. The old version showed pretty
+ * cards; this one demonstrates the promise before a word of the form is read.
  *
- * Card faces are composed from the design system rather than photographed.
- * The repo carries no photography, and rather than reach for stock imagery -
- * which is exactly what made the seeded social content read as fake - each
- * card is a palette field with an archetype set in Playfair. Drop a real
- * image into a card's `image` field and it renders instead, no other change
- * needed.
+ * Still real perspective space - per-card rotate/scale/opacity, drag
+ * parallax on top of whatever pose the scene is in, and everything springs
+ * back. No new dependencies; the card faces are the woven textures generated
+ * from the design system's own palette.
  */
 
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, ImageSourcePropType } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
   withSpring,
-  interpolate,
+  withDelay,
   Easing,
+  runOnJS,
 } from 'react-native-reanimated';
 import { colors, fonts } from '../theme/designSystem';
 
-const { width } = Dimensions.get('window');
-const CARD_W = Math.min(230, width * 0.58);
+const CARD_W = 168;
 const CARD_H = CARD_W * 1.36;
+const SCENE_MS = 4200;
+const MOVE_MS = 950;
 
-interface HeroCard {
+interface Pose {
+  x: number;
+  y: number;
+  rot: number;
+  scale: number;
+  opacity: number;
+}
+
+interface CardDef {
   label: string;
   meta: string;
   ground: string;
   ink: string;
-  /** Supply a require()'d asset and it replaces the composed face entirely. */
-  image?: ImageSourcePropType;
+  image: ImageSourcePropType;
+  /** One pose per scene, same length for every card. */
+  poses: Pose[];
 }
 
 /**
- * Front of the stack last, so the array reads back-to-front the way it is
- * drawn. Grounds walk the palette from deepest to lightest.
+ * Render order is fixed back-to-front (shirt deepest, blazer on top) and the
+ * poses are choreographed so no scene ever needs the depth order to change -
+ * z-order swaps mid-animation read as glitches, not motion.
+ *
+ * Scenes: 0 closet fan · 1 work look · 2 weekend look · 3 regroup.
  */
-const CARDS: HeroCard[] = [
+const CARDS: CardDef[] = [
   {
-    label: 'Tailored',
+    label: 'Shirt',
+    meta: 'LINEN',
+    ground: colors.sand,
+    ink: colors.ink,
+    image: require('../../assets/textures/linen.png'),
+    poses: [
+      { x: -104, y: 16, rot: -9, scale: 0.78, opacity: 0.92 },
+      { x: -58, y: -26, rot: -6, scale: 0.8, opacity: 0.88 },
+      { x: -142, y: -48, rot: -12, scale: 0.6, opacity: 0.2 },
+      { x: -64, y: 8, rot: -7, scale: 0.8, opacity: 0.92 },
+    ],
+  },
+  {
+    label: 'Trousers',
+    meta: 'TWILL',
+    ground: colors.camel,
+    ink: colors.ink,
+    image: require('../../assets/textures/twill.png'),
+    poses: [
+      { x: -35, y: 2, rot: -3, scale: 0.83, opacity: 0.96 },
+      { x: 62, y: 30, rot: 5, scale: 0.85, opacity: 0.92 },
+      { x: 58, y: 28, rot: 6, scale: 0.87, opacity: 0.92 },
+      { x: -21, y: -2, rot: -2, scale: 0.85, opacity: 0.96 },
+    ],
+  },
+  {
+    label: 'Sweater',
+    meta: 'RIB KNIT',
+    ground: colors.tobacco,
+    ink: colors.bone,
+    image: require('../../assets/textures/knit.png'),
+    poses: [
+      { x: 35, y: 2, rot: 3, scale: 0.87, opacity: 1 },
+      { x: -150, y: 58, rot: -14, scale: 0.6, opacity: 0.2 },
+      { x: 0, y: 2, rot: 0, scale: 1.02, opacity: 1 },
+      { x: 22, y: -2, rot: 2, scale: 0.89, opacity: 1 },
+    ],
+  },
+  {
+    label: 'Blazer',
     meta: 'HERRINGBONE',
     ground: colors.ink,
     ink: colors.bone,
     image: require('../../assets/textures/tailored.png'),
-  },
-  {
-    label: 'Knitwear',
-    meta: 'RIB',
-    ground: colors.tobacco,
-    ink: colors.bone,
-    image: require('../../assets/textures/knit.png'),
-  },
-  {
-    label: 'Twill',
-    meta: 'EVERY DAY',
-    ground: colors.camel,
-    ink: colors.ink,
-    image: require('../../assets/textures/twill.png'),
-  },
-  {
-    label: 'Linen',
-    meta: 'WARM WEATHER',
-    ground: colors.sand,
-    ink: colors.ink,
-    image: require('../../assets/textures/linen.png'),
+    poses: [
+      { x: 104, y: 16, rot: 9, scale: 0.9, opacity: 1 },
+      { x: 0, y: 0, rot: 0, scale: 1.02, opacity: 1 },
+      { x: 148, y: -54, rot: 13, scale: 0.6, opacity: 0.2 },
+      { x: 66, y: 8, rot: 7, scale: 0.92, opacity: 1 },
+    ],
   },
 ];
 
-const REST_OFFSET = 26;
-const REST_LIFT = 16;
+/** The words carry the story; the cards carry the proof. */
+const CAPTIONS = [
+  { eyebrow: 'YOUR CLOSET', line: 'Four pieces you actually own.' },
+  { eyebrow: 'MONDAY · 8 AM', line: 'Blazer, shirt, trousers — pitched for the office.' },
+  { eyebrow: 'SATURDAY', line: 'Same closet, softer — the knit leads.' },
+  { eyebrow: 'THE DIFFERENCE', line: 'Every look arrives with its reason.' },
+];
 
 export default function LoginHero() {
-  // Drag state, shared across every layer.
+  const [scene, setScene] = useState(0);
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
-  // Idle drift, so the stack is never completely still.
-  const drift = useSharedValue(0);
 
   useEffect(() => {
-    drift.value = withRepeat(
-      withTiming(1, { duration: 7000, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true
-    );
-  }, [drift]);
+    const timer = setInterval(() => setScene(s => (s + 1) % CAPTIONS.length), SCENE_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   const pan = Gesture.Pan()
     .onChange(event => {
-      // Clamped so the stack can be pushed around but never thrown apart.
-      dragX.value = Math.max(-120, Math.min(120, dragX.value + event.changeX));
-      dragY.value = Math.max(-60, Math.min(60, dragY.value + event.changeY));
+      dragX.value = Math.max(-110, Math.min(110, dragX.value + event.changeX));
+      dragY.value = Math.max(-55, Math.min(55, dragY.value + event.changeY));
     })
     .onFinalize(() => {
       dragX.value = withSpring(0, { damping: 14, stiffness: 90 });
@@ -107,65 +142,68 @@ export default function LoginHero() {
     });
 
   return (
-    <GestureDetector gesture={pan}>
-      <View style={styles.stage} pointerEvents="box-only">
-        {CARDS.map((card, index) => (
-          <HeroLayer
-            key={card.label}
-            card={card}
-            index={index}
-            total={CARDS.length}
-            dragX={dragX}
-            dragY={dragY}
-            drift={drift}
-          />
-        ))}
-      </View>
-    </GestureDetector>
+    <View>
+      <GestureDetector gesture={pan}>
+        <View style={styles.stage} pointerEvents="box-only">
+          {CARDS.map((card, index) => (
+            <StoryCard key={card.label} card={card} index={index} scene={scene} dragX={dragX} dragY={dragY} />
+          ))}
+        </View>
+      </GestureDetector>
+      <StageCaption {...CAPTIONS[scene]} />
+    </View>
   );
 }
 
-interface LayerProps {
-  card: HeroCard;
+interface CardProps {
+  card: CardDef;
   index: number;
-  total: number;
+  scene: number;
   dragX: ReturnType<typeof useSharedValue<number>>;
   dragY: ReturnType<typeof useSharedValue<number>>;
-  drift: ReturnType<typeof useSharedValue<number>>;
 }
 
-function HeroLayer({ card, index, total, dragX, dragY, drift }: LayerProps) {
-  // 0 for the deepest card, 1 for the front one.
-  const depth = index / (total - 1);
+function StoryCard({ card, index, scene, dragX, dragY }: CardProps) {
+  const first = card.poses[0];
+  const x = useSharedValue(first.x);
+  const y = useSharedValue(first.y);
+  const rot = useSharedValue(first.rot);
+  const scale = useSharedValue(first.scale);
+  const opacity = useSharedValue(first.opacity);
+
+  useEffect(() => {
+    const pose = card.poses[scene];
+    // A slight stagger per card is what makes the change read as garments
+    // being picked, not a layout snapping.
+    const delay = index * 110;
+    const config = { duration: MOVE_MS, easing: Easing.inOut(Easing.cubic) };
+    x.value = withDelay(delay, withTiming(pose.x, config));
+    y.value = withDelay(delay, withTiming(pose.y, config));
+    rot.value = withDelay(delay, withTiming(pose.rot, config));
+    scale.value = withDelay(delay, withTiming(pose.scale, config));
+    opacity.value = withDelay(delay, withTiming(pose.opacity, config));
+  }, [scene, card, index, x, y, rot, scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    // Layers further back move less, which is what reads as distance.
-    const parallax = 0.35 + depth * 0.65;
-    const wobble = interpolate(drift.value, [0, 1], [-1, 1]);
-
+    // Front cards move more under drag - that differential is the depth.
+    const depth = scale.value;
     return {
+      opacity: opacity.value,
       transform: [
         { perspective: 1000 },
-        { translateX: (total - 1 - index) * -REST_OFFSET + dragX.value * parallax + wobble * (4 + index * 2) },
-        { translateY: (total - 1 - index) * -REST_LIFT + dragY.value * parallax * 0.6 + wobble * (2 + index) },
-        { rotateY: `${dragX.value * 0.06 * parallax + wobble * 1.5}deg` },
-        { rotateX: `${-dragY.value * 0.05 * parallax}deg` },
-        { rotateZ: `${(total - 1 - index) * -1.6 + wobble * 0.6}deg` },
-        { scale: 0.86 + depth * 0.14 },
+        { translateX: x.value + dragX.value * 0.45 * depth },
+        { translateY: y.value + dragY.value * 0.3 * depth },
+        { rotateY: `${dragX.value * 0.055 * depth}deg` },
+        { rotateX: `${-dragY.value * 0.045 * depth}deg` },
+        { rotateZ: `${rot.value}deg` },
+        { scale: scale.value },
       ],
-      opacity: 0.55 + depth * 0.45,
     };
   });
 
   return (
     <Animated.View style={[styles.card, { backgroundColor: card.ground }, animatedStyle]}>
-      {/* The weave sits behind the type rather than replacing it. The
-          background colour underneath is the same hue the texture was
-          generated from, so a slow-decoding image never flashes a wrong
-          colour. */}
-      {card.image && (
-        <Image source={card.image} style={styles.cardImage} resizeMode="cover" />
-      )}
+      <Image source={card.image} style={styles.cardImage} resizeMode="cover" />
       <View style={styles.cardFace}>
         <Text style={[styles.cardMeta, { color: card.ink }]}>{card.meta}</Text>
         <View style={{ flex: 1 }} />
@@ -176,9 +214,42 @@ function HeroLayer({ card, index, total, dragX, dragY, drift }: LayerProps) {
   );
 }
 
+/** Crossfades when the scene's words change; holds still otherwise. */
+function StageCaption({ eyebrow, line }: { eyebrow: string; line: string }) {
+  const [shown, setShown] = useState({ eyebrow, line });
+  const opacity = useSharedValue(1);
+  const lift = useSharedValue(0);
+
+  useEffect(() => {
+    if (shown.eyebrow === eyebrow && shown.line === line) return;
+    const next = { eyebrow, line };
+    opacity.value = withTiming(0, { duration: 260 }, finished => {
+      if (finished) runOnJS(setShown)(next);
+    });
+    lift.value = withTiming(-6, { duration: 260 });
+  }, [eyebrow, line, shown, opacity, lift]);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.quad) });
+    lift.value = withTiming(0, { duration: 420, easing: Easing.out(Easing.quad) });
+  }, [shown, opacity, lift]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: lift.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.caption, style]}>
+      <Text style={styles.captionEyebrow}>{shown.eyebrow}</Text>
+      <Text style={styles.captionLine}>{shown.line}</Text>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   stage: {
-    height: CARD_H + 90,
+    height: CARD_H + 96,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,22 +257,37 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CARD_W,
     height: CARD_H,
-    // The one shadow in the app, and it earns its place: without it the
-    // layers read as flat overlapping rectangles rather than as depth.
+    // The one shadow in the app; without it the layers read as flat
+    // rectangles rather than depth.
     shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    elevation: 10,
   },
   cardImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  cardFace: { flex: 1, padding: 20 },
+  cardFace: { flex: 1, padding: 16 },
   cardMeta: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 8,
+    letterSpacing: 1.6,
+    opacity: 0.75,
+  },
+  cardRule: { height: 1, width: 22, marginBottom: 9, opacity: 0.5 },
+  cardLabel: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 24 },
+
+  caption: { alignItems: 'center', marginTop: 2, minHeight: 46 },
+  captionEyebrow: {
     fontFamily: fonts.sansSemiBold,
     fontSize: 9,
     letterSpacing: 1.8,
-    opacity: 0.75,
+    color: colors.tobacco,
+    marginBottom: 5,
   },
-  cardRule: { height: 1, width: 28, marginBottom: 12, opacity: 0.5 },
-  cardLabel: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 30 },
+  captionLine: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 15,
+    color: colors.inkMuted,
+    textAlign: 'center',
+  },
 });
