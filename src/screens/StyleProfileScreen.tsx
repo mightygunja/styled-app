@@ -10,7 +10,6 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { styleProfileService } from '../services/firestore';
 import { ColorAnalysisResult, BodyAnalysisResult, BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
-import Button from '../components/Button';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -109,6 +108,23 @@ export default function StyleProfileScreen() {
             ))
           )}
         </View>
+
+        {/* The profile editor gets the same card treatment as the analyses,
+            up here where people look for it. It used to be a "Retake quiz"
+            button at the very bottom of the scroll - a wrong label in an
+            invisible place. */}
+        <Text style={styles.sectionLabel}>YOUR PREFERENCES</Text>
+        <TouchableOpacity
+          style={styles.colorAnalysisCard}
+          onPress={() => navigation.navigate('StyleProfileBuilder')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.colorSeasonDesc}>
+            Your style words, occasions, fit preferences and hard nos — everything the
+            recommendations start from. Set once, adjust any time.
+          </Text>
+          <Text style={styles.colorAnalysisLink}>Edit my style profile →</Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionLabel}>PERSONAL COLOR ANALYSIS</Text>
         {colorAnalysis ? (
@@ -223,12 +239,6 @@ export default function StyleProfileScreen() {
           </View>
         ))}
 
-        <Button
-          title="Retake quiz"
-          variant="secondary"
-          onPress={() => navigation.navigate('StyleProfileBuilder')}
-          style={{ marginTop: 28 }}
-        />
       </ScrollView>
     </SafeAreaView>
   );
