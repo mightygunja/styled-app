@@ -652,6 +652,52 @@ export async function loadOutfitPools(
 }
 
 /**
+ * Ranks replacements for one garment in a look.
+ *
+ * Candidates are everything in the source pool from the same category that
+ * is not already on the body, scored the same way the engine scored the
+ * original: pair chemistry with each remaining piece (colour, formality gap,
+ * pattern mixing) plus distance from the occasion's formality target. This is
+ * what makes "swap a piece" a styling decision rather than a category browse.
+ */
+export function rankAlternates(
+  current: Item,
+  look: Item[],
+  source: Item[],
+  occasion: OccasionKey
+): Item[] {
+  const profile = OCCASIONS[occasion] || OCCASIONS.casual;
+  const category = (current.category || '').toLowerCase();
+  const inLook = new Set(look.map(i => i.id));
+  const others = look.filter(i => i.id !== current.id);
+  const core = new Set(['tops', 'bottoms', 'dresses']);
+
+  const seen = new Set<string>();
+  const candidates = source.filter(item => {
+    const key = item.id;
+    if (seen.has(key) || inLook.has(key)) return false;
+    seen.add(key);
+    return (item.category || '').toLowerCase() === category;
+  });
+
+  return candidates
+    .map(candidate => {
+      let score = 0;
+      for (const other of others) {
+        const { score: pair } = pairScore(candidate, other, profile);
+        // Chemistry with the other core garment matters most; shoes and
+        // layers weigh in at half strength.
+        score += core.has((other.category || '').toLowerCase()) ? pair : pair * 0.5;
+      }
+      const gap = Math.abs(formalityOf(candidate) - profile.target);
+      if (gap > profile.tolerance) score -= (gap - profile.tolerance) * 8;
+      return { candidate, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(entry => entry.candidate);
+}
+
+/**
  * Turns a pool into renderable outfits. Pure and synchronous, so a tab switch
  * is a state update rather than an await.
  */
@@ -752,6 +798,7 @@ export const dailyOutfitService = {
   loadOutfitPools,
   composeOutfits,
   rankOccasion,
+  rankAlternates,
   formalityOf,
   daySeed,
   slotSeed,

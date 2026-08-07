@@ -41,7 +41,7 @@ import BrandWordmark from '../components/BrandWordmark';
 import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../contexts/AuthContext';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -117,6 +117,11 @@ export default function HomeScreen() {
   const [archetype, setArchetype] = useState<string>('Quiet Luxe');
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [lookIndex, setLookIndex] = useState(0);
+  // Which garment's swap tray is open, and the user's per-look edits. Edits
+  // are keyed by the base look's id so cycling looks or tabs and coming back
+  // keeps them, while a new slot's outfits start clean.
+  const [swapTargetId, setSwapTargetId] = useState<string | null>(null);
+  const [lookOverrides, setLookOverrides] = useState<Record<string, Item[]>>({});
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
   const { toast, showToast, hideToast } = useToast();
@@ -296,6 +301,9 @@ export default function HomeScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    // A refresh rebuilds the pools; edits belonged to the outgoing looks.
+    setLookOverrides({});
+    setSwapTargetId(null);
     loadDressMeToday(occasion);
   };
 
@@ -309,15 +317,18 @@ export default function HomeScreen() {
     }
     showOccasion(value, closetItemsRef.current);
     setLookIndex(0);
+    setSwapTargetId(null);
   };
 
-  const handleSwap = () => {
+  // The look counter's arrows. Distinct from swapping a piece: this pages
+  // through the three composed looks for the tab.
+  const goToLook = (delta: number) => {
     if (recommendations.length === 0) return;
-    setLookIndex((lookIndex + 1) % recommendations.length);
+    setSwapTargetId(null);
+    setLookIndex((lookIndex + delta + recommendations.length) % recommendations.length);
   };
 
   const handleSave = async () => {
-    const look = recommendations[lookIndex];
     if (!look) return;
     try {
       await outfitsService.create(
@@ -340,7 +351,34 @@ export default function HomeScreen() {
     .toUpperCase();
   const hour = today.getHours();
   const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
-  const look = recommendations[lookIndex];
+
+  // The rendered look is the engine's composition with the user's swaps laid
+  // over it. Saving saves what is on screen, not what was first proposed.
+  const baseLook = recommendations[lookIndex];
+  const lookEdited = !!(baseLook && lookOverrides[baseLook.id]);
+  const look = baseLook
+    ? { ...baseLook, items: lookOverrides[baseLook.id] ?? baseLook.items }
+    : undefined;
+
+  const swapTarget = swapTargetId ? look?.items.find(i => i.id === swapTargetId) ?? null : null;
+  // Alternates come from wherever the look itself came from: the wearable
+  // closet normally, the starter catalogue pool in starter mode.
+  const swapSource = starterMode
+    ? (poolsRef.current?.pools[occasion as OccasionKey] || []).flatMap(c => c.items)
+    : closetItemsRef.current;
+  const alternates =
+    swapTarget && look
+      ? dailyOutfitService.rankAlternates(swapTarget, look.items, swapSource, occasion as OccasionKey)
+      : [];
+
+  const applySwap = (replacement: Item) => {
+    if (!baseLook || !swapTarget) return;
+    const items = (lookOverrides[baseLook.id] ?? baseLook.items).map(item =>
+      item.id === swapTarget.id ? replacement : item
+    );
+    setLookOverrides(current => ({ ...current, [baseLook.id]: items }));
+    setSwapTargetId(null);
+  };
 
   if (loading) {
     return (
@@ -362,8 +400,14 @@ export default function HomeScreen() {
           const costPerWear = item.price && item.wornCount
             ? (item.price / (item.wornCount + 1)).toFixed(2)
             : item.price?.toFixed(2);
+          const isSwapping = swapTargetId === item.id;
           return (
-            <View key={item.id} style={styles.thumbCard}>
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.thumbCard, isSwapping && styles.thumbCardActive]}
+              activeOpacity={0.85}
+              onPress={() => setSwapTargetId(isSwapping ? null : item.id)}
+            >
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="cover" />
               ) : (
@@ -371,21 +415,67 @@ export default function HomeScreen() {
                   <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
                 </View>
               )}
+              <View style={styles.swapBadge}>
+                <Ionicons name="swap-horizontal" size={12} color={colors.ink} />
+              </View>
               <View style={styles.thumbMeta}>
                 <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
                 {costPerWear && <Text style={styles.thumbPrice}>${costPerWear}</Text>}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
+
+      {swapTarget && (
+        <View style={styles.swapTray}>
+          <View style={styles.swapTrayHeader}>
+            <Text style={styles.swapTrayLabel}>
+              SWAP THE {String(swapTarget.name || swapTarget.category).toUpperCase()}
+            </Text>
+            <TouchableOpacity onPress={() => setSwapTargetId(null)}>
+              <Text style={styles.swapTrayClose}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+          {alternates.length === 0 ? (
+            <Text style={styles.swapTrayEmpty}>
+              Nothing else in {starterMode ? 'the catalogue' : 'your closet'} fills this slot —
+              add more {(swapTarget.category || 'pieces').toLowerCase()} and I'll have options.
+            </Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.swapTrayRow}>
+                {alternates.slice(0, 12).map(alt => (
+                  <TouchableOpacity
+                    key={alt.id}
+                    style={styles.swapOption}
+                    activeOpacity={0.85}
+                    onPress={() => applySwap(alt)}
+                  >
+                    {alt.imageUrl ? (
+                      <Image source={{ uri: alt.imageUrl }} style={styles.swapOptionImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.swapOptionImage, styles.thumbPlaceholder]}>
+                        <Text style={styles.thumbPlaceholderText}>{alt.category}</Text>
+                      </View>
+                    )}
+                    <Text style={styles.swapOptionName} numberOfLines={1}>{alt.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      )}
     </View>
   ) : null;
 
   const noteBlock = look ? (
     <View style={styles.noteCard}>
       <Text style={styles.noteQuote}>{look.reasoning[0] || look.description}</Text>
-      <Text style={styles.noteLabel}>STYLIST NOTE</Text>
+      {/* Once a piece is swapped the prose describes the original composition,
+          so the label owns up to whose look this now is. */}
+      <Text style={styles.noteLabel}>{lookEdited ? 'STYLIST NOTE · EDITED BY YOU' : 'STYLIST NOTE'}</Text>
     </View>
   ) : null;
 
@@ -413,7 +503,6 @@ export default function HomeScreen() {
       ) : (
         <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
       )}
-      <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
     </View>
   ) : null;
 
@@ -544,9 +633,29 @@ export default function HomeScreen() {
             {/* No spinner here any more - switching tabs is synchronous, so
                 there is nothing to wait for. */}
             {recommendations.length > 0 ? (
-              <Text style={styles.lookCounter}>
-                LOOK {String(lookIndex + 1).padStart(2, '0')} OF {String(recommendations.length).padStart(2, '0')}
-              </Text>
+              <View style={styles.lookPager}>
+                {recommendations.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.lookPagerArrow}
+                    onPress={() => goToLook(-1)}
+                    accessibilityLabel="Previous look"
+                  >
+                    <Ionicons name="chevron-back" size={16} color={colors.ink} />
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.lookCounter}>
+                  LOOK {String(lookIndex + 1).padStart(2, '0')} OF {String(recommendations.length).padStart(2, '0')}
+                </Text>
+                {recommendations.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.lookPagerArrow}
+                    onPress={() => goToLook(1)}
+                    accessibilityLabel="Next look"
+                  >
+                    <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+                  </TouchableOpacity>
+                )}
+              </View>
             ) : null}
           </View>
 
@@ -777,6 +886,80 @@ const styles = StyleSheet.create({
   },
   lookCounter: {
     ...textType.eyebrow,
+  },
+  lookPager: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  // 28pt squares around 16pt chevrons: enough finger, no visual weight.
+  lookPagerArrow: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  thumbCardActive: {
+    opacity: 0.75,
+  },
+  // The swap affordance on every piece - a quiet chip, not a button, because
+  // the whole thumb is the tap target.
+  swapBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: radius.full,
+    backgroundColor: colors.bone,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swapTray: {
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  swapTrayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  swapTrayLabel: {
+    ...textType.eyebrow,
+  },
+  swapTrayClose: {
+    ...textType.eyebrow,
+    color: colors.camel,
+  },
+  swapTrayEmpty: {
+    ...textType.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+  },
+  swapTrayRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  swapOption: {
+    width: 96,
+  },
+  swapOptionImage: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: colors.paper,
+  },
+  swapOptionName: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.ink,
+    marginTop: 5,
   },
   lookCard: {
     marginHorizontal: 20,
