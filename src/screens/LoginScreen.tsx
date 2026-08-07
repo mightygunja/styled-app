@@ -11,6 +11,7 @@ import {
   ScrollView,
   Animated,
   Easing,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,11 +28,33 @@ import { useIsDesktopWeb } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Ordered by the research: the cataloguing barrier is why people abandon
+// competitor apps, so ease goes first; the never-worn money pain carries the
+// sharpest number and closes.
+const HOW_STEPS = [
+  {
+    n: '01',
+    title: 'Your closet, in minutes',
+    line: 'Snap a photo — the AI reads colour, cut, fabric and fit. Import a receipt and add a whole haul at once.',
+  },
+  {
+    n: '02',
+    title: 'Never "nothing to wear"',
+    line: 'A look every morning for the day you actually have — work, weekend, weather — from clothes you own.',
+  },
+  {
+    n: '03',
+    title: "Buy nothing that won't earn its place",
+    line: 'The average closet is a quarter never-worn. See how many outfits a piece unlocks before you pay.',
+  },
+];
+
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signIn } = useAuth();
   const { toast, showToast, hideToast } = useToast();
   const isDesktop = useIsDesktopWeb();
+  const { height: windowHeight } = useWindowDimensions();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -188,83 +211,84 @@ export default function LoginScreen() {
                 New here? <Text style={styles.linkTextBold}>Create a free account</Text>
               </Text>
             </TouchableOpacity>
-
-            {/* The consumable version of what the app does, for anyone who
-                scrolls past the form before committing. Three steps, because
-                that is the actual product loop. */}
-            <View style={styles.howSection}>
-              <Text style={styles.howLabel}>HOW IT WORKS</Text>
-              {/* Ordered by the research: the cataloguing barrier is why
-                  people abandon competitor apps, so ease goes first; the
-                  never-worn money pain carries the sharpest number and
-                  closes. */}
-              {[
-                {
-                  n: '01',
-                  title: 'Your closet, in minutes',
-                  line: 'Snap a photo — the AI reads colour, cut, fabric and fit. Import a receipt and add a whole haul at once.',
-                },
-                {
-                  n: '02',
-                  title: 'Never "nothing to wear"',
-                  line: 'A look every morning for the day you actually have — work, weekend, weather — from clothes you own.',
-                },
-                {
-                  n: '03',
-                  title: "Buy nothing that won't earn its place",
-                  line: 'The average closet is a quarter never-worn. See how many outfits a piece unlocks before you pay.',
-                },
-              ].map(step => (
-                <View key={step.n} style={styles.howRow}>
-                  <Text style={styles.howNumber}>{step.n}</Text>
-                  <View style={styles.howText}>
-                    <Text style={styles.howTitle}>{step.title}</Text>
-                    <Text style={styles.howLine}>{step.line}</Text>
-                  </View>
-                </View>
-              ))}
-
-              {/* "Free" is only credible with the why attached. Naming the
-                  business model turns the claim from bait into a promise -
-                  the only way this app earns is by recommending well. */}
-              <View style={styles.freeBox}>
-                <Text style={styles.freeLabel}>FREE, ACTUALLY</Text>
-                <Text style={styles.freeTitle}>Every feature. No subscription, no trial clock.</Text>
-                {/* "Your wear stats included" is aimed at a specific,
-                    documented resentment: competitors charge $60 a year to
-                    see your own most- and least-worn pieces. */}
-                <Text style={styles.freeLine}>
-                  Nothing in 33 Trends is locked behind a tier — your wear stats included. When you
-                  buy a piece we recommended, the retailer pays us a small commission, so the only
-                  way we make money is by being right about what suits you.
-                </Text>
-      </View>
-      </View>
     </Animated.View>
   );
 
-  // Desktop web: a split landing — the story stage owns the left half on a
-  // paper ground, the pitch and form sit in a fixed-width column on the
-  // right. The phone layout stacks the same blocks vertically.
+  // "Free" is only credible with the why attached. Naming the business model
+  // turns the claim from bait into a promise - the only way this app earns is
+  // by recommending well. "Your wear stats included" is aimed at a specific,
+  // documented resentment: competitors charge $60 a year for that.
+  const freeBlock = (
+    <View style={styles.freeBox}>
+      <Text style={styles.freeLabel}>FREE, ACTUALLY</Text>
+      <Text style={styles.freeTitle}>Every feature. No subscription, no trial clock.</Text>
+      <Text style={styles.freeLine}>
+        Nothing in 33 Trends is locked behind a tier — your wear stats included. When you
+        buy a piece we recommended, the retailer pays us a small commission, so the only
+        way we make money is by being right about what suits you.
+      </Text>
+    </View>
+  );
+
+  // Desktop landing: full-height split hero, then the product loop as three
+  // columns, then the free promise as a band — a marketing page, not a form.
   if (isDesktop) {
     return (
-      <View style={styles.splitPage}>
-        <Animated.View style={[styles.splitLeft, rise(heroIn, 32)]}>
-          <LoginHero />
-        </Animated.View>
-        <ScrollView
-          style={styles.splitRight}
-          contentContainerStyle={styles.splitRightContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {intro}
-          {formBlock}
-        </ScrollView>
+      <ScrollView
+        style={styles.landingPage}
+        contentContainerStyle={styles.landingContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.heroSplit, { minHeight: Math.max(windowHeight * 0.92, 560) }]}>
+          <Animated.View style={[styles.splitLeft, rise(heroIn, 32)]}>
+            <LoginHero />
+          </Animated.View>
+          <View style={styles.splitRightPane}>
+            <View style={styles.splitRightInner}>
+              {intro}
+              {formBlock}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.howDesktop}>
+          <Text style={styles.howDesktopLabel}>HOW IT WORKS</Text>
+          <View style={styles.howColumns}>
+            {HOW_STEPS.map(step => (
+              <View key={step.n} style={styles.howColumn}>
+                <Text style={styles.howNumber}>{step.n}</Text>
+                <Text style={styles.howTitle}>{step.title}</Text>
+                <Text style={styles.howLine}>{step.line}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.freeBand}>
+          <View style={styles.freeBandInner}>{freeBlock}</View>
+        </View>
+
         <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
-      </View>
+      </ScrollView>
     );
   }
+
+  const howMobile = (
+    <View style={styles.howSection}>
+      <Text style={styles.howLabel}>HOW IT WORKS</Text>
+      {HOW_STEPS.map(step => (
+        <View key={step.n} style={styles.howRow}>
+          <Text style={styles.howNumber}>{step.n}</Text>
+          <View style={styles.howText}>
+            <Text style={styles.howTitle}>{step.title}</Text>
+            <Text style={styles.howLine}>{step.line}</Text>
+          </View>
+        </View>
+      ))}
+      {freeBlock}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -283,6 +307,7 @@ export default function LoginScreen() {
           </Animated.View>
           {intro}
           {formBlock}
+          {howMobile}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -295,11 +320,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bone },
   content: { paddingHorizontal: spacing.page, paddingBottom: 48, paddingTop: spacing.sm },
 
-  // Desktop split landing. The stage centres in the left half on paper —
-  // the garment cards were composed against that ground — and the right
-  // half scrolls the pitch and form as a fixed reading column.
-  splitPage: {
+  // Desktop landing. Section one is a full-height split hero: the stage
+  // centres in the left half on paper — the garment cards were composed
+  // against that ground — with the pitch and form centred in the right half.
+  // The page itself scrolls; the sections below sell the loop.
+  landingPage: {
     flex: 1,
+    backgroundColor: colors.bone,
+  },
+  landingContent: {
+    paddingBottom: 0,
+  },
+  heroSplit: {
     flexDirection: 'row',
     backgroundColor: colors.bone,
   },
@@ -311,16 +343,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 48,
   },
-  splitRight: {
+  splitRightPane: {
     flex: 1,
+    justifyContent: 'center',
   },
-  splitRightContent: {
+  splitRightInner: {
     width: '100%',
     maxWidth: 460,
     alignSelf: 'center',
     paddingHorizontal: spacing.page,
+    paddingVertical: 56,
+  },
+
+  // The product loop as three columns under the fold — the reading order a
+  // desktop landing page is expected to have.
+  howDesktop: {
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.page,
     paddingTop: 72,
     paddingBottom: 64,
+  },
+  howDesktopLabel: {
+    ...textType.eyebrow,
+    textAlign: 'center',
+    marginBottom: spacing.section,
+  },
+  howColumns: {
+    flexDirection: 'row',
+    gap: 40,
+  },
+  howColumn: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    paddingTop: spacing.md,
+    gap: 6,
+  },
+
+  freeBand: {
+    backgroundColor: colors.paper,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
+  freeBandInner: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.page,
+    paddingVertical: 64,
   },
 
   intro: { marginTop: spacing.lg },

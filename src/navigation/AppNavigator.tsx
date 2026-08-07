@@ -91,7 +91,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
  * stretches across a monitor. Native and mobile web are untouched.
  */
 const TAB_CONTENT_WIDTH: Record<string, number> = {
-  Home: 760,
+  Home: 1180,
   Closet: 1240,
   StyleProfile: 800,
   StylistChat: 860,

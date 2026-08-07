@@ -352,26 +352,120 @@ export default function HomeScreen() {
     );
   }
 
+  const lookImagesBlock = look ? (
+    <View style={styles.lookCard}>
+      {look.items[0]?.imageUrl && (
+        <Image source={{ uri: look.items[0].imageUrl }} style={styles.heroImage} resizeMode="cover" />
+      )}
+      <View style={styles.thumbRow}>
+        {look.items.slice(0, 4).map(item => {
+          const costPerWear = item.price && item.wornCount
+            ? (item.price / (item.wornCount + 1)).toFixed(2)
+            : item.price?.toFixed(2);
+          return (
+            <View key={item.id} style={styles.thumbCard}>
+              {item.imageUrl ? (
+                <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.thumbImage, styles.thumbPlaceholder]}>
+                  <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
+                </View>
+              )}
+              <View style={styles.thumbMeta}>
+                <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
+                {costPerWear && <Text style={styles.thumbPrice}>${costPerWear}</Text>}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  ) : null;
+
+  const noteBlock = look ? (
+    <View style={styles.noteCard}>
+      <Text style={styles.noteQuote}>{look.reasoning[0] || look.description}</Text>
+      <Text style={styles.noteLabel}>STYLIST NOTE</Text>
+    </View>
+  ) : null;
+
+  const gapBlock =
+    look && look.missingPieces && look.missingPieces.length > 0 ? (
+      <View style={styles.gapCard}>
+        <Text style={styles.gapText}>
+          This look is missing {look.missingPieces.join(' and ')} — add some to your closet to complete it.
+        </Text>
+      </View>
+    ) : null;
+
+  const actionBlock = look ? (
+    <View style={styles.actionRow}>
+      {starterMode ? (
+        // Saving a look of catalogue products would write shop ids into the
+        // user's outfits - these pieces are not owned yet. The primary action
+        // is the honest one: go get them.
+        <Button
+          title="Shop this look"
+          variant="primary"
+          onPress={() => navigation.navigate('Shop', undefined)}
+          style={{ flex: 1 }}
+        />
+      ) : (
+        <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+      )}
+      <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
+    </View>
+  ) : null;
+
+  const shopBannerBlock = (
+    <TouchableOpacity
+      style={styles.shopBanner}
+      onPress={() =>
+        navigation.navigate(
+          'Shop',
+          look?.missingPieces?.[0] ? { category: look.missingPieces[0] as any } : undefined
+        )
+      }
+      activeOpacity={0.9}
+    >
+      <View style={styles.shopBannerCopy}>
+        <Text style={styles.shopBannerLabel}>SHOP</Text>
+        <Text style={styles.shopBannerTitle}>
+          {look?.missingPieces && look.missingPieces.length > 0
+            ? `Complete this look — shop ${look.missingPieces.join(' & ')}`
+            : 'Shop pieces matched to your style'}
+        </Text>
+      </View>
+      <View style={styles.shopBannerArrow}>
+        <Ionicons name="arrow-forward" size={18} color={colors.bone} />
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        {/* The wordmark component, not a letterspaced string - same lockup as
-            the app icon and splash, so the brand is one drawing everywhere.
-            Left-aligned like a masthead: every other screen in this system
-            sets its title on the left edge, and the old centred version was
-            never actually centred anyway (40px spacer against two 40px
-            buttons). On desktop web the site header already carries the
-            wordmark, so repeating it here would brand the page twice. */}
-        {isDesktop ? <View /> : <BrandWordmark variant="header" />}
-        <View style={styles.headerRightRow}>
-          <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
-            <Ionicons name="bag-outline" size={20} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
-            <Text style={styles.socialIcon}>◎</Text>
-          </TouchableOpacity>
+      {/* On desktop the site header carries the brand and the shortcuts move
+          into the hero row, so this bar would be an empty strip with two
+          orphaned icons — drop it entirely. */}
+      {!isDesktop && (
+        <View style={styles.header}>
+          {/* The wordmark component, not a letterspaced string - same lockup as
+              the app icon and splash, so the brand is one drawing everywhere.
+              Left-aligned like a masthead: every other screen in this system
+              sets its title on the left edge, and the old centred version was
+              never actually centred anyway (40px spacer against two 40px
+              buttons). */}
+          <BrandWordmark variant="header" />
+          <View style={styles.headerRightRow}>
+            <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
+              <Ionicons name="bag-outline" size={20} color={colors.ink} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
+              <Text style={styles.socialIcon}>◎</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -381,13 +475,25 @@ export default function HomeScreen() {
           <View style={styles.hero}>
             <View style={styles.heroTopRow}>
               <Text style={styles.dateLabel}>{dateLabel}</Text>
-              <TouchableOpacity
-                style={styles.archetypePill}
-                onPress={() => navigation.navigate('StyleProfileBuilder')}
-              >
-                <View style={styles.archetypeDot} />
-                <Text style={styles.archetypePillText}>{archetype.toUpperCase()}</Text>
-              </TouchableOpacity>
+              <View style={styles.heroTopRight}>
+                {isDesktop && (
+                  <>
+                    <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
+                      <Ionicons name="bag-outline" size={20} color={colors.ink} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
+                      <Text style={styles.socialIcon}>◎</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity
+                  style={styles.archetypePill}
+                  onPress={() => navigation.navigate('StyleProfileBuilder')}
+                >
+                  <View style={styles.archetypeDot} />
+                  <Text style={styles.archetypePillText}>{archetype.toUpperCase()}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             <Text style={styles.heroTitle}>
               {greeting}, <Text style={styles.heroTitleAccent}>{firstName}</Text>.
@@ -455,103 +561,42 @@ export default function HomeScreen() {
           )}
 
           {!look ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>
-                I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
-              </Text>
-              <Button
-                title="Add closet items"
-                variant="primary"
-                onPress={() => navigation.navigate('Closet' as any)}
-                style={{ marginTop: 16 }}
-              />
+            <>
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>
+                  I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
+                </Text>
+                <Button
+                  title="Add closet items"
+                  variant="primary"
+                  onPress={() => navigation.navigate('Closet' as any)}
+                  style={{ marginTop: 16 }}
+                />
+              </View>
+              {shopBannerBlock}
+            </>
+          ) : isDesktop ? (
+            // Desktop: the imagery holds the left column at editorial width;
+            // the stylist's voice — note, gaps, actions, shop — reads as a
+            // rail beside it instead of a scroll below it.
+            <View style={styles.lookSplit}>
+              <View style={styles.lookSplitImages}>{lookImagesBlock}</View>
+              <View style={styles.lookSplitAside}>
+                {noteBlock}
+                {gapBlock}
+                {actionBlock}
+                {shopBannerBlock}
+              </View>
             </View>
           ) : (
             <>
-              <View style={styles.lookCard}>
-                {look.items[0]?.imageUrl && (
-                  <Image source={{ uri: look.items[0].imageUrl }} style={styles.heroImage} resizeMode="cover" />
-                )}
-                <View style={styles.thumbRow}>
-                  {look.items.slice(0, 4).map(item => {
-                    const costPerWear = item.price && item.wornCount
-                      ? (item.price / (item.wornCount + 1)).toFixed(2)
-                      : item.price?.toFixed(2);
-                    return (
-                      <View key={item.id} style={styles.thumbCard}>
-                        {item.imageUrl ? (
-                          <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="cover" />
-                        ) : (
-                          <View style={[styles.thumbImage, styles.thumbPlaceholder]}>
-                            <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
-                          </View>
-                        )}
-                        <View style={styles.thumbMeta}>
-                          <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
-                          {costPerWear && <Text style={styles.thumbPrice}>${costPerWear}</Text>}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.noteCard}>
-                <Text style={styles.noteQuote}>
-                  {look.reasoning[0] || look.description}
-                </Text>
-                <Text style={styles.noteLabel}>STYLIST NOTE</Text>
-              </View>
-
-              {look.missingPieces && look.missingPieces.length > 0 && (
-                <View style={styles.gapCard}>
-                  <Text style={styles.gapText}>
-                    This look is missing {look.missingPieces.join(' and ')} — add some to your closet to complete it.
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.actionRow}>
-                {starterMode ? (
-                  // Saving a look of catalogue products would write shop ids
-                  // into the user's outfits - these pieces are not owned yet.
-                  // The primary action is the honest one: go get them.
-                  <Button
-                    title="Shop this look"
-                    variant="primary"
-                    onPress={() => navigation.navigate('Shop', undefined)}
-                    style={{ flex: 1 }}
-                  />
-                ) : (
-                  <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
-                )}
-                <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
-              </View>
+              {lookImagesBlock}
+              {noteBlock}
+              {gapBlock}
+              {actionBlock}
+              {shopBannerBlock}
             </>
           )}
-
-          <TouchableOpacity
-            style={styles.shopBanner}
-            onPress={() =>
-              navigation.navigate(
-                'Shop',
-                look?.missingPieces?.[0] ? { category: look.missingPieces[0] as any } : undefined
-              )
-            }
-            activeOpacity={0.9}
-          >
-            <View style={styles.shopBannerCopy}>
-              <Text style={styles.shopBannerLabel}>SHOP</Text>
-              <Text style={styles.shopBannerTitle}>
-                {look?.missingPieces && look.missingPieces.length > 0
-                  ? `Complete this look — shop ${look.missingPieces.join(' & ')}`
-                  : 'Shop pieces matched to your style'}
-              </Text>
-            </View>
-            <View style={styles.shopBannerArrow}>
-              <Ionicons name="arrow-forward" size={18} color={colors.bone} />
-            </View>
-          </TouchableOpacity>
         </Animated.View>
       </ScrollView>
 
@@ -649,6 +694,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  heroTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  // Desktop: imagery left, the stylist's rail right. The images column takes
+  // the larger share - it is the product - and the rail holds everything the
+  // stylist has to say about it at a fixed reading width.
+  lookSplit: {
+    flexDirection: 'row',
+    gap: 28,
+    alignItems: 'flex-start',
+  },
+  lookSplitImages: {
+    flex: 1.35,
+  },
+  lookSplitAside: {
+    flex: 1,
+    gap: 0,
   },
   dateLabel: {
     ...textType.eyebrow,
