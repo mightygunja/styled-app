@@ -64,3 +64,6 @@ functions/.runtimeconfig.json
 # generated native folders
 /ios
 /android
+
+# Firebase Hosting deploy cache
+.firebase/

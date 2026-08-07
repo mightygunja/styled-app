@@ -1,8 +1,13 @@
+import { Platform } from 'react-native';
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import {
+  initializeAuth,
+  getReactNativePersistence,
+  browserLocalPersistence,
+} from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase configuration
@@ -51,11 +56,14 @@ export const db = createFirestore();
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
 
-// Initialize Auth with AsyncStorage-backed persistence - without this, the Firebase JS
-// SDK defaults to in-memory auth state on React Native, silently logging users out on
-// every app restart.
+// Initialize Auth with platform-appropriate persistence. On native, the
+// AsyncStorage wrapper - without it the SDK defaults to in-memory state and
+// silently logs users out on every restart. On web, the browser's own
+// localStorage persistence; the RN wrapper is not built for a DOM
+// environment and web is where popup/redirect sign-in flows live.
 export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
+  persistence:
+    Platform.OS === 'web' ? browserLocalPersistence : getReactNativePersistence(AsyncStorage),
 });
 
 export default app;

@@ -406,7 +406,7 @@ export default function HomeScreen() {
               <View style={styles.profilePromptActions}>
                 <TouchableOpacity
                   style={styles.profilePromptButton}
-                  onPress={() => navigation.navigate('Onboarding')}
+                  onPress={() => navigation.navigate('ProfileSurvey')}
                 >
                   <Text style={styles.profilePromptButtonText}>Take the survey</Text>
                 </TouchableOpacity>

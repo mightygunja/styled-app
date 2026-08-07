@@ -104,6 +104,81 @@ function MainTabs() {
 // devSkipAuthChecks() in firestore.rules, which need to be reverted together.
 const DEV_SKIP_AUTH = false;
 
+/**
+ * URL map for the web build (harmless on native, where it also powers deep
+ * links via the app scheme). Paths follow the content, not the code: the
+ * browser bar reads /closet/item/abc123, back and forward work, and any URL
+ * cold-loads into the right screen because web output is a single page.
+ *
+ * Screens without an entry still navigate normally - they just get a
+ * generated URL instead of a designed one.
+ */
+const linking = {
+  prefixes: [],
+  config: {
+    screens: {
+      MainTabs: {
+        path: '',
+        screens: {
+          Home: '',
+          Closet: 'closet',
+          StyleProfile: 'style',
+          StylistChat: 'stylist',
+          More: 'more',
+        },
+      },
+      Login: 'login',
+      Signup: 'signup',
+      Onboarding: 'welcome',
+      ProfileSurvey: 'survey',
+      Shop: 'shop',
+      ProductDetail: 'product/:productId',
+      Wishlist: 'saved',
+      Explore: 'explore',
+      SocialFeed: 'feed',
+      CreatePost: 'feed/new',
+      PostDetail: 'post/:postId',
+      UserProfile: 'profile/:userId',
+      Followers: 'profile/:userId/followers',
+      Following: 'profile/:userId/following',
+      Messages: 'messages',
+      Chat: 'messages/:conversationId',
+      Notifications: 'notifications',
+      Challenges: 'challenges',
+      ChallengeDetail: 'challenges/:challengeId',
+      Groups: 'groups',
+      GroupDetail: 'groups/:groupId',
+      EventDetail: 'events/:eventId',
+      AddClosetItem: 'closet/add',
+      ClosetItemDetail: 'closet/item/:closetItemId',
+      SimilarItems: 'closet/similar',
+      OutfitBuilder: 'outfits/new',
+      OutfitPlanner: 'planner',
+      PackingList: 'packing',
+      SmartSearch: 'search',
+      Favorites: 'favorites',
+      StyleProfileBuilder: 'style/edit',
+      ColorAnalysis: 'style/colors',
+      BodyAnalysis: 'style/body',
+      InStoreCheck: 'check',
+      TrendInsights: 'trends',
+      Edits: 'edits',
+      EditDetail: 'edits/:editId',
+      Sustainability: 'sustainability',
+      CarbonCalculator: 'carbon',
+      Resale: 'resale',
+      StylistMarketplace: 'stylists',
+      StylistDetail: 'stylists/:stylistId',
+      MySessions: 'sessions',
+      Account: 'account',
+      Admin: 'admin',
+      AffiliateAnalytics: 'admin/affiliate',
+      StylistApplicationsAdmin: 'admin/stylists',
+      StylistApplication: 'apply',
+    },
+  },
+};
+
 export default function AppNavigator() {
   const { user, loading, isNewUser } = useAuth();
 
@@ -116,7 +191,15 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      linking={linking}
+      documentTitle={{
+        formatter: (options, route) => {
+          const label = (options?.title as string) || route?.name || '';
+          return label && label !== 'MainTabs' ? `${label} · 33 Trends` : '33 Trends';
+        },
+      }}
+    >
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -131,9 +214,14 @@ export default function AppNavigator() {
             <Stack.Screen name="MainTabs" component={MainTabs} />
             {/* Also reachable from inside the app, so existing accounts that
                 predate the survey can take it from the Home prompt. The
-                isNewUser branch above still owns the first-run flow. */}
+                isNewUser branch above still owns the first-run flow. Named
+                differently from that branch's "Onboarding" on purpose: if both
+                branches used the same route name, finishing first-run would
+                leave the user parked on this screen (React Navigation keeps
+                the current route when its name survives the config swap)
+                instead of resetting to MainTabs. */}
             <Stack.Screen
-              name="Onboarding"
+              name="ProfileSurvey"
               component={OnboardingScreen}
               options={{ presentation: 'modal' }}
             />

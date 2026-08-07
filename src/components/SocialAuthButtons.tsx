@@ -52,13 +52,21 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
    * Any real build has it, because it is declared in app.json plugins.
    */
   useEffect(() => {
+    // On web there is no native module registry at all - react-native-web
+    // does not export TurboModuleRegistry, and touching it crashes the
+    // screen. Web gets Google via Firebase's popup flow instead, handled in
+    // AuthContext, so the button stays visible there.
+    if (Platform.OS === 'web') {
+      setNativeAuthLinked(true);
+      return;
+    }
     // TurboModuleRegistry.get, never require. Requiring the package runs
     // getEnforcing at module scope, which THROWS when the module is absent -
     // and React Native logs that native exception to the console even when it
     // is caught, which is why the Invariant Violation kept appearing despite
     // the try/catch. `get` returns null instead, silently.
     const linked =
-      TurboModuleRegistry.get('RNGoogleSignin') != null ||
+      TurboModuleRegistry?.get?.('RNGoogleSignin') != null ||
       // Old architecture fallback.
       (NativeModules as any)?.RNGoogleSignin != null;
     setNativeAuthLinked(linked);

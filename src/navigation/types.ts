@@ -53,6 +53,7 @@ export type RootStackParamList = {
   Subscription: undefined;
   Settings: undefined;
   Onboarding: undefined;
+  ProfileSurvey: undefined;
   Favorites: undefined;
   OutfitBuilder: { sourceItemId?: string };
   OutfitPlanner: undefined;

@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithCredential,
+  signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
   FacebookAuthProvider,
@@ -179,6 +180,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(
         'Google Sign-In is not configured yet (missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID).'
       );
+    }
+
+    // Web signs in with Firebase's own popup flow - the native module does
+    // not exist in a browser, and the popup is the correct web technique.
+    // The Google provider is already enabled in Firebase, so no extra
+    // configuration is needed.
+    if (Platform.OS === 'web') {
+      try {
+        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        if (getAdditionalUserInfo(result)?.isNewUser) setIsNewUser(true);
+        return;
+      } catch (error: any) {
+        if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+          return; // user closed the popup - not an error worth surfacing
+        }
+        if (error?.code === 'auth/account-exists-with-different-credential') {
+          throw new Error(await describeAccountCollision(error));
+        }
+        throw new Error(authErrorMessage(error));
+      }
     }
 
     try {

@@ -87,7 +87,7 @@ const NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
 const MAX_WORDS = 3;
 
 export default function OnboardingScreen() {
-  const { user, clearIsNewUser } = useAuth();
+  const { user, isNewUser, clearIsNewUser } = useAuth();
   const navigation = useNavigation();
   // First-run renders this as the whole stack (nothing to go back to);
   // existing users arrive as a pushed modal from the Home prompt. That one
@@ -155,8 +155,13 @@ export default function OnboardingScreen() {
       setFinishing(false);
       if (presentedAsRoute) {
         navigation.goBack();
-      } else {
+      } else if (isNewUser) {
         clearIsNewUser();
+      } else {
+        // Web edge case: an existing user cold-loads /survey, so this screen
+        // is the entire stack and there is no isNewUser flag whose clearing
+        // would swap the navigator. Reset to the tabs explicitly.
+        (navigation as any).reset({ index: 0, routes: [{ name: 'MainTabs' }] });
       }
     }
   };
