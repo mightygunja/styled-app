@@ -32,6 +32,7 @@ import {
   HOME_OCCASIONS,
 } from '../services/dailyOutfitService';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { discoveryService } from '../services/discoveryService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
@@ -115,6 +116,7 @@ export default function HomeScreen() {
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [lookIndex, setLookIndex] = useState(0);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
+  const [starterMode, setStarterMode] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Every tab's outfits are built once per slot and held here, so switching
@@ -224,6 +226,25 @@ export default function HomeScreen() {
         condition: weatherResult.condition,
         temperature: weatherResult.temperature,
       };
+
+      // Cold start: a closet that cannot make a single top-and-bottom pair
+      // would leave Dress Me Today as a dead end. Compose looks from the shop
+      // instead - same engine, same occasion tabs, ranked against the survey
+      // profile - and say so plainly in the banner. The moment enough real
+      // pieces exist, this branch stops being taken.
+      const coreCount = wearable.filter(i =>
+        ['tops', 'bottoms', 'dresses'].includes((i.category || '').toLowerCase())
+      ).length;
+      if (coreCount < 3) {
+        const starterPools = await discoveryService.buildStarterPools(matchContext);
+        poolsRef.current = { slot: -1, pools: starterPools, copy: {} };
+        setStarterMode(true);
+        showOccasion(occasionValue, []);
+        setLookIndex(0);
+        if (!refreshing) fadeIn(fadeAnim, 300).start();
+        return;
+      }
+      setStarterMode(false);
 
       const loaded = await dailyOutfitService.loadOutfitPools(wearable, {
         weather: weatherContext,
@@ -420,6 +441,16 @@ export default function HomeScreen() {
             ) : null}
           </View>
 
+          {starterMode && look && (
+            <View style={styles.starterBanner}>
+              <Text style={styles.starterEyebrow}>STARTING YOU OFF</Text>
+              <Text style={styles.starterLine}>
+                Your closet is empty, so these looks are composed from the shop and matched to your
+                style profile. Add your own pieces and I dress you from your wardrobe instead.
+              </Text>
+            </View>
+          )}
+
           {!look ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>
@@ -478,7 +509,19 @@ export default function HomeScreen() {
               )}
 
               <View style={styles.actionRow}>
-                <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+                {starterMode ? (
+                  // Saving a look of catalogue products would write shop ids
+                  // into the user's outfits - these pieces are not owned yet.
+                  // The primary action is the honest one: go get them.
+                  <Button
+                    title="Shop this look"
+                    variant="primary"
+                    onPress={() => navigation.navigate('Shop', undefined)}
+                    style={{ flex: 1 }}
+                  />
+                ) : (
+                  <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+                )}
                 <Button title="Swap a piece" variant="outline" onPress={handleSwap} style={{ flex: 1, marginLeft: 10 }} />
               </View>
             </>
@@ -579,6 +622,15 @@ const styles = StyleSheet.create({
   profilePromptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   profilePromptDismiss: { paddingVertical: 12 },
   profilePromptDismissText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
+  starterBanner: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: 14,
+  },
+  starterEyebrow: { ...textType.eyebrow, fontSize: 9, marginBottom: 6 },
+  starterLine: { ...textType.body, fontSize: 12, lineHeight: 18, color: colors.inkMuted },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',

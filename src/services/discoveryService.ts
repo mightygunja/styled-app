@@ -30,6 +30,7 @@ import { buildProfileMatchContext, ProfileMatchContext } from './profileMatchCon
 import { scoreAndRankProducts } from './marketplaceMatchingService';
 import { computeOutfitUnlock, colorsWork, roleForCategory, GarmentRole } from './outfitUnlock';
 import { currentSeason } from './seasonalFit';
+import { buildAllOccasions, OccasionKey, OutfitCandidate } from './dailyOutfitService';
 import { shopperSignals } from './shopperSignals';
 import { getCurrentWeather } from './weatherService';
 import { closetAPI, getCurrentUserId } from './api';
@@ -338,12 +339,56 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
   return { summary, unlocks, matched, fillsGap, edit, productsById };
 }
 
+/**
+ * Starter looks for an empty closet.
+ *
+ * A new user has answered the survey but owns nothing in the app yet, so
+ * Dress Me Today would be a dead end. Instead: pull the catalogue, rank it
+ * against the survey profile (avoid-rules veto here exactly as everywhere
+ * else), map the top products into the Item shape, and hand them to the SAME
+ * outfit engine that dresses a real closet. Colour harmony, formality
+ * targets and per-occasion separation all apply - these are composed looks,
+ * not a product carousel.
+ */
+export async function buildStarterPools(
+  profile: ProfileMatchContext | undefined
+): Promise<Record<OccasionKey, OutfitCandidate[]>> {
+  const result = await getActiveAdapter()
+    .search({
+      colors: profile?.recommendedColors?.slice(0, 6),
+      styleArchetypes: profile?.styleArchetypes,
+      silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
+      pageSize: 60,
+    })
+    .catch(() => ({ products: [] as Product[] }));
+
+  // Empty closet means the unlock signals stay silent, but profile fit and
+  // hard vetoes still order the pool.
+  const ranked = scoreAndRankProducts(result.products, profile, [], {});
+
+  const pool: Item[] = ranked.slice(0, 40).map(({ product }) => ({
+    id: product.id,
+    name: product.name,
+    imageUrl: product.imageUrl,
+    category: product.category,
+    color: product.color,
+    brand: product.brand,
+    price: product.price,
+    subcategory: product.subcategory,
+    style: product.styleTags?.[0],
+    tags: product.styleTags,
+  }));
+
+  return buildAllOccasions(pool, {});
+}
+
 export const discoveryService = {
   loadDiscovery,
   summariseCloset,
   summaryLine,
   outfitsToday,
   findBottleneck,
+  buildStarterPools,
 };
 
 export { computeOutfitUnlock };
