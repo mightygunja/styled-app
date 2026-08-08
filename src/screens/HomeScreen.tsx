@@ -122,6 +122,18 @@ export default function HomeScreen() {
   // keeps them, while a new slot's outfits start clean.
   const [swapTargetId, setSwapTargetId] = useState<string | null>(null);
   const [lookOverrides, setLookOverrides] = useState<Record<string, Item[]>>({});
+  const swapTrayRef = useRef<View>(null);
+
+  // The tray opens below the thumbnails, which on most screens is below the
+  // fold at the moment of the tap - without this the only feedback for a
+  // successful tap is off-screen and the feature reads as broken.
+  useEffect(() => {
+    if (!swapTargetId) return;
+    const node = swapTrayRef.current as unknown as HTMLElement | null;
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [swapTargetId]);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
   const { toast, showToast, hideToast } = useToast();
@@ -406,6 +418,11 @@ export default function HomeScreen() {
               key={item.id}
               style={[styles.thumbCard, isSwapping && styles.thumbCardActive]}
               activeOpacity={0.85}
+              // The role is what makes this real on web: without it the
+              // element never enters the accessibility tree, so keyboard
+              // activation and assistive tech treat it as decoration.
+              accessibilityRole="button"
+              accessibilityLabel={`Swap the ${item.name || item.category}`}
               onPress={() => setSwapTargetId(isSwapping ? null : item.id)}
             >
               {item.imageUrl ? (
@@ -415,8 +432,8 @@ export default function HomeScreen() {
                   <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
                 </View>
               )}
-              <View style={styles.swapBadge}>
-                <Ionicons name="swap-horizontal" size={12} color={colors.ink} />
+              <View style={[styles.swapBadge, isSwapping && styles.swapBadgeActive]}>
+                <Ionicons name="swap-horizontal" size={12} color={isSwapping ? colors.bone : colors.ink} />
               </View>
               <View style={styles.thumbMeta}>
                 <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
@@ -428,7 +445,7 @@ export default function HomeScreen() {
       </View>
 
       {swapTarget && (
-        <View style={styles.swapTray}>
+        <View ref={swapTrayRef} style={styles.swapTray}>
           <View style={styles.swapTrayHeader}>
             <Text style={styles.swapTrayLabel}>
               SWAP THE {String(swapTarget.name || swapTarget.category).toUpperCase()}
@@ -450,6 +467,8 @@ export default function HomeScreen() {
                     key={alt.id}
                     style={styles.swapOption}
                     activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Swap in ${alt.name || alt.category}`}
                     onPress={() => applySwap(alt)}
                   >
                     {alt.imageUrl ? (
@@ -638,6 +657,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     style={styles.lookPagerArrow}
                     onPress={() => goToLook(-1)}
+                    accessibilityRole="button"
                     accessibilityLabel="Previous look"
                   >
                     <Ionicons name="chevron-back" size={16} color={colors.ink} />
@@ -650,6 +670,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     style={styles.lookPagerArrow}
                     onPress={() => goToLook(1)}
+                    accessibilityRole="button"
                     accessibilityLabel="Next look"
                   >
                     <Ionicons name="chevron-forward" size={16} color={colors.ink} />
@@ -900,8 +921,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Selection needs to read at a glance: a full-strength ink frame against
+  // everything else's hairlines, not an opacity nudge nobody notices.
   thumbCardActive: {
-    opacity: 0.75,
+    borderWidth: 2,
+    borderColor: colors.ink,
+  },
+  swapBadgeActive: {
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
   // The swap affordance on every piece - a quiet chip, not a button, because
   // the whole thumb is the tap target.
