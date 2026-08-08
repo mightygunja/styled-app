@@ -1162,24 +1162,40 @@ export const seedStylists = functions
 // switchover is a config change, not a rebuild.
 //
 // To activate:
-//   1. Create a Sovrn Commerce (https://www.sovrn.com/products/commerce/) or
-//      Skimlinks account, get an API key + publisher/site ID.
-//   2. firebase functions:config:set sovrn.key="..." sovrn.pubid="..."
-//   3. Implement the two TODOs below against Sovrn's actual Product Search
-//      and link-wrapping API (their exact request/response shape needs to be
-//      pulled from their current API docs when you have real credentials -
-//      intentionally not guessed here, since a wrong guess would silently
-//      fail rather than error clearly).
-//   4. firebase deploy --only functions:searchMarketplaceProducts,functions:wrapAffiliateLink
-//   5. Flip MARKETPLACE_PROVIDER to 'sovrn' in src/services/affiliateNetwork.ts
+//   1. Create a Sovrn Commerce (https://www.sovrn.com/products/commerce/)
+//      account and get an API key.
+//   2. Put SOVRN_KEY=... (and optionally SOVRN_PUBID=...) in functions/.env,
+//      which is gitignored. `functions:config:set` is retired and rejected by
+//      current CLI versions.
+//   3. firebase deploy --only functions:searchMarketplaceProducts,functions:wrapAffiliateLink
+//   4. Flip MARKETPLACE_PROVIDER to 'sovrn' in src/services/affiliateNetwork.ts
+//
+// The request/response mapping below is written against Sovrn's documented
+// shapes. Verify it against a live response on first run: a shape mismatch
+// throws with a named error rather than silently returning nothing.
 
 function getSovrnConfig(): { key: string; pubId: string } | null {
-  const cfg = functions.config().sovrn;
+  // Env first: `functions:config:set` is retired, so credentials now live in
+  // functions/.env (gitignored). The legacy runtime config is still read as a
+  // fallback so an existing deployment keeps working, and it must be wrapped -
+  // functions.config() throws rather than returning empty when no runtime
+  // config exists at all.
+  const legacy = (() => {
+    try {
+      return functions.config().sovrn || {};
+    } catch {
+      return {} as Record<string, string>;
+    }
+  })();
+
+  const key = process.env.SOVRN_KEY || legacy.key || '';
   // pubid is optional: Sovrn's link format authenticates on `key` alone. It is
-  // still read so an existing config keeps working and so a publisher id can be
-  // threaded through as `cuid` for attribution if you want it later.
-  if (!cfg?.key) return null;
-  return { key: cfg.key, pubId: cfg.pubid || '' };
+  // still read so a publisher id can be threaded through as `cuid` for
+  // attribution if you want it later.
+  const pubId = process.env.SOVRN_PUBID || legacy.pubid || '';
+
+  if (!key) return null;
+  return { key, pubId };
 }
 
 const SOVRN_PRODUCTS_URL =
@@ -1383,8 +1399,8 @@ export const searchMarketplaceProducts = functions
 // Setup:
 //   1. Get client_id, client_secret and SID from your Rakuten Advertising
 //      publisher account (Help > API Access).
-//   2. firebase functions:config:set rakuten.client_id="..." \
-//        rakuten.client_secret="..." rakuten.sid="..."
+//   2. Put RAKUTEN_CLIENT_ID, RAKUTEN_CLIENT_SECRET and RAKUTEN_SID in
+//      functions/.env (gitignored). `functions:config:set` is retired.
 //   3. firebase deploy --only functions:searchRakutenProducts
 //   4. Set MARKETPLACE_PROVIDER to 'rakuten' (or 'both') in affiliateNetwork.ts
 
@@ -1410,9 +1426,21 @@ const RAKUTEN_FIELDS = {
 };
 
 function getRakutenConfig(): { clientId: string; clientSecret: string; sid: string } | null {
-  const cfg = functions.config().rakuten;
-  if (!cfg?.client_id || !cfg?.client_secret || !cfg?.sid) return null;
-  return { clientId: cfg.client_id, clientSecret: cfg.client_secret, sid: cfg.sid };
+  // Env first, legacy runtime config as a fallback - see getSovrnConfig.
+  const legacy = (() => {
+    try {
+      return functions.config().rakuten || {};
+    } catch {
+      return {} as Record<string, string>;
+    }
+  })();
+
+  const clientId = process.env.RAKUTEN_CLIENT_ID || legacy.client_id || '';
+  const clientSecret = process.env.RAKUTEN_CLIENT_SECRET || legacy.client_secret || '';
+  const sid = process.env.RAKUTEN_SID || legacy.sid || '';
+
+  if (!clientId || !clientSecret || !sid) return null;
+  return { clientId, clientSecret, sid };
 }
 
 /**
