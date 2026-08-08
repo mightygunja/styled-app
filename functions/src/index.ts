@@ -1404,9 +1404,16 @@ export const searchMarketplaceProducts = functions
 //   3. firebase deploy --only functions:searchRakutenProducts
 //   4. Set MARKETPLACE_PROVIDER to 'rakuten' (or 'both') in affiliateNetwork.ts
 
+/**
+ * api.linksynergy.com is the host Rakuten Advertising currently documents;
+ * api.rakutenmarketing.com is the older name for the same platform and may
+ * still answer. Both are overridable from functions/.env so a wrong host can be
+ * corrected with a config change instead of a code change and redeploy.
+ */
 const RAKUTEN_ENDPOINTS = {
-  token: 'https://api.rakutenmarketing.com/token',
-  productSearch: 'https://api.rakutenmarketing.com/productsearch/1.0',
+  token: process.env.RAKUTEN_TOKEN_URL || 'https://api.linksynergy.com/token',
+  productSearch:
+    process.env.RAKUTEN_SEARCH_URL || 'https://api.linksynergy.com/productsearch/1.0',
 };
 
 /** XML element names on each returned product. Correct these against a live response. */
