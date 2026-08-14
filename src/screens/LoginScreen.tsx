@@ -214,6 +214,30 @@ export default function LoginScreen() {
     </Animated.View>
   );
 
+  // The site's identity block for a logged-out reader: who runs this, what
+  // the rules are, how to reach a human. Affiliate networks and app review
+  // both check for exactly these links, and users deserve them anyway.
+  const legalFooter = (
+    <View style={styles.legalFooter}>
+      <View style={styles.legalLinks}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('About')}>
+          <Text style={styles.legalLink}>ABOUT</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalDot}>·</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Privacy')}>
+          <Text style={styles.legalLink}>PRIVACY</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalDot}>·</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Terms')}>
+          <Text style={styles.legalLink}>TERMS</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.legalCopy}>
+        © 2026 33 Trends · support@thirtythreetrends.com
+      </Text>
+    </View>
+  );
+
   // "Free" is only credible with the why attached. Naming the business model
   // turns the claim from bait into a promise - the only way this app earns is
   // by recommending well. "Your wear stats included" is aimed at a specific,
@@ -269,6 +293,8 @@ export default function LoginScreen() {
           <View style={styles.freeBandInner}>{freeBlock}</View>
         </View>
 
+        {legalFooter}
+
         <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
       </ScrollView>
     );
@@ -308,6 +334,7 @@ export default function LoginScreen() {
           {intro}
           {formBlock}
           {howMobile}
+          {legalFooter}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -393,6 +420,32 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.page,
     paddingVertical: 64,
+  },
+
+  legalFooter: {
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.page,
+    alignItems: 'center',
+    gap: 8,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  legalLink: {
+    ...textType.eyebrow,
+    color: colors.ink,
+  },
+  legalDot: {
+    color: colors.inkFaint,
+  },
+  legalCopy: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkFaint,
   },
 
   intro: { marginTop: spacing.lg },

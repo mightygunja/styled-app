@@ -77,6 +77,7 @@ import AccountScreen from '../screens/AccountScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import { AboutScreen, PrivacyScreen, TermsScreen } from '../screens/PublicPagesScreens';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme/designSystem';
 import FloatingTabBar from './FloatingTabBar';
@@ -212,6 +213,9 @@ const linking = {
       Signup: 'signup',
       Onboarding: 'welcome',
       ProfileSurvey: 'survey',
+      About: 'about',
+      Privacy: 'privacy',
+      Terms: 'terms',
       Shop: 'shop',
       ProductDetail: 'product/:productId',
       Wishlist: 'saved',
@@ -299,7 +303,12 @@ export default function AppNavigator() {
         }}
       >
         {user && isNewUser ? (
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
+          </>
         ) : user || DEV_SKIP_AUTH ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
@@ -381,11 +390,21 @@ export default function AppNavigator() {
             <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="Wishlist" component={WishlistScreen} />
+            {/* Public pages are registered in every branch: a signed-in user
+                can read them, and a signed-out visitor - an App Store or
+                affiliate-network reviewer included - can cold-load /privacy
+                without hitting the login wall. */}
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
           </>
         )}
       </Stack.Navigator>

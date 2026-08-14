@@ -89,6 +89,9 @@ export type RootStackParamList = {
   Wishlist: undefined;
   Login: undefined;
   Signup: undefined;
+  About: undefined;
+  Privacy: undefined;
+  Terms: undefined;
 
   // ==================== NOT REGISTERED IN AppNavigator ====================
   // Route types kept only so the corresponding screen files (restored from
