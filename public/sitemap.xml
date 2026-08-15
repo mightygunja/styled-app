@@ -25,6 +25,42 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://www.thirtythreetrends.com/guides/capsule-wardrobe</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.thirtythreetrends.com/guides/nothing-to-wear</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.thirtythreetrends.com/guides/cost-per-wear</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.thirtythreetrends.com/guides/color-analysis</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.thirtythreetrends.com/guides/body-types</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.thirtythreetrends.com/guides/wardrobe-gaps</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.thirtythreetrends.com/privacy</loc>
     <lastmod>2026-08-15</lastmod>
     <changefreq>yearly</changefreq>

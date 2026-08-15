@@ -25,6 +25,7 @@ import LoginHero from '../components/LoginHero';
 import BrandWordmark from '../components/BrandWordmark';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
+import { GUIDES } from './GuideScreens';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -219,6 +220,22 @@ export default function LoginScreen() {
   // both check for exactly these links, and users deserve them anyway.
   const legalFooter = (
     <View style={styles.legalFooter}>
+      {/* The guides are the site's indexable content; linking them from the
+          landing page is what lets a crawler (or a curious person) find them. */}
+      <View style={styles.guideLinks}>
+        <Text style={styles.guideLinksLabel}>STYLE GUIDES</Text>
+        <View style={styles.guideLinkRow}>
+          {GUIDES.map(guide => (
+            <TouchableOpacity
+              key={guide.route}
+              accessibilityRole="button"
+              onPress={() => navigation.navigate(guide.route as any)}
+            >
+              <Text style={styles.guideLink}>{guide.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
       <View style={styles.legalLinks}>
         <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('About')}>
           <Text style={styles.legalLink}>ABOUT</Text>
@@ -429,6 +446,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     alignItems: 'center',
     gap: 8,
+  },
+  guideLinks: {
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: spacing.md,
+  },
+  guideLinksLabel: {
+    ...textType.eyebrow,
+    color: colors.inkFaint,
+  },
+  guideLinkRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: 18,
+    rowGap: 8,
+    maxWidth: 640,
+  },
+  guideLink: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.tobacco,
   },
   legalLinks: {
     flexDirection: 'row',

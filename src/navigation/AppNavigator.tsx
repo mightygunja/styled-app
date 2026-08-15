@@ -78,6 +78,15 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { AboutScreen, PrivacyScreen, TermsScreen } from '../screens/PublicPagesScreens';
+import {
+  GUIDES,
+  GuideCapsuleScreen,
+  GuideNothingToWearScreen,
+  GuideCostPerWearScreen,
+  GuideColorSeasonsScreen,
+  GuideBodyTypesScreen,
+  GuideWardrobeGapsScreen,
+} from '../screens/GuideScreens';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme/designSystem';
 import FloatingTabBar from './FloatingTabBar';
@@ -187,6 +196,33 @@ function MainTabs() {
 const DEV_SKIP_AUTH = false;
 
 /**
+ * Screens reachable without an account: legal pages and the style guides.
+ * Registered in every navigator branch so they cold-load logged-out,
+ * logged-in and mid-onboarding - a crawler or reviewer never signs in.
+ * The title feeds documentTitle, which is what search results display.
+ */
+const PUBLIC_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title?: string }> = [
+  { name: 'About', component: AboutScreen, title: 'About' },
+  { name: 'Privacy', component: PrivacyScreen, title: 'Privacy' },
+  { name: 'Terms', component: TermsScreen, title: 'Terms' },
+  { name: 'GuideCapsule', component: GuideCapsuleScreen, title: 'How to Build a Capsule Wardrobe' },
+  { name: 'GuideNothingToWear', component: GuideNothingToWearScreen, title: 'Full Closet, Nothing to Wear? The Fix' },
+  { name: 'GuideCostPerWear', component: GuideCostPerWearScreen, title: 'Cost Per Wear, Explained' },
+  { name: 'GuideColorSeasons', component: GuideColorSeasonsScreen, title: 'Color Seasons, Plainly' },
+  { name: 'GuideBodyTypes', component: GuideBodyTypesScreen, title: 'Dressing for Your Body Type' },
+  { name: 'GuideWardrobeGaps', component: GuideWardrobeGapsScreen, title: 'What to Buy Next: Wardrobe Gaps' },
+];
+
+const publicScreens = PUBLIC_SCREENS.map(screen => (
+  <Stack.Screen
+    key={screen.name}
+    name={screen.name as any}
+    component={screen.component}
+    options={{ title: screen.title }}
+  />
+));
+
+/**
  * URL map for the web build (harmless on native, where it also powers deep
  * links via the app scheme). Paths follow the content, not the code: the
  * browser bar reads /closet/item/abc123, back and forward work, and any URL
@@ -216,6 +252,7 @@ const linking = {
       About: 'about',
       Privacy: 'privacy',
       Terms: 'terms',
+      ...Object.fromEntries(GUIDES.map(g => [g.route, g.path])),
       Shop: 'shop',
       ProductDetail: 'product/:productId',
       Wishlist: 'saved',
@@ -298,6 +335,9 @@ const ROUTE_SEO: Record<string, { path: string; description: string }> = {
     description:
       'The 33 Trends terms of service, including the affiliate disclosure and your rights over your own content.',
   },
+  ...Object.fromEntries(
+    GUIDES.map(g => [g.route, { path: `/${g.path}`, description: g.description }])
+  ),
 };
 
 function syncSeoMeta() {
@@ -362,9 +402,7 @@ export default function AppNavigator() {
         {user && isNewUser ? (
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyScreen} />
-            <Stack.Screen name="Terms" component={TermsScreen} />
+            {publicScreens}
           </>
         ) : user || DEV_SKIP_AUTH ? (
           <>
@@ -447,21 +485,13 @@ export default function AppNavigator() {
             <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="Wishlist" component={WishlistScreen} />
-            {/* Public pages are registered in every branch: a signed-in user
-                can read them, and a signed-out visitor - an App Store or
-                affiliate-network reviewer included - can cold-load /privacy
-                without hitting the login wall. */}
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyScreen} />
-            <Stack.Screen name="Terms" component={TermsScreen} />
+            {publicScreens}
           </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyScreen} />
-            <Stack.Screen name="Terms" component={TermsScreen} />
+            {publicScreens}
           </>
         )}
       </Stack.Navigator>
