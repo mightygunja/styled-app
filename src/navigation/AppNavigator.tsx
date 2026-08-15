@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text, View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { Text, View, ActivityIndicator, Platform } from 'react-native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from './types';
@@ -264,6 +264,60 @@ const linking = {
   },
 };
 
+const navigationRef = createNavigationContainerRef();
+
+/**
+ * Per-route SEO meta for the pages a crawler can actually read logged-out.
+ * The static index.html carries the site-wide defaults; this swaps the
+ * description and canonical as the SPA navigates, so /about and /privacy
+ * present as themselves rather than as copies of the homepage.
+ */
+const ROUTE_SEO: Record<string, { path: string; description: string }> = {
+  Login: {
+    path: '/login',
+    description:
+      'Sign in to 33 Trends — daily outfit recommendations from the clothes you already own. Free, every feature.',
+  },
+  Signup: {
+    path: '/signup',
+    description:
+      'Create a free 33 Trends account: photograph your closet and get daily outfits matched to your style profile, the occasion and the weather.',
+  },
+  About: {
+    path: '/about',
+    description:
+      'What 33 Trends is: an AI personal stylist built on the clothes you already own, funded by affiliate commission instead of subscriptions or ads.',
+  },
+  Privacy: {
+    path: '/privacy',
+    description:
+      'The 33 Trends privacy policy: what we collect, how photos and style profiles are used, where data lives, and how to delete it.',
+  },
+  Terms: {
+    path: '/terms',
+    description:
+      'The 33 Trends terms of service, including the affiliate disclosure and your rights over your own content.',
+  },
+};
+
+function syncSeoMeta() {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  const routeName = navigationRef.isReady() ? navigationRef.getCurrentRoute()?.name : undefined;
+  const seo = routeName ? ROUTE_SEO[routeName] : undefined;
+  const description = document.querySelector('meta[name="description"]');
+  const ogDescription = document.querySelector('meta[property="og:description"]');
+  const canonical = document.querySelector('link[rel="canonical"]');
+  const ogUrl = document.querySelector('meta[property="og:url"]');
+
+  const url = `https://www.thirtythreetrends.com${seo?.path ?? '/'}`;
+  canonical?.setAttribute('href', url);
+  ogUrl?.setAttribute('content', url);
+  if (seo) {
+    description?.setAttribute('content', seo.description);
+    ogDescription?.setAttribute('content', seo.description);
+  }
+}
+
 export default function AppNavigator() {
   const { user, loading, isNewUser } = useAuth();
 
@@ -277,7 +331,10 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer
+      ref={navigationRef}
       linking={linking}
+      onReady={syncSeoMeta}
+      onStateChange={syncSeoMeta}
       documentTitle={{
         formatter: (options, route) => {
           const label = (options?.title as string) || route?.name || '';

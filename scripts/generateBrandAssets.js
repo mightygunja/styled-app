@@ -496,3 +496,23 @@ const outDir = path.join(__dirname, '../assets');
   writePng(path.join(outDir, 'favicon.png'), rgb, S, S);
   console.log('  favicon.png');
 }
+
+// Social share card (Open Graph / Twitter): the splash lockup recomposed for
+// 1200x630 landscape, with the one-line pitch beneath. Written to public/ so
+// the web export serves it at /og-image.png.
+{
+  const W = 1200;
+  const H = 630;
+  const rgb = canvas(W, H, BONE);
+  const mark = renderRun(playfair, '33', 300, -9);
+  blitRun(rgb, W, H, mark, W / 2, H * 0.36, INK);
+  rect(rgb, W, H, Math.round(W / 2 - 48), Math.round(H * 0.575), 96, 6, CAMEL);
+  const word = renderRun(instrument, 'TRENDS', 66, 26);
+  blitRun(rgb, W, H, word, W / 2 + 13, H * 0.675, TOBACCO);
+  const tag = renderRun(instrument, 'AI STYLING FROM THE CLOTHES YOU OWN', 27, 7);
+  blitRun(rgb, W, H, tag, W / 2 + 3, H * 0.845, INK);
+  const pubDir = path.join(__dirname, '../public');
+  if (!fs.existsSync(pubDir)) fs.mkdirSync(pubDir);
+  writePng(path.join(pubDir, 'og-image.png'), rgb, W, H);
+  console.log('  og-image.png');
+}

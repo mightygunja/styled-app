@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Authenticated app surfaces have no logged-out content to index.
+Disallow: /admin
+Disallow: /account
+Disallow: /messages
+
+Sitemap: https://www.thirtythreetrends.com/sitemap.xml
