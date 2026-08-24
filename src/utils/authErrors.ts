@@ -88,13 +88,24 @@ export function authErrorMessage(error: any): string {
       return 'Email sign-in is not enabled for this app yet.';
     case 'auth/user-disabled':
       return 'That account has been disabled.';
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.';
+    case 'auth/unauthorized-domain':
+      return 'Sign-in is not authorized for this address yet. Please write to support@thirtythreetrends.com.';
     default:
       break;
   }
 
   // Strip Firebase's wrapper if an unmapped code slips through, so the user
-  // sees the sentence rather than the plumbing.
+  // sees the sentence rather than the plumbing. Firebase's generic shape is
+  // "Firebase: Error (auth/some-code)." - stripping both halves used to leave
+  // just the word "Error" on screen, which hid the code that identified the
+  // popup-resolver bug. Unmapped codes now stay visible so reports are
+  // actionable.
   const raw: string = error?.message || '';
   const cleaned = raw.replace(/^Firebase:\s*/i, '').replace(/\s*\(auth\/[^)]+\)\.?$/, '');
-  return cleaned || 'Something went wrong. Please try again.';
+  if (cleaned && cleaned !== 'Error') return cleaned;
+  return error?.code
+    ? `Something went wrong (${error.code}). Please try again.`
+    : 'Something went wrong. Please try again.';
 }

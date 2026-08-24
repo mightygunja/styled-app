@@ -7,6 +7,7 @@ import {
   initializeAuth,
   getReactNativePersistence,
   browserLocalPersistence,
+  browserPopupRedirectResolver,
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -61,9 +62,22 @@ export const functions = getFunctions(app);
 // silently logs users out on every restart. On web, the browser's own
 // localStorage persistence; the RN wrapper is not built for a DOM
 // environment and web is where popup/redirect sign-in flows live.
-export const auth = initializeAuth(app, {
-  persistence:
-    Platform.OS === 'web' ? browserLocalPersistence : getReactNativePersistence(AsyncStorage),
-});
+//
+// The resolver matters: unlike getAuth(), initializeAuth registers NO
+// popup/redirect machinery unless one is passed. Without it every
+// signInWithPopup call rejects immediately with auth/argument-error before
+// any window opens - which is how "Continue with Google" on web was failing
+// for everyone.
+export const auth = initializeAuth(
+  app,
+  Platform.OS === 'web'
+    ? {
+        persistence: browserLocalPersistence,
+        popupRedirectResolver: browserPopupRedirectResolver,
+      }
+    : {
+        persistence: getReactNativePersistence(AsyncStorage),
+      }
+);
 
 export default app;
