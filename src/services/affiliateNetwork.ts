@@ -16,15 +16,18 @@
  *   - **Caching.** Identical searches inside the TTL are served from memory,
  *     which matters once calls are billed per request.
  *
- * IMPORTANT: the real Sovrn/Skimlinks API key must never ship in client code
- * (the RN bundle is inspectable). SovrnCommerceAdapter calls Cloud Functions
- * (searchMarketplaceProducts / wrapAffiliateLink in functions/src/index.ts),
- * which hold the real key server-side via functions.config().
+ * IMPORTANT: real network credentials must never ship in client code (the RN
+ * bundle is inspectable). Every adapter here calls Cloud Functions
+ * (functions/src/index.ts), which hold the keys server-side in functions/.env.
  *
- * To go live: get a Sovrn Commerce (or Skimlinks) account + API key, set it
- * via `firebase functions:config:set sovrn.key="..." sovrn.pubid="..."`,
- * implement the two TODOs in those Cloud Functions, redeploy, then flip
- * MARKETPLACE_PROVIDER below to 'sovrn'.
+ * To go live with Skimlinks (the application in flight as of 2026-08-24):
+ *   1. Once approved, note the publisher site ID and request a Product API
+ *      key in the Skimlinks hub.
+ *   2. Put SKIMLINKS_PUBID=... and SKIMLINKS_KEY=... in functions/.env.
+ *   3. firebase deploy --only functions:searchSkimlinksProducts,functions:wrapAffiliateLink
+ *   4. Flip MARKETPLACE_PROVIDER below to 'skimlinks'.
+ * Sovrn ('sovrn') and Rakuten ('rakuten') activate the same way with their
+ * own credentials - see the matching sections in functions/src/index.ts.
  */
 
 import { httpsCallable } from 'firebase/functions';
@@ -43,7 +46,7 @@ import { MOCK_CATALOG } from '../data/mockProductCatalog';
  * a serious catalogue needs - no single affiliate network covers every
  * retailer, and the competitor doing this best runs exactly this pair.
  */
-type MarketplaceProvider = 'mock' | 'sovrn' | 'rakuten' | 'both';
+type MarketplaceProvider = 'mock' | 'sovrn' | 'rakuten' | 'skimlinks' | 'both';
 const MARKETPLACE_PROVIDER: MarketplaceProvider = 'mock';
 
 const DEFAULT_PAGE_SIZE = 24;
@@ -144,6 +147,58 @@ class SovrnCommerceAdapter implements AffiliateNetworkAdapter {
 
   async wrapLink(product: Product): Promise<string> {
     const result = await wrapAffiliateLinkFn({ productId: product.id, sourceUrl: product.sourceUrl });
+    return (result.data as any).wrappedUrl as string;
+  }
+
+  async getFacets() {
+    // A live network's brand list is far too large to enumerate; filter UI
+    // falls back to whatever is present in the current result set.
+    return { brands: [], retailers: [] };
+  }
+}
+
+const searchSkimlinksProductsFn = httpsCallable(functions, 'searchSkimlinksProducts');
+
+class SkimlinksAdapter implements AffiliateNetworkAdapter {
+  async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
+    const result = await searchSkimlinksProductsFn(filters);
+    const data = result.data as any;
+    const products = (data.products || []) as Product[];
+
+    // Skimlinks honours query and price range; brand, colour and size filters
+    // have to be applied here or they would silently do nothing.
+    const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+
+    return {
+      products: refined,
+      hasMore: !!data.hasMore,
+      totalCount: typeof data.totalCount === 'number' ? data.totalCount : null,
+    };
+  }
+
+  /**
+   * Skimlinks' Product API is search-only; there is no fetch-by-id.
+   * ResilientAdapter serves detail views from the index it builds out of
+   * search results, which is what keeps Product Detail working.
+   */
+  async getById(): Promise<Product | null> {
+    return null;
+  }
+
+  async getByIds(): Promise<Product[]> {
+    return [];
+  }
+
+  async wrapLink(product: Product): Promise<string> {
+    // Search results carry the plain merchant URL; monetization happens here,
+    // at click time. The product id rides along as xcust so per-product
+    // performance shows up in Skimlinks reporting.
+    const result = await wrapAffiliateLinkFn({
+      network: 'skimlinks',
+      productId: product.id,
+      sourceUrl: product.sourceUrl,
+      cuid: product.id,
+    });
     return (result.data as any).wrappedUrl as string;
   }
 
@@ -266,9 +321,14 @@ class CompositeAdapter implements AffiliateNetworkAdapter {
   }
 
   async wrapLink(product: Product): Promise<string> {
-    // Route by origin: a Rakuten link is already tracked and must not be
-    // re-wrapped through Sovrn, or the commission goes to the wrong network.
-    const origin = product.id.startsWith('rakuten-') ? 'Rakuten' : 'Sovrn';
+    // Route by origin: a Rakuten link is already tracked, and a Skimlinks
+    // product must wrap through Skimlinks - crossing networks sends the
+    // commission to the wrong place or breaks attribution entirely.
+    const origin = product.id.startsWith('rakuten-')
+      ? 'Rakuten'
+      : product.id.startsWith('skimlinks-')
+        ? 'Skimlinks'
+        : 'Sovrn';
     const member = this.members.find(m => m.name === origin) || this.members[0];
     return member.adapter.wrapLink(product);
   }
@@ -391,13 +451,16 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
 
 const sovrnAdapter = new SovrnCommerceAdapter();
 const rakutenAdapter = new RakutenAdvertisingAdapter();
+const skimlinksAdapter = new SkimlinksAdapter();
 
 const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
   mock: new ResilientAdapter(new MockCatalogAdapter()),
   sovrn: new ResilientAdapter(sovrnAdapter),
   rakuten: new ResilientAdapter(rakutenAdapter),
+  skimlinks: new ResilientAdapter(skimlinksAdapter),
   both: new ResilientAdapter(
     new CompositeAdapter([
+      { name: 'Skimlinks', adapter: skimlinksAdapter },
       { name: 'Sovrn', adapter: sovrnAdapter },
       { name: 'Rakuten', adapter: rakutenAdapter },
     ])

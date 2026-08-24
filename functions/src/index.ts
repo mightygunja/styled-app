@@ -1631,24 +1631,52 @@ export const searchRakutenProducts = functions
     }
   });
 
+/**
+ * Wraps a retailer URL into a monetized redirect. Both supported networks wrap
+ * by URL construction, not an API call - there is no round trip to make.
+ * Building it here rather than on the client keeps the credentials
+ * server-side, which is the whole reason this function exists.
+ *
+ * `network` selects the wrapper: 'skimlinks' or 'sovrn' (the default, for
+ * backward compatibility with clients that never sent the field).
+ */
 export const wrapAffiliateLink = functions
   .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
   .https.onCall(async (data, context) => {
-    const sovrn = getSovrnConfig();
-    if (!sovrn) {
-      throw new functions.https.HttpsError(
-        'failed-precondition',
-        'Sovrn Commerce is not configured yet. Set sovrn.key and sovrn.pubid via firebase functions:config:set, then implement the link-wrapping call in wrapAffiliateLink.'
-      );
-    }
-    const { sourceUrl, cuid } = data;
+    const { sourceUrl, cuid, network } = data;
     if (!sourceUrl) {
       throw new functions.https.HttpsError('invalid-argument', 'sourceUrl is required');
     }
 
-    // Sovrn link wrapping is URL construction, not an API call - there is no
-    // round trip to make. Building it here rather than on the client keeps the
-    // Commerce key server-side, which is the whole reason this function exists.
+    if (network === 'skimlinks') {
+      const skimlinks = getSkimlinksConfig();
+      if (!skimlinks || !skimlinks.pubId) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Skimlinks is not configured yet. Put SKIMLINKS_PUBID=... in functions/.env and redeploy wrapAffiliateLink.'
+        );
+      }
+      // Documented Skimlinks link format: go.skimresources.com?id=<publisher
+      // site id>&xs=1&url=<encoded destination>. xcust is the free-form
+      // attribution field (their analogue of Sovrn's cuid), echoed back in
+      // reporting.
+      const params = new URLSearchParams({
+        id: skimlinks.pubId,
+        xs: '1',
+        url: sourceUrl,
+      });
+      if (cuid) params.set('xcust', String(cuid).slice(0, 50));
+      return { wrappedUrl: `${SKIMLINKS_ENDPOINTS.redirect}?${params.toString()}` };
+    }
+
+    const sovrn = getSovrnConfig();
+    if (!sovrn) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Sovrn Commerce is not configured yet. Put SOVRN_KEY=... in functions/.env and redeploy wrapAffiliateLink.'
+      );
+    }
+
     const params = new URLSearchParams({
       key: sovrn.key,
       u: sourceUrl,
@@ -1657,6 +1685,192 @@ export const wrapAffiliateLink = functions
 
     // URLSearchParams percent-encodes `u` for us, which the format requires.
     return { wrappedUrl: `https://sovrn.co?${params.toString()}` };
+  });
+
+// ==================== SKIMLINKS ====================
+//
+// CONFIDENCE NOTE - read before debugging this.
+//
+// Like the Rakuten section above, the Product Search call is written against
+// Skimlinks' developer documentation (developers.skimlinks.com) rather than
+// verified against a live account - Product API access is granted per
+// publisher after approval. Endpoint, parameter names and response field
+// names are isolated in SKIMLINKS_ENDPOINTS / the mapper below: when you have
+// credentials, run one live query, look at the JSON, and correct those.
+// Nothing else should need touching. The link-wrapping format in
+// wrapAffiliateLink above is long-established and low-risk by comparison.
+//
+// Setup:
+//   1. Get approved as a Skimlinks publisher (skimlinks.com) and note your
+//      publisher site ID - the number shown in the publisher hub, and visible
+//      as `id` in every wrapped go.skimresources.com link.
+//   2. Request Product API access in the hub and note the API key.
+//   3. Put SKIMLINKS_PUBID=... and SKIMLINKS_KEY=... in functions/.env
+//      (gitignored). Link wrapping needs only the pubid; product search needs
+//      the key.
+//   4. firebase deploy --only functions:searchSkimlinksProducts,functions:wrapAffiliateLink
+//   5. Flip MARKETPLACE_PROVIDER to 'skimlinks' in src/services/affiliateNetwork.ts
+
+const SKIMLINKS_ENDPOINTS = {
+  productSearch:
+    process.env.SKIMLINKS_SEARCH_URL || 'https://api-2.skimlinks.com/v4/product/search',
+  redirect: process.env.SKIMLINKS_REDIRECT_URL || 'https://go.skimresources.com',
+};
+
+function getSkimlinksConfig(): { pubId: string; key: string } | null {
+  // Env first, legacy runtime config as a fallback - see getSovrnConfig.
+  const legacy = (() => {
+    try {
+      return functions.config().skimlinks || {};
+    } catch {
+      return {} as Record<string, string>;
+    }
+  })();
+
+  const pubId = process.env.SKIMLINKS_PUBID || legacy.pubid || '';
+  const key = process.env.SKIMLINKS_KEY || legacy.key || '';
+
+  if (!pubId && !key) return null;
+  return { pubId, key };
+}
+
+/** Tolerant number parse: Skimlinks prices have been seen as numbers and strings. */
+function skimlinksPrice(value: unknown): number | null {
+  if (typeof value === 'number') return isNaN(value) ? null : value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+/**
+ * Maps one Skimlinks product onto the client's Product model.
+ *
+ * Skimlinks nests commercial data in `offers` (one per merchant carrying the
+ * item); the first offer is taken as canonical. The merchant is a retailer,
+ * not a manufacturer brand, so `brand` stays empty rather than guessed - the
+ * client's scorer treats a missing field as "no signal", which is correct.
+ * The offer URL is the plain merchant link: monetization happens at click
+ * time through wrapAffiliateLink, so `sourceUrl` is stored unwrapped.
+ */
+function mapSkimlinksProduct(raw: any, requestedCategory?: string) {
+  const offer = Array.isArray(raw?.offers) ? raw.offers[0] : undefined;
+  const name = raw?.title || raw?.name || '';
+  const url = offer?.url || raw?.url || '';
+  const listPrice = skimlinksPrice(offer?.price ?? raw?.price);
+  const salePrice = skimlinksPrice(offer?.sale_price ?? raw?.sale_price);
+  const price = salePrice ?? listPrice;
+  if (!name || !url || price === null) return null;
+
+  const onSale = salePrice !== null && listPrice !== null && listPrice > salePrice;
+  const merchant =
+    (typeof raw?.merchant === 'string' ? raw.merchant : raw?.merchant?.name) ||
+    offer?.merchant?.name ||
+    '';
+  const image = Array.isArray(raw?.image_urls) ? raw.image_urls[0] : raw?.image_url || '';
+
+  return {
+    id: `skimlinks-${raw?.id ?? url}`,
+    name,
+    brand: '',
+    retailer: merchant,
+    category: requestedCategory || 'tops',
+    price,
+    originalPrice: onSale ? listPrice ?? undefined : undefined,
+    currency: String(offer?.currency || raw?.currency || 'USD').toUpperCase(),
+    imageUrl: image,
+    sourceUrl: url,
+    inStock: true,
+  };
+}
+
+export const searchSkimlinksProducts = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    const cfg = getSkimlinksConfig();
+    if (!cfg || !cfg.key) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Skimlinks Product Search is not configured yet. Put SKIMLINKS_KEY=... in functions/.env and redeploy searchSkimlinksProducts.'
+      );
+    }
+
+    try {
+      // Skimlinks searches by keyword, so the query is assembled from what the
+      // user typed plus their filters - unlike Sovrn's content brief.
+      const terms = [
+        data.query,
+        Array.isArray(data.colors) ? data.colors.slice(0, 2).join(' ') : '',
+        data.subcategory || data.category,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      const pageSize = Math.min(50, Math.max(1, data.pageSize || 24));
+      const page = Math.max(0, data.page || 0);
+      const params = new URLSearchParams({
+        apikey: cfg.key,
+        query: terms || 'wardrobe staples',
+        limit: String(pageSize),
+        offset: String(page * pageSize),
+      });
+      if (typeof data.minPrice === 'number') params.set('min_price', String(Math.floor(data.minPrice)));
+      if (typeof data.maxPrice === 'number') params.set('max_price', String(Math.ceil(data.maxPrice)));
+
+      const response = await fetch(`${SKIMLINKS_ENDPOINTS.productSearch}?${params.toString()}`);
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        console.error('Skimlinks product request failed', response.status, detail.slice(0, 400));
+        throw new functions.https.HttpsError(
+          'unavailable',
+          `Skimlinks returned ${response.status}. ${detail.slice(0, 200)}`
+        );
+      }
+
+      const payload: any = await response.json();
+
+      // Documented shape is { products: [...], num_products: n }; tolerate the
+      // common alternatives rather than silently returning nothing.
+      const rawProducts: any[] = Array.isArray(payload)
+        ? payload
+        : payload?.products || payload?.data || payload?.results;
+
+      if (!Array.isArray(rawProducts)) {
+        // Fail loudly - a silent empty result here would look exactly like
+        // "no matches" and could sit unnoticed for weeks.
+        console.error('Unexpected Skimlinks response shape:', JSON.stringify(payload).slice(0, 500));
+        throw new functions.https.HttpsError(
+          'internal',
+          'Skimlinks returned an unexpected response shape. Check the mapping in searchSkimlinksProducts.'
+        );
+      }
+
+      const products = rawProducts
+        .map(p => mapSkimlinksProduct(p, data.category))
+        .filter((p): p is NonNullable<typeof p> => p !== null);
+
+      console.log(`Skimlinks returned ${rawProducts.length} products, ${products.length} usable`);
+
+      const total =
+        typeof payload?.num_products === 'number'
+          ? payload.num_products
+          : typeof payload?.total === 'number'
+            ? payload.total
+            : null;
+
+      return {
+        products,
+        hasMore: total !== null ? (page + 1) * pageSize < total : rawProducts.length >= pageSize,
+        totalCount: total,
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error calling Skimlinks product search:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
   });
 
 // ==================== IMAGE GENERATION HELPERS ====================
