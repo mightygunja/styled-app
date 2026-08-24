@@ -53,11 +53,15 @@ interface CardDef {
 }
 
 /**
- * Render order is fixed back-to-front (shirt deepest, blazer on top) and the
- * poses are choreographed so no scene ever needs the depth order to change -
- * z-order swaps mid-animation read as glitches, not motion.
+ * Depth follows scale: each card's zIndex is derived from its animated scale,
+ * so whichever garment a scene enlarges rises to the front on its own. The
+ * flip between two cards happens at the instant their scales cross - when
+ * they are the same size - which is the one moment a z-swap doesn't read as
+ * a glitch. That is what lets every garment take a turn leading; a fixed
+ * back-to-front order could only ever front the top card.
  *
- * Scenes: 0 closet fan · 1 work look · 2 weekend look · 3 regroup.
+ * Scenes: 0 closet fan · 1 work look (blazer) · 2 weekend look (sweater) ·
+ * 3 warm day (shirt) · 4 evening (trousers) · 5 regroup.
  */
 const CARDS: CardDef[] = [
   {
@@ -70,6 +74,8 @@ const CARDS: CardDef[] = [
       { x: -104, y: 16, rot: -9, scale: 0.78, opacity: 0.92 },
       { x: -58, y: -26, rot: -6, scale: 0.8, opacity: 0.88 },
       { x: -142, y: -48, rot: -12, scale: 0.6, opacity: 0.2 },
+      { x: 0, y: 2, rot: 0, scale: 1.05, opacity: 1 },
+      { x: -60, y: -24, rot: -6, scale: 0.8, opacity: 0.88 },
       { x: -64, y: 8, rot: -7, scale: 0.8, opacity: 0.92 },
     ],
   },
@@ -83,6 +89,8 @@ const CARDS: CardDef[] = [
       { x: -35, y: 2, rot: -3, scale: 0.83, opacity: 0.96 },
       { x: 62, y: 30, rot: 5, scale: 0.85, opacity: 0.92 },
       { x: 58, y: 28, rot: 6, scale: 0.87, opacity: 0.92 },
+      { x: 64, y: 26, rot: 6, scale: 0.84, opacity: 0.9 },
+      { x: 0, y: 0, rot: 0, scale: 1.05, opacity: 1 },
       { x: -21, y: -2, rot: -2, scale: 0.85, opacity: 0.96 },
     ],
   },
@@ -95,7 +103,9 @@ const CARDS: CardDef[] = [
     poses: [
       { x: 35, y: 2, rot: 3, scale: 0.87, opacity: 1 },
       { x: -150, y: 58, rot: -14, scale: 0.6, opacity: 0.2 },
-      { x: 0, y: 2, rot: 0, scale: 1.02, opacity: 1 },
+      { x: 0, y: 2, rot: 0, scale: 1.05, opacity: 1 },
+      { x: -148, y: 56, rot: -13, scale: 0.62, opacity: 0.25 },
+      { x: 64, y: 30, rot: 6, scale: 0.82, opacity: 0.9 },
       { x: 22, y: -2, rot: 2, scale: 0.89, opacity: 1 },
     ],
   },
@@ -107,8 +117,10 @@ const CARDS: CardDef[] = [
     image: require('../../assets/garments/blazer.jpg'),
     poses: [
       { x: 104, y: 16, rot: 9, scale: 0.9, opacity: 1 },
-      { x: 0, y: 0, rot: 0, scale: 1.02, opacity: 1 },
+      { x: 0, y: 0, rot: 0, scale: 1.05, opacity: 1 },
       { x: 148, y: -54, rot: 13, scale: 0.6, opacity: 0.2 },
+      { x: 142, y: -52, rot: 12, scale: 0.62, opacity: 0.25 },
+      { x: 146, y: -50, rot: 12, scale: 0.62, opacity: 0.22 },
       { x: 66, y: 8, rot: 7, scale: 0.92, opacity: 1 },
     ],
   },
@@ -119,6 +131,8 @@ const CAPTIONS = [
   { eyebrow: 'YOUR CLOSET', line: 'Four pieces you actually own.' },
   { eyebrow: 'MONDAY · 8 AM', line: 'Blazer, shirt, trousers — pitched for the office.' },
   { eyebrow: 'SATURDAY', line: 'Same closet, softer — the knit leads.' },
+  { eyebrow: 'WEDNESDAY · 82°', line: 'Heat wave — the linen takes the front.' },
+  { eyebrow: 'FRIDAY · 8 PM', line: 'Dinner out — the twill dresses up.' },
   { eyebrow: 'THE DIFFERENCE', line: 'Every look arrives with its reason.' },
 ];
 
@@ -190,6 +204,10 @@ function StoryCard({ card, index, scene, dragX, dragY }: CardProps) {
     const depth = scale.value;
     return {
       opacity: opacity.value,
+      // Depth follows scale (see CARDS): the enlarged card surfaces, and the
+      // swap lands exactly when two crossing cards are the same size. The
+      // index is a stable tie-break so equal-scale cards never flicker.
+      zIndex: Math.round(scale.value * 1000) + index,
       transform: [
         { perspective: 1000 },
         { translateX: x.value + dragX.value * 0.45 * depth },
