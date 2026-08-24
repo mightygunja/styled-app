@@ -392,6 +392,122 @@ const INK = hex('#1C1C1C');
 const BONE = hex('#FDFBFA');
 const CAMEL = hex('#B89664');
 const TOBACCO = hex('#7A5C43');
+// The wordmark artwork's own brown, so flat marks sit in the same family.
+const COFFEE = hex('#41230E');
+
+/* ---------------- PNG reading (for the wordmark artwork) ---------------- */
+
+/**
+ * Minimal PNG decoder: 8-bit, colour types 2 (RGB) and 6 (RGBA),
+ * non-interlaced — exactly what assets/brand/*.png are. Returns RGBA.
+ */
+function readPng(file) {
+  const buf = fs.readFileSync(file);
+  let p = 8;
+  let W = 0;
+  let H = 0;
+  let colorType = 0;
+  const idat = [];
+  while (p < buf.length) {
+    const len = buf.readUInt32BE(p);
+    const type = buf.toString('ascii', p + 4, p + 8);
+    const data = buf.slice(p + 8, p + 8 + len);
+    if (type === 'IHDR') {
+      W = data.readUInt32BE(0);
+      H = data.readUInt32BE(4);
+      const bitDepth = data[8];
+      colorType = data[9];
+      if (bitDepth !== 8 || (colorType !== 2 && colorType !== 6) || data[12] !== 0) {
+        throw new Error(`unsupported PNG layout in ${path.basename(file)}`);
+      }
+    } else if (type === 'IDAT') {
+      idat.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+    p += 12 + len;
+  }
+  const bpp = colorType === 6 ? 4 : 3;
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const stride = W * bpp;
+  const rgba = Buffer.alloc(W * H * 4);
+  let prev = Buffer.alloc(stride);
+  for (let y = 0; y < H; y++) {
+    const filter = raw[y * (stride + 1)];
+    const line = raw.slice(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let i = 0; i < stride; i++) {
+      const a = i >= bpp ? line[i - bpp] : 0;
+      const b = prev[i];
+      const c = i >= bpp ? prev[i - bpp] : 0;
+      let v = line[i];
+      if (filter === 1) v = (v + a) & 0xff;
+      else if (filter === 2) v = (v + b) & 0xff;
+      else if (filter === 3) v = (v + ((a + b) >> 1)) & 0xff;
+      else if (filter === 4) {
+        const pa = Math.abs(b - c);
+        const pb = Math.abs(a - c);
+        const pc = Math.abs(a + b - 2 * c);
+        const pred = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+        v = (v + pred) & 0xff;
+      }
+      line[i] = v;
+    }
+    prev = line;
+    for (let x = 0; x < W; x++) {
+      rgba[(y * W + x) * 4] = line[x * bpp];
+      rgba[(y * W + x) * 4 + 1] = line[x * bpp + 1];
+      rgba[(y * W + x) * 4 + 2] = line[x * bpp + 2];
+      rgba[(y * W + x) * 4 + 3] = colorType === 6 ? line[x * bpp + 3] : 255;
+    }
+  }
+  return { W, H, rgba };
+}
+
+/**
+ * Alpha-composites the artwork onto the canvas, centred on (cx, cy) at
+ * targetW wide. Area-average sampling, since this only ever downscales.
+ */
+function blitImage(rgb, W, H, img, cx, cy, targetW) {
+  const targetH = Math.round((img.H * targetW) / img.W);
+  const x0 = Math.round(cx - targetW / 2);
+  const y0 = Math.round(cy - targetH / 2);
+  const sx = img.W / targetW;
+  const sy = img.H / targetH;
+  for (let ty = 0; ty < targetH; ty++) {
+    const py = y0 + ty;
+    if (py < 0 || py >= H) continue;
+    const srcY0 = Math.floor(ty * sy);
+    const srcY1 = Math.min(img.H, Math.max(srcY0 + 1, Math.floor((ty + 1) * sy)));
+    for (let tx = 0; tx < targetW; tx++) {
+      const px = x0 + tx;
+      if (px < 0 || px >= W) continue;
+      const srcX0 = Math.floor(tx * sx);
+      const srcX1 = Math.min(img.W, Math.max(srcX0 + 1, Math.floor((tx + 1) * sx)));
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let n = 0;
+      for (let y = srcY0; y < srcY1; y++) {
+        for (let x = srcX0; x < srcX1; x++) {
+          const i = (y * img.W + x) * 4;
+          const al = img.rgba[i + 3] / 255;
+          r += img.rgba[i] * al;
+          g += img.rgba[i + 1] * al;
+          b += img.rgba[i + 2] * al;
+          a += al;
+          n++;
+        }
+      }
+      if (n === 0 || a === 0) continue;
+      const alpha = a / n;
+      const i = (py * W + px) * 3;
+      rgb[i] = rgb[i] * (1 - alpha) + (r / a) * alpha;
+      rgb[i + 1] = rgb[i + 1] * (1 - alpha) + (g / a) * alpha;
+      rgb[i + 2] = rgb[i + 2] * (1 - alpha) + (b / a) * alpha;
+    }
+  }
+}
 
 function canvas(W, H, bg) {
   const rgb = Buffer.alloc(W * H * 3);
@@ -448,14 +564,17 @@ const instrument = parseFont(
 );
 
 const outDir = path.join(__dirname, '../assets');
+const wordmark = readPng(path.join(outDir, 'brand/wordmark-color.png'));
 
-// App icon: the "33" mark in bone on ink, a camel rule beneath - the same
-// eyebrow-and-rule language the app's screens use.
+// App icon: the "33" monogram in the wordmark's coffee brown on bone, camel
+// rule beneath. The calligraphic wordmark is 4:1 - far too wide to read on a
+// home screen - so small square marks keep the numerals and take the new
+// palette instead.
 {
   const S = 1024;
-  const rgb = canvas(S, S, INK);
+  const rgb = canvas(S, S, BONE);
   const mark = renderRun(playfair, '33', 520, -14);
-  blitRun(rgb, S, S, mark, S / 2, S * 0.46, BONE);
+  blitRun(rgb, S, S, mark, S / 2, S * 0.46, COFFEE);
   rect(rgb, S, S, Math.round(S / 2 - 70), Math.round(S * 0.72), 140, 8, CAMEL);
   writePng(path.join(outDir, 'icon.png'), rgb, S, S);
   console.log('  icon.png');
@@ -465,24 +584,20 @@ const outDir = path.join(__dirname, '../assets');
 // is safe, so the mark is smaller and the rule is dropped.
 {
   const S = 1024;
-  const rgb = canvas(S, S, INK);
+  const rgb = canvas(S, S, BONE);
   const mark = renderRun(playfair, '33', 380, -10);
-  blitRun(rgb, S, S, mark, S / 2, S / 2, BONE);
+  blitRun(rgb, S, S, mark, S / 2, S / 2, COFFEE);
   writePng(path.join(outDir, 'adaptive-icon.png'), rgb, S, S);
   console.log('  adaptive-icon.png');
 }
 
-// Splash: full lockup on bone - ink "33", camel rule, TRENDS letterspaced in
-// tobacco. resizeMode is contain, and the splash backgroundColor is set to
-// the same bone so the PNG edge is invisible.
+// Splash: the wordmark itself, centred on bone. resizeMode is contain, and
+// the splash backgroundColor is set to the same bone so the PNG edge is
+// invisible.
 {
   const S = 1024;
   const rgb = canvas(S, S, BONE);
-  const mark = renderRun(playfair, '33', 430, -12);
-  blitRun(rgb, S, S, mark, S / 2, S * 0.42, INK);
-  rect(rgb, S, S, Math.round(S / 2 - 55), Math.round(S * 0.635), 110, 6, CAMEL);
-  const word = renderRun(instrument, 'TRENDS', 92, 34);
-  blitRun(rgb, S, S, word, S / 2 + 17, S * 0.735, TOBACCO);
+  blitImage(rgb, S, S, wordmark, S / 2, S / 2, Math.round(S * 0.72));
   writePng(path.join(outDir, 'splash-icon.png'), rgb, S, S);
   console.log('  splash-icon.png');
 }
@@ -490,27 +605,23 @@ const outDir = path.join(__dirname, '../assets');
 // Favicon: just the numerals - anything more is noise at 16px.
 {
   const S = 96;
-  const rgb = canvas(S, S, INK);
+  const rgb = canvas(S, S, BONE);
   const mark = renderRun(playfair, '33', 58, -2);
-  blitRun(rgb, S, S, mark, S / 2, S / 2, BONE);
+  blitRun(rgb, S, S, mark, S / 2, S / 2, COFFEE);
   writePng(path.join(outDir, 'favicon.png'), rgb, S, S);
   console.log('  favicon.png');
 }
 
-// Social share card (Open Graph / Twitter): the splash lockup recomposed for
+// Social share card (Open Graph / Twitter): the wordmark recomposed for
 // 1200x630 landscape, with the one-line pitch beneath. Written to public/ so
 // the web export serves it at /og-image.png.
 {
   const W = 1200;
   const H = 630;
   const rgb = canvas(W, H, BONE);
-  const mark = renderRun(playfair, '33', 300, -9);
-  blitRun(rgb, W, H, mark, W / 2, H * 0.36, INK);
-  rect(rgb, W, H, Math.round(W / 2 - 48), Math.round(H * 0.575), 96, 6, CAMEL);
-  const word = renderRun(instrument, 'TRENDS', 66, 26);
-  blitRun(rgb, W, H, word, W / 2 + 13, H * 0.675, TOBACCO);
+  blitImage(rgb, W, H, wordmark, W / 2, H * 0.42, Math.round(W * 0.56));
   const tag = renderRun(instrument, 'AI STYLING FROM THE CLOTHES YOU OWN', 27, 7);
-  blitRun(rgb, W, H, tag, W / 2 + 3, H * 0.845, INK);
+  blitRun(rgb, W, H, tag, W / 2 + 3, H * 0.78, INK);
   const pubDir = path.join(__dirname, '../public');
   if (!fs.existsSync(pubDir)) fs.mkdirSync(pubDir);
   writePng(path.join(pubDir, 'og-image.png'), rgb, W, H);

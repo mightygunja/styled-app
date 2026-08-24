@@ -1,87 +1,52 @@
 /**
  * The 33 Trends wordmark, as a component.
  *
- * Exactly the same lockup as the generated icon and splash - Playfair "33",
- * camel rule, TRENDS letterspaced in Instrument Sans - so the brand is one
- * drawing everywhere it appears. Rendered as text rather than an image
- * because the fonts are already loaded, it stays crisp at any scale, and the
- * colours come from the tokens instead of being baked into pixels.
+ * Renders the brand's actual logotype — the calligraphic "ThirtyThree" with
+ * "trends" beneath — from a single trimmed PNG (assets/brand/wordmark-color.png,
+ * deep coffee brown on transparent), so the mark is identical everywhere it
+ * appears. A white variant (wordmark-white.png) exists for dark surfaces.
  *
- * `header`: horizontal, sized for a nav bar row.
- * `hero`: stacked, for the login screen - the splash lockup, left-aligned to
- *         sit on the screen's editorial grid.
+ * `header`: sized for a nav bar row.
+ * `hero`: large, for the login screen — left-aligned to sit on the screen's
+ *         editorial grid.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { Image, StyleSheet } from 'react-native';
+
+// Trimmed to the ink bounding box; 1600x393.
+const WORDMARK_RATIO = 1600 / 393;
 
 interface Props {
   variant?: 'header' | 'hero';
+  /** Use the white artwork on dark surfaces. */
+  tone?: 'color' | 'white';
 }
 
-export default function BrandWordmark({ variant = 'header' }: Props) {
-  if (variant === 'hero') {
-    return (
-      <View>
-        <Text style={styles.heroNumerals}>33</Text>
-        <View style={styles.heroRow}>
-          <View style={styles.heroRule} />
-          <Text style={styles.heroTrends}>TRENDS</Text>
-        </View>
-      </View>
-    );
-  }
+export default function BrandWordmark({ variant = 'header', tone = 'color' }: Props) {
+  const source =
+    tone === 'white'
+      ? require('../../assets/brand/wordmark-white.png')
+      : require('../../assets/brand/wordmark-color.png');
 
   return (
-    <View style={styles.headerRow}>
-      <Text style={styles.headerNumerals}>33</Text>
-      <Text style={styles.headerTrends}>TRENDS</Text>
-    </View>
+    <Image
+      source={source}
+      style={variant === 'hero' ? styles.hero : styles.header}
+      resizeMode="contain"
+      accessibilityRole="image"
+      accessibilityLabel="33 Trends"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  // Baseline alignment is what makes a two-font lockup read as one mark
-  // rather than two labels that happen to be adjacent.
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 7,
+  header: {
+    height: 26,
+    width: 26 * WORDMARK_RATIO,
   },
-  headerNumerals: {
-    fontFamily: fonts.serif,
-    fontSize: 24,
-    color: colors.ink,
-  },
-  headerTrends: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 11,
-    letterSpacing: 2.6,
-    color: colors.tobacco,
-  },
-
-  heroNumerals: {
-    fontFamily: fonts.serif,
-    fontSize: 64,
-    lineHeight: 68,
-    color: colors.ink,
-  },
-  heroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 2,
-  },
-  heroRule: {
-    width: 26,
-    height: 2,
-    backgroundColor: colors.camel,
-  },
-  heroTrends: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 13,
-    letterSpacing: 3.4,
-    color: colors.tobacco,
+  hero: {
+    width: 280,
+    height: 280 / WORDMARK_RATIO,
   },
 });
