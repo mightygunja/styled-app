@@ -10,8 +10,9 @@
  *
  * Still real perspective space - per-card rotate/scale/opacity, drag
  * parallax on top of whatever pose the scene is in, and everything springs
- * back. No new dependencies; the card faces are the woven textures generated
- * from the design system's own palette.
+ * back. No new dependencies; the card faces are editorial photographs of the
+ * garments themselves (scripts/generateHeroGarments.js), each cut from the
+ * fabric its label names and shot in the design system's own palette.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -64,7 +65,7 @@ const CARDS: CardDef[] = [
     meta: 'LINEN',
     ground: colors.sand,
     ink: colors.ink,
-    image: require('../../assets/textures/linen.png'),
+    image: require('../../assets/garments/shirt.jpg'),
     poses: [
       { x: -104, y: 16, rot: -9, scale: 0.78, opacity: 0.92 },
       { x: -58, y: -26, rot: -6, scale: 0.8, opacity: 0.88 },
@@ -77,7 +78,7 @@ const CARDS: CardDef[] = [
     meta: 'TWILL',
     ground: colors.camel,
     ink: colors.ink,
-    image: require('../../assets/textures/twill.png'),
+    image: require('../../assets/garments/trousers.jpg'),
     poses: [
       { x: -35, y: 2, rot: -3, scale: 0.83, opacity: 0.96 },
       { x: 62, y: 30, rot: 5, scale: 0.85, opacity: 0.92 },
@@ -90,7 +91,7 @@ const CARDS: CardDef[] = [
     meta: 'RIB KNIT',
     ground: colors.tobacco,
     ink: colors.bone,
-    image: require('../../assets/textures/knit.png'),
+    image: require('../../assets/garments/sweater.jpg'),
     poses: [
       { x: 35, y: 2, rot: 3, scale: 0.87, opacity: 1 },
       { x: -150, y: 58, rot: -14, scale: 0.6, opacity: 0.2 },
@@ -103,7 +104,7 @@ const CARDS: CardDef[] = [
     meta: 'HERRINGBONE',
     ground: colors.ink,
     ink: colors.bone,
-    image: require('../../assets/textures/tailored.png'),
+    image: require('../../assets/garments/blazer.jpg'),
     poses: [
       { x: 104, y: 16, rot: 9, scale: 0.9, opacity: 1 },
       { x: 0, y: 0, rot: 0, scale: 1.02, opacity: 1 },
