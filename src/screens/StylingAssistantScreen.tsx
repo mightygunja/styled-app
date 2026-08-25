@@ -220,7 +220,16 @@ export default function StylingAssistantScreen() {
                   <TouchableOpacity
                     key={index}
                     style={styles.outfitItem}
-                    onPress={() => navigation.navigate('ClosetItemDetail', { closetItemId: item.id })}
+                    onPress={() =>
+                      // Shop-composed looks hold product ids, not closet ids -
+                      // ClosetItemDetail would open on nothing.
+                      message.fromShop
+                        ? navigation.navigate('ProductDetail', {
+                            productId: item.id,
+                            surface: 'chat',
+                          })
+                        : navigation.navigate('ClosetItemDetail', { closetItemId: item.id })
+                    }
                   >
                     <Image source={{ uri: item.imageUrl }} style={styles.outfitItemImage} />
                     <Text style={styles.outfitItemName} numberOfLines={1}>
@@ -229,15 +238,26 @@ export default function StylingAssistantScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TouchableOpacity
-                style={[styles.saveOutfitButton, isSaved && styles.saveOutfitButtonSaved]}
-                onPress={() => handleSaveOutfit(message)}
-                disabled={isSaved}
-              >
-                <Text style={[styles.saveOutfitText, isSaved && styles.saveOutfitTextSaved]}>
-                  {isSaved ? '✓ Saved to Outfits' : '+ Save This Outfit'}
-                </Text>
-              </TouchableOpacity>
+              {message.fromShop ? (
+                // Saving would write shop ids into Outfits; browsing is the
+                // honest action for a look the user doesn't own yet.
+                <TouchableOpacity
+                  style={styles.saveOutfitButton}
+                  onPress={() => navigation.navigate('Shop')}
+                >
+                  <Text style={styles.saveOutfitText}>Shop this look →</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.saveOutfitButton, isSaved && styles.saveOutfitButtonSaved]}
+                  onPress={() => handleSaveOutfit(message)}
+                  disabled={isSaved}
+                >
+                  <Text style={[styles.saveOutfitText, isSaved && styles.saveOutfitTextSaved]}>
+                    {isSaved ? '✓ Saved to Outfits' : '+ Save This Outfit'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
 

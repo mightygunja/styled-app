@@ -13,6 +13,9 @@ import { Item } from '../types';
 import { StyleProfile } from './aiStyleService';
 import { chatService } from './firestore';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
+import { buildProfileMatchContext } from './profileMatchContext';
+import { discoveryService } from './discoveryService';
+import { OccasionKey } from './dailyOutfitService';
 
 const chatWithStylistFn = httpsCallable(functions, 'chatWithStylist');
 
@@ -52,6 +55,9 @@ export interface ChatMessage {
   itemIds?: string[];
   outfitId?: string;
   imageUrl?: string;
+  /** The look is composed of shop products, not closet items: taps open
+   *  Product Detail and the save action becomes "Shop this look". */
+  fromShop?: boolean;
   timestamp: string;
 }
 
@@ -75,9 +81,98 @@ export interface StylingTip {
   imageUrl?: string;
 }
 
+/** Does this message actually ask to be dressed? General questions ("does
+ *  navy go with brown?") still deserve the AI even with an empty closet. */
+function isOutfitSeeking(message: string, occasion?: string): boolean {
+  if (occasion) return true; // the Get My Outfit picker was used
+  const q = message.toLowerCase();
+  return [
+    'outfit',
+    'what should i wear',
+    'what do i wear',
+    'what to wear',
+    'dress me',
+    'style me',
+    'put together',
+    'a look',
+    'wear to',
+    'wear for',
+  ].some(k => q.includes(k));
+}
+
+/** Maps free text (or the picker's occasion) onto the outfit engine's keys. */
+function inferOccasion(message: string, occasion?: string): OccasionKey {
+  const q = `${occasion || ''} ${message}`.toLowerCase();
+  if (/\b(work|office|meeting|interview|business)\b/.test(q)) return 'work';
+  if (/\b(date|dinner|restaurant|drinks)\b/.test(q)) return 'date';
+  if (/\b(party|club|night out|celebration|birthday)\b/.test(q)) return 'party';
+  if (/\b(travel|trip|flight|airport|vacation)\b/.test(q)) return 'travel';
+  if (/\b(gym|workout|run|exercise|yoga)\b/.test(q)) return 'workout';
+  if (/\b(wedding|formal|gala|black tie|ceremony)\b/.test(q)) return 'formal';
+  if (/\b(hike|outdoor|park|beach|picnic)\b/.test(q)) return 'outdoor';
+  return 'casual';
+}
+
+const OCCASION_PHRASE: Record<OccasionKey, string> = {
+  work: 'for work',
+  casual: 'for an easy day',
+  formal: 'for a formal occasion',
+  date: 'for your date',
+  workout: 'for a workout',
+  party: 'for a night out',
+  travel: 'for travelling',
+  outdoor: 'for the outdoors',
+};
+
 class StylingAssistantService {
   private conversations: Map<string, ChatMessage[]> = new Map();
   private context: Map<string, ConversationContext> = new Map();
+
+  /**
+   * A composed shop look for a closet too thin to dress. Returns null on any
+   * failure so the caller falls through to the normal AI path - a degraded
+   * answer beats no answer.
+   */
+  private async buildStarterLookMessage(
+    userId: string,
+    message: string,
+    context: StylingContext | undefined,
+    closetCount: number
+  ): Promise<ChatMessage | null> {
+    try {
+      const profile = await buildProfileMatchContext(userId).catch(() => undefined);
+      const pools = await discoveryService.buildStarterPools(profile);
+
+      const wanted = inferOccasion(message, context?.occasion);
+      const order: OccasionKey[] = [wanted, 'casual', 'work', 'date', 'party', 'travel'];
+      const usedOccasion = order.find(key => (pools[key] || []).length > 0);
+      if (!usedOccasion) return null;
+      const look = pools[usedOccasion][0];
+      if (!look.items.length) return null;
+
+      const closetLine =
+        closetCount === 0
+          ? "Your closet is empty so far"
+          : `Your closet only has ${closetCount} ${closetCount === 1 ? 'piece' : 'pieces'} so far`;
+      const content =
+        `${closetLine}, so I put this together from the shop instead — ` +
+        `a look ${OCCASION_PHRASE[usedOccasion]}, matched to your style profile. ` +
+        `Tap any piece to see it, or add your own clothes and I'll style those.`;
+
+      return {
+        id: `local-${Date.now()}-a`,
+        role: 'assistant',
+        type: 'outfit',
+        content,
+        items: look.items,
+        fromShop: true,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Starter look unavailable, falling back to AI reply', error);
+      return null;
+    }
+  }
 
   /**
    * Send a message to the styling assistant.
@@ -103,6 +198,31 @@ class StylingAssistantService {
       content: message,
       timestamp: now.toISOString(),
     };
+
+    // Cold start: a closet that cannot make a single top-and-bottom pair turns
+    // every outfit request into a cop-out ("add some items first"). Same rule
+    // and same engine as Home's Dress Me Today: compose the look from the
+    // shop, ranked against the survey profile, and say so plainly. The moment
+    // enough real pieces exist this branch stops being taken, and questions
+    // that aren't outfit requests still go to the AI as usual.
+    const coreCount = closetItems.filter(i =>
+      ['tops', 'bottoms', 'dresses'].includes((i.category || '').toLowerCase())
+    ).length;
+    if (coreCount < 3 && isOutfitSeeking(message, context?.occasion)) {
+      const starter = await this.buildStarterLookMessage(userId, message, context, closetItems.length);
+      if (starter) {
+        chatService
+          .addMessage(userId, 'user', message, 'text')
+          .catch(error => console.error('Error persisting user message:', error));
+        // Persisted as text: product ids don't survive a history reload the
+        // way closet ids do, and a stale product grid would be worse than
+        // the sentence alone.
+        chatService
+          .addMessage(userId, 'assistant', starter.content, 'text')
+          .catch(error => console.error('Error persisting assistant message:', error));
+        return { userMessage, assistantMessage: starter };
+      }
+    }
 
     const historyForModel = localHistory.slice(-6).map(m => ({
       role: m.role,
