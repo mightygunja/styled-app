@@ -86,6 +86,10 @@ import {
   GuideColorSeasonsScreen,
   GuideBodyTypesScreen,
   GuideWardrobeGapsScreen,
+  GuideWeddingGuestScreen,
+  GuideClosetOrganizationScreen,
+  GuideWorkWardrobeScreen,
+  GuideSustainableScreen,
 } from '../screens/GuideScreens';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme/designSystem';
@@ -211,6 +215,10 @@ const PUBLIC_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'GuideColorSeasons', component: GuideColorSeasonsScreen, title: 'Color Seasons, Plainly' },
   { name: 'GuideBodyTypes', component: GuideBodyTypesScreen, title: 'Dressing for Your Body Type' },
   { name: 'GuideWardrobeGaps', component: GuideWardrobeGapsScreen, title: 'What to Buy Next: Wardrobe Gaps' },
+  { name: 'GuideWeddingGuest', component: GuideWeddingGuestScreen, title: 'What to Wear to a Wedding' },
+  { name: 'GuideClosetOrganization', component: GuideClosetOrganizationScreen, title: 'How to Organize Your Closet' },
+  { name: 'GuideWorkWardrobe', component: GuideWorkWardrobeScreen, title: 'Building a Work Wardrobe' },
+  { name: 'GuideSustainable', component: GuideSustainableScreen, title: 'Sustainable Fashion, Practically' },
 ];
 
 const publicScreens = PUBLIC_SCREENS.map(screen => (

@@ -77,6 +77,38 @@ export const GUIDES: GuideMeta[] = [
     description:
       'How to tell a real wardrobe gap from a shopping impulse: the outfit-unlock test, the orphan audit, and a short list of gaps most closets share.',
   },
+  {
+    route: 'GuideWeddingGuest',
+    path: 'guides/wedding-guest-outfit',
+    label: 'Wedding guest',
+    title: 'What to Wear to a Wedding: A Guest’s Field Guide',
+    description:
+      'Every wedding dress code decoded - black tie to "festive" - plus the four rules that actually matter and a checklist that saves you at hour seven.',
+  },
+  {
+    route: 'GuideClosetOrganization',
+    path: 'guides/closet-organization',
+    label: 'Closet organization',
+    title: 'How to Organize Your Closet So Mornings Decide Themselves',
+    description:
+      'A closet organization method built for decisions, not photos: the cull that makes space honest, zoning by frequency, and the upkeep that takes minutes.',
+  },
+  {
+    route: 'GuideWorkWardrobe',
+    path: 'guides/work-wardrobe',
+    label: 'Work wardrobes',
+    title: 'Building a Work Wardrobe That Runs Itself',
+    description:
+      'How to read your office’s real dress code, the 3×5+2 formula that yields weeks of outfits, and why work clothes live or die by fabric.',
+  },
+  {
+    route: 'GuideSustainable',
+    path: 'guides/sustainable-fashion',
+    label: 'Sustainable style',
+    title: 'Sustainable Fashion Starts in the Closet You Already Own',
+    description:
+      'The highest-impact sustainable fashion habits: wearing what you own more, the 30-wears test, care that doubles garment life, and exits that aren’t landfill.',
+  },
 ];
 
 function GuidePage({
@@ -480,6 +512,227 @@ export function GuideWardrobeGapsScreen() {
         shoe. The exciting piece is rarely the missing piece; the missing piece is what makes
         the exciting pieces you already own finally wearable. Fill the boring gap and watch how
         much of your closet wakes up.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideWeddingGuestScreen() {
+  return (
+    <GuidePage
+      route="GuideWeddingGuest"
+      eyebrow="STYLE GUIDE"
+      title="What to wear to a wedding: a guest's field guide"
+      intro="No other event hands you a dress code written by strangers, a ten-hour runtime, and a photographer. Wedding-guest dressing feels high-stakes because it is — but it reduces to reading the code correctly, obeying four rules, and dressing for hour seven instead of hour one."
+    >
+      <H>Decode the code</H>
+      <LI>
+        <B>Black tie</B> means floor-length or your most formal cocktail dress, and a tuxedo or
+        dark suit at the absolute dressiest end. When in doubt at this level, more formal — the
+        only guest who suffers at black tie is the one in a sundress.
+      </LI>
+      <LI>
+        <B>Cocktail</B> is the broad middle: knee-to-midi dresses, a good suit, dressy
+        separates. Most weddings live here, and most closets can already answer it.
+      </LI>
+      <LI>
+        <B>"Festive," "garden," "beach formal"</B> — the invented codes — all translate the
+        same way: cocktail, adjusted for setting. Festive invites colour; garden means heels
+        that survive grass (block, wedge, or flat); beach formal means breathable fabric and
+        shoes that come off gracefully.
+      </LI>
+      <LI>
+        <B>No code given?</B> Read the venue and the hour. Evening plus ballroom reads
+        cocktail-to-formal; afternoon plus barn or garden reads elevated daytime. A ceremony in
+        a house of worship adds covered shoulders until the reception, whatever the code.
+      </LI>
+      <H>The four rules that actually matter</H>
+      <P>
+        <B>Not white</B> — and not ivory, cream, or champagne either; if it could read white in
+        a photograph, it's white. <B>Nothing that upstages</B> — sequinned gowns and
+        floor-length red are for your own party. <B>Match the formality, not the couple's
+        taste</B> — you're dressing for the event they described, not the event you'd throw.
+        And <B>rewearing is not a failure</B> — nobody at this wedding attended the last one
+        you wore it to, and cost per wear loves a repeat.
+      </P>
+      <H>Dress for hour seven</H>
+      <P>
+        The outfit is chosen at hour zero and judged at hour seven, on the dance floor, in
+        weather. Shoes you can stand in through a receiving line beat shoes that win the first
+        photo. Fabric that breathes beats fabric that photographs crisply and swelters. Sit
+        down in the outfit before you commit; raise both arms; walk a flight of stairs. A
+        wedding is a marathon wearing an evening's clothes.
+      </P>
+      <H>The week-before checklist</H>
+      <P>
+        Check the forecast and the terrain, not just the invitation. Confirm the layer — every
+        reception venue is over-air-conditioned or an open field at sunset, and a wrap or
+        blazer rescues both. Then assemble the whole outfit once, jewellery to shoes, days
+        early: the missing-shoe discovery is survivable on Tuesday and a crisis at 2 PM
+        Saturday.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideClosetOrganizationScreen() {
+  return (
+    <GuidePage
+      route="GuideClosetOrganization"
+      eyebrow="STYLE GUIDE"
+      title="Organize your closet so mornings decide themselves"
+      intro="Closet organization is sold as an aesthetic project — matched hangers, rainbow gradients, baskets. But a closet has a job: produce an outfit quickly, every morning, from everything you own. Organize for that job and the beauty follows; organize for beauty and Monday still finds you staring."
+    >
+      <H>Cull first — the space has to be honest</H>
+      <P>
+        No system survives a closet where a third of the contents are never worn. Before
+        arranging anything, pull what doesn't fit, doesn't suit the life you actually live, or
+        hasn't been worn in a year. The maybes go in a box with a date on it: anything still in
+        the box in six months has answered the question itself. This step is the whole game —
+        organizing unworn clothes is alphabetizing books you'll never read.
+      </P>
+      <H>Zone by frequency, not by category</H>
+      <P>
+        The prime real estate — eye level, front of the rail, the reachable shelf — belongs to
+        what you wear weekly. The blazer worn twice a year doesn't deserve a better spot than
+        the jeans worn twice a week, yet in most closets it has one. Demote occasion wear to
+        the high shelf and the far end; promote the workhorses to where your hand already goes.
+        Off-season clothes leave the room entirely if space is tight — February should not have
+        to search past linen.
+      </P>
+      <H>Within a zone: category, then colour</H>
+      <LI>
+        <B>Hang what breaks, fold what stretches.</B> Blazers, dresses, anything structured or
+        crease-prone hangs; knits fold, always — a hung sweater grows shoulders no one gave it.
+      </LI>
+      <LI>
+        <B>Group like with like</B> — all trousers together, all shirts together — so the
+        morning question "which trousers?" is answered by one stretch of rail, not a search.
+      </LI>
+      <LI>
+        <B>Light to dark within each group.</B> Not for the photograph: because you reach for
+        "the dark jeans" and your hand should know where dark lives.
+      </LI>
+      <LI>
+        <B>One garment, one visible edge.</B> Whatever the container, you should see a sliver
+        of everything it holds. Stacks more than four deep are where clothes go to be
+        forgotten.
+      </LI>
+      <H>Maintenance is a habit, not a weekend</H>
+      <P>
+        The system decays one lazy evening at a time, so make the upkeep smaller than the
+        decay: hangers rehung in the right zone, a one-in-one-out rule for the categories you
+        overbuy, and a re-file that happens with the laundry, not as a project. A closet that
+        needs a seasonal overhaul was organized for the photo; a closet that needs ten minutes
+        a week was organized for the mornings.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideWorkWardrobeScreen() {
+  return (
+    <GuidePage
+      route="GuideWorkWardrobe"
+      eyebrow="STYLE GUIDE"
+      title="Building a work wardrobe that runs itself"
+      intro='"Business casual" is doing more work than any phrase in fashion — it means a blazer in one office and dark jeans in the next. A working wardrobe starts by reading your office correctly, then builds a small system that produces outfits faster than you can drink the first coffee.'
+    >
+      <H>Read the room, then dress one notch up</H>
+      <P>
+        Forget the handbook; look at the three most senior people you respect and note what
+        they wear on an ordinary Tuesday. That's the office's real code. Your target sits one
+        notch above the middle of it — enough polish to be taken seriously, not so much that
+        Tuesday reads as an interview. One notch, not three: overdressing announces effort the
+        way underdressing announces indifference.
+      </P>
+      <H>The 3 × 5 + 2 formula</H>
+      <P>
+        Three bottoms, five tops, two layers — all chosen so any top works with any bottom and
+        either layer. That's 30 combinations before repeating, a six-week rotation, from ten
+        garments. The discipline that makes it work is the same as a capsule's: a tight neutral
+        base, matched formality across every piece, colour arriving in the tops where it sits
+        near your face and multiplies least dangerously.
+      </P>
+      <LI>
+        <B>Bottoms are infrastructure</B> — the most neutral, best-fitting trousers or skirts
+        you can manage, because they repeat twice a week and nobody should be able to tell.
+      </LI>
+      <LI>
+        <B>Tops carry the variety</B> — five is enough for a week without repetition, and
+        they're the cheapest tier to refresh when boredom hits.
+      </LI>
+      <LI>
+        <B>The layers do the formality shifting</B> — the same base outfit moves from desk day
+        to client meeting by swapping a cardigan for a blazer. Buy the best blazer the budget
+        allows; it's the piece doing the talking.
+      </LI>
+      <H>At work, fabric is the whole ballgame</H>
+      <P>
+        Work clothes are worn ten hours, sat in for eight, and judged at 4 PM, not 9 AM. That
+        verdict is decided by fabric: wool and ponte recover from a chair, linen surrenders to
+        it, and the wrong synthetic announces itself in any warm meeting room. The
+        one-fist test at the register — crush the fabric hard for five seconds, watch what it
+        does — predicts the 4 PM meeting better than the mirror does.
+      </P>
+      <H>The range test</H>
+      <P>
+        A finished work wardrobe answers three days without shopping: the ordinary Tuesday, the
+        surprise client meeting, and the offsite that says "casual" but means "still work." If
+        any of the three sends you to a store in a panic, that's the gap — and it's usually the
+        middle one, which one good blazer closes.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideSustainableScreen() {
+  return (
+    <GuidePage
+      route="GuideSustainable"
+      eyebrow="STYLE GUIDE"
+      title="Sustainable fashion starts in the closet you already own"
+      intro="Sustainable fashion gets framed as a shopping decision — which brand, which fabric, which certification. But the garment with the smallest footprint is the one already hanging in your closet, and the habits that matter most cost nothing: wear things more, keep them alive longer, and let them exit well."
+    >
+      <H>The metric is wears, not labels</H>
+      <P>
+        A conscientiously made organic-cotton shirt worn three times is worse for the planet
+        than a fast-fashion top worn eighty. Production dominates a garment's footprint, so
+        every additional wear divides that fixed cost — the same arithmetic as cost per wear,
+        with carbon in place of currency. The most sustainable act available to you tonight is
+        not a purchase: it's putting the unworn half of your closet back into rotation.
+      </P>
+      <H>Buy rarely, buy for thirty wears</H>
+      <P>
+        The 30-wears test is the honest gatekeeper: before buying, count the real occasions
+        this piece will see in its life with you. Not "could I wear it thirty times" — will I.
+        The test passes boring staples easily and trend pieces almost never, which is exactly
+        the point. And secondhand passes automatically: a garment already made carries no new
+        production cost, only the wears you add to it.
+      </P>
+      <H>Care is the multiplier</H>
+      <LI>
+        <B>Wash less.</B> Most garments are washed out of habit, not need — and washing is how
+        clothes age. Air a worn piece overnight before deciding it's dirty.
+      </LI>
+      <LI>
+        <B>Wash cold, dry on air.</B> Heat is the enemy in both machines: cold cycles protect
+        fibre and colour, and the dryer shortens a garment's life faster than wearing it does.
+      </LI>
+      <LI>
+        <B>Repair the small things early.</B> A loose button is a two-minute job; the same
+        button lost is how a shirt stops being worn. Cobblers and tailors resurrect pieces for
+        a fraction of replacement.
+      </LI>
+      <H>Exit well</H>
+      <P>
+        The donation bin is where the guilt goes, not always where the clothes go — a large
+        share of donations are landfilled or shipped abroad into markets that can't absorb
+        them. Better exits, in order: sell or give directly to a person who wants the piece
+        (resale platforms make this nearly effortless), donate only clean items with real life
+        left, and route true end-of-life textiles to fabric recycling rather than the bin.
+        A garment that leaves your closet into someone's rotation is a success; one that
+        leaves it for a landfill via a feel-good middleman is not.
       </P>
     </GuidePage>
   );

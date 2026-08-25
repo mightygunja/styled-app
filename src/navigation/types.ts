@@ -98,6 +98,10 @@ export type RootStackParamList = {
   GuideColorSeasons: undefined;
   GuideBodyTypes: undefined;
   GuideWardrobeGaps: undefined;
+  GuideWeddingGuest: undefined;
+  GuideClosetOrganization: undefined;
+  GuideWorkWardrobe: undefined;
+  GuideSustainable: undefined;
 
   // ==================== NOT REGISTERED IN AppNavigator ====================
   // Route types kept only so the corresponding screen files (restored from
