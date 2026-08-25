@@ -335,6 +335,27 @@ export interface BuildOptions {
   /** How many distinct outfits to return. */
   count?: number;
   seed?: number;
+  /** Item id -> how many days ago Dress Me Today last showed it. */
+  recentlyShown?: Map<string, number>;
+}
+
+/**
+ * The day-over-day rotation the seeded jitter alone could not deliver.
+ *
+ * The jitter tops out at 4 points while the structural scores (formality fit,
+ * season, pairing) run to 10+ - so the same best-scoring outfits won every
+ * day, identically. This penalty is the counterweight: items shown yesterday
+ * carry enough cost to push a different-but-still-good look to the top, and
+ * the cost decays over three days so favourites return, just not tomorrow.
+ * It is a penalty rather than a veto on purpose: in a small closet where
+ * everything was shown yesterday, the penalties fall on every candidate
+ * roughly equally and cancel out - the screen stays full.
+ */
+const RECENCY_PENALTY: Record<number, number> = { 1: 16, 2: 8, 3: 4 };
+
+function recencyCost(items: Item[], recent?: Map<string, number>): number {
+  if (!recent?.size) return 0;
+  return items.reduce((sum, item) => sum + (RECENCY_PENALTY[recent.get(item.id) ?? 0] || 0), 0);
 }
 
 /**
@@ -436,7 +457,8 @@ export function buildOutfits(items: Item[], options: BuildOptions): OutfitCandid
 
     candidates.forEach((candidate, index) => {
       const penalty = candidate.items.reduce((sum, i) => sum + (used.get(i.id) || 0) * 25, 0);
-      const value = candidate.score - penalty;
+      const value =
+        candidate.score - penalty - recencyCost(candidate.items, options.recentlyShown);
       if (value > bestValue) {
         bestValue = value;
         bestIndex = index;
@@ -524,6 +546,65 @@ async function writeCache(cache: SlotCache): Promise<void> {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Shown history - what makes today's looks differ from yesterday's
+ * ------------------------------------------------------------------ */
+
+const HISTORY_KEY = 'dressMeToday:shown:v1';
+const HISTORY_DAYS = 3;
+
+/** daySeed numbers are YYYYMMDD, so subtraction across month ends lies -
+ *  convert back to dates to count days. */
+function daysBetweenSeeds(later: number, earlier: number): number {
+  const parse = (seedValue: number) => {
+    const s = String(seedValue);
+    return new Date(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8)));
+  };
+  return Math.round((parse(later).getTime() - parse(earlier).getTime()) / 86_400_000);
+}
+
+/** Item id -> days ago it was shown (1..HISTORY_DAYS). Today is excluded so
+ *  the within-day slot cache stays stable. */
+async function readRecentlyShown(today: number = daySeed()): Promise<Map<string, number>> {
+  try {
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw) as Record<string, string[]>;
+    const recent = new Map<string, number>();
+    Object.entries(parsed)
+      .map(([day, ids]) => ({ daysAgo: daysBetweenSeeds(today, Number(day)), ids }))
+      .filter(entry => entry.daysAgo >= 1 && entry.daysAgo <= HISTORY_DAYS)
+      // Oldest first, so when an item was shown twice the nearest day wins.
+      .sort((a, b) => b.daysAgo - a.daysAgo)
+      .forEach(entry => entry.ids.forEach(id => recent.set(id, entry.daysAgo)));
+    return recent;
+  } catch {
+    return new Map();
+  }
+}
+
+async function recordShown(
+  pools: Record<OccasionKey, OutfitCandidate[]>,
+  today: number = daySeed()
+): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
+    const parsed: Record<string, string[]> = raw ? JSON.parse(raw) : {};
+    const ids = new Set(parsed[String(today)] || []);
+    HOME_OCCASIONS.forEach(occasion =>
+      pools[occasion]?.forEach(candidate => candidate.items.forEach(item => ids.add(item.id)))
+    );
+    parsed[String(today)] = Array.from(ids);
+    Object.keys(parsed).forEach(day => {
+      const age = daysBetweenSeeds(today, Number(day));
+      if (age > HISTORY_DAYS || age < 0) delete parsed[day];
+    });
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(parsed));
+  } catch {
+    // History is rotation, not correctness; never break the screen over it.
+  }
+}
+
 /**
  * Builds every tab's outfits in one pass, with no garment reused across tabs.
  *
@@ -533,7 +614,7 @@ async function writeCache(cache: SlotCache): Promise<void> {
  */
 export function buildAllOccasions(
   items: Item[],
-  options: { weather?: BuildOptions['weather']; seed?: number }
+  options: { weather?: BuildOptions['weather']; seed?: number; recentlyShown?: Map<string, number> }
 ): Record<OccasionKey, OutfitCandidate[]> {
   const seed = options.seed ?? slotSeed();
   const spent = new Set<string>();
@@ -547,6 +628,7 @@ export function buildAllOccasions(
       weather: options.weather,
       seed,
       count: PER_OCCASION * 4,
+      recentlyShown: options.recentlyShown,
     });
 
     // Overlap is a cost, not a veto. A hard exclusion empties the pool for
@@ -641,12 +723,15 @@ export async function loadOutfitPools(
     }
   }
 
-  const pools = buildAllOccasions(items, { weather: options.weather, seed: slot });
+  const recentlyShown = await readRecentlyShown();
+  const pools = buildAllOccasions(items, { weather: options.weather, seed: slot, recentlyShown });
   const idsOnly: SlotCache['pools'] = {};
   HOME_OCCASIONS.forEach(occasion => {
     idsOnly[occasion] = pools[occasion].map(c => c.items.map(i => i.id));
   });
   await writeCache({ slot, pools: idsOnly, copy: cached?.copy ?? {} });
+  // Remember what went on screen so tomorrow's build rotates away from it.
+  recordShown(pools).catch(() => undefined);
 
   return { slot, pools, copy: cached?.copy ?? {} };
 }
