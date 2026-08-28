@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   FlatList,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -17,7 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
-import { getActiveAdapter, curatedCatalogNotice } from '../services/affiliateNetwork';
+import { getActiveAdapter, curatedCatalogNotice, amazonSearchUrl } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
@@ -237,6 +238,20 @@ export default function ShopScreen() {
               <Text style={styles.trendFocusName}>{focusTrend.name}</Text>
               {!!route.params?.trendGap && (
                 <Text style={styles.trendFocusGap}>Looking for: {route.params.trendGap}</Text>
+              )}
+              {/* The exact piece, straight from the source. The in-app grid
+                  is bounded by the catalogue; this is not - a tagged Amazon
+                  search for precisely what the trend told them to find. */}
+              {!!route.params?.trendGap && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Search Amazon for ${route.params.trendGap}`}
+                  onPress={() => Linking.openURL(amazonSearchUrl(route.params!.trendGap!))}
+                >
+                  <Text style={styles.trendFocusSearch}>
+                    Search Amazon for “{route.params.trendGap}” →
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity
@@ -468,6 +483,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   trendFocusClear: { ...textType.eyebrow, fontSize: 10, color: colors.tobacco, paddingVertical: 4 },
+  trendFocusSearch: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.tobacco,
+    marginTop: 8,
+  },
   searchInput: {
     marginHorizontal: spacing.page,
     marginTop: spacing.sm,

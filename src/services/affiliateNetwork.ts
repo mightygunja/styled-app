@@ -595,6 +595,18 @@ export function isMockProvider(): boolean {
 }
 
 /**
+ * A tagged Amazon search for an arbitrary phrase - the bridge over the
+ * bootstrap gap: until Amazon's Product API unlocks (3 qualifying sales),
+ * the app cannot pull Amazon's catalogue in, but it can always send the
+ * user out to exactly what they're looking for, monetized. Used by trend
+ * surfaces to search the gap phrase ("camel wide-leg trousers") directly.
+ */
+export function amazonSearchUrl(query: string): string {
+  const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
+  return `https://www.amazon.com/s?k=${encodeURIComponent(query.trim())}${tag}`;
+}
+
+/**
  * The honesty line for curated-catalogue providers, or null on a live feed.
  * Under Amazon it also carries the disclosure wording Amazon's operating
  * agreement requires wherever its links appear.
