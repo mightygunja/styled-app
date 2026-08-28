@@ -109,6 +109,46 @@ export const GUIDES: GuideMeta[] = [
     description:
       'The highest-impact sustainable fashion habits: wearing what you own more, the 30-wears test, care that doubles garment life, and exits that aren’t landfill.',
   },
+  {
+    route: 'GuideWhatsInStyle',
+    path: 'guides/whats-in-style',
+    label: 'What’s in style',
+    title: 'What’s in Style Right Now — and How to Read What’s Next',
+    description:
+      'How fashion trends actually move: the four stages from emerging to fading, where trends start, how to separate a real trend from your algorithm, and what stage should mean for your wallet.',
+  },
+  {
+    route: 'GuideWearTrends',
+    path: 'guides/how-to-wear-a-trend',
+    label: 'Wearing trends',
+    title: 'How to Wear a Trend Without Losing Your Style',
+    description:
+      'The one-trend-piece rule, anchoring a trend in clothes you already own, the “still me” test, and when skipping a trend is the more stylish move.',
+  },
+  {
+    route: 'GuideTrendBudget',
+    path: 'guides/trends-on-a-budget',
+    label: 'Trends on a budget',
+    title: 'Trying a Trend on a Budget: The One-Piece Rule',
+    description:
+      'How to buy into a trend without regret: style what you own first, enter through the cheapest real piece, run the cost-per-wear math against the trend’s stage, and let secondhand absorb the risk.',
+  },
+  {
+    route: 'GuideCityStyle',
+    path: 'guides/dressing-for-your-city',
+    label: 'Dressing for your city',
+    title: 'Dressing for Your City: Why Location Changes What Works',
+    description:
+      'Why the same outfit reads differently in Milan, Seattle and a suburb: climate honesty, local formality, and how to adopt trends in the version your actual streets wear.',
+  },
+  {
+    route: 'GuideFabric',
+    path: 'guides/fabric-guide',
+    label: 'Fabric, decoded',
+    title: 'Reading Fabric: Why Material Makes the Outfit',
+    description:
+      'A plain guide to fabric: how material decides drape, formality and lifespan, the in-store tests that take ten seconds, and which fibres earn their price.',
+  },
 ];
 
 function GuidePage({
@@ -733,6 +773,263 @@ export function GuideSustainableScreen() {
         left, and route true end-of-life textiles to fabric recycling rather than the bin.
         A garment that leaves your closet into someone's rotation is a success; one that
         leaves it for a landfill via a feel-good middleman is not.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideWhatsInStyleScreen() {
+  return (
+    <GuidePage
+      route="GuideWhatsInStyle"
+      eyebrow="STYLE GUIDE"
+      title="What's in style right now — and how to read what's next"
+      intro="Trends feel like weather: they arrive from nowhere and everyone is suddenly wet. They aren't. Trends move in a knowable pattern, and once you can read it, being current stops being luck and starts being a skill."
+    >
+      <H>Every trend lives through four stages</H>
+      <P>
+        Emerging: a look shows up on the most fashion-forward streets — often one city's scene,
+        not everywhere — and reads as strange in photos. Rising: it spreads across cities and
+        into mid-market stores, and starts reading as fresh rather than strange. Peak: it is
+        simply how clothes look this year; wearing it reads as current, not daring. Fading: fast
+        fashion has saturated it, the people who started it have moved on, and wearing it starts
+        to date an outfit rather than update it.
+      </P>
+      <P>
+        The stage matters more than the trend. The same wide-leg trouser was a risk in its
+        emerging year, a smart buy while rising, a safe one at peak — and the identical garment
+        becomes a question mark once the direction fades. Nothing about the trouser changed.
+      </P>
+      <H>Where trends actually start</H>
+      <P>
+        Less from runways than the mythology says, and more from a handful of street-style
+        scenes that the industry watches: Copenhagen and its practical minimalism, Seoul's
+        precision play with proportion, Milan and Paris for how polish evolves, London and New
+        York for the collision of subculture and tailoring. When the same shape appears in
+        three of those cities in one season, it is coming to yours.
+      </P>
+      <H>A trend, or just your algorithm?</H>
+      <LI>
+        <B>The feed test fails alone.</B> Seeing something constantly online proves the
+        algorithm knows you looked once. It is evidence about you, not about fashion.
+      </LI>
+      <LI>
+        <B>Look for it on three kinds of people.</B> A style worn by the influencer, the
+        well-dressed stranger at the coffee shop, and a colleague who doesn't follow fashion is
+        a trend at three different stages — that spread is the real signal.
+      </LI>
+      <LI>
+        <B>Check the stores' middle.</B> When mid-market retailers rack a shape in quantity,
+        the trend is rising toward peak. When the same shape floods the clearance rail, you're
+        watching it fade in real time.
+      </LI>
+      <H>Let the stage set the budget</H>
+      <P>
+        Emerging trends deserve curiosity, not money — try the look with what you own. Rising
+        is the buying window: the piece will be current for years. At peak, buy the best
+        version you'll wear long after the label "trend" falls away. Fading earns your money
+        only if you genuinely love the piece — at which point it isn't a trend purchase at
+        all, it's just your taste.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideWearTrendsScreen() {
+  return (
+    <GuidePage
+      route="GuideWearTrends"
+      eyebrow="STYLE GUIDE"
+      title="How to wear a trend without losing your style"
+      intro="The fear is legitimate: chase trends and you dress like a mannequin; ignore them and the wardrobe slowly dates. The answer isn't a side of that argument. It's a method — trend as ingredient, never as recipe."
+    >
+      <H>One trend piece per outfit</H>
+      <P>
+        The reliable rule in all of this: a single trend element, surrounded by clothes that
+        are unmistakably yours. Wide-leg trousers with your usual knit and jacket reads as
+        evolution. Wide-leg trousers with the trending jacket, the trending shoe and the
+        trending bag reads as costume — and costs four times as much to assemble.
+      </P>
+      <H>Anchor it in what you already own</H>
+      <P>
+        Before a trend earns a purchase, make it prove itself with your existing closet. Most
+        trends are re-proportioned versions of garments you already have: tuck differently,
+        layer differently, swap which trouser meets which shoe. Styling your way into a trend
+        costs nothing, teaches you whether the direction suits you, and tells you precisely
+        which piece is actually missing if you decide to go further.
+      </P>
+      <H>The "still me" test</H>
+      <LI>
+        <B>Name your three words.</B> Whatever your style reduces to — say, polished, relaxed,
+        classic. A trend worth adopting can be worn in a way that still answers to those words.
+        If it can't, it isn't your trend, however good it looks on someone else.
+      </LI>
+      <LI>
+        <B>Mind your hard lines, but let one bend occasionally.</B> "I don't wear X" deserves
+        respect — and an annual audit. Style evolves by testing an old rule against a current
+        reason. When a trend argues against one of yours, try it once, cheaply, at home. Keep
+        the rule or retire it on evidence.
+      </LI>
+      <LI>
+        <B>Fit beats fashion, always.</B> A trend cut wrong for your build does not become
+        right because it's current. The version of the trend that fits you is the trend, for
+        you.
+      </LI>
+      <H>Skipping can be the stylish move</H>
+      <P>
+        Every trend cycle includes directions that simply aren't for you, and the most
+        credible personal style is edited, not exhaustive. Skip consciously — knowing what the
+        trend is, and choosing no — rather than by not noticing. The difference shows.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideTrendBudgetScreen() {
+  return (
+    <GuidePage
+      route="GuideTrendBudget"
+      eyebrow="STYLE GUIDE"
+      title="Trying a trend on a budget: the one-piece rule"
+      intro="Trends have a pricing trick built in: they make you feel behind, and people who feel behind buy fast and badly. The countermove is a sequence — free first, then cheap, then committed — that lets the trend prove itself before it touches your savings."
+    >
+      <H>Step one costs nothing: restyle</H>
+      <P>
+        Most trends can be approximated from an ordinary closet, because most trends are
+        proportions and pairings rather than exotic garments. Wear the trend for a week using
+        only what you own. Half the time this satisfies the itch entirely — you were after the
+        feeling of current, and you got it free.
+      </P>
+      <H>Step two: enter through the smallest real piece</H>
+      <P>
+        Every trend has a cheapest genuine entry: the colour arrives as a bag or a knit before
+        a coat, a silhouette arrives as one trouser, a texture as one jacket. Buy the entry
+        piece, wear it hard for a month, and let it decide whether the trend deserves deeper
+        investment. An accessory-first entry also exits gracefully: when the trend fades, a
+        bag retires quietly; a statement coat haunts the rail.
+      </P>
+      <H>Run cost per wear against the clock</H>
+      <LI>
+        <B>Rising trend, staple-adjacent piece:</B> the happy case. A wide trouser or a suede
+        jacket bought while rising can log years of wears — trend price, staple math.
+      </LI>
+      <LI>
+        <B>Peak trend, loud piece:</B> assume two seasons of life, and divide the price by
+        honest wears within them. If the number embarrasses you, the clearance version of the
+        same thought will be along shortly.
+      </LI>
+      <LI>
+        <B>Fading trend, any piece:</B> the discount is not a bargain — it's the market
+        agreeing the direction is ending. Buy only what you'd wear with the trend gone.
+      </LI>
+      <H>Let secondhand carry the risk</H>
+      <P>
+        By the time a trend peaks, its rising-phase purchases are flowing into resale — often
+        barely worn, at a third of retail. Secondhand is the ideal trend laboratory: real
+        pieces, real prices, and if the direction leaves you cold in six months, you resell at
+        roughly what you paid. The experiment runs at nearly zero cost either way.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideCityStyleScreen() {
+  return (
+    <GuidePage
+      route="GuideCityStyle"
+      eyebrow="STYLE GUIDE"
+      title="Dressing for your city: why location changes what works"
+      intro="The same outfit is polished in Milan, overdressed at a Portland farmers market, and underdressed at a Dallas dinner. Style advice that ignores where you live is advice for nowhere. Location sets three dials — climate, formality, and vibe — and reading them is a skill."
+    >
+      <H>Climate is not negotiable</H>
+      <P>
+        Trend photography is shot in mild weather on people stepping between cars and
+        buildings. Your version of any trend has to survive your actual seasons: the
+        layered-suede autumn look means nothing in a city that holds 90 degrees through
+        October, and sheer layering is a hard sell at a bus stop in February. Adopt the
+        trend's idea in the fabric your weather permits — the silhouette usually travels even
+        when the material can't.
+      </P>
+      <H>Read your city's real formality</H>
+      <P>
+        Every place has a baseline: the level at which most people dress most days. Wearing
+        far above it reads as trying; far below it reads as not noticing. The baseline is
+        observable — look at what the put-together people at the grocery store wear, not what
+        the going-out photos show. Then position yourself half a step above baseline. Half a
+        step reads as intentional everywhere on earth; two steps reads as lost.
+      </P>
+      <H>Vibe: which capitals your streets listen to</H>
+      <LI>
+        <B>Coastal American cities</B> tend to metabolize New York's mix fastest — tailoring
+        crossed with sport, trends worn at rising stage.
+      </LI>
+      <LI>
+        <B>Practical and northern cities</B> read Copenhagen naturally: function-first layers,
+        quality basics, colour used deliberately.
+      </LI>
+      <LI>
+        <B>Suburbs and smaller cities</B> adopt at peak, which is not a failing — it means the
+        safest buying window is longer there, and emerging-stage pieces will read as strange
+        for another season. Price that in.
+      </LI>
+      <H>Dress for your streets, not your feed</H>
+      <P>
+        The feed shows you five capitals at once; you dress in exactly one place. The skill is
+        translation, not import: take the direction, render it at your city's formality, in
+        your climate's fabrics, one stage closer to peak than the photos. That is what
+        "well-dressed here" means — and "here" is the only place you get dressed.
+      </P>
+    </GuidePage>
+  );
+}
+
+export function GuideFabricScreen() {
+  return (
+    <GuidePage
+      route="GuideFabric"
+      eyebrow="STYLE GUIDE"
+      title="Reading fabric: why material makes the outfit"
+      intro="Two shirts, same cut, same colour: one reads expensive, one reads tired by noon. The difference is nothing you can see on a hanger and everything you can feel in ten seconds. Fabric is the least discussed, most decisive fact about clothes."
+    >
+      <H>Material decides three things cut can't</H>
+      <P>
+        Drape — whether the garment falls in clean lines or clings and bunches. Formality — a
+        wool trouser and a jersey trouser at the identical cut sit levels apart. And lifespan —
+        the difference between a knit that pills by the third wash and one that outlives the
+        trend it arrived in. Price correlates loosely with all three; fibre content correlates
+        tightly.
+      </P>
+      <H>The ten-second store tests</H>
+      <LI>
+        <B>Scrunch it.</B> Grip a handful for five seconds and release. Wrinkles that fall out
+        as you watch mean the garment survives a workday; creases that stay are the 3pm
+        version of the shirt.
+      </LI>
+      <LI>
+        <B>Hold it to light.</B> Unintended sheerness in a tee or trouser is the fastest tell
+        of a fabric built to a price.
+      </LI>
+      <LI>
+        <B>Read the label last.</B> Guess the fibre by hand first, then check. This trains
+        your hand fast — and the label still settles it: majority natural fibre for pieces
+        meant to breathe and last, synthetics welcome where they work (stretch in denim,
+        weatherproofing in shells), suspicious where they merely cheapen (a "silky" blouse
+        that is 100% polyester at a silk price).
+      </LI>
+      <H>Fabric is how trends are worn well</H>
+      <P>
+        Most trends name a texture as much as a shape — suede's whole argument is surface;
+        linen is a temperature statement; sheer layering is literally a fabric weight. The
+        cheap version of a trend usually fails at the fabric, not the silhouette, which is why
+        a secondhand piece in the right material beats a new one in the wrong material at the
+        same price, every time.
+      </P>
+      <H>Match fabric to your actual climate</H>
+      <P>
+        Natural fibres regulate; plastics insulate. Linen and cotton for genuine heat, wool
+        far beyond winter — lightweight merino is a three-season fabric — and the humid
+        shoulder seasons are where polyester blends punish you hardest. If your weather app
+        and your wardrobe disagree, the wardrobe loses.
       </P>
     </GuidePage>
   );

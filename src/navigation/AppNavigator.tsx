@@ -91,6 +91,11 @@ import {
   GuideClosetOrganizationScreen,
   GuideWorkWardrobeScreen,
   GuideSustainableScreen,
+  GuideWhatsInStyleScreen,
+  GuideWearTrendsScreen,
+  GuideTrendBudgetScreen,
+  GuideCityStyleScreen,
+  GuideFabricScreen,
 } from '../screens/GuideScreens';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme/designSystem';
@@ -220,6 +225,11 @@ const PUBLIC_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'GuideClosetOrganization', component: GuideClosetOrganizationScreen, title: 'How to Organize Your Closet' },
   { name: 'GuideWorkWardrobe', component: GuideWorkWardrobeScreen, title: 'Building a Work Wardrobe' },
   { name: 'GuideSustainable', component: GuideSustainableScreen, title: 'Sustainable Fashion, Practically' },
+  { name: 'GuideWhatsInStyle', component: GuideWhatsInStyleScreen, title: "What's in Style Right Now" },
+  { name: 'GuideWearTrends', component: GuideWearTrendsScreen, title: 'How to Wear a Trend Without Losing Your Style' },
+  { name: 'GuideTrendBudget', component: GuideTrendBudgetScreen, title: 'Trying a Trend on a Budget' },
+  { name: 'GuideCityStyle', component: GuideCityStyleScreen, title: 'Dressing for Your City' },
+  { name: 'GuideFabric', component: GuideFabricScreen, title: 'Reading Fabric: Why Material Makes the Outfit' },
 ];
 
 const publicScreens = PUBLIC_SCREENS.map(screen => (

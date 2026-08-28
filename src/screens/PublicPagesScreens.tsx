@@ -99,6 +99,14 @@ export function AboutScreen() {
         would rather tell you not to buy something than recommend a piece that won't earn its
         place.
       </P>
+      <P>
+        The app also tracks what is genuinely moving in fashion - an editor-reviewed trend
+        report spanning Copenhagen to Seoul - and makes it personal: which trends your closet
+        already carries, how to wear them as yourself, and the one piece worth adding when
+        you're a step away. Your hard limits stay respected by default, and on the rare
+        occasion a trend argues for crossing one, the app says so plainly instead of sneaking
+        it past you.
+      </P>
       <Section heading="How it's funded">
         <P>
           33 Trends is free - every feature, no subscription. When you buy a piece through a link
@@ -109,8 +117,9 @@ export function AboutScreen() {
       </Section>
       <Section heading="Who we are">
         <P>
-          33 Trends is operated independently from Chicago, Illinois. The iOS app is in
-          development for App Store release; the web app at thirtythreetrends.com is live today.
+          33 Trends is owned and operated by Gunja Consulting, Inc., based in Chicago,
+          Illinois. The web app at thirtythreetrends.com is live today, and the iOS app is on
+          its way to the App Store.
         </P>
       </Section>
     </PublicPage>
