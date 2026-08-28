@@ -2581,6 +2581,158 @@ export const archiveTrend = functions
     return { success: true };
   });
 
+// ==================== EBAY PARTNER NETWORK ====================
+
+/**
+ * eBay Browse API search, affiliatized through eBay Partner Network.
+ *
+ * Credentials live in functions/.env:
+ *   EBAY_CLIENT_ID / EBAY_CLIENT_SECRET - an eBay developer keyset
+ *   EBAY_CAMPAIGN_ID - the EPN campaign id
+ *
+ * With the campaign id sent in X-EBAY-C-ENDUSERCTX, the itemWebUrl eBay
+ * returns is already affiliatized - the client uses it verbatim and never
+ * re-wraps. Secondhand comes back honestly labelled, which is what makes
+ * Shop's secondhand filter real instead of aspirational.
+ */
+
+let ebayToken: { value: string; expiresAt: number } | null = null;
+
+async function getEbayToken(clientId: string, clientSecret: string): Promise<string> {
+  if (ebayToken && Date.now() < ebayToken.expiresAt - 60_000) return ebayToken.value;
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${auth}`,
+    },
+    body: 'grant_type=client_credentials&scope=' + encodeURIComponent('https://api.ebay.com/oauth/api_scope'),
+  });
+  if (!response.ok) {
+    throw new Error(`eBay token request failed: ${response.status}`);
+  }
+  const data = (await response.json()) as any;
+  ebayToken = {
+    value: String(data.access_token),
+    expiresAt: Date.now() + (Number(data.expires_in) || 7200) * 1000,
+  };
+  return ebayToken.value;
+}
+
+/**
+ * eBay's top-level Clothing, Shoes & Accessories category. Browse works best
+ * with this plus keywords; per-category ids shift regionally, so the keyword
+ * (which includes our category word) carries the narrowing.
+ */
+const EBAY_FASHION_CATEGORY = '11450';
+
+export const searchEbayProducts = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const clientId = process.env.EBAY_CLIENT_ID || '';
+      const clientSecret = process.env.EBAY_CLIENT_SECRET || '';
+      const campaignId = process.env.EBAY_CAMPAIGN_ID || '';
+      if (!clientId || !clientSecret) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'eBay credentials are not configured (EBAY_CLIENT_ID / EBAY_CLIENT_SECRET in functions/.env).'
+        );
+      }
+
+      const {
+        query,
+        category,
+        condition,
+        minPrice,
+        maxPrice,
+        colors = [],
+        styleArchetypes = [],
+        page = 0,
+        pageSize = 24,
+      } = data || {};
+
+      // A concrete keyword beats an empty search: fall back to the style
+      // brief so profile-led surfaces (Explore, starter looks) get relevant
+      // garments rather than the marketplace firehose.
+      const q =
+        String(query || '').trim() ||
+        [colors[0], styleArchetypes[0], category || 'clothing'].filter(Boolean).join(' ') ||
+        'clothing';
+
+      const filters: string[] = [];
+      if (condition === 'secondhand') filters.push('conditions:{USED}');
+      else if (condition === 'new') filters.push('conditions:{NEW}');
+      if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
+        filters.push(
+          `price:[${typeof minPrice === 'number' ? minPrice : ''}..${typeof maxPrice === 'number' ? maxPrice : ''}],priceCurrency:USD`
+        );
+      }
+
+      const limit = Math.min(50, Math.max(1, Number(pageSize) || 24));
+      const offset = Math.max(0, Number(page) || 0) * limit;
+      const params = new URLSearchParams({
+        q,
+        category_ids: EBAY_FASHION_CATEGORY,
+        limit: String(limit),
+        offset: String(offset),
+      });
+      if (filters.length) params.set('filter', filters.join(','));
+
+      const token = await getEbayToken(clientId, clientSecret);
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      };
+      // This header is what affiliatizes every itemWebUrl in the response.
+      if (campaignId) headers['X-EBAY-C-ENDUSERCTX'] = `affiliateCampaignId=${campaignId}`;
+
+      const response = await fetch(
+        `https://api.ebay.com/buy/browse/v1/item_summary/search?${params.toString()}`,
+        { headers }
+      );
+      if (!response.ok) {
+        const body = await response.text();
+        console.error('eBay Browse search failed', response.status, body.slice(0, 300));
+        throw new functions.https.HttpsError('internal', `eBay search failed: ${response.status}`);
+      }
+
+      const result = (await response.json()) as any;
+      const items = Array.isArray(result.itemSummaries) ? result.itemSummaries : [];
+
+      const products = items
+        .filter((item: any) => item?.itemId && item?.title && item?.price?.value && item?.itemWebUrl)
+        .map((item: any) => ({
+          id: `ebay-${item.itemId}`,
+          name: String(item.title),
+          brand: String(item.brand || ''),
+          retailer: 'eBay',
+          category: category || 'tops',
+          price: Number(item.price.value),
+          currency: String(item.price.currency || 'USD'),
+          imageUrl: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || '',
+          color: item.color ? String(item.color).toLowerCase() : undefined,
+          sourceUrl: String(item.itemWebUrl),
+          inStock: true,
+          condition:
+            item.condition && !/new/i.test(String(item.condition)) ? 'secondhand' : 'new',
+        }))
+        .filter((p: any) => p.imageUrl);
+
+      return {
+        products,
+        hasMore: typeof result.total === 'number' ? offset + limit < result.total : items.length === limit,
+        totalCount: typeof result.total === 'number' ? result.total : null,
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error searching eBay:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
 // ==================== PERSONAL TREND REPORT ====================
 
 /**

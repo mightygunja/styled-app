@@ -33,7 +33,7 @@ import {
   DiscoveryData,
   MIN_CLOSET_FOR_ARITHMETIC,
 } from '../services/discoveryService';
-import { isMockProvider } from '../services/affiliateNetwork';
+import { curatedCatalogNotice } from '../services/affiliateNetwork';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { shopperSignals } from '../services/shopperSignals';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
@@ -297,13 +297,11 @@ export default function ExploreScreen() {
         </Text>
 
         {/* Named plainly rather than dressed up. Someone deciding whether to
-            trust a recommendation deserves to know it is a demo catalogue. */}
-        {isMockProvider() && (
+            trust a recommendation deserves to know how the catalogue and its
+            links actually work. */}
+        {!!curatedCatalogNotice() && (
           <View style={styles.noticeBox}>
-            <Text style={styles.noticeText}>
-              Showing a sample catalogue. Connect a retail partner and these become live,
-              purchasable products — the scoring below is already real.
-            </Text>
+            <Text style={styles.noticeText}>{curatedCatalogNotice()}</Text>
           </View>
         )}
 

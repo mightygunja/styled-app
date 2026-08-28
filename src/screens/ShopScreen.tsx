@@ -17,7 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
-import { getActiveAdapter, isMockProvider } from '../services/affiliateNetwork';
+import { getActiveAdapter, curatedCatalogNotice } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
@@ -221,11 +221,8 @@ export default function ShopScreen() {
         <Text style={styles.subtitle}>
           Filtered against your color season, body & fit profile, style archetypes, and what's already in your closet.
         </Text>
-        {isMockProvider() && (
-          <Text style={styles.devNotice}>
-            Sample picks curated by us, not a live retailer feed yet - each one links to a real search on the
-            retailer's site rather than a specific in-stock item.
-          </Text>
+        {!!curatedCatalogNotice() && (
+          <Text style={styles.devNotice}>{curatedCatalogNotice()}</Text>
         )}
 
         {/* Trend focus: the user tapped "Find the piece" on a specific trend,

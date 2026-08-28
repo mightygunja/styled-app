@@ -45,9 +45,46 @@ import { MOCK_CATALOG } from '../data/mockProductCatalog';
  * 'both' runs Sovrn and Rakuten together and merges the results, which is what
  * a serious catalogue needs - no single affiliate network covers every
  * retailer, and the competitor doing this best runs exactly this pair.
+ *
+ * 'amazon' is the low-barrier starter network: Amazon Associates issues a
+ * tracking tag at signup with no site review up front (the review happens
+ * after the first 3 qualifying sales, with 180 days to make them). It serves
+ * the curated catalogue but monetizes every outbound click as an Amazon
+ * search link carrying the associate tag - a legitimate, attributable
+ * affiliate link that needs no API access and no server-side secret (the tag
+ * is public by design; it appears in every URL).
  */
-type MarketplaceProvider = 'mock' | 'sovrn' | 'rakuten' | 'skimlinks' | 'both';
-const MARKETPLACE_PROVIDER: MarketplaceProvider = 'mock';
+/**
+ * 'ebay' is the second low-barrier network: eBay Partner Network approval is
+ * straightforward, the Browse API returns real, in-stock items (including
+ * secondhand - it is what powers our secondhand filter properly), and links
+ * come back already affiliatized when the campaign id is set server-side.
+ * To activate: EPN account -> campaign id, plus an eBay developer keyset;
+ * put EBAY_CLIENT_ID / EBAY_CLIENT_SECRET / EBAY_CAMPAIGN_ID in
+ * functions/.env, deploy functions, then flip the provider to 'ebay' - or
+ * 'starter', which merges the curated Amazon picks with live eBay results.
+ */
+type MarketplaceProvider =
+  | 'mock'
+  | 'amazon'
+  | 'ebay'
+  | 'starter'
+  | 'sovrn'
+  | 'rakuten'
+  | 'skimlinks'
+  | 'both';
+const MARKETPLACE_PROVIDER: MarketplaceProvider = 'amazon';
+
+/**
+ * The Amazon Associates tracking tag, e.g. 'thirtythree-20'.
+ * Get one at affiliate-program.amazon.com (instant at signup). Empty tag =
+ * links still work as plain Amazon searches, they just don't earn yet.
+ *
+ * Amazon requires the disclosure "As an Amazon Associate we earn from
+ * qualifying purchases" wherever its links appear - curatedCatalogNotice()
+ * below carries it, and the Shop/Explore screens render it.
+ */
+const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
 
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
@@ -106,6 +143,24 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
       brands: Array.from(new Set(MOCK_CATALOG.map(p => p.brand))).sort(),
       retailers: Array.from(new Set(MOCK_CATALOG.map(p => p.retailer))).sort(),
     };
+  }
+}
+
+/**
+ * Amazon Associates over the curated catalogue.
+ *
+ * Same product set as the mock adapter - the difference is the money: every
+ * outbound link becomes an Amazon search for that garment with the associate
+ * tag attached, so a purchase within Amazon's attribution window pays
+ * commission. No Product API involved: Amazon locks live search behind the
+ * first 3 sales, but tag-on-search-link works from day one, which is the
+ * entire point of starting here.
+ */
+class AmazonAssociatesAdapter extends MockCatalogAdapter {
+  async wrapLink(product: Product): Promise<string> {
+    const query = encodeURIComponent(`${product.brand} ${product.name}`.trim());
+    const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
+    return `https://www.amazon.com/s?k=${query}${tag}`;
   }
 }
 
@@ -205,6 +260,52 @@ class SkimlinksAdapter implements AffiliateNetworkAdapter {
   async getFacets() {
     // A live network's brand list is far too large to enumerate; filter UI
     // falls back to whatever is present in the current result set.
+    return { brands: [], retailers: [] };
+  }
+}
+
+const searchEbayProductsFn = httpsCallable(functions, 'searchEbayProducts');
+
+/**
+ * eBay Partner Network over the Browse API.
+ *
+ * The Cloud Function holds the developer keys and the EPN campaign id; with
+ * the campaign id in the request context, eBay returns item URLs that are
+ * already affiliatized - so wrapLink is a pass-through, and re-wrapping
+ * would break attribution.
+ */
+class EbayPartnerNetworkAdapter implements AffiliateNetworkAdapter {
+  async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
+    const result = await searchEbayProductsFn(filters);
+    const data = result.data as any;
+    const products = (data.products || []) as Product[];
+
+    // Browse honours keyword, price and condition; colour, size and brand
+    // filters have to land here or they would silently do nothing.
+    const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+
+    return {
+      products: refined,
+      hasMore: !!data.hasMore,
+      totalCount: typeof data.totalCount === 'number' ? data.totalCount : null,
+    };
+  }
+
+  /** Browse search is the only surface we use; detail views come from the
+   *  ResilientAdapter's session index, same as Sovrn and Skimlinks. */
+  async getById(): Promise<Product | null> {
+    return null;
+  }
+
+  async getByIds(): Promise<Product[]> {
+    return [];
+  }
+
+  async wrapLink(product: Product): Promise<string> {
+    return product.sourceUrl;
+  }
+
+  async getFacets() {
     return { brands: [], retailers: [] };
   }
 }
@@ -321,14 +422,20 @@ class CompositeAdapter implements AffiliateNetworkAdapter {
   }
 
   async wrapLink(product: Product): Promise<string> {
-    // Route by origin: a Rakuten link is already tracked, and a Skimlinks
-    // product must wrap through Skimlinks - crossing networks sends the
-    // commission to the wrong place or breaks attribution entirely.
+    // Route by origin: a Rakuten or eBay link is already tracked, a
+    // Skimlinks product must wrap through Skimlinks, and a curated-catalogue
+    // id wraps through Amazon when that member is present - crossing
+    // networks sends the commission to the wrong place or breaks
+    // attribution entirely.
     const origin = product.id.startsWith('rakuten-')
       ? 'Rakuten'
       : product.id.startsWith('skimlinks-')
         ? 'Skimlinks'
-        : 'Sovrn';
+        : product.id.startsWith('ebay-')
+          ? 'eBay'
+          : this.members.some(m => m.name === 'Amazon')
+            ? 'Amazon'
+            : 'Sovrn';
     const member = this.members.find(m => m.name === origin) || this.members[0];
     return member.adapter.wrapLink(product);
   }
@@ -452,9 +559,21 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
 const sovrnAdapter = new SovrnCommerceAdapter();
 const rakutenAdapter = new RakutenAdvertisingAdapter();
 const skimlinksAdapter = new SkimlinksAdapter();
+const amazonAdapter = new AmazonAssociatesAdapter();
+const ebayAdapter = new EbayPartnerNetworkAdapter();
 
 const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
   mock: new ResilientAdapter(new MockCatalogAdapter()),
+  amazon: new ResilientAdapter(amazonAdapter),
+  ebay: new ResilientAdapter(ebayAdapter),
+  // The low-barrier pair together: curated Amazon picks plus live eBay
+  // inventory (which also lights up the secondhand filter for real).
+  starter: new ResilientAdapter(
+    new CompositeAdapter([
+      { name: 'Amazon', adapter: amazonAdapter },
+      { name: 'eBay', adapter: ebayAdapter },
+    ])
+  ),
   sovrn: new ResilientAdapter(sovrnAdapter),
   rakuten: new ResilientAdapter(rakutenAdapter),
   skimlinks: new ResilientAdapter(skimlinksAdapter),
@@ -473,6 +592,33 @@ export function getActiveAdapter(): AffiliateNetworkAdapter {
 
 export function isMockProvider(): boolean {
   return MARKETPLACE_PROVIDER === 'mock';
+}
+
+/**
+ * The honesty line for curated-catalogue providers, or null on a live feed.
+ * Under Amazon it also carries the disclosure wording Amazon's operating
+ * agreement requires wherever its links appear.
+ */
+export function curatedCatalogNotice(): string | null {
+  if (MARKETPLACE_PROVIDER === 'mock') {
+    return (
+      'Showing a sample catalogue. Connect a retail partner and these become live, purchasable ' +
+      'products — the scoring is already real.'
+    );
+  }
+  if (MARKETPLACE_PROVIDER === 'amazon') {
+    return (
+      'Picks curated by us; each links to a matching search on Amazon rather than a specific ' +
+      'in-stock item. As an Amazon Associate we earn from qualifying purchases.'
+    );
+  }
+  if (MARKETPLACE_PROVIDER === 'starter') {
+    return (
+      'A mix of picks curated by us (linking to matching Amazon searches) and live eBay ' +
+      'listings. As an Amazon Associate we earn from qualifying purchases.'
+    );
+  }
+  return null;
 }
 
 /** Recorded on outbound clicks so mock traffic is never mistaken for real. */
