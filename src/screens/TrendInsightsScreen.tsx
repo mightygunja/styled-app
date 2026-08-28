@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,6 +37,7 @@ import { trendRemixService, TrendRemix, anchorDisplayLabel } from '../services/t
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { shopperSignals } from '../services/shopperSignals';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
+import { amazonSearchUrl } from '../services/affiliateNetwork';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -110,17 +111,34 @@ export default function TrendInsightsScreen() {
     }, [load])
   );
 
+  /** The vetted piece this user is missing for the trend, when there is one. */
+  const gapFor = (remix: TrendRemix): string | undefined =>
+    remix.personalization?.gapNote ??
+    (remix.wearableToday ? undefined : remix.trend.entryPiece);
+
+  /**
+   * Primary action. When the report names a specific missing piece, "Find
+   * the piece" means exactly that: a tagged Amazon search for the piece
+   * itself - all of Amazon's inventory, not the app's bounded catalogue.
+   * With no gap (they're already in the trend), it deepens in-app instead.
+   */
   const shopTrend = (remix: TrendRemix) => {
     shopperSignals.recordTrendTap(remix.trend.id).catch(() => {});
-    // Shop opens focused on this trend: results filter and rank to the
-    // trend's own garments/cuts/colours, and the vetted gap phrase rides
-    // along so the page can say what the user came for.
+    const gap = gapFor(remix);
+    if (gap) {
+      Linking.openURL(amazonSearchUrl(gap)).catch(() => {});
+      return;
+    }
+    browseTrend(remix, false);
+  };
+
+  /** Secondary: the in-app Shop focused on this trend, scored against their closet. */
+  const browseTrend = (remix: TrendRemix, recordTap: boolean = true) => {
+    if (recordTap) shopperSignals.recordTrendTap(remix.trend.id).catch(() => {});
     navigation.navigate('Shop', {
       trendId: remix.trend.id,
       trendName: remix.trend.name,
-      trendGap:
-        remix.personalization?.gapNote ??
-        (remix.wearableToday ? undefined : remix.trend.entryPiece),
+      trendGap: gapFor(remix),
     });
   };
 
@@ -175,13 +193,8 @@ export default function TrendInsightsScreen() {
               : remix.wearableToday
                 ? anchorLine(remix)
                 : remix.gapLine;
-            const shopLabel = p
-              ? p.gapNote
-                ? 'Find the piece'
-                : 'Go deeper in Shop'
-              : remix.wearableToday
-                ? 'Go deeper in Shop'
-                : 'Find the piece';
+            const gap = gapFor(remix);
+            const shopLabel = gap ? 'Find it on Amazon' : 'Go deeper in Shop';
             return (
               <View key={trend.id} style={styles.trendCard}>
                 <View style={styles.trendTopRow}>
@@ -224,6 +237,16 @@ export default function TrendInsightsScreen() {
                   >
                     <Text style={styles.shopActionText}>{shopLabel}</Text>
                   </TouchableOpacity>
+                  {!!gap && (
+                    <TouchableOpacity
+                      style={styles.dismissAction}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Browse ${trend.name} in Shop`}
+                      onPress={() => browseTrend(remix)}
+                    >
+                      <Text style={styles.browseActionText}>Browse in Shop</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={styles.dismissAction}
                     accessibilityRole="button"
@@ -322,6 +345,7 @@ const styles = StyleSheet.create({
   shopActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   dismissAction: { paddingVertical: 11 },
   dismissActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint },
+  browseActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
 
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 8 },
   sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },
