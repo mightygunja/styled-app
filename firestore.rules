@@ -105,6 +105,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Fashion trend registry. Written only by the trend desk Cloud Functions
+    // (admin SDK bypasses these rules); clients may read published entries
+    // only - drafts belong to the editor until they sign off. Client queries
+    // must therefore constrain status == 'published'.
+    match /trends/{trendId} {
+      allow read: if isAuthenticated() && resource.data.status == 'published';
+      allow write: if false;
+    }
+
     // Stylist bookings - owned by userId field
     match /stylistBookings/{bookingId} {
       allow read: if isResourceOwner();
@@ -244,7 +253,7 @@ service cloud.firestore {
     // reason to expose aggregate traffic to every user of the app.
     match /affiliateDaily/{day} {
       allow read: if false;
-      allow create, update: if isSignedIn();
+      allow create, update: if isAuthenticated();
       allow delete: if false;
     }
 

@@ -163,7 +163,7 @@ export interface MatchedProduct {
   matchReasons: string[];
   /** Typed signals with strength, so the UI can emphasise rather than just list. */
   signals: Array<{
-    kind: 'unlock' | 'color' | 'fit' | 'style' | 'gap' | 'value' | 'versatility' | 'concern';
+    kind: 'unlock' | 'color' | 'fit' | 'style' | 'trend' | 'gap' | 'value' | 'versatility' | 'concern';
     text: string;
     strength: 'strong' | 'moderate' | 'minor';
   }>;
@@ -178,4 +178,6 @@ export interface MatchedProduct {
     newOutfits: number;
     bestPairings: Array<{ id: string; label: string }>;
   } | null;
+  /** The current fashion trend this product buys into, when it does. */
+  trend?: { id: string; name: string; region: string; stage: string } | null;
 }

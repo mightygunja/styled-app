@@ -39,7 +39,7 @@ const SECTIONS: MoreSection[] = [
     label: 'STYLE',
     items: [
       { label: 'Edits', subtitle: 'A STYLIST ON YOUR OWN CLOSET', icon: 'sparkles-outline', route: 'Edits' },
-      { label: 'Trend insights', subtitle: "WHAT'S TRENDING NOW", icon: 'trending-up-outline', route: 'TrendInsights' },
+      { label: 'The Trend Report', subtitle: "WHAT'S MOVING, RANKED FOR YOU", icon: 'trending-up-outline', route: 'TrendInsights' },
     ],
   },
   {

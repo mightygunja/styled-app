@@ -31,6 +31,12 @@ interface AdminEntry {
 
 const ENTRIES: AdminEntry[] = [
   {
+    eyebrow: 'EDITORIAL',
+    label: 'Trend desk',
+    detail: 'Draft the trend report with AI, review it, and publish what users see everywhere.',
+    route: 'TrendDeskAdmin',
+  },
+  {
     eyebrow: 'REVENUE',
     label: 'Affiliate performance',
     detail: 'Impressions, outbound clicks and tap-through by surface, plus recorded payouts.',

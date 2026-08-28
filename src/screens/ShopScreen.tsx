@@ -26,6 +26,8 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { shopperSignals } from '../services/shopperSignals';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
+import { getPublishedTrends } from '../services/trendService';
+import { FashionTrend, trendTextMatch, TrendMatchKind } from '../models/fashionTrend';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
@@ -61,6 +63,10 @@ export default function ShopScreen() {
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [sort, setSort] = useState<ProductSort>('match');
   const [products, setProducts] = useState<MatchedProduct[]>([]);
+  const [allTrends, setAllTrends] = useState<FashionTrend[]>([]);
+  // "Shopping the trend" focus, set when a trend surface sent the user here.
+  // Filters and orders the grid to pieces that actually carry the trend.
+  const [focusTrend, setFocusTrend] = useState<FashionTrend | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,7 +78,7 @@ export default function ShopScreen() {
       // the extra fields harmlessly.
       const profile = await buildProfileMatchContext(userId);
 
-      const [searchResult, closetResponse, signals, weather] = await Promise.all([
+      const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
           query: query.trim() || undefined,
           category: category === 'all' ? undefined : category,
@@ -89,6 +95,9 @@ export default function ShopScreen() {
         // Weather sharpens seasonality but must never block the page - a failed
         // lookup just means the calendar season carries the signal alone.
         getCurrentWeather().catch(() => undefined),
+        // Session-cached; enriches ranking (trend signals on cards) and powers
+        // the trend focus. Never blocks the page.
+        getPublishedTrends().catch(() => [] as FashionTrend[]),
       ]);
       const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
         id: item.id,
@@ -106,9 +115,11 @@ export default function ShopScreen() {
         seasons: item.seasons,
         style: item.style,
       }));
+      setAllTrends(publishedTrends);
       const ranked = scoreAndRankProducts(searchResult.products, profile, closetItems, {
         signals,
         weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
+        trends: publishedTrends,
       });
 
       // Only the first screenful counts as seen. Recording the whole result set
@@ -142,9 +153,57 @@ export default function ShopScreen() {
     }, [])
   );
 
+  // Resolve the trend focus whenever a trend surface navigates here (or the
+  // params clear). Kept in an effect rather than the load path so tapping a
+  // different trend on the report refocuses an already-mounted Shop.
+  useEffect(() => {
+    const trendId = route.params?.trendId;
+    if (!trendId) {
+      setFocusTrend(null);
+      return;
+    }
+    if (allTrends.length) {
+      setFocusTrend(allTrends.find(t => t.id === trendId) ?? null);
+    }
+  }, [route.params?.trendId, allTrends]);
+
+  const clearTrendFocus = () => {
+    setFocusTrend(null);
+    navigation.setParams({ trendId: undefined, trendName: undefined, trendGap: undefined });
+  };
+
+  // Under a trend focus the grid shows only pieces that carry the trend, in
+  // honesty order: pieces matching the specific gap the user came to fill,
+  // then real garment matches, then the trend's cuts, then its colours - and
+  // within each, the personal match score.
+  const trendFiltered = useMemo(() => {
+    if (!focusTrend) return products;
+    const kindOrder: Record<TrendMatchKind, number> = { garment: 1, silhouette: 2, color: 3 };
+    // "Worth adding: camel wide-leg trousers" -> significant tokens the user
+    // is actually here for. Short filler words carry no meaning.
+    const gapTokens = (route.params?.trendGap || '')
+      .toLowerCase()
+      .split(/[^a-z-]+/)
+      .filter(t => t.length > 3);
+    return products
+      .map(m => {
+        const haystack = [m.product.name, m.product.subcategory, ...(m.product.styleTags || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        const kind = trendTextMatch(focusTrend, haystack, m.product.color);
+        if (!kind) return null;
+        const fillsGap = gapTokens.length > 0 && gapTokens.some(t => haystack.includes(t));
+        return { m, order: fillsGap ? 0 : kindOrder[kind] };
+      })
+      .filter((x): x is { m: MatchedProduct; order: number } => x !== null)
+      .sort((a, b) => a.order - b.order || b.m.matchScore - a.m.matchScore)
+      .map(x => x.m);
+  }, [products, focusTrend, route.params?.trendGap]);
+
   const visibleProducts = useMemo(
-    () => (matchedOnly ? products.filter(p => p.matchScore >= MATCH_THRESHOLD) : products),
-    [products, matchedOnly]
+    () => (matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered),
+    [trendFiltered, matchedOnly]
   );
 
   return (
@@ -167,6 +226,30 @@ export default function ShopScreen() {
             Sample picks curated by us, not a live retailer feed yet - each one links to a real search on the
             retailer's site rather than a specific in-stock item.
           </Text>
+        )}
+
+        {/* Trend focus: the user tapped "Find the piece" on a specific trend,
+            so the page owes them results that carry THAT trend - and a plain
+            statement of what they came for. */}
+        {focusTrend && (
+          <View style={styles.trendFocusBox}>
+            <View style={styles.trendFocusText}>
+              <Text style={styles.trendFocusLabel}>
+                SHOPPING THE TREND · {focusTrend.stage.toUpperCase()} IN {focusTrend.region.toUpperCase()}
+              </Text>
+              <Text style={styles.trendFocusName}>{focusTrend.name}</Text>
+              {!!route.params?.trendGap && (
+                <Text style={styles.trendFocusGap}>Looking for: {route.params.trendGap}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={clearTrendFocus}
+              accessibilityRole="button"
+              accessibilityLabel="Stop shopping this trend"
+            >
+              <Text style={styles.trendFocusClear}>CLEAR</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -258,7 +341,11 @@ export default function ShopScreen() {
           windowSize={7}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No matches for this filter yet.</Text>
+              <Text style={styles.emptyText}>
+                {focusTrend
+                  ? `Nothing in the catalogue carries "${focusTrend.name}" right now — clear the trend to browse everything.`
+                  : 'No matches for this filter yet.'}
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -363,6 +450,27 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
     marginTop: 8,
   },
+  // Same camel-rule "trend voice" treatment as Home and the Trend Report.
+  trendFocusBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.camel,
+  },
+  trendFocusText: { flex: 1, paddingRight: 10 },
+  trendFocusLabel: { ...textType.eyebrow, fontSize: 9, color: colors.camel },
+  trendFocusName: { fontFamily: fonts.serif, fontSize: 18, color: colors.ink, marginTop: 4 },
+  trendFocusGap: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.ink,
+    marginTop: 4,
+  },
+  trendFocusClear: { ...textType.eyebrow, fontSize: 10, color: colors.tobacco, paddingVertical: 4 },
   searchInput: {
     marginHorizontal: spacing.page,
     marginTop: spacing.sm,

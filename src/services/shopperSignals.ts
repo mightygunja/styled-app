@@ -46,6 +46,14 @@ export interface ShopperSignals {
   dismissed: string[];
   /** Prices of tapped products, for inferring what they actually engage with. */
   tappedPrices: number[];
+  /**
+   * Trend engagement, keyed by trend id. Positive events (tapping into a
+   * trend, shopping its stretch pick) versus explicit "not my thing"
+   * dismissals. This is what widens or narrows how far the trend layer
+   * stretches this user - see trendAdventurousness below.
+   */
+  trendTaps: Record<string, number>;
+  trendDismissals: Record<string, number>;
 }
 
 export const EMPTY_SIGNALS: ShopperSignals = {
@@ -56,6 +64,8 @@ export const EMPTY_SIGNALS: ShopperSignals = {
   categoryAffinity: {},
   dismissed: [],
   tappedPrices: [],
+  trendTaps: {},
+  trendDismissals: {},
 };
 
 let cache: ShopperSignals | null = null;
@@ -162,6 +172,20 @@ export const shopperSignals = {
     scheduleWrite();
   },
 
+  /** They leaned into a trend - opened its report, shopped its stretch pick. */
+  async recordTrendTap(trendId: string): Promise<void> {
+    const signals = await read();
+    signals.trendTaps[trendId] = (signals.trendTaps[trendId] || 0) + 1;
+    scheduleWrite();
+  },
+
+  /** An explicit "not my thing" on a trend. Stronger than ignoring it. */
+  async recordTrendDismiss(trendId: string): Promise<void> {
+    const signals = await read();
+    signals.trendDismissals[trendId] = (signals.trendDismissals[trendId] || 0) + 1;
+    scheduleWrite();
+  },
+
   async recordDismiss(product: Product): Promise<void> {
     const signals = await read();
     if (!signals.dismissed.includes(product.id)) signals.dismissed.push(product.id);
@@ -225,6 +249,21 @@ export function behaviouralAdjustment(
   }
 
   return { weight, reason, suppressed: false };
+}
+
+/**
+ * How adventurous this user has proven to be with trends, 0.15..1.
+ *
+ * Starts at a neutral 0.5 and moves with behaviour: engaging with trend
+ * surfaces widens the stretch (earlier-stage trends, bolder stretch picks);
+ * dismissing them narrows it. Deliberately never reaches 0 - the app's
+ * promise is making people trendier, so the trend layer quiets down for a
+ * reluctant user but never disappears.
+ */
+export function trendAdventurousness(signals: ShopperSignals): number {
+  const taps = Object.values(signals.trendTaps || {}).reduce((a, b) => a + b, 0);
+  const dismissals = Object.values(signals.trendDismissals || {}).reduce((a, b) => a + b, 0);
+  return Math.max(0.15, Math.min(1, 0.5 + taps * 0.06 - dismissals * 0.08));
 }
 
 /** Median price of products the user has actually tapped, once there are enough. */

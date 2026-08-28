@@ -16,6 +16,7 @@ import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { buildProfileMatchContext } from './profileMatchContext';
 import { discoveryService } from './discoveryService';
 import { OccasionKey } from './dailyOutfitService';
+import { trendRemixService } from './trendRemixService';
 
 const chatWithStylistFn = httpsCallable(functions, 'chatWithStylist');
 
@@ -275,6 +276,40 @@ class StylingAssistantService {
         }
       : undefined;
 
+    // The trend desk's current report, ranked for THIS user - their closet,
+    // their taste, and the weather where they are - so the stylist leads
+    // with the trends most applicable to them, not a generic global list.
+    // A trend that crosses one of the user's avoid rules still goes through,
+    // flagged, so the stylist can propose it as an owned exception rather
+    // than pretending the trend doesn't exist. Cached in-session, and never
+    // allowed to block the chat.
+    const trendPayload = await trendRemixService
+      .loadTrendRemixes(
+        closetItems,
+        styleProfile
+          ? {
+              styleArchetypes: styleProfile.styleArchetypes,
+              avoidRules: styleProfile.avoidRules,
+              recommendedColors: styleProfile.colorAnalysis?.palette.map(c => c.name),
+            }
+          : undefined,
+        context?.weather
+          ? { temperature: context.weather.temperature, condition: context.weather.condition }
+          : undefined
+      )
+      .then(remixes =>
+        remixes.slice(0, 4).map(r => ({
+          name: r.trend.name,
+          region: r.trend.region,
+          stage: r.trend.stage,
+          keyGarments: r.trend.keyGarments.slice(0, 4),
+          keyColors: r.trend.keyColors.slice(0, 3),
+          stylingNote: r.trend.stylingNote,
+          challengesAvoidRule: r.challengesAvoidRule,
+        }))
+      )
+      .catch(() => undefined);
+
     // Fire the AI call and the user-message persistence at the same time - independent work
     const [aiResult] = await Promise.all([
       chatWithStylistFn({
@@ -287,6 +322,7 @@ class StylingAssistantService {
         styleProfile: styleProfilePayload,
         timeOfDay,
         dayType,
+        trends: trendPayload,
       }).catch(error => {
         console.error('Error calling chatWithStylist:', error);
         return null;

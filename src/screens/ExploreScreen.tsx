@@ -35,6 +35,7 @@ import {
 } from '../services/discoveryService';
 import { isMockProvider } from '../services/affiliateNetwork';
 import { affiliateImpressions } from '../services/affiliateImpressions';
+import { shopperSignals } from '../services/shopperSignals';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -45,6 +46,7 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [stretchDismissed, setStretchDismissed] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -83,14 +85,22 @@ export default function ExploreScreen() {
   const openProduct = (productId: string, reason?: string) =>
     navigation.navigate('ProductDetail', { productId, surface: 'explore', reason });
 
-  const renderProductRow = (matched: MatchedProduct, reason: string, emphasis?: string) => {
+  const renderProductRow = (
+    matched: MatchedProduct,
+    reason: string,
+    emphasis?: string,
+    onBeforeOpen?: () => void
+  ) => {
     const { product } = matched;
     return (
       <TouchableOpacity
         key={product.id}
         style={styles.row}
         activeOpacity={0.85}
-        onPress={() => openProduct(product.id, emphasis || reason)}
+        onPress={() => {
+          onBeforeOpen?.();
+          openProduct(product.id, emphasis || reason);
+        }}
       >
         {product.imageUrl ? (
           <Image source={{ uri: product.imageUrl }} style={styles.thumb} />
@@ -125,7 +135,7 @@ export default function ExploreScreen() {
   const renderBody = () => {
     if (!data) return null;
 
-    const { summary, unlocks, matched, fillsGap, edit, productsById } = data;
+    const { summary, unlocks, matched, fillsGap, stretch, edit, productsById } = data;
     const closetLine = discoveryService.summaryLine(summary);
     const thinCloset = summary.totalItems < MIN_CLOSET_FOR_ARITHMETIC;
 
@@ -179,6 +189,38 @@ export default function ExploreScreen() {
                 return product ? renderProductRow(product, pick.line) : null;
               })}
             </View>
+          </View>
+        )}
+
+        {/* The stretch pick: labelled as exactly what it is - one step
+            outside their usual, chosen for a real current trend. Selling a
+            stretch as a safe match would burn the trust the rest of this
+            page earns; naming it honestly is what makes it work. */}
+        {stretch && !stretchDismissed && (
+          <View style={styles.stretchSection}>
+            <Text style={styles.stretchLabel}>THE STRETCH</Text>
+            <Text style={styles.stretchLine}>
+              "{stretch.trend.name}" is {stretch.trend.stage} in {stretch.trend.region} right now.
+              This is one step outside your usual — still yours, deliberately not more of the same.
+            </Text>
+            {renderProductRow(
+              stretch.pick,
+              stretch.pick.headline,
+              `Trending in ${stretch.trend.region}`,
+              // Shopping the stretch is the strongest "stretch me further" signal.
+              () => shopperSignals.recordTrendTap(stretch.trend.id).catch(() => {})
+            )}
+            <TouchableOpacity
+              style={styles.stretchDismiss}
+              accessibilityRole="button"
+              accessibilityLabel="Not my thing"
+              onPress={() => {
+                shopperSignals.recordTrendDismiss(stretch.trend.id).catch(() => {});
+                setStretchDismissed(true);
+              }}
+            >
+              <Text style={styles.stretchDismissText}>Not my thing</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -314,6 +356,21 @@ const styles = StyleSheet.create({
 
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 10 },
   sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },
+
+  // The stretch pick reads as an editorial aside, not another ranked row -
+  // the camel rule is the same "trend voice" marker used on Home and the
+  // Trend Report.
+  stretchSection: {
+    marginTop: spacing.section,
+    padding: spacing.md,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.camel,
+  },
+  stretchLabel: { ...textType.eyebrow, fontSize: 9, color: colors.camel, marginBottom: 8 },
+  stretchLine: { ...textType.body, fontSize: 13, lineHeight: 20, color: colors.ink, marginBottom: spacing.md },
+  stretchDismiss: { alignSelf: 'flex-start', paddingVertical: 6 },
+  stretchDismissText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.inkFaint },
 
   // The Edit is the one place on the screen with a voice rather than a
   // ranking, so it gets the serif treatment and room to breathe.

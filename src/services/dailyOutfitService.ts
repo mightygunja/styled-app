@@ -521,10 +521,30 @@ const PER_OCCASION = 3;
 
 interface SlotCache {
   slot: number;
+  /** Fingerprint of the closet the pools were built from. Rehydration checks
+   *  ids, which catches deletions - but an added garment matches every cached
+   *  id and slipped straight through, so a wardrobe could grow all day and the
+   *  screen would keep serving outfits computed from the old, smaller closet.
+   *  Optional because caches written before this field must read as stale. */
+  closet?: string;
   /** Item ids per outfit, per occasion. Ids only - garments are re-read from
    *  the live closet so a renamed or deleted item cannot go stale in cache. */
   pools: Partial<Record<OccasionKey, string[][]>>;
   copy: Partial<Record<OccasionKey, Array<{ title: string; note: string }>>>;
+}
+
+/** Order-independent closet fingerprint. Ids catch additions and removals;
+ *  category is included because moving a garment between categories changes
+ *  which outfits can exist without changing any id. */
+function closetSignature(items: Item[]): string {
+  let h = 2166136261 >>> 0;
+  for (const key of items.map(i => `${i.id}|${(i.category || '').toLowerCase()}`).sort()) {
+    for (let i = 0; i < key.length; i++) {
+      h = Math.imul(h ^ key.charCodeAt(i), 16777619) >>> 0;
+    }
+    h = Math.imul(h ^ 0x1f, 16777619) >>> 0;
+  }
+  return `${items.length}:${h.toString(16)}`;
 }
 
 async function readCache(slot: number): Promise<SlotCache | null> {
@@ -688,11 +708,15 @@ export async function loadOutfitPools(
 ): Promise<OutfitPools> {
   const slot = options.seed ?? slotSeed();
   const byId = new Map(items.map(i => [i.id, i]));
+  const signature = closetSignature(items);
   const cached = await readCache(slot);
 
   // Rehydrate cached pools from the live closet. Ids are cached, garments are
-  // not, so a deleted item drops its outfit rather than rendering a gap.
-  if (cached?.pools) {
+  // not, so a deleted item drops its outfit rather than rendering a gap. The
+  // signature gate covers the opposite direction: garments added since the
+  // pools were built rehydrate cleanly yet were never candidates, so the cache
+  // must be treated as describing a different closet.
+  if (cached?.pools && cached.closet === signature) {
     const rehydrated = {} as Record<OccasionKey, OutfitCandidate[]>;
     let usable = true;
 
@@ -729,11 +753,14 @@ export async function loadOutfitPools(
   HOME_OCCASIONS.forEach(occasion => {
     idsOnly[occasion] = pools[occasion].map(c => c.items.map(i => i.id));
   });
-  await writeCache({ slot, pools: idsOnly, copy: cached?.copy ?? {} });
+  // Cached copy is not carried over: it was written for the outfits the old
+  // pools held, position by position, and those positions now hold different
+  // clothes. Deterministic titles cover until rankOccasion refills it.
+  await writeCache({ slot, closet: signature, pools: idsOnly, copy: {} });
   // Remember what went on screen so tomorrow's build rotates away from it.
   recordShown(pools).catch(() => undefined);
 
-  return { slot, pools, copy: cached?.copy ?? {} };
+  return { slot, pools, copy: {} };
 }
 
 /**
@@ -816,6 +843,12 @@ export async function rankOccasion(
     weather?: BuildOptions['weather'];
     archetypes?: string[];
     avoidRules?: string[];
+    /**
+     * Compact lines describing current trends the user's own closet can
+     * already carry (from trendRemixService.wearableTrendLines), so the
+     * model can name a trend when an outfit genuinely channels one.
+     */
+    trendLines?: string[];
   }
 ): Promise<OutfitCopy[] | null> {
   // The function needs at least two outfits to have anything to rank between.
@@ -830,6 +863,7 @@ export async function rankOccasion(
       weather: context.weather,
       archetypes: context.archetypes || [],
       avoidRules: context.avoidRules || [],
+      trends: context.trendLines || [],
       outfits: pool.map((c, index) => ({
         index,
         formality: c.formality,

@@ -17,6 +17,9 @@ export interface CurrentWeather {
   condition: WeatherCondition;
   temperature: number;
   city?: string;
+  /** State/province, when the geocoder reports one. */
+  region?: string;
+  country?: string;
 }
 
 const FALLBACK_WEATHER: CurrentWeather = { condition: 'sunny', temperature: 72 };
@@ -37,6 +40,8 @@ interface Coords {
   latitude: number;
   longitude: number;
   city?: string;
+  region?: string;
+  country?: string;
 }
 
 async function getDeviceCoords(): Promise<Coords | null> {
@@ -55,14 +60,18 @@ async function getDeviceCoords(): Promise<Coords | null> {
     const { latitude, longitude } = position.coords;
 
     let city: string | undefined;
+    let region: string | undefined;
+    let country: string | undefined;
     try {
       const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
       city = place?.city || place?.subregion || undefined;
+      region = place?.region || undefined;
+      country = place?.country || undefined;
     } catch {
       // reverse geocoding is best-effort; weather still works without a city label
     }
 
-    return { latitude, longitude, city };
+    return { latitude, longitude, city, region, country };
   } catch (error) {
     console.log('Could not get device GPS location', error);
     return null;
@@ -78,9 +87,15 @@ async function getIpCoords(): Promise<Coords | null> {
     if (!geoRes.ok) return null;
     const geo = await geoRes.json();
 
-    const { latitude, longitude, city } = geo;
+    const { latitude, longitude, city, region, country_name: countryName } = geo;
     if (typeof latitude !== 'number' || typeof longitude !== 'number') return null;
-    return { latitude, longitude, city: typeof city === 'string' ? city : undefined };
+    return {
+      latitude,
+      longitude,
+      city: typeof city === 'string' ? city : undefined,
+      region: typeof region === 'string' ? region : undefined,
+      country: typeof countryName === 'string' ? countryName : undefined,
+    };
   } catch (error) {
     console.log('Could not fetch IP-based location', error);
     return null;
@@ -108,7 +123,13 @@ export async function getCurrentWeather(): Promise<CurrentWeather> {
       return FALLBACK_WEATHER;
     }
 
-    return { condition: mapWeatherCode(code, temperature), temperature, city: coords.city };
+    return {
+      condition: mapWeatherCode(code, temperature),
+      temperature,
+      city: coords.city,
+      region: coords.region,
+      country: coords.country,
+    };
   } catch (error) {
     console.log('Could not fetch real weather, using fallback', error);
     return FALLBACK_WEATHER;

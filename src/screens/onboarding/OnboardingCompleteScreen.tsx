@@ -103,7 +103,9 @@ export default function OnboardingCompleteScreen() {
         <View style={styles.trustMessage}>
           <Text style={styles.trustTitle}>We've got you</Text>
           <Text style={styles.trustText}>
-            Your style is unique, and we respect that. Every recommendation is personalized just for you—no trends, no pressure, just what works for your life.
+            Your style is where we start, never where you're stuck. We track what's moving from
+            Copenhagen to Seoul and hand you the trends worth trying — and when one is worth
+            crossing a hard no, we say so out loud instead of sneaking it in.
           </Text>
         </View>
 

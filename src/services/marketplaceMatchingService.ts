@@ -26,6 +26,7 @@ import { seasonalFit, currentSeason } from './seasonalFit';
 import { behaviouralAdjustment, ShopperSignals } from './shopperSignals';
 import { Season } from '../types';
 import { WeatherCondition } from './recommendationEngine';
+import { FashionTrend, trendTextMatch } from '../models/fashionTrend';
 
 /**
  * Everything that makes a ranking change over time rather than only when the
@@ -36,6 +37,8 @@ export interface MatchEnvironment {
   season?: Season;
   weather?: { condition: WeatherCondition; temperature: number };
   signals?: ShopperSignals;
+  /** Published trends from the trend registry - the external fashion signal. */
+  trends?: FashionTrend[];
 }
 
 /**
@@ -97,6 +100,7 @@ export type SignalKind =
   | 'color'
   | 'fit'
   | 'style'
+  | 'trend'
   | 'gap'
   | 'value'
   | 'versatility'
@@ -155,22 +159,14 @@ export function scoreProduct(
     .join(' ')
     .toLowerCase();
 
-  // A hard avoid-rule is a veto, not a penalty. The user told us not to show
-  // them this; scoring it lower would still show it.
+  // An avoid rule is a strong preference, not a veto. The user told us they
+  // steer around this, so unbacked matches sink hard - but a piece that
+  // anchors a genuinely current trend is allowed to surface anyway, demoted
+  // and with the crossing named. The penalty is applied after trend matching
+  // below, because the trend decides how heavy it is.
   const violatedRule = profile?.avoidRules?.find(
     rule => haystack.includes(rule.toLowerCase()) || productColor.includes(rule.toLowerCase())
   );
-  if (violatedRule) {
-    return {
-      product,
-      matchScore: 0,
-      matchReasons: [`You asked to avoid ${violatedRule}`],
-      signals: [{ kind: 'concern', text: `You asked to avoid ${violatedRule}`, strength: 'strong' }],
-      headline: `You asked to avoid ${violatedRule}`,
-      concerns: [`You asked to avoid ${violatedRule}`],
-      unlock: null,
-    };
-  }
 
   let score = 40;
   const signals: MatchSignal[] = [];
@@ -253,6 +249,62 @@ export function scoreProduct(
       text: `Reads ${archetype}, which is how you've described your style`,
       strength: 'moderate',
     });
+  }
+
+  // ---- Trend, named and placed ----
+  // The external signal: does this piece buy into something genuinely moving
+  // in fashion right now? A garment/silhouette match is the real thing; a
+  // colour-only match is support.
+  let matchedTrend: FashionTrend | null = null;
+  let matchedTrendKind: 'garment' | 'silhouette' | 'color' | null = null;
+  for (const trend of env.trends || []) {
+    const kind = trendTextMatch(trend, haystack, productColor);
+    if (!kind) continue;
+    // Keep the strongest hit: an anchor match beats a colour match.
+    if (!matchedTrend || (matchedTrendKind === 'color' && kind !== 'color')) {
+      matchedTrend = trend;
+      matchedTrendKind = kind;
+      if (kind !== 'color') break;
+    }
+  }
+  if (matchedTrend && matchedTrendKind) {
+    if (matchedTrendKind === 'color') {
+      score += 7;
+      signals.push({
+        kind: 'trend',
+        text: `${product.color || 'This colour'} is a "${matchedTrend.name}" colour — big in ${matchedTrend.region} right now`,
+        strength: 'minor',
+      });
+    } else {
+      score += matchedTrend.stage === 'fading' ? 5 : 15;
+      signals.push({
+        kind: 'trend',
+        text:
+          matchedTrend.stage === 'fading'
+            ? `Part of "${matchedTrend.name}", which is past its peak — buy it because you love it, not for the trend`
+            : `Right inside "${matchedTrend.name}" — ${matchedTrend.stage} in ${matchedTrend.region} right now`,
+        strength: matchedTrend.stage === 'fading' ? 'minor' : 'strong',
+      });
+    }
+  }
+
+  // ---- Avoid rule, weighed rather than enforced ----
+  // A live trend earns the right to challenge a "never" - demoted, and with
+  // the crossing named so the user decides. Without one, the preference
+  // sinks the piece hard enough that it only surfaces when everything else
+  // about it argues for it.
+  if (violatedRule) {
+    const trendBacked =
+      matchedTrend && matchedTrendKind !== 'color' && matchedTrend.stage !== 'fading';
+    if (trendBacked) {
+      score -= 12;
+      concerns.push(
+        `You usually avoid ${violatedRule} — shown anyway because it's how "${matchedTrend!.name}" is worn in ${matchedTrend!.region}`
+      );
+    } else {
+      score -= 30;
+      concerns.push(`You said you avoid ${violatedRule}`);
+    }
   }
 
   // ---- Gap, made concrete ----
@@ -390,6 +442,17 @@ export function scoreProduct(
     headline: ordered[0]?.text || 'Worth a look',
     concerns,
     unlock,
+    // Colour-only support doesn't make a product "the trend"; only an anchor
+    // match earns the label downstream (stretch picks, the Edit).
+    trend:
+      matchedTrend && matchedTrendKind !== 'color'
+        ? {
+            id: matchedTrend.id,
+            name: matchedTrend.name,
+            region: matchedTrend.region,
+            stage: matchedTrend.stage,
+          }
+        : null,
   };
 }
 

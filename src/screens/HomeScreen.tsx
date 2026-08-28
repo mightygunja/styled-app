@@ -34,6 +34,11 @@ import {
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { discoveryService } from '../services/discoveryService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
+import { trendRemixService, TrendRemix } from '../services/trendRemixService';
+import { getPublishedTrends } from '../services/trendService';
+import { FashionTrend, itemMatchesTrend } from '../models/fashionTrend';
+import { shopperSignals } from '../services/shopperSignals';
+import TrendRemixCard from '../components/TrendRemixCard';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
 import Button from '../components/Button';
@@ -136,6 +141,9 @@ export default function HomeScreen() {
   }, [swapTargetId]);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
+  // The lead trend remix: what's moving in the world, anchored to this
+  // closet. Null until loaded; the screen never waits on it.
+  const [trendRemix, setTrendRemix] = useState<TrendRemix | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   // Every tab's outfits are built once per slot and held here, so switching
@@ -222,10 +230,22 @@ export default function HomeScreen() {
         .then(dismissed => setShowProfilePrompt(!dismissed && !matchContext))
         .catch(() => setShowProfilePrompt(false));
 
-      // A veto is a veto for owned clothes too. "I don't wear dresses" means
-      // the daily looks should not build outfits around the one dress still
-      // hanging in the closet.
+      // Avoid rules are a strong preference for owned clothes, not a veto:
+      // "I don't wear skirts" still steers the daily looks away from the one
+      // skirt in the closet - unless that piece anchors a genuinely current
+      // trend, in which case trend seeps through and the look can invite a
+      // rethink. The ranking prompt is told about the preference either way.
       const avoidRules = matchContext?.avoidRules ?? [];
+      let activeTrends: FashionTrend[] = [];
+      try {
+        activeTrends = await getPublishedTrends();
+      } catch {}
+      const anchorsCurrentTrend = (item: Item) =>
+        activeTrends.some(t => {
+          if (t.stage === 'fading') return false;
+          const match = itemMatchesTrend(t, item);
+          return match === 'garment' || match === 'silhouette';
+        });
       const wearable =
         avoidRules.length === 0
           ? items
@@ -233,9 +253,30 @@ export default function HomeScreen() {
               const haystack = [item.name, item.subcategory, item.category, ...(item.tags || [])]
                 .join(' ')
                 .toLowerCase();
-              return !avoidRules.some(rule => haystack.includes(rule.toLowerCase()));
+              const hitsRule = avoidRules.some(rule => haystack.includes(rule.toLowerCase()));
+              return !hitsRule || anchorsCurrentTrend(item);
             });
       closetItemsRef.current = wearable;
+
+      // The trend layer: which current trends this closet can already carry,
+      // ranked for where this user actually is - their city's weather and
+      // style scene reorder the same published pool. Awaited because the
+      // outfit-ranking prompts below want the wearable trend lines - the
+      // registry read is session-cached, so this is cheap.
+      let trendLines: string[] = [];
+      try {
+        const remixes = await trendRemixService.loadTrendRemixes(wearable, matchContext, {
+          city: weatherResult.city,
+          region: weatherResult.region,
+          country: weatherResult.country,
+          temperature: weatherResult.temperature,
+          condition: weatherResult.condition,
+        });
+        setTrendRemix(remixes[0] ?? null);
+        trendLines = trendRemixService.wearableTrendLines(remixes);
+      } catch {
+        setTrendRemix(null);
+      }
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
       styleProfileRef.current = styleProfile;
@@ -286,6 +327,7 @@ export default function HomeScreen() {
             weather: weatherContext,
             archetypes: matchContext?.styleArchetypes,
             avoidRules,
+            trendLines,
           })
           .then(copy => {
             if (!copy || poolsRef.current !== loaded) return;
@@ -525,6 +567,18 @@ export default function HomeScreen() {
     </View>
   ) : null;
 
+  // The trend layer's Home surface. A tap counts as leaning into the trend,
+  // which is the signal that widens how adventurous future picks get.
+  const trendRemixBlock = trendRemix ? (
+    <TrendRemixCard
+      remix={trendRemix}
+      onOpenReport={() => {
+        shopperSignals.recordTrendTap(trendRemix.trend.id).catch(() => {});
+        navigation.navigate('TrendInsights');
+      }}
+    />
+  ) : null;
+
   const shopBannerBlock = (
     <TouchableOpacity
       style={styles.shopBanner}
@@ -703,18 +757,20 @@ export default function HomeScreen() {
                   style={{ marginTop: 16 }}
                 />
               </View>
+              {trendRemixBlock}
               {shopBannerBlock}
             </>
           ) : isDesktop ? (
             // Desktop: the imagery holds the left column at editorial width;
-            // the stylist's voice — note, gaps, actions, shop — reads as a
-            // rail beside it instead of a scroll below it.
+            // the stylist's voice — note, gaps, actions, trend, shop — reads
+            // as a rail beside it instead of a scroll below it.
             <View style={styles.lookSplit}>
               <View style={styles.lookSplitImages}>{lookImagesBlock}</View>
               <View style={styles.lookSplitAside}>
                 {noteBlock}
                 {gapBlock}
                 {actionBlock}
+                {trendRemixBlock}
                 {shopBannerBlock}
               </View>
             </View>
@@ -724,6 +780,7 @@ export default function HomeScreen() {
               {noteBlock}
               {gapBlock}
               {actionBlock}
+              {trendRemixBlock}
               {shopBannerBlock}
             </>
           )}

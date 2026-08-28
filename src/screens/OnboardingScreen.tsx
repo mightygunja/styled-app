@@ -12,7 +12,8 @@
  *   body type   -> bodyAnalysis (silhouettes, per-category guidance, keywords)
  *   style words -> styleArchetypes
  *   occasions   -> lifestyleWeights
- *   never-wears -> avoidRules (hard vetoes in every matcher)
+ *   never-wears -> avoidRules (a strong steer in every matcher - respected by
+ *                  default, crossable only by a named, current trend)
  *
  * That is the point of asking at all: recommendations are personal from
  * minute one, before a single closet item exists. Nothing is asked that the
@@ -68,8 +69,8 @@ const OCCASIONS = [
 
 /**
  * Never-wear options. The label is what the user reads; `rule` is the
- * lowercase substring the matchers veto against product text, so it has to be
- * a word that actually appears in product names and tags.
+ * lowercase substring the matchers weigh against product text, so it has to
+ * be a word that actually appears in product names and tags.
  */
 const NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
   { label: 'Heels', rule: 'heel' },
@@ -218,8 +219,8 @@ export default function OnboardingScreen() {
               Meet your <Text style={styles.heroTitleAccent}>stylist</Text>.
             </Text>
             <Text style={styles.heroSubtitle}>
-              Four questions, and every answer changes what gets recommended to you — before a
-              single photo of your closet.
+              Four questions, so your stylist knows where you're starting from. Then we bring you
+              what's actually moving in fashion — and show you how to wear it as you.
             </Text>
           </View>
         </ImageBackground>
@@ -369,7 +370,8 @@ export default function OnboardingScreen() {
           <Text style={styles.eyebrow}>HARD LINES</Text>
           <Text style={styles.question}>Anything you simply don't wear?</Text>
           <Text style={styles.questionNote}>
-            These become vetoes — nothing matching them will ever be suggested.
+            We steer around these by default. Only a genuinely current trend can ask for an
+            exception — and it will always say so.
           </Text>
           <View style={styles.chipWrap}>
             {NEVER_OPTIONS.map(option => {
@@ -434,16 +436,19 @@ export default function OnboardingScreen() {
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>NEVER</Text>
               <Text style={styles.revealValue}>
-                {nevers.length} {nevers.length === 1 ? 'veto' : 'vetoes'} — those will not be
-                suggested, ever
+                {nevers.length} {nevers.length === 1 ? 'hard line' : 'hard lines'} — steered
+                around by default; only a real trend can ask for an exception
               </Text>
             </View>
           )}
         </View>
 
         <Text style={styles.revealBody}>
-          Every recommendation from here starts from these answers. The closet makes it sharper —
-          and colour analysis lives in your Style Profile when you want to go deeper.
+          Every recommendation starts from these answers — including which trends we bring you from
+          Copenhagen to Seoul, and how far we stretch you. The closet makes it sharper, your hard
+          lines are respected by default — crossed only when a trend truly earns it, and always
+          said out loud — and colour analysis lives in your Style Profile when you want to go
+          deeper.
         </Text>
 
         <View style={styles.stepFooter}>

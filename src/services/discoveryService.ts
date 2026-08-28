@@ -31,9 +31,11 @@ import { scoreAndRankProducts } from './marketplaceMatchingService';
 import { computeOutfitUnlock, colorsWork, roleForCategory, GarmentRole } from './outfitUnlock';
 import { currentSeason } from './seasonalFit';
 import { buildAllOccasions, OccasionKey, OutfitCandidate } from './dailyOutfitService';
-import { shopperSignals } from './shopperSignals';
+import { shopperSignals, trendAdventurousness, ShopperSignals } from './shopperSignals';
 import { getCurrentWeather } from './weatherService';
 import { closetAPI, getCurrentUserId } from './api';
+import { getPublishedTrends } from './trendService';
+import { FashionTrend, stageWeight, trendWeatherFit } from '../models/fashionTrend';
 
 const curateStyleEditFn = httpsCallable(functions, 'curateStyleEdit');
 
@@ -64,6 +66,21 @@ export interface StyleEdit {
   picks: EditPick[];
 }
 
+/**
+ * The stretch pick: one honest step outside the user's usual.
+ *
+ * A product chosen because it buys into a current trend and sits *adjacent*
+ * to the wardrobe - it still works with owned pieces, but it is deliberately
+ * not another portrait of their existing taste, and it may even cross an
+ * avoid preference when the trend earns it (named as a concern, never
+ * hidden). Labelled as exactly that in the UI, because a stretch sold as a
+ * safe match would burn the trust the rest of the ranking earns.
+ */
+export interface StretchPick {
+  pick: MatchedProduct;
+  trend: FashionTrend;
+}
+
 export interface DiscoveryData {
   summary: ClosetSummary;
   /** Ranked by new outfits created, then match score. */
@@ -72,6 +89,8 @@ export interface DiscoveryData {
   matched: MatchedProduct[];
   /** Candidates in the bottleneck role specifically. */
   fillsGap: MatchedProduct[];
+  /** One trend-forward piece a step outside their usual. Null when nothing qualifies. */
+  stretch: StretchPick | null;
   edit: StyleEdit | null;
   /** Products by id, so the Edit can be joined back to real records. */
   productsById: Map<string, MatchedProduct>;
@@ -224,6 +243,48 @@ async function fetchCandidates(
 }
 
 /**
+ * Chooses the stretch pick from the already-scored candidates.
+ *
+ * The comfort zone is the ranking's own head - the products the profile
+ * already leads to. A stretch has to (a) sit outside that head and (b)
+ * anchor a real current trend. Avoid rules no longer veto: a stretch that
+ * crosses one arrives demoted by the scorer and carries the crossing as a
+ * named concern, so the card can be honest about it. How early-stage a
+ * trend it reaches for scales with the user's demonstrated adventurousness.
+ */
+function pickStretch(
+  matched: MatchedProduct[],
+  trends: FashionTrend[],
+  signals: ShopperSignals,
+  temperatureF?: number
+): StretchPick | null {
+  if (trends.length === 0) return null;
+
+  const adventurousness = trendAdventurousness(signals);
+  const comfort = new Set(matched.slice(0, 6).map(m => m.product.id));
+  const trendById = new Map(trends.map(t => [t.id, t]));
+
+  const candidates = matched
+    .filter(m => m.matchScore > 0 && m.trend && !comfort.has(m.product.id))
+    .map(m => {
+      const trend = trendById.get(m.trend!.id);
+      return trend && trend.stage !== 'fading'
+        ? {
+            m,
+            trend,
+            // The stretch is local too: no suede-jacket trend pitched into a
+            // 90° week just because it's big in London.
+            weight: stageWeight(trend.stage, adventurousness) * trendWeatherFit(trend, temperatureF),
+          }
+        : null;
+    })
+    .filter((c): c is { m: MatchedProduct; trend: FashionTrend; weight: number } => c !== null)
+    .sort((a, b) => b.weight - a.weight || b.m.matchScore - a.m.matchScore);
+
+  return candidates.length > 0 ? { pick: candidates[0].m, trend: candidates[0].trend } : null;
+}
+
+/**
  * AI editorial over the candidates.
  *
  * Returns null on any failure. The Edit is the voice on the page, not the
@@ -232,7 +293,8 @@ async function fetchCandidates(
 async function curateEdit(
   candidates: MatchedProduct[],
   summary: ClosetSummary,
-  profile: ProfileMatchContext | undefined
+  profile: ProfileMatchContext | undefined,
+  trends: FashionTrend[] = []
 ): Promise<StyleEdit | null> {
   if (candidates.length < 6) return null;
 
@@ -241,6 +303,13 @@ async function curateEdit(
       season: summary.season,
       archetypes: profile?.styleArchetypes || [],
       palette: profile?.recommendedColors?.slice(0, 6) || [],
+      // The trend desk's view of the moment, so the Edit can argue from the
+      // world as well as the closet. Trends that cross an avoid rule are
+      // included - the preference reaches the model separately, and a trend
+      // is allowed to argue against it openly.
+      trends: trends
+        .slice(0, 4)
+        .map(t => ({ name: t.name, region: t.region, stage: t.stage, summary: t.summary })),
       closet: {
         totalItems: summary.totalItems,
         byRole: summary.byRole,
@@ -285,11 +354,13 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
   const userId = getCurrentUserId();
   const profile = await buildProfileMatchContext(userId);
 
-  const [closetResponse, signals, weather] = await Promise.all([
+  const [closetResponse, signals, weather, trends] = await Promise.all([
     closetAPI.getItems(userId),
     shopperSignals.load(),
     // Weather sharpens seasonality but must never block the page.
     getCurrentWeather().catch(() => undefined),
+    // Same rule for the trend registry: it enriches, it never blocks.
+    getPublishedTrends().catch(() => [] as FashionTrend[]),
   ]);
 
   const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
@@ -318,6 +389,7 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
       ? { condition: weather.condition, temperature: weather.temperature }
       : undefined,
     season: summary.season,
+    trends,
   });
 
   // Unlock ranking is a different question from match ranking, so it gets its
@@ -334,9 +406,10 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
     : [];
 
   const productsById = new Map(matched.map(m => [m.product.id, m]));
-  const edit = await curateEdit(matched, summary, profile);
+  const stretch = pickStretch(matched, trends, signals, weather?.temperature);
+  const edit = await curateEdit(matched, summary, profile, trends);
 
-  return { summary, unlocks, matched, fillsGap, edit, productsById };
+  return { summary, unlocks, matched, fillsGap, stretch, edit, productsById };
 }
 
 /**
@@ -344,9 +417,9 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
  *
  * A new user has answered the survey but owns nothing in the app yet, so
  * Dress Me Today would be a dead end. Instead: pull the catalogue, rank it
- * against the survey profile (avoid-rules veto here exactly as everywhere
- * else), map the top products into the Item shape, and hand them to the SAME
- * outfit engine that dresses a real closet. Colour harmony, formality
+ * against the survey profile (avoid rules weigh against a piece here exactly
+ * as everywhere else), map the top products into the Item shape, and hand
+ * them to the SAME outfit engine that dresses a real closet. Colour harmony, formality
  * targets and per-occasion separation all apply - these are composed looks,
  * not a product carousel.
  */
@@ -363,7 +436,7 @@ export async function buildStarterPools(
     .catch(() => ({ products: [] as Product[] }));
 
   // Empty closet means the unlock signals stay silent, but profile fit and
-  // hard vetoes still order the pool.
+  // avoid-rule preferences still order the pool.
   const ranked = scoreAndRankProducts(result.products, profile, [], {});
 
   const pool: Item[] = ranked.slice(0, 40).map(({ product }) => ({

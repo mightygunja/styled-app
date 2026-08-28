@@ -70,6 +70,7 @@ export type RootStackParamList = {
   StylistApplicationsAdmin: undefined;
   Admin: undefined;
   AffiliateAnalytics: undefined;
+  TrendDeskAdmin: undefined;
   SmartOutfitBuilder: undefined;
   ClosetAnalytics: undefined;
   Recommendations: undefined;
@@ -78,7 +79,18 @@ export type RootStackParamList = {
   BodyAnalysis: undefined;
   InStoreCheck: undefined;
   Account: undefined;
-  Shop: { category?: ItemCategory; matchedOnly?: boolean; secondhandOnly?: boolean } | undefined;
+  Shop:
+    | {
+        category?: ItemCategory;
+        matchedOnly?: boolean;
+        secondhandOnly?: boolean;
+        /** Arriving from a trend surface: results filter/rank to this trend. */
+        trendId?: string;
+        trendName?: string;
+        /** The vetted "worth adding" phrase, shown so the user knows what they came for. */
+        trendGap?: string;
+      }
+    | undefined;
   /** `surface` attributes the eventual outbound click to where the product was
    *  found, which is the only way to tell which surface actually earns. */
   ProductDetail: {

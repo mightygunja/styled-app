@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.getLocaleStyle = exports.personalizeTrendReport = exports.archiveTrend = exports.publishTrend = exports.listTrendDesk = exports.draftTrendReport = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.searchSkimlinksProducts = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -290,7 +290,7 @@ exports.analyzeStoreItem = functions
             profileLines.push(`Their style archetypes: ${profile.styleArchetypes.join(', ')}.`);
         }
         if ((profile === null || profile === void 0 ? void 0 : profile.avoidRules) && profile.avoidRules.length > 0) {
-            profileLines.push(`HARD CONSTRAINT - they want to avoid: ${profile.avoidRules.join(', ')}.`);
+            profileLines.push(`STRONG PREFERENCE - they usually avoid: ${profile.avoidRules.join(', ')}. Weigh it heavily, but it is a preference, not a ban.`);
         }
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -313,7 +313,7 @@ Return ONLY valid JSON with this exact shape:
   "overallVerdict": "buy" | "maybe" | "skip",
   "overallReasoning": "1-2 sentence summary, warm and direct, never clinical"
 }
-"skip" only for a genuine HARD CONSTRAINT violation or a clear multi-dimension mismatch - default to "buy" or "maybe" when profile data is limited or the item is reasonably versatile.`,
+"skip" only when it lands squarely on something they usually avoid with nothing else arguing for it, or on a clear multi-dimension mismatch - default to "buy" or "maybe" when profile data is limited or the item is reasonably versatile. If it crosses an avoid preference but is genuinely current or otherwise strong for them, "maybe" with the trade-off named beats a flat "skip".`,
                         },
                         {
                             type: 'image_url',
@@ -619,9 +619,9 @@ exports.findSimilarItems = functions
 exports.chatWithStylist = functions
     .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     try {
-        const { message, history = [], closetItems = [], weather, occasion, mood, styleProfile, timeOfDay, dayType, } = data;
+        const { message, history = [], closetItems = [], weather, occasion, mood, styleProfile, timeOfDay, dayType, trends = [], } = data;
         if (!message) {
             throw new functions.https.HttpsError('invalid-argument', 'message is required');
         }
@@ -692,7 +692,7 @@ exports.chatWithStylist = functions
             styleProfileLines.push(`Colors they're open to experimenting with: ${styleProfile.stretchColors.join(', ')} - occasionally suggest these to help them stretch, but don't force it.`);
         }
         if ((styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.avoidRules) && styleProfile.avoidRules.length > 0) {
-            styleProfileLines.push(`HARD CONSTRAINT - they explicitly want to avoid: ${styleProfile.avoidRules.join(', ')}. Never recommend items/styles matching these.`);
+            styleProfileLines.push(`STRONG PREFERENCE - they usually avoid: ${styleProfile.avoidRules.join(', ')}. Default to respecting this. You may cross it only for a trend-led suggestion from the trend list, and only openly - name the preference, name the trend, and offer an alternative that respects it ("you usually skip skirts, but pleated minis are how New Prep is worn in Seoul right now - or the trousers keep it strictly you"). Never cross it silently or repeatedly against pushback.`);
         }
         // AI/quiz-derived body & fit analysis - concrete per-category silhouette guidance,
         // more actionable than the flat highlight/downplay list below.
@@ -736,10 +736,31 @@ exports.chatWithStylist = functions
             guided: 'They prefer GUIDED advice: give one clear recommendation with a brief explanation of why.',
             directive: 'They prefer DIRECTIVE advice: give one confident, specific pick with minimal hedging - tell them exactly what to wear.',
         }[(styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.guidanceLevel) || 'guided'];
-        const systemPrompt = `You are a fast, sharp personal fashion stylist inside a wardrobe app called 33 Trends. You know the user's real closet inventory below and give specific, confident outfit advice grounded in what they actually own - never generic platitudes.
+        // The trend desk's current, editor-approved report - already filtered
+        // client-side against the user's avoid rules. This is what separates a
+        // stylist who teaches fashion fluency from one who only describes the
+        // closet back to its owner.
+        const trendLines = trends
+            .slice(0, 5)
+            .map(t => {
+            var _a, _b;
+            const parts = [`${t.name} — ${t.stage}, strongest in ${t.region}.`];
+            if ((_a = t.keyGarments) === null || _a === void 0 ? void 0 : _a.length)
+                parts.push(`Key pieces: ${t.keyGarments.join(', ')}.`);
+            if ((_b = t.keyColors) === null || _b === void 0 ? void 0 : _b.length)
+                parts.push(`Colours: ${t.keyColors.join(', ')}.`);
+            if (t.stylingNote)
+                parts.push(`How to wear it: ${t.stylingNote}`);
+            if (t.challengesAvoidRule) {
+                parts.push(`Note: this crosses their "${t.challengesAvoidRule}" avoid preference - propose it only as an explicit, owned exception, never as a default pick.`);
+            }
+            return `- ${parts.join(' ')}`;
+        });
+        const systemPrompt = `You are a fast, sharp personal fashion stylist inside a wardrobe app called 33 Trends. The app's promise is making the user genuinely more fashion-savvy and trendier over time - not just dressing them from what they own. You know the user's real closet inventory below and give specific, confident outfit advice grounded in what they actually own - never generic platitudes.
 
 ${contextLines.length > 0 ? `Today's context:\n${contextLines.join('\n')}\n` : ''}
 ${styleProfileLines.length > 0 ? `What you know about their personal style (from their saved Style Profile):\n${styleProfileLines.join('\n')}\n` : ''}
+${trendLines.length > 0 ? `Current trends 33 Trends is tracking (real, editor-curated - never invent a trend beyond these):\n${trendLines.join('\n')}\n` : ''}
 Communication style: ${guidanceStyle}
 
 The user's actual closet inventory (id | category | color | brand | style | seasons | wear count | recency):
@@ -753,7 +774,8 @@ Guidelines:
 - Weigh time of day and day type: evenings/weekends can lean dressier-fun or more relaxed depending on occasion; weekday mornings favor practical, quick-to-wear pieces.
 - If they have a color season analysis, use it as the primary color filter for picks - items in their flattering palette outrank items in their generic go-to colors, and items in their "colors to avoid" list should only be picked if nothing else in the relevant category works.
 - If they have a body type / fit analysis, use the per-category fit guidance (necklines, cuts, silhouettes) to choose between otherwise-similar items, not just color or style-archetype fit.
-- Respect their Style Profile above, especially any HARD CONSTRAINT avoid-list - never violate it.
+- Respect their Style Profile above. The avoid-list is a strong preference, not an absolute: default to it, and cross it only for a trend-led suggestion you name and own, with a respecting alternative alongside.
+- When an outfit or an owned item genuinely channels one of the current trends listed above, say so by name and place ("this reads as ${((_f = trends[0]) === null || _f === void 0 ? void 0 : _f.name) || 'the trend'} - big in ${((_g = trends[0]) === null || _g === void 0 ? void 0 : _g.region) || 'the style capitals'} right now") and use the trend's styling guidance to sharpen how they wear it. When they ask what's trending or how to look more current, answer from the trend list with the specific bridge from their own closet. Never let a trend override the occasion or their colour guidance, and never claim a trend not on the list.
 - Favor items with a lower wear count AND items not worn in the last couple days, when multiple options fit equally well, so the user rotates their closet instead of repeating the same pieces or what they just wore.
 - Briefly explain WHY the outfit works (1-2 short sentences covering the most relevant factors: weather/occasion/mood/color season/fit), don't just list items.
 - Keep replies tight: under 100 words for outfit recommendations, under 60 for quick questions.
@@ -772,7 +794,7 @@ Respond with a JSON object shaped exactly like: {"reply": string, "itemIds": str
             max_tokens: 400,
             response_format: { type: 'json_object' },
         });
-        const raw = ((_g = (_f = response.choices[0]) === null || _f === void 0 ? void 0 : _f.message) === null || _g === void 0 ? void 0 : _g.content) || '{}';
+        const raw = ((_j = (_h = response.choices[0]) === null || _h === void 0 ? void 0 : _h.message) === null || _j === void 0 ? void 0 : _j.content) || '{}';
         let reply = "Sorry, I couldn't come up with a response. Please try again.";
         let itemIds = [];
         try {
@@ -1375,20 +1397,44 @@ exports.searchRakutenProducts = functions
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+/**
+ * Wraps a retailer URL into a monetized redirect. Both supported networks wrap
+ * by URL construction, not an API call - there is no round trip to make.
+ * Building it here rather than on the client keeps the credentials
+ * server-side, which is the whole reason this function exists.
+ *
+ * `network` selects the wrapper: 'skimlinks' or 'sovrn' (the default, for
+ * backward compatibility with clients that never sent the field).
+ */
 exports.wrapAffiliateLink = functions
     .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
-    const sovrn = getSovrnConfig();
-    if (!sovrn) {
-        throw new functions.https.HttpsError('failed-precondition', 'Sovrn Commerce is not configured yet. Set sovrn.key and sovrn.pubid via firebase functions:config:set, then implement the link-wrapping call in wrapAffiliateLink.');
-    }
-    const { sourceUrl, cuid } = data;
+    const { sourceUrl, cuid, network } = data;
     if (!sourceUrl) {
         throw new functions.https.HttpsError('invalid-argument', 'sourceUrl is required');
     }
-    // Sovrn link wrapping is URL construction, not an API call - there is no
-    // round trip to make. Building it here rather than on the client keeps the
-    // Commerce key server-side, which is the whole reason this function exists.
+    if (network === 'skimlinks') {
+        const skimlinks = getSkimlinksConfig();
+        if (!skimlinks || !skimlinks.pubId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Skimlinks is not configured yet. Put SKIMLINKS_PUBID=... in functions/.env and redeploy wrapAffiliateLink.');
+        }
+        // Documented Skimlinks link format: go.skimresources.com?id=<publisher
+        // site id>&xs=1&url=<encoded destination>. xcust is the free-form
+        // attribution field (their analogue of Sovrn's cuid), echoed back in
+        // reporting.
+        const params = new URLSearchParams({
+            id: skimlinks.pubId,
+            xs: '1',
+            url: sourceUrl,
+        });
+        if (cuid)
+            params.set('xcust', String(cuid).slice(0, 50));
+        return { wrappedUrl: `${SKIMLINKS_ENDPOINTS.redirect}?${params.toString()}` };
+    }
+    const sovrn = getSovrnConfig();
+    if (!sovrn) {
+        throw new functions.https.HttpsError('failed-precondition', 'Sovrn Commerce is not configured yet. Put SOVRN_KEY=... in functions/.env and redeploy wrapAffiliateLink.');
+    }
     const params = new URLSearchParams({
         key: sovrn.key,
         u: sourceUrl,
@@ -1397,6 +1443,168 @@ exports.wrapAffiliateLink = functions
         params.set('cuid', String(cuid).slice(0, 2048));
     // URLSearchParams percent-encodes `u` for us, which the format requires.
     return { wrappedUrl: `https://sovrn.co?${params.toString()}` };
+});
+// ==================== SKIMLINKS ====================
+//
+// CONFIDENCE NOTE - read before debugging this.
+//
+// Like the Rakuten section above, the Product Search call is written against
+// Skimlinks' developer documentation (developers.skimlinks.com) rather than
+// verified against a live account - Product API access is granted per
+// publisher after approval. Endpoint, parameter names and response field
+// names are isolated in SKIMLINKS_ENDPOINTS / the mapper below: when you have
+// credentials, run one live query, look at the JSON, and correct those.
+// Nothing else should need touching. The link-wrapping format in
+// wrapAffiliateLink above is long-established and low-risk by comparison.
+//
+// Setup:
+//   1. Get approved as a Skimlinks publisher (skimlinks.com) and note your
+//      publisher site ID - the number shown in the publisher hub, and visible
+//      as `id` in every wrapped go.skimresources.com link.
+//   2. Request Product API access in the hub and note the API key.
+//   3. Put SKIMLINKS_PUBID=... and SKIMLINKS_KEY=... in functions/.env
+//      (gitignored). Link wrapping needs only the pubid; product search needs
+//      the key.
+//   4. firebase deploy --only functions:searchSkimlinksProducts,functions:wrapAffiliateLink
+//   5. Flip MARKETPLACE_PROVIDER to 'skimlinks' in src/services/affiliateNetwork.ts
+const SKIMLINKS_ENDPOINTS = {
+    productSearch: process.env.SKIMLINKS_SEARCH_URL || 'https://api-2.skimlinks.com/v4/product/search',
+    redirect: process.env.SKIMLINKS_REDIRECT_URL || 'https://go.skimresources.com',
+};
+function getSkimlinksConfig() {
+    // Env first, legacy runtime config as a fallback - see getSovrnConfig.
+    const legacy = (() => {
+        try {
+            return functions.config().skimlinks || {};
+        }
+        catch (_a) {
+            return {};
+        }
+    })();
+    const pubId = process.env.SKIMLINKS_PUBID || legacy.pubid || '';
+    const key = process.env.SKIMLINKS_KEY || legacy.key || '';
+    if (!pubId && !key)
+        return null;
+    return { pubId, key };
+}
+/** Tolerant number parse: Skimlinks prices have been seen as numbers and strings. */
+function skimlinksPrice(value) {
+    if (typeof value === 'number')
+        return isNaN(value) ? null : value;
+    if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? null : parsed;
+    }
+    return null;
+}
+/**
+ * Maps one Skimlinks product onto the client's Product model.
+ *
+ * Skimlinks nests commercial data in `offers` (one per merchant carrying the
+ * item); the first offer is taken as canonical. The merchant is a retailer,
+ * not a manufacturer brand, so `brand` stays empty rather than guessed - the
+ * client's scorer treats a missing field as "no signal", which is correct.
+ * The offer URL is the plain merchant link: monetization happens at click
+ * time through wrapAffiliateLink, so `sourceUrl` is stored unwrapped.
+ */
+function mapSkimlinksProduct(raw, requestedCategory) {
+    var _a, _b, _c, _d, _e;
+    const offer = Array.isArray(raw === null || raw === void 0 ? void 0 : raw.offers) ? raw.offers[0] : undefined;
+    const name = (raw === null || raw === void 0 ? void 0 : raw.title) || (raw === null || raw === void 0 ? void 0 : raw.name) || '';
+    const url = (offer === null || offer === void 0 ? void 0 : offer.url) || (raw === null || raw === void 0 ? void 0 : raw.url) || '';
+    const listPrice = skimlinksPrice((_a = offer === null || offer === void 0 ? void 0 : offer.price) !== null && _a !== void 0 ? _a : raw === null || raw === void 0 ? void 0 : raw.price);
+    const salePrice = skimlinksPrice((_b = offer === null || offer === void 0 ? void 0 : offer.sale_price) !== null && _b !== void 0 ? _b : raw === null || raw === void 0 ? void 0 : raw.sale_price);
+    const price = salePrice !== null && salePrice !== void 0 ? salePrice : listPrice;
+    if (!name || !url || price === null)
+        return null;
+    const onSale = salePrice !== null && listPrice !== null && listPrice > salePrice;
+    const merchant = (typeof (raw === null || raw === void 0 ? void 0 : raw.merchant) === 'string' ? raw.merchant : (_c = raw === null || raw === void 0 ? void 0 : raw.merchant) === null || _c === void 0 ? void 0 : _c.name) ||
+        ((_d = offer === null || offer === void 0 ? void 0 : offer.merchant) === null || _d === void 0 ? void 0 : _d.name) ||
+        '';
+    const image = Array.isArray(raw === null || raw === void 0 ? void 0 : raw.image_urls) ? raw.image_urls[0] : (raw === null || raw === void 0 ? void 0 : raw.image_url) || '';
+    return {
+        id: `skimlinks-${(_e = raw === null || raw === void 0 ? void 0 : raw.id) !== null && _e !== void 0 ? _e : url}`,
+        name,
+        brand: '',
+        retailer: merchant,
+        category: requestedCategory || 'tops',
+        price,
+        originalPrice: onSale ? listPrice !== null && listPrice !== void 0 ? listPrice : undefined : undefined,
+        currency: String((offer === null || offer === void 0 ? void 0 : offer.currency) || (raw === null || raw === void 0 ? void 0 : raw.currency) || 'USD').toUpperCase(),
+        imageUrl: image,
+        sourceUrl: url,
+        inStock: true,
+    };
+}
+exports.searchSkimlinksProducts = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    const cfg = getSkimlinksConfig();
+    if (!cfg || !cfg.key) {
+        throw new functions.https.HttpsError('failed-precondition', 'Skimlinks Product Search is not configured yet. Put SKIMLINKS_KEY=... in functions/.env and redeploy searchSkimlinksProducts.');
+    }
+    try {
+        // Skimlinks searches by keyword, so the query is assembled from what the
+        // user typed plus their filters - unlike Sovrn's content brief.
+        const terms = [
+            data.query,
+            Array.isArray(data.colors) ? data.colors.slice(0, 2).join(' ') : '',
+            data.subcategory || data.category,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+        const pageSize = Math.min(50, Math.max(1, data.pageSize || 24));
+        const page = Math.max(0, data.page || 0);
+        const params = new URLSearchParams({
+            apikey: cfg.key,
+            query: terms || 'wardrobe staples',
+            limit: String(pageSize),
+            offset: String(page * pageSize),
+        });
+        if (typeof data.minPrice === 'number')
+            params.set('min_price', String(Math.floor(data.minPrice)));
+        if (typeof data.maxPrice === 'number')
+            params.set('max_price', String(Math.ceil(data.maxPrice)));
+        const response = await fetch(`${SKIMLINKS_ENDPOINTS.productSearch}?${params.toString()}`);
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            console.error('Skimlinks product request failed', response.status, detail.slice(0, 400));
+            throw new functions.https.HttpsError('unavailable', `Skimlinks returned ${response.status}. ${detail.slice(0, 200)}`);
+        }
+        const payload = await response.json();
+        // Documented shape is { products: [...], num_products: n }; tolerate the
+        // common alternatives rather than silently returning nothing.
+        const rawProducts = Array.isArray(payload)
+            ? payload
+            : (payload === null || payload === void 0 ? void 0 : payload.products) || (payload === null || payload === void 0 ? void 0 : payload.data) || (payload === null || payload === void 0 ? void 0 : payload.results);
+        if (!Array.isArray(rawProducts)) {
+            // Fail loudly - a silent empty result here would look exactly like
+            // "no matches" and could sit unnoticed for weeks.
+            console.error('Unexpected Skimlinks response shape:', JSON.stringify(payload).slice(0, 500));
+            throw new functions.https.HttpsError('internal', 'Skimlinks returned an unexpected response shape. Check the mapping in searchSkimlinksProducts.');
+        }
+        const products = rawProducts
+            .map(p => mapSkimlinksProduct(p, data.category))
+            .filter((p) => p !== null);
+        console.log(`Skimlinks returned ${rawProducts.length} products, ${products.length} usable`);
+        const total = typeof (payload === null || payload === void 0 ? void 0 : payload.num_products) === 'number'
+            ? payload.num_products
+            : typeof (payload === null || payload === void 0 ? void 0 : payload.total) === 'number'
+                ? payload.total
+                : null;
+        return {
+            products,
+            hasMore: total !== null ? (page + 1) * pageSize < total : rawProducts.length >= pageSize,
+            totalCount: total,
+        };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error calling Skimlinks product search:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
 });
 // ==================== IMAGE GENERATION HELPERS ====================
 /**
@@ -1599,7 +1807,7 @@ exports.curateStyleEdit = functions
     .https.onCall(async (data, context) => {
     var _a, _b, _c;
     try {
-        const { season = 'autumn', archetypes = [], palette = [], closet = {}, products = [], } = data;
+        const { season = 'autumn', archetypes = [], palette = [], trends = [], closet = {}, products = [], } = data;
         if (products.length < 6) {
             throw new functions.https.HttpsError('failed-precondition', 'Not enough candidate products to write an edit.');
         }
@@ -1621,12 +1829,17 @@ exports.curateStyleEdit = functions
             messages: [
                 {
                     role: 'user',
-                    content: `You are the style editor of a personal styling app. Write this week's Edit for one reader.
+                    content: `You are the style editor of 33 Trends, a personal styling app whose promise is making its readers genuinely more fashion-savvy and trendier. Write this week's Edit for one reader.
 
 What you know about their wardrobe: ${closetLine || 'very little - treat them as starting out'}.
 Season: ${season}.
 ${archetypes.length ? `Their style reads as: ${archetypes.join(', ')}.` : ''}
 ${palette.length ? `Colours that suit them: ${palette.join(', ')}.` : ''}
+${trends.length
+                        ? `What is genuinely moving in fashion right now (editor-curated - use these, never invent others):\n${trends
+                            .map(t => `- ${t.name} — ${t.stage}, strongest in ${t.region}.${t.summary ? ` ${t.summary}` : ''}`)
+                            .join('\n')}`
+                        : ''}
 
 Candidate pieces (use these exact ids):
 ${productLines}
@@ -1636,6 +1849,7 @@ Choose 3 to 5 pieces that make a coherent argument together, and write the Edit.
 What makes this good:
 - One idea, not a list. "Three ways to break up a neutral wardrobe" is an idea. "Autumn picks" is not.
 - Argue from THEIR closet. The numbers above are real and countable - use them when they help ("this alone takes you from 12 outfits to 20").
+- Argue from the WORLD when it strengthens the case: a piece that both opens up their wardrobe AND buys into one of the listed trends is the strongest possible pick - name the trend and where it is strong. A trend the closet cannot support is not an argument.
 - Prefer pieces with high newOutfits when the argument allows it. A beautiful piece that pairs with nothing they own is a bad recommendation.
 
 Rules:
@@ -1708,7 +1922,7 @@ exports.curateDailyOutfits = functions
     .https.onCall(async (data, context) => {
     var _a, _b;
     try {
-        const { occasion = 'casual', weather, archetypes = [], avoidRules = [], outfits = [], } = data;
+        const { occasion = 'casual', weather, archetypes = [], avoidRules = [], trends = [], outfits = [], } = data;
         if (outfits.length < 2) {
             throw new functions.https.HttpsError('failed-precondition', 'Not enough candidate outfits to rank.');
         }
@@ -1728,7 +1942,8 @@ exports.curateDailyOutfits = functions
 
 ${weather ? `Weather: ${weather.condition}, ${Math.round(weather.temperature)}°F.` : ''}
 ${archetypes.length ? `Their style reads as: ${archetypes.join(', ')}.` : ''}
-${avoidRules.length ? `They do not wear: ${avoidRules.join('; ')}.` : ''}
+${avoidRules.length ? `They usually avoid: ${avoidRules.join('; ')}.` : ''}
+${trends.length ? `Current trends their own closet can already carry:\n${trends.map(t => `- ${t}`).join('\n')}` : ''}
 
 Candidate outfits, all built from garments they already own:
 ${described}
@@ -1738,8 +1953,9 @@ Pick the best 3 for this occasion, in order, and say why each one works.
 What makes a good answer:
 - Judge the outfit as an outfit. Does it hold together, and is it right for ${occasion} specifically?
 - Be concrete about what makes it work: the cut, the colour relationship, the level it is pitched at.
+- When a candidate genuinely channels one of the trends listed, prefer it over an equal candidate that does not, and name the trend in the note. Never force a trend onto an outfit that does not carry it, and never let one override the occasion.
 - If a candidate is wrong for the occasion, do not pick it, even if it appears high in the list.
-- Reject anything that breaks their stated rules.
+- Their avoid list is a strong preference, not a ban: prefer candidates that respect it, and pick one that crosses it only when a listed trend genuinely calls for it - then own the crossing plainly in the note ("you usually skip skirts - this is the one worth the exception").
 
 Rules:
 - Only use the numeric indices shown. Never describe a garment that is not listed.
@@ -1783,6 +1999,374 @@ Return ONLY valid JSON:
         if (error instanceof functions.https.HttpsError)
             throw error;
         console.error('Error curating daily outfits:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+// ==================== TREND DESK ====================
+/**
+ * The trend registry's write path. Reads are direct Firestore queries from
+ * the client (published entries only, enforced by rules); every write comes
+ * through here with an admin check, because a trend the app asserts to every
+ * user deserves an editor. Same draft-then-publish shape as Edits: the AI
+ * drafts, a human signs off, and nothing reaches users until they do.
+ */
+const TREND_STAGES = ['emerging', 'rising', 'peak', 'fading'];
+const TREND_SEASONS = ['spring', 'summer', 'fall', 'winter'];
+const TREND_ARCHETYPES = ['minimal', 'polished', 'relaxed', 'edgy', 'classic', 'bohemian', 'romantic', 'sporty'];
+function currentTrendSeason(date = new Date()) {
+    const month = date.getMonth();
+    if (month <= 1 || month === 11)
+        return 'winter';
+    if (month <= 4)
+        return 'spring';
+    if (month <= 7)
+        return 'summer';
+    return 'fall';
+}
+/**
+ * Drafts a fresh trend report with the model. Writes drafts only - the
+ * editor publishes each one individually from the Trend Desk screen.
+ */
+exports.draftTrendReport = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    try {
+        requireAdmin(context);
+        const season = currentTrendSeason();
+        const year = new Date().getFullYear();
+        // Existing names, so a redraft extends the desk instead of repeating it.
+        const existingSnap = await db
+            .collection('trends')
+            .where('status', 'in', ['draft', 'published'])
+            .get();
+        const existingNames = existingSnap.docs
+            .map(d => String(d.data().name || ''))
+            .filter(Boolean);
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are the trend editor of 33 Trends, a personal styling app. Draft this cycle's trend report: the directions genuinely moving in fashion right now (${season} ${year}), for a human editor to review before anything is published.
+
+${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
+Draft 6 trends. For each:
+- Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage.
+- region: the city or scene where it is strongest ("Copenhagen", "Seoul", "Milan", "Paris", "London", "New York", "Tokyo", or "Global"). Spread across regions - the point of the report is bringing readers what is moving in Europe, Asia and the US, not one city's feed.
+- stage: one of ${TREND_STAGES.join(' | ')}. Be honest - a fading trend marked fading is more useful than flattery.
+- keyGarments: 3-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only.
+- keyColors: 0-4 lowercase colour words.
+- silhouettes: 0-4 lowercase cut/fit words (e.g. "wide-leg", "oversized", "cropped").
+- archetypes: 1-3 from ${TREND_ARCHETYPES.join(', ')} - the tastes this trend sits nearest.
+- summary: 1-2 sentences, what it is and why now. No hype words.
+- stylingNote: 1-2 sentences of genuinely useful how-to-wear-it advice with a normal wardrobe. Specific, not generic. Never use "flattering", "must-have", "elevate" or "effortless".
+- entryPiece: the single lowest-commitment way in, as a short phrase.
+- name: 2-4 words, editorial, no emoji.
+
+Return ONLY valid JSON:
+{ "trends": [{ "name": "", "summary": "", "region": "", "stage": "", "keyGarments": [], "keyColors": [], "silhouettes": [], "archetypes": [], "stylingNote": "", "entryPiece": "" }] }`,
+                },
+            ],
+            max_tokens: 2500,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        const asStrings = (value, max) => Array.isArray(value)
+            ? value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim().toLowerCase()).slice(0, max)
+            : [];
+        const drafts = (Array.isArray(result.trends) ? result.trends : [])
+            .filter((t) => (t === null || t === void 0 ? void 0 : t.name) && (t === null || t === void 0 ? void 0 : t.summary) && TREND_STAGES.includes(t.stage))
+            .slice(0, 8)
+            .map((t) => ({
+            name: String(t.name).trim(),
+            summary: String(t.summary).trim(),
+            region: String(t.region || 'Global').trim(),
+            stage: t.stage,
+            season: TREND_SEASONS.includes(season) ? season : 'fall',
+            year,
+            keyGarments: asStrings(t.keyGarments, 6),
+            keyColors: asStrings(t.keyColors, 4),
+            silhouettes: asStrings(t.silhouettes, 4),
+            archetypes: asStrings(t.archetypes, 3).filter((a) => TREND_ARCHETYPES.includes(a)),
+            stylingNote: String(t.stylingNote || '').trim(),
+            entryPiece: String(t.entryPiece || '').trim(),
+            status: 'draft',
+            source: 'ai-draft',
+            createdAt: new Date().toISOString(),
+        }))
+            // A trend the matchers cannot see is not a trend the app can use.
+            .filter((t) => t.keyGarments.length > 0 || t.silhouettes.length > 0);
+        if (drafts.length === 0) {
+            throw new functions.https.HttpsError('internal', 'The draft produced no usable trends.');
+        }
+        const batch = db.batch();
+        drafts.forEach((draft) => batch.set(db.collection('trends').doc(), draft));
+        await batch.commit();
+        console.log(`Trend desk: drafted ${drafts.length} trends for ${season} ${year}`);
+        return { success: true, data: { drafted: drafts.length } };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error drafting trend report:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+/** Everything on the desk, freshest first, for the admin screen. */
+exports.listTrendDesk = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    const snapshot = await db.collection('trends').orderBy('createdAt', 'desc').limit(60).get();
+    return {
+        success: true,
+        data: { trends: snapshot.docs.map(d => (Object.assign({ id: d.id }, d.data()))) },
+    };
+});
+/** Human sign-off. Only now does a draft reach users. */
+exports.publishTrend = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    const trendId = String((data === null || data === void 0 ? void 0 : data.trendId) || '');
+    if (!trendId) {
+        throw new functions.https.HttpsError('invalid-argument', 'trendId is required');
+    }
+    const ref = db.collection('trends').doc(trendId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+        throw new functions.https.HttpsError('not-found', 'That trend no longer exists.');
+    }
+    await ref.update({ status: 'published', publishedAt: new Date().toISOString() });
+    return { success: true };
+});
+/** Retires a trend - a draft that missed, or a published trend past its moment. */
+exports.archiveTrend = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    const trendId = String((data === null || data === void 0 ? void 0 : data.trendId) || '');
+    if (!trendId) {
+        throw new functions.https.HttpsError('invalid-argument', 'trendId is required');
+    }
+    await db.collection('trends').doc(trendId).update({ status: 'archived' });
+    return { success: true };
+});
+// ==================== PERSONAL TREND REPORT ====================
+/**
+ * The AI pass that makes the Trend Report personal rather than generic.
+ *
+ * The deterministic client matcher can tell that a "pleated skirt" matches a
+ * trend keyword; it cannot tell that this user is already fully dressed for
+ * a trend, or that the trend's stock entry piece is something they already
+ * own in a different wording. This function reads the person's real closet
+ * against each trend and returns, per trend: how far in they already are,
+ * which of their own pieces carry it, styling advice written from those
+ * pieces, and at most one purchase suggestion - which is required to be
+ * something they verifiably do not own. Never a shopping pitch for a piece
+ * already hanging in their closet.
+ *
+ * ownedItemIds are validated against the sent closet, so a hallucinated
+ * garment is impossible by construction.
+ */
+exports.personalizeTrendReport = functions
+    .runWith({ memory: '512MB', timeoutSeconds: 90, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e;
+    try {
+        const { trends = [], closetItems = [], profile, locale, } = data;
+        if (!Array.isArray(trends) || trends.length === 0) {
+            throw new functions.https.HttpsError('invalid-argument', 'trends are required');
+        }
+        if (!Array.isArray(closetItems) || closetItems.length < 3) {
+            throw new functions.https.HttpsError('failed-precondition', 'Too few closet items to personalize against.');
+        }
+        const closetLines = closetItems
+            .slice(0, 150)
+            .map(i => `- ${i.id} | ${i.color || 'unknown colour'} ${i.subcategory || i.category || 'item'} | category: ${i.category || 'unknown'}` +
+            `${i.style ? ` | style: ${i.style}` : ''}${i.fabricTexture ? ` | fabric: ${i.fabricTexture}` : ''}${i.fitType ? ` | fit: ${i.fitType}` : ''}`)
+            .join('\n');
+        const trendLines = trends
+            .slice(0, 8)
+            .map(t => {
+            var _a, _b, _c;
+            return `- id:${t.id} | ${t.name} (${t.stage}, strongest in ${t.region})` +
+                `${((_a = t.keyGarments) === null || _a === void 0 ? void 0 : _a.length) ? ` | key pieces: ${t.keyGarments.join(', ')}` : ''}` +
+                `${((_b = t.keyColors) === null || _b === void 0 ? void 0 : _b.length) ? ` | colours: ${t.keyColors.join(', ')}` : ''}` +
+                `${((_c = t.silhouettes) === null || _c === void 0 ? void 0 : _c.length) ? ` | cuts: ${t.silhouettes.join(', ')}` : ''}` +
+                `${t.entryPiece ? ` | stock entry piece: ${t.entryPiece}` : ''}` +
+                `${t.stylingNote ? ` | how it's worn: ${t.stylingNote}` : ''}`;
+        })
+            .join('\n');
+        const profileLines = [];
+        if ((_a = profile === null || profile === void 0 ? void 0 : profile.archetypes) === null || _a === void 0 ? void 0 : _a.length)
+            profileLines.push(`Their style reads as: ${profile.archetypes.join(', ')}.`);
+        if ((_b = profile === null || profile === void 0 ? void 0 : profile.palette) === null || _b === void 0 ? void 0 : _b.length)
+            profileLines.push(`Colours that suit them: ${profile.palette.slice(0, 8).join(', ')}.`);
+        if ((_c = profile === null || profile === void 0 ? void 0 : profile.avoidRules) === null || _c === void 0 ? void 0 : _c.length) {
+            profileLines.push(`They usually avoid: ${profile.avoidRules.join(', ')} - a strong preference, not a ban; cross it only openly.`);
+        }
+        if ((locale === null || locale === void 0 ? void 0 : locale.city) || typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number') {
+            profileLines.push(`Where they are: ${(locale === null || locale === void 0 ? void 0 : locale.city) || 'unknown'}${typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number' ? `, ${Math.round(locale.temperatureF)}°F right now` : ''}.`);
+        }
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are the stylist behind a personal trend report in a wardrobe app. For each trend below, read this ONE person's real closet and write their personal take - not generic trend copy.
+
+Their closet (use these exact ids):
+${closetLines}
+
+${profileLines.length ? `About them:\n${profileLines.join('\n')}\n` : ''}
+The trends:
+${trendLines}
+
+For EACH trend, return:
+- trendId: the trend's id, exactly as given.
+- participation: "in" when their closet already carries the trend properly, "partial" when they own a genuine start, "not-yet" when nothing they own carries it. Judge by what each garment actually IS (category, colour, fabric, cut), not by keyword overlap.
+- ownedItemIds: the closet ids that genuinely carry this trend. Only ids from the list. Empty for "not-yet".
+- wearNote: 1-2 sentences of specific styling advice for THIS person, built from their named pieces ("your olive utility jacket over..."). For "not-yet", say how they'd start from whatever they own that comes nearest.
+- gapNote: the SINGLE purchase that would most advance them in this trend, as a short phrase - or null.
+
+The one unbreakable rule: NEVER suggest buying anything they already own or a near-duplicate of it. Same category in a similar colour or material counts as already owned - someone with a burgundy sweater does not need "a burgundy knit" suggested, whatever the trend's stock entry piece says. When they are "in", prefer gapNote null unless a genuinely different, additive piece would deepen the look.
+
+Other rules:
+- Never invent an item, a colour, or a fabric that was not given.
+- If a trend crosses something they usually avoid, keep it optional and say the crossing plainly in the wearNote.
+- No emoji. Never use "flattering", "must-have", "elevate" or "effortless".
+
+Return ONLY valid JSON:
+{ "reports": [{ "trendId": "string", "participation": "in"|"partial"|"not-yet", "ownedItemIds": ["ids"], "wearNote": "string", "gapNote": "string or null" }] }`,
+                },
+            ],
+            max_tokens: 1600,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_e = (_d = response.choices[0]) === null || _d === void 0 ? void 0 : _d.message) === null || _e === void 0 ? void 0 : _e.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        const validTrendIds = new Set(trends.map(t => t.id));
+        const validItemIds = new Set(closetItems.map(i => i.id));
+        const seen = new Set();
+        const reports = (Array.isArray(result.reports) ? result.reports : [])
+            .filter((r) => {
+            if (!(r === null || r === void 0 ? void 0 : r.trendId) || !validTrendIds.has(r.trendId) || seen.has(r.trendId))
+                return false;
+            if (!['in', 'partial', 'not-yet'].includes(r.participation))
+                return false;
+            seen.add(r.trendId);
+            return true;
+        })
+            .map((r) => ({
+            trendId: r.trendId,
+            participation: r.participation,
+            ownedItemIds: Array.isArray(r.ownedItemIds)
+                ? r.ownedItemIds.filter((id) => typeof id === 'string' && validItemIds.has(id))
+                : [],
+            wearNote: String(r.wearNote || '').trim(),
+            gapNote: r.gapNote ? String(r.gapNote).trim() : null,
+        }));
+        if (reports.length === 0) {
+            throw new functions.https.HttpsError('internal', 'No usable trend reports came back.');
+        }
+        console.log(`Personalized trend report: ${reports.length} of ${trends.length} trends`);
+        return { success: true, data: { reports } };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error personalizing trend report:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+// ==================== LOCALE STYLE ====================
+const TREND_CAPITALS = ['Copenhagen', 'Milan', 'Paris', 'London', 'New York', 'Seoul', 'Tokyo', 'Global'];
+/** Firestore doc key for a place. */
+function localeKey(city, region, country) {
+    return [city, region, country]
+        .filter(Boolean)
+        .join('|')
+        .toLowerCase()
+        .replace(/[^a-z0-9|]+/g, '-')
+        .slice(0, 200);
+}
+/**
+ * The style scene of one place, for personalizing trend delivery: how people
+ * there actually dress, and which style capitals' trends read naturally
+ * there. Generated once per place and cached in Firestore for two months, so
+ * every user in a city shares a single generation - the marginal cost of
+ * localization rounds to zero.
+ */
+exports.getLocaleStyle = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    try {
+        const city = String((data === null || data === void 0 ? void 0 : data.city) || '').trim();
+        const region = String((data === null || data === void 0 ? void 0 : data.region) || '').trim();
+        const country = String((data === null || data === void 0 ? void 0 : data.country) || '').trim();
+        if (!city) {
+            throw new functions.https.HttpsError('invalid-argument', 'city is required');
+        }
+        const key = localeKey(city, region, country);
+        const ref = db.collection('localeStyles').doc(key);
+        const cached = await ref.get();
+        if (cached.exists) {
+            const doc = cached.data();
+            const ageMs = Date.now() - new Date(doc.generatedAt || 0).getTime();
+            if (ageMs < 60 * 86400000) {
+                return { success: true, data: doc };
+            }
+        }
+        const label = [city, region, country].filter(Boolean).join(', ');
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'user',
+                    content: `Describe the current everyday fashion scene of ${label} for a styling app - how people who live there actually dress day to day, not tourist clichés and not runway.
+
+Return ONLY valid JSON:
+{
+  "vibes": [3-5 lowercase words/short phrases for the dominant dressing vibe, e.g. "practical", "polished-casual", "outdoorsy"],
+  "archetypes": [1-3 of: minimal, polished, relaxed, edgy, classic, bohemian, romantic, sporty],
+  "regionAffinities": [1-3 of: ${TREND_CAPITALS.join(', ')} - the style capitals whose current trends would read most naturally on the streets of this place],
+  "summary": "one sentence on how people there actually dress"
+}
+
+Be honest about ordinary places: a suburb reads as a suburb, not as Paris. If you genuinely don't know this place, generalize from its country and settlement size rather than inventing specifics.`,
+                },
+            ],
+            max_tokens: 300,
+            response_format: { type: 'json_object' },
+        });
+        let content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || '{}';
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(content);
+        const strings = (v, max) => Array.isArray(v)
+            ? v.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim()).slice(0, max)
+            : [];
+        const doc = {
+            label,
+            vibes: strings(result.vibes, 5).map(s => s.toLowerCase()),
+            archetypes: strings(result.archetypes, 3).map(s => s.toLowerCase()),
+            regionAffinities: strings(result.regionAffinities, 3).filter(r => TREND_CAPITALS.includes(r)),
+            summary: String(result.summary || '').trim(),
+            generatedAt: new Date().toISOString(),
+        };
+        await ref.set(doc);
+        console.log(`Locale style generated for ${label}: ${doc.vibes.join(', ')}`);
+        return { success: true, data: doc };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error generating locale style:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
@@ -2670,7 +3254,7 @@ exports.draftStyleEdit = functions
             profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
         }
         if ((_d = styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.avoidRules) === null || _d === void 0 ? void 0 : _d.length) {
-            profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+            profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')}. Respect this by default; cross it only when a genuinely current trend gives a real reason, stated plainly.`);
         }
         const closetLines = closetItems
             .map(i => `- ${i.id} | ${i.color} ${i.subcategory || i.category} | category: ${i.category}` +
@@ -2865,7 +3449,7 @@ exports.generatePackingList = functions
             profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
         }
         if ((_b = styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.avoidRules) === null || _b === void 0 ? void 0 : _b.length) {
-            profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+            profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')}. Respect this by default; cross it only when a genuinely current trend gives a real reason, stated plainly.`);
         }
         const closetLines = closetItems
             .map(i => {
@@ -2987,7 +3571,7 @@ exports.planOutfitsForSchedule = functions
         if ((_a = styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.styleArchetypes) === null || _a === void 0 ? void 0 : _a.length)
             profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
         if ((_b = styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.avoidRules) === null || _b === void 0 ? void 0 : _b.length)
-            profileLines.push(`HARD CONSTRAINT - avoid: ${styleProfile.avoidRules.join(', ')}.`);
+            profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')} - respect this by default, and cross it only with a reason stated plainly.`);
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [

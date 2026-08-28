@@ -150,9 +150,11 @@ export function rankForYou(
         if (!archetype) reason = `${colour} is in your palette`;
       }
 
-      // A hard avoid-rule is a veto here too, same as in product matching.
+      // An avoid rule is a strong preference here too, same as in product
+      // matching: it sinks a post rather than erasing it, so a look the user
+      // "never wears" can still surface when it's genuinely resonating.
       if (profile?.avoidRules?.some(rule => haystack.includes(rule.toLowerCase()))) {
-        return { post, score: 0, reason: '' };
+        score -= 30;
       }
 
       // Mild engagement weighting so a good match with some traction outranks

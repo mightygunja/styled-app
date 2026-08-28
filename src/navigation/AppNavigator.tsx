@@ -28,6 +28,7 @@ import StylistApplicationScreen from '../screens/StylistApplicationScreen';
 import StylistApplicationsAdminScreen from '../screens/StylistApplicationsAdminScreen';
 import AdminScreen from '../screens/AdminScreen';
 import AffiliateAnalyticsScreen from '../screens/AffiliateAnalyticsScreen';
+import TrendDeskAdminScreen from '../screens/TrendDeskAdminScreen';
 import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
 import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
 import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
@@ -304,6 +305,7 @@ const linking = {
       Admin: 'admin',
       AffiliateAnalytics: 'admin/affiliate',
       StylistApplicationsAdmin: 'admin/stylists',
+      TrendDeskAdmin: 'admin/trends',
       StylistApplication: 'apply',
     },
   },
@@ -326,12 +328,12 @@ const ROUTE_SEO: Record<string, { path: string; description: string }> = {
   Signup: {
     path: '/signup',
     description:
-      'Create a free 33 Trends account: photograph your closet and get daily outfits matched to your style profile, the occasion and the weather.',
+      'Create a free 33 Trends account: photograph your closet, get daily outfits matched to your style, and learn to wear what’s trending from Copenhagen to Seoul.',
   },
   About: {
     path: '/about',
     description:
-      'What 33 Trends is: an AI personal stylist built on the clothes you already own, funded by affiliate commission instead of subscriptions or ads.',
+      'What 33 Trends is: an AI personal stylist that tracks what’s moving in fashion’s capitals and shows you how to wear it with the clothes you already own — funded by affiliate commission instead of subscriptions or ads.',
   },
   Privacy: {
     path: '/privacy',
@@ -449,6 +451,7 @@ export default function AppNavigator() {
             <Stack.Screen name="StylistApplicationsAdmin" component={StylistApplicationsAdminScreen} />
             <Stack.Screen name="Admin" component={AdminScreen} />
             <Stack.Screen name="AffiliateAnalytics" component={AffiliateAnalyticsScreen} />
+            <Stack.Screen name="TrendDeskAdmin" component={TrendDeskAdminScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
             <Stack.Screen name="StylistMarketplace" component={StylistMarketplaceScreen} />
