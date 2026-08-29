@@ -141,9 +141,15 @@ export default function HomeScreen() {
   }, [swapTargetId]);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
-  // The lead trend remix: what's moving in the world, anchored to this
-  // closet. Null until loaded; the screen never waits on it.
-  const [trendRemix, setTrendRemix] = useState<TrendRemix | null>(null);
+  // Trend remixes: what's moving in the world, anchored to this closet.
+  // Regular mode renders the lead one as a card; starter mode (empty
+  // closet) renders the top three, because trends are most of what the
+  // screen has to offer before a closet exists.
+  const [trendRemixes, setTrendRemixes] = useState<TrendRemix[]>([]);
+  // Starter mode: a browsable rail of catalogue pieces matched to the
+  // survey profile (and its department), so a brand-new account's Home is
+  // a storefront of their taste rather than an empty room.
+  const [starterItems, setStarterItems] = useState<Item[]>([]);
   const { toast, showToast, hideToast } = useToast();
 
   // Every tab's outfits are built once per slot and held here, so switching
@@ -272,10 +278,10 @@ export default function HomeScreen() {
           temperature: weatherResult.temperature,
           condition: weatherResult.condition,
         });
-        setTrendRemix(remixes[0] ?? null);
+        setTrendRemixes(remixes.slice(0, 3));
         trendLines = trendRemixService.wearableTrendLines(remixes);
       } catch {
-        setTrendRemix(null);
+        setTrendRemixes([]);
       }
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
@@ -299,12 +305,29 @@ export default function HomeScreen() {
         const starterPools = await discoveryService.buildStarterPools(matchContext);
         poolsRef.current = { slot: -1, pools: starterPools, copy: {} };
         setStarterMode(true);
+        // The browsable rail: every distinct catalogue piece the starter
+        // looks drew from, already ranked against the survey profile and
+        // filtered to the user's department.
+        const seen = new Set<string>();
+        const rail: Item[] = [];
+        Object.values(starterPools)
+          .flat()
+          .forEach(candidate =>
+            candidate.items.forEach(item => {
+              if (!seen.has(item.id) && item.imageUrl) {
+                seen.add(item.id);
+                rail.push(item);
+              }
+            })
+          );
+        setStarterItems(rail.slice(0, 12));
         showOccasion(occasionValue, []);
         setLookIndex(0);
         if (!refreshing) fadeIn(fadeAnim, 300).start();
         return;
       }
       setStarterMode(false);
+      setStarterItems([]);
 
       const loaded = await dailyOutfitService.loadOutfitPools(wearable, {
         weather: weatherContext,
@@ -569,15 +592,94 @@ export default function HomeScreen() {
 
   // The trend layer's Home surface. A tap counts as leaning into the trend,
   // which is the signal that widens how adventurous future picks get.
-  const trendRemixBlock = trendRemix ? (
+  const leadRemix = trendRemixes[0];
+  const trendRemixBlock = leadRemix ? (
     <TrendRemixCard
-      remix={trendRemix}
+      remix={leadRemix}
       onOpenReport={() => {
-        shopperSignals.recordTrendTap(trendRemix.trend.id).catch(() => {});
+        shopperSignals.recordTrendTap(leadRemix.trend.id).catch(() => {});
         navigation.navigate('TrendInsights');
       }}
     />
   ) : null;
+
+  // Starter mode's richer trend surface: the top three, because before a
+  // closet exists the trend report is most of what the app has to say.
+  const starterTrendsBlock =
+    trendRemixes.length > 0 ? (
+      <View style={styles.starterTrends}>
+        <Text style={styles.sectionLabel}>WHAT'S MOVING RIGHT NOW</Text>
+        {trendRemixes.map((remix, index) => (
+          <TouchableOpacity
+            key={remix.trend.id}
+            style={styles.starterTrendRow}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={`Open the trend report: ${remix.trend.name}`}
+            onPress={() => {
+              shopperSignals.recordTrendTap(remix.trend.id).catch(() => {});
+              navigation.navigate('TrendInsights');
+            }}
+          >
+            <Text style={styles.starterTrendRank}>{String(index + 1).padStart(2, '0')}</Text>
+            <View style={styles.starterTrendText}>
+              <Text style={styles.starterTrendMeta}>
+                {remix.trend.stage.toUpperCase()} · {remix.trend.region.toUpperCase()}
+              </Text>
+              <Text style={styles.starterTrendName}>{remix.trend.name}</Text>
+              <Text style={styles.starterTrendLine} numberOfLines={2}>
+                {remix.gapLine ?? remix.trend.stylingNote}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+          </TouchableOpacity>
+        ))}
+      </View>
+    ) : null;
+
+  // A storefront of their taste: catalogue pieces ranked against the survey
+  // profile, in their department, browsable before a single photo exists.
+  const starterRailBlock =
+    starterItems.length > 0 ? (
+      <View style={styles.starterRail}>
+        <Text style={styles.sectionLabel}>PIECES THAT MATCH YOUR TASTE</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.starterRailContent}>
+          {starterItems.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.starterRailCard}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${item.name}`}
+              onPress={() => navigation.navigate('ProductDetail', { productId: item.id, surface: 'shop' })}
+            >
+              <Image source={{ uri: item.imageUrl }} style={styles.starterRailImage} resizeMode="cover" />
+              <Text style={styles.starterRailName} numberOfLines={1}>{item.name}</Text>
+              {!!item.price && <Text style={styles.starterRailPrice}>${item.price.toFixed(0)}</Text>}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    ) : null;
+
+  // The one thing a new account should actually do. Everything above it is
+  // proof the app already knows them; this is how it gets personal.
+  const addClosetBlock = (
+    <View style={styles.addClosetCard}>
+      <Text style={styles.addClosetEyebrow}>MAKE IT YOURS</Text>
+      <Text style={styles.addClosetTitle}>Add your closet, and every look becomes yours</Text>
+      <Text style={styles.addClosetLine}>
+        Photograph a few pieces — the AI reads colour, cut and fabric, and from then on the looks,
+        trends and shopping picks are built from clothes you actually own.
+      </Text>
+      <Button
+        title="Add your first pieces"
+        variant="primary"
+        fullWidth
+        onPress={() => navigation.navigate('AddClosetItem')}
+      />
+    </View>
+  );
 
   const shopBannerBlock = (
     <TouchableOpacity
@@ -745,22 +847,23 @@ export default function HomeScreen() {
           )}
 
           {!look ? (
+            // No composed look at all. Even here the screen must not be an
+            // empty room: trends, taste-matched pieces and the closet CTA
+            // carry it, with the plain empty card only as a last resort.
             <>
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>
-                  I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
-                </Text>
-                <Button
-                  title="Add closet items"
-                  variant="primary"
-                  onPress={() => navigation.navigate('Closet' as any)}
-                  style={{ marginTop: 16 }}
-                />
-              </View>
-              {trendRemixBlock}
+              {!starterTrendsBlock && !starterRailBlock && (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
+                  </Text>
+                </View>
+              )}
+              {starterTrendsBlock}
+              {starterRailBlock}
+              {addClosetBlock}
               {shopBannerBlock}
             </>
-          ) : isDesktop ? (
+          ) : isDesktop && !starterMode ? (
             // Desktop: the imagery holds the left column at editorial width;
             // the stylist's voice — note, gaps, actions, trend, shop — reads
             // as a rail beside it instead of a scroll below it.
@@ -780,7 +883,18 @@ export default function HomeScreen() {
               {noteBlock}
               {gapBlock}
               {actionBlock}
-              {trendRemixBlock}
+              {starterMode ? (
+                // A new account's Home is a magazine, not an empty closet:
+                // the composed starter look above, then what's trending,
+                // pieces in their taste, and the one real call to action.
+                <>
+                  {starterTrendsBlock}
+                  {starterRailBlock}
+                  {addClosetBlock}
+                </>
+              ) : (
+                trendRemixBlock
+              )}
               {shopBannerBlock}
             </>
           )}
@@ -1140,6 +1254,53 @@ const styles = StyleSheet.create({
   emptyText: {
     ...textType.body,
     color: colors.inkMuted,
+  },
+
+  // ---- Starter-mode sections: the empty-closet Home as a magazine ----
+  starterTrends: { marginTop: 28 },
+  starterTrendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
+  },
+  starterTrendRank: { fontFamily: fonts.serifItalic, fontSize: 16, color: colors.camel, width: 30 },
+  starterTrendText: { flex: 1, paddingRight: 10 },
+  starterTrendMeta: { ...textType.eyebrow, fontSize: 9, color: colors.camel },
+  starterTrendName: { fontFamily: fonts.serif, fontSize: 18, color: colors.ink, marginTop: 3 },
+  starterTrendLine: { ...textType.body, fontSize: 12, lineHeight: 17, color: colors.inkMuted, marginTop: 3 },
+
+  starterRail: { marginTop: 28 },
+  starterRailContent: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+  starterRailCard: { width: 128 },
+  starterRailImage: { width: 128, height: 160, backgroundColor: colors.paper },
+  starterRailName: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.ink,
+    marginTop: 6,
+  },
+  starterRailPrice: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.tobacco, marginTop: 1 },
+
+  addClosetCard: {
+    marginHorizontal: 20,
+    marginTop: 28,
+    padding: 20,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.camel,
+  },
+  addClosetEyebrow: { ...textType.eyebrow, fontSize: 9, color: colors.camel, marginBottom: 8 },
+  addClosetTitle: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 26, color: colors.ink },
+  addClosetLine: {
+    ...textType.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+    marginTop: 8,
+    marginBottom: 16,
   },
   shopBanner: {
     flexDirection: 'row',
