@@ -115,6 +115,27 @@ function awinDeeplink(product: Product): string | null {
   return `https://www.awin1.com/cread.php?awinmid=${merchantId}&awinaffid=${encodeURIComponent(AWIN_AFFILIATE_ID)}&ued=${encodeURIComponent(product.sourceUrl)}`;
 }
 
+/**
+ * Rakuten Advertising: same shape as the Awin layer, different network.
+ * Etsy moved its affiliate program here (verified 2026-08-29 - their apply
+ * flow hands off to an affiliatehub run by Rakuten Advertising), so Etsy's
+ * catalogue items monetize through this the moment the publisher account
+ * and the Etsy program approve. Ids are public link parameters.
+ *   RAKUTEN_PUBLISHER_ID - the publisher/site id from the Rakuten dashboard.
+ *   RAKUTEN_MERCHANTS - retailer name -> Rakuten advertiser id (mid).
+ */
+const RAKUTEN_PUBLISHER_ID = '';
+const RAKUTEN_MERCHANTS: Record<string, string> = {
+  // 'Etsy': '<mid>',  <- paste Etsy's advertiser id once the program approves
+};
+
+function rakutenDeeplink(product: Product): string | null {
+  if (!RAKUTEN_PUBLISHER_ID) return null;
+  const merchantId = RAKUTEN_MERCHANTS[product.retailer];
+  if (!merchantId) return null;
+  return `https://click.linksynergy.com/deeplink?id=${encodeURIComponent(RAKUTEN_PUBLISHER_ID)}&mid=${merchantId}&murl=${encodeURIComponent(product.sourceUrl)}`;
+}
+
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -187,10 +208,14 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
  */
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
-    // Best monetization first: an Awin merchant deeplink lands the user on
-    // the actual boutique at the boutique's commission rate.
+    // Best monetization first: a merchant deeplink lands the user on the
+    // actual retailer at the retailer's commission rate. Awin and Rakuten
+    // merchant maps are disjoint (a retailer lives on one network), so
+    // order between them is moot; both beat the Amazon fallback.
     const awin = awinDeeplink(product);
     if (awin) return awin;
+    const rakuten = rakutenDeeplink(product);
+    if (rakuten) return rakuten;
 
     // The department qualifier keeps Amazon's results in the right aisle - a
     // search for a men's oxford shirt without it comes back mixed.
