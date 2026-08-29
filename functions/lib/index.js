@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.getLocaleStyle = exports.personalizeTrendReport = exports.archiveTrend = exports.publishTrend = exports.listTrendDesk = exports.draftTrendReport = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.searchSkimlinksProducts = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.getLocaleStyle = exports.personalizeTrendReport = exports.searchEbayProducts = exports.archiveTrend = exports.publishTrend = exports.listTrendDesk = exports.draftTrendReport = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.searchSkimlinksProducts = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -669,6 +669,12 @@ exports.chatWithStylist = functions
         if (dayType)
             contextLines.push(`Day: ${dayType}`);
         const styleProfileLines = [];
+        if ((styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.wardrobeFocus) === 'mens') {
+            styleProfileLines.push('They dress in MENSWEAR. Every outfit, comparison, trend translation and shopping suggestion must be menswear - menswear garments, menswear cuts, menswear sizing. Never suggest womenswear.');
+        }
+        else if ((styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.wardrobeFocus) === 'womens') {
+            styleProfileLines.push('They dress in WOMENSWEAR - keep every suggestion in that department.');
+        }
         if ((styleProfile === null || styleProfile === void 0 ? void 0 : styleProfile.styleArchetypes) && styleProfile.styleArchetypes.length > 0) {
             styleProfileLines.push(`Their style archetypes: ${styleProfile.styleArchetypes.join(', ')} - lean into these when choosing between options.`);
         }
@@ -2053,6 +2059,7 @@ exports.draftTrendReport = functions
 ${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
 Draft 6 trends. For each:
 - Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage.
+- The app dresses men and women. Prefer directions that read across departments, write stylingNote so it works for any wardrobe (or gives both readings in one sentence), and choose keyGarments that are department-neutral retail words wherever the trend allows. A genuinely single-department trend is allowed, but the set of 6 must serve both menswear and womenswear readers.
 - region: the city or scene where it is strongest ("Copenhagen", "Seoul", "Milan", "Paris", "London", "New York", "Tokyo", or "Global"). Spread across regions - the point of the report is bringing readers what is moving in Europe, Asia and the US, not one city's feed.
 - stage: one of ${TREND_STAGES.join(' | ')}. Be honest - a fading trend marked fading is more useful than flattery.
 - keyGarments: 3-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only.
@@ -2155,6 +2162,132 @@ exports.archiveTrend = functions
     await db.collection('trends').doc(trendId).update({ status: 'archived' });
     return { success: true };
 });
+// ==================== EBAY PARTNER NETWORK ====================
+/**
+ * eBay Browse API search, affiliatized through eBay Partner Network.
+ *
+ * Credentials live in functions/.env:
+ *   EBAY_CLIENT_ID / EBAY_CLIENT_SECRET - an eBay developer keyset
+ *   EBAY_CAMPAIGN_ID - the EPN campaign id
+ *
+ * With the campaign id sent in X-EBAY-C-ENDUSERCTX, the itemWebUrl eBay
+ * returns is already affiliatized - the client uses it verbatim and never
+ * re-wraps. Secondhand comes back honestly labelled, which is what makes
+ * Shop's secondhand filter real instead of aspirational.
+ */
+let ebayToken = null;
+async function getEbayToken(clientId, clientSecret) {
+    if (ebayToken && Date.now() < ebayToken.expiresAt - 60000)
+        return ebayToken.value;
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${auth}`,
+        },
+        body: 'grant_type=client_credentials&scope=' + encodeURIComponent('https://api.ebay.com/oauth/api_scope'),
+    });
+    if (!response.ok) {
+        throw new Error(`eBay token request failed: ${response.status}`);
+    }
+    const data = (await response.json());
+    ebayToken = {
+        value: String(data.access_token),
+        expiresAt: Date.now() + (Number(data.expires_in) || 7200) * 1000,
+    };
+    return ebayToken.value;
+}
+/**
+ * eBay's top-level Clothing, Shoes & Accessories category. Browse works best
+ * with this plus keywords; per-category ids shift regionally, so the keyword
+ * (which includes our category word) carries the narrowing.
+ */
+const EBAY_FASHION_CATEGORY = '11450';
+exports.searchEbayProducts = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    try {
+        const clientId = process.env.EBAY_CLIENT_ID || '';
+        const clientSecret = process.env.EBAY_CLIENT_SECRET || '';
+        const campaignId = process.env.EBAY_CAMPAIGN_ID || '';
+        if (!clientId || !clientSecret) {
+            throw new functions.https.HttpsError('failed-precondition', 'eBay credentials are not configured (EBAY_CLIENT_ID / EBAY_CLIENT_SECRET in functions/.env).');
+        }
+        const { query, category, condition, minPrice, maxPrice, colors = [], styleArchetypes = [], page = 0, pageSize = 24, } = data || {};
+        // A concrete keyword beats an empty search: fall back to the style
+        // brief so profile-led surfaces (Explore, starter looks) get relevant
+        // garments rather than the marketplace firehose.
+        const q = String(query || '').trim() ||
+            [colors[0], styleArchetypes[0], category || 'clothing'].filter(Boolean).join(' ') ||
+            'clothing';
+        const filters = [];
+        if (condition === 'secondhand')
+            filters.push('conditions:{USED}');
+        else if (condition === 'new')
+            filters.push('conditions:{NEW}');
+        if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
+            filters.push(`price:[${typeof minPrice === 'number' ? minPrice : ''}..${typeof maxPrice === 'number' ? maxPrice : ''}],priceCurrency:USD`);
+        }
+        const limit = Math.min(50, Math.max(1, Number(pageSize) || 24));
+        const offset = Math.max(0, Number(page) || 0) * limit;
+        const params = new URLSearchParams({
+            q,
+            category_ids: EBAY_FASHION_CATEGORY,
+            limit: String(limit),
+            offset: String(offset),
+        });
+        if (filters.length)
+            params.set('filter', filters.join(','));
+        const token = await getEbayToken(clientId, clientSecret);
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        };
+        // This header is what affiliatizes every itemWebUrl in the response.
+        if (campaignId)
+            headers['X-EBAY-C-ENDUSERCTX'] = `affiliateCampaignId=${campaignId}`;
+        const response = await fetch(`https://api.ebay.com/buy/browse/v1/item_summary/search?${params.toString()}`, { headers });
+        if (!response.ok) {
+            const body = await response.text();
+            console.error('eBay Browse search failed', response.status, body.slice(0, 300));
+            throw new functions.https.HttpsError('internal', `eBay search failed: ${response.status}`);
+        }
+        const result = (await response.json());
+        const items = Array.isArray(result.itemSummaries) ? result.itemSummaries : [];
+        const products = items
+            .filter((item) => { var _a; return (item === null || item === void 0 ? void 0 : item.itemId) && (item === null || item === void 0 ? void 0 : item.title) && ((_a = item === null || item === void 0 ? void 0 : item.price) === null || _a === void 0 ? void 0 : _a.value) && (item === null || item === void 0 ? void 0 : item.itemWebUrl); })
+            .map((item) => {
+            var _a, _b, _c;
+            return ({
+                id: `ebay-${item.itemId}`,
+                name: String(item.title),
+                brand: String(item.brand || ''),
+                retailer: 'eBay',
+                category: category || 'tops',
+                price: Number(item.price.value),
+                currency: String(item.price.currency || 'USD'),
+                imageUrl: ((_a = item.image) === null || _a === void 0 ? void 0 : _a.imageUrl) || ((_c = (_b = item.thumbnailImages) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.imageUrl) || '',
+                color: item.color ? String(item.color).toLowerCase() : undefined,
+                sourceUrl: String(item.itemWebUrl),
+                inStock: true,
+                condition: item.condition && !/new/i.test(String(item.condition)) ? 'secondhand' : 'new',
+            });
+        })
+            .filter((p) => p.imageUrl);
+        return {
+            products,
+            hasMore: typeof result.total === 'number' ? offset + limit < result.total : items.length === limit,
+            totalCount: typeof result.total === 'number' ? result.total : null,
+        };
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        console.error('Error searching eBay:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
 // ==================== PERSONAL TREND REPORT ====================
 /**
  * The AI pass that makes the Trend Report personal rather than generic.
@@ -2202,6 +2335,12 @@ exports.personalizeTrendReport = functions
         })
             .join('\n');
         const profileLines = [];
+        if ((profile === null || profile === void 0 ? void 0 : profile.wardrobeFocus) === 'mens') {
+            profileLines.push('They dress in MENSWEAR: wearNote must style menswear, and gapNote must name a menswear piece ("men\'s suede chukka boots", not a skirt).');
+        }
+        else if ((profile === null || profile === void 0 ? void 0 : profile.wardrobeFocus) === 'womens') {
+            profileLines.push('They dress in womenswear - keep wearNote and gapNote in that department.');
+        }
         if ((_a = profile === null || profile === void 0 ? void 0 : profile.archetypes) === null || _a === void 0 ? void 0 : _a.length)
             profileLines.push(`Their style reads as: ${profile.archetypes.join(', ')}.`);
         if ((_b = profile === null || profile === void 0 ? void 0 : profile.palette) === null || _b === void 0 ? void 0 : _b.length)

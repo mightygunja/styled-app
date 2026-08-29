@@ -86,6 +86,35 @@ const MARKETPLACE_PROVIDER: MarketplaceProvider = 'amazon';
  */
 const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
 
+/**
+ * Awin: the boutique-merchant layer. Awin monetizes per-merchant deeplinks -
+ * an awin1.com redirect wrapping the retailer's own URL - so unlike the
+ * Amazon fallback, the user lands on the actual boutique's site and the
+ * commission comes from that merchant's program (often 10%+ vs Amazon's ~4%).
+ *
+ * Both values are public identifiers (they appear in every link), so client
+ * code is the right place for them:
+ *   AWIN_AFFILIATE_ID - your publisher id, shown in the Awin dashboard header
+ *     after signup.
+ *   AWIN_MERCHANTS - retailer name (exactly as it appears in the catalogue)
+ *     -> that merchant's Awin advertiser id (awinmid), added one by one as
+ *     merchant applications are approved. Etsy is the first target.
+ *
+ * Any catalogue product whose retailer is in the map monetizes through Awin
+ * automatically; everything else falls back to the tagged Amazon search.
+ */
+const AWIN_AFFILIATE_ID = '';
+const AWIN_MERCHANTS: Record<string, string> = {
+  // 'Etsy': '<awinmid>',  <- paste the advertiser id once the Etsy program approves
+};
+
+function awinDeeplink(product: Product): string | null {
+  if (!AWIN_AFFILIATE_ID) return null;
+  const merchantId = AWIN_MERCHANTS[product.retailer];
+  if (!merchantId) return null;
+  return `https://www.awin1.com/cread.php?awinmid=${merchantId}&awinaffid=${encodeURIComponent(AWIN_AFFILIATE_ID)}&ued=${encodeURIComponent(product.sourceUrl)}`;
+}
+
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -158,6 +187,11 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
  */
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
+    // Best monetization first: an Awin merchant deeplink lands the user on
+    // the actual boutique at the boutique's commission rate.
+    const awin = awinDeeplink(product);
+    if (awin) return awin;
+
     // The department qualifier keeps Amazon's results in the right aisle - a
     // search for a men's oxford shirt without it comes back mixed.
     const dept =

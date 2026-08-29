@@ -35,6 +35,10 @@ const RETAILER_SEARCH: Record<string, (query: string) => string> = {
   Zara: q => `https://www.zara.com/us/en/search?searchTerm=${encodeURIComponent(q)}`,
   Nike: q => `https://www.nike.com/w?q=${encodeURIComponent(q)}`,
   Reformation: q => `https://www.thereformation.com/search?q=${encodeURIComponent(q)}`,
+  // Verified in-browser 2026-08-29 (curl gets a bot-block 403; the page
+  // renders real results). Etsy links must live on etsy.com so the Awin
+  // deeplink layer has a merchant URL to wrap.
+  Etsy: q => `https://www.etsy.com/search?q=${encodeURIComponent(q)}`,
 };
 
 function link(retailer: string, brand: string, name: string): string {
