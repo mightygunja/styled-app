@@ -25,6 +25,12 @@ export interface Product {
   inStock: boolean;
   rating?: number; // 0-5, when the network provides it
   condition?: 'new' | 'secondhand'; // defaults to 'new'; secondhand folds the old standalone marketplace into Shop as a filter
+  /**
+   * Which department the piece belongs to. 'unisex' passes every wardrobe
+   * focus; absent is treated as 'unisex' so live feeds that don't report a
+   * department are never silently filtered out.
+   */
+  department?: 'women' | 'men' | 'unisex';
 
   // ---- Live-inventory fields ----
   // Every one of these is optional and every scorer that reads them no-ops

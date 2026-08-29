@@ -38,10 +38,28 @@ export interface ColorAnalysisResult {
   sourceImageUrl?: string;
 }
 
-export const BODY_TYPES = [
+/**
+ * Whose wardrobe the app is dressing. Set in onboarding; every matcher,
+ * catalogue search and outbound link respects it. 'all' (and the undefined
+ * of profiles that predate the question) means no department filtering.
+ */
+export type WardrobeFocus = 'womens' | 'mens' | 'all';
+
+export const WOMENS_BODY_TYPES = [
   'hourglass', 'topHourglass', 'bottomHourglass',
   'pear', 'invertedTriangle', 'rectangle', 'apple', 'diamond',
 ] as const;
+
+/**
+ * The five standard menswear frame types. Prefixed keys so their guide
+ * content never collides with the women's rectangle/inverted-triangle
+ * entries, whose advice is written for a different wardrobe.
+ */
+export const MENS_BODY_TYPES = [
+  'mTrapezoid', 'mRectangle', 'mTriangle', 'mOval', 'mInvertedTriangle',
+] as const;
+
+export const BODY_TYPES = [...WOMENS_BODY_TYPES, ...MENS_BODY_TYPES] as const;
 
 export type BodyType = (typeof BODY_TYPES)[number];
 
@@ -211,6 +229,83 @@ export const BODY_TYPE_GUIDES: Record<BodyType, {
     },
     matchKeywords: ['structured-shoulder', 'a-line', 'empire', 'open-neckline', 'flared'],
   },
+
+  // ---- Menswear frames ----
+  mTrapezoid: {
+    label: 'Trapezoid',
+    description: 'Shoulders broader than the waist with an even taper - the frame most cuts are drafted for, so fit precision is your whole game.',
+    highlight: ['shoulders', 'chest'],
+    downplay: [],
+    recommendedSilhouettes: ['Tailored through the body', 'Straight and slim-straight legs', 'Unstructured blazers', 'Crew and polo collars'],
+    categoryGuidance: {
+      tops: ['Tailored and slim-straight cuts that follow the taper', 'Avoid extreme oversizing that erases the frame'],
+      bottoms: ['Straight or slim-straight legs with a mid rise', 'Most cuts work - fit at the seat and break decide it'],
+      dresses: [],
+      shoes: ['Almost anything - let formality, not correction, choose the shoe'],
+      outerwear: ['Unstructured blazers and clean overcoats that sit on the shoulder line'],
+    },
+    matchKeywords: ['tailored', 'slim-straight', 'straight-leg', 'unstructured', 'crewneck'],
+  },
+  mRectangle: {
+    label: 'Straight',
+    description: 'Shoulders, chest and waist run close to the same width - structure up top and layering add the taper the frame does not supply.',
+    highlight: ['shoulders'],
+    downplay: [],
+    recommendedSilhouettes: ['Structured shoulders', 'Layered tops', 'Straight legs', 'Horizontal detail at the chest'],
+    categoryGuidance: {
+      tops: ['Structured shoulders, chest pockets and layering to build the upper frame', 'Avoid long unbroken columns of one colour'],
+      bottoms: ['Straight legs; a slight taper reads as shape'],
+      dresses: [],
+      shoes: ['A slightly substantial shoe balances the added structure up top'],
+      outerwear: ['Shoulder-structured jackets, trucker and chore shapes, filled gilets'],
+    },
+    matchKeywords: ['structured', 'layered', 'chest-pocket', 'trucker', 'chore'],
+  },
+  mTriangle: {
+    label: 'Triangle',
+    description: 'Waist and hips carry more than the shoulders - visual weight moved upward brings the frame into balance.',
+    highlight: ['shoulders', 'chest'],
+    downplay: ['midsection'],
+    recommendedSilhouettes: ['Structured shoulders', 'Vertical patterns', 'Straight legs', 'Open collars'],
+    categoryGuidance: {
+      tops: ['Structured shoulders, spread collars and vertical stripes', 'Darker, matte fabrics below the chest'],
+      bottoms: ['Straight legs with a clean drape - avoid tapering too hard at the ankle'],
+      dresses: [],
+      shoes: ['A fuller shoe grounds the silhouette'],
+      outerwear: ['Shoulder-built jackets worn open, single-breasted coats'],
+    },
+    matchKeywords: ['structured', 'vertical-stripe', 'straight-leg', 'spread-collar', 'single-breasted'],
+  },
+  mOval: {
+    label: 'Oval',
+    description: 'The midsection is the fullest point - long clean lines and one-colour columns lengthen the whole frame.',
+    highlight: ['shoulders', 'legs'],
+    downplay: ['midsection'],
+    recommendedSilhouettes: ['Vertical lines', 'Single-breasted layers', 'Straight legs', 'V-necks and open collars'],
+    categoryGuidance: {
+      tops: ['V-necks, open collars and vertical detail to lengthen', 'Skim, never cling - and never billow'],
+      bottoms: ['Straight legs with a comfortable, non-cinching waistband', 'Flat fronts over pleats'],
+      dresses: [],
+      shoes: ['Substantial soles balance the frame top to bottom'],
+      outerwear: ['Long single-breasted coats worn open create the vertical line'],
+    },
+    matchKeywords: ['v-neck', 'single-breasted', 'straight-leg', 'flat-front', 'longline'],
+  },
+  mInvertedTriangle: {
+    label: 'Inverted Triangle',
+    description: 'Shoulders and chest dominate a narrow waist and hips - adding visual weight below keeps the frame from top-heaviness.',
+    highlight: ['chest'],
+    downplay: [],
+    recommendedSilhouettes: ['Straight and relaxed legs', 'Minimal shoulder structure', 'Textured bottoms'],
+    categoryGuidance: {
+      tops: ['Softer shoulders and raglan sleeves - the frame supplies its own structure', 'Avoid extra chest padding or tight stretch fits'],
+      bottoms: ['Straight to relaxed legs with texture or lighter washes to add weight below'],
+      dresses: [],
+      shoes: ['Fuller shoes - chunky soles, boots - anchor the silhouette'],
+      outerwear: ['Unstructured, raglan and bomber shapes over padded shoulders'],
+    },
+    matchKeywords: ['raglan', 'relaxed', 'straight-leg', 'unstructured', 'bomber'],
+  },
 };
 
 /**
@@ -363,6 +458,12 @@ export interface PersonalStyleProfile {
    * - "directive": Give specific recommendations and instructions
    */
   guidanceLevel: "inspiration" | "guided" | "directive";
+
+  /**
+   * Whose wardrobe this is - womenswear, menswear, or both. Optional so
+   * profiles that predate the question stay valid; absent reads as 'all'.
+   */
+  wardrobeFocus?: WardrobeFocus;
 
   /**
    * AI-powered personal color analysis (selfie -> seasonal color type + palette).

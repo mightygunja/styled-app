@@ -770,6 +770,8 @@ interface StyleProfileContext {
   bodyDownplay?: string[];
   recommendedSilhouettes?: string[];
   categoryGuidance?: CategoryGuidanceContext;
+  /** 'womens' | 'mens' | 'all' - whose wardrobe this is. */
+  wardrobeFocus?: string;
 }
 
 export const chatWithStylist = functions
@@ -851,6 +853,11 @@ export const chatWithStylist = functions
       if (dayType) contextLines.push(`Day: ${dayType}`);
 
       const styleProfileLines: string[] = [];
+      if (styleProfile?.wardrobeFocus === 'mens') {
+        styleProfileLines.push('They dress in MENSWEAR. Every outfit, comparison, trend translation and shopping suggestion must be menswear - menswear garments, menswear cuts, menswear sizing. Never suggest womenswear.');
+      } else if (styleProfile?.wardrobeFocus === 'womens') {
+        styleProfileLines.push('They dress in WOMENSWEAR - keep every suggestion in that department.');
+      }
       if (styleProfile?.styleArchetypes && styleProfile.styleArchetypes.length > 0) {
         styleProfileLines.push(`Their style archetypes: ${styleProfile.styleArchetypes.join(', ')} - lean into these when choosing between options.`);
       }
@@ -2466,6 +2473,7 @@ export const draftTrendReport = functions
 ${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
 Draft 6 trends. For each:
 - Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage.
+- The app dresses men and women. Prefer directions that read across departments, write stylingNote so it works for any wardrobe (or gives both readings in one sentence), and choose keyGarments that are department-neutral retail words wherever the trend allows. A genuinely single-department trend is allowed, but the set of 6 must serve both menswear and womenswear readers.
 - region: the city or scene where it is strongest ("Copenhagen", "Seoul", "Milan", "Paris", "London", "New York", "Tokyo", or "Global"). Spread across regions - the point of the report is bringing readers what is moving in Europe, Asia and the US, not one city's feed.
 - stage: one of ${TREND_STAGES.join(' | ')}. Be honest - a fading trend marked fading is more useful than flattery.
 - keyGarments: 3-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only.
@@ -2781,7 +2789,12 @@ export const personalizeTrendReport = functions
           fabricTexture?: string;
           fitType?: string;
         }>;
-        profile?: { archetypes?: string[]; avoidRules?: string[]; palette?: string[] };
+        profile?: {
+          archetypes?: string[];
+          avoidRules?: string[];
+          palette?: string[];
+          wardrobeFocus?: string;
+        };
         locale?: { city?: string; temperatureF?: number };
       } = data;
 
@@ -2818,6 +2831,11 @@ export const personalizeTrendReport = functions
         .join('\n');
 
       const profileLines: string[] = [];
+      if (profile?.wardrobeFocus === 'mens') {
+        profileLines.push('They dress in MENSWEAR: wearNote must style menswear, and gapNote must name a menswear piece ("men\'s suede chukka boots", not a skirt).');
+      } else if (profile?.wardrobeFocus === 'womens') {
+        profileLines.push('They dress in womenswear - keep wearNote and gapNote in that department.');
+      }
       if (profile?.archetypes?.length) profileLines.push(`Their style reads as: ${profile.archetypes.join(', ')}.`);
       if (profile?.palette?.length) profileLines.push(`Colours that suit them: ${profile.palette.slice(0, 8).join(', ')}.`);
       if (profile?.avoidRules?.length) {

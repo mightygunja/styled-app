@@ -456,6 +456,23 @@ export function scoreProduct(
   };
 }
 
+/**
+ * Whether a product belongs in this user's department. A menswear profile
+ * never sees womenswear and vice versa - that is a fit for the person, not
+ * a preference to be outweighed. Unisex and unlabelled products pass every
+ * focus, and a profile without a focus (or 'all') sees everything.
+ */
+export function departmentAllowed(
+  product: Product,
+  profile: ProfileMatchContext | undefined
+): boolean {
+  const focus = profile?.wardrobeFocus;
+  if (!focus || focus === 'all') return true;
+  const department = product.department;
+  if (!department || department === 'unisex') return true;
+  return focus === 'womens' ? department === 'women' : department === 'men';
+}
+
 export function scoreAndRankProducts(
   products: Product[],
   profile: ProfileMatchContext | undefined,
@@ -463,6 +480,7 @@ export function scoreAndRankProducts(
   env: MatchEnvironment = {}
 ): MatchedProduct[] {
   return products
+    .filter(p => departmentAllowed(p, profile))
     .map(p => scoreProduct(p, profile, closetItems, env))
     // Dismissed products drop out entirely rather than sitting at the bottom.
     // Someone who said no should not have to scroll past it again.

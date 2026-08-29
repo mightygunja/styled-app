@@ -252,6 +252,7 @@ class StylingAssistantService {
     const bodyAnalysis = styleProfile?.bodyAnalysis;
     const styleProfilePayload = styleProfile
       ? {
+          wardrobeFocus: styleProfile.wardrobeFocus,
           styleArchetypes: styleProfile.styleArchetypes,
           avoidRules: styleProfile.avoidRules,
           preferredColors: [...styleProfile.colorProfile.primary, ...styleProfile.colorProfile.secondary],

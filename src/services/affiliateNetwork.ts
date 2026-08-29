@@ -158,7 +158,11 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
  */
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
-    const query = encodeURIComponent(`${product.brand} ${product.name}`.trim());
+    // The department qualifier keeps Amazon's results in the right aisle - a
+    // search for a men's oxford shirt without it comes back mixed.
+    const dept =
+      product.department === 'men' ? "men's " : product.department === 'women' ? "women's " : '';
+    const query = encodeURIComponent(`${dept}${product.brand} ${product.name}`.trim());
     const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
     return `https://www.amazon.com/s?k=${query}${tag}`;
   }

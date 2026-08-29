@@ -358,6 +358,7 @@ export async function personalizeRemixes(
             archetypes: profile.styleArchetypes,
             avoidRules: profile.avoidRules,
             palette: profile.recommendedColors,
+            wardrobeFocus: profile.wardrobeFocus,
           }
         : undefined,
       locale: locale

@@ -91,6 +91,32 @@ const IMAGE_POOLS: Record<ItemCategory, string[]> = {
   bags: ['1584917865442-de89df76afd3', '1548036328-c9fa89d128fa', '1554568218-0f1715e72254'],
 };
 
+/** Verified-live menswear photography, cycled for men's items. */
+const MENS_IMAGE_POOLS: Partial<Record<ItemCategory, string[]>> = {
+  tops: [
+    '1602810318383-e386cc2a3ccf', '1488161628813-04466f872be2', '1516826957135-700dedea698c',
+    '1520975954732-35dd22299614', '1541840031508-326b77c9a17e', '1507003211169-0a1dd7228f2d',
+    '1500648767791-00dcc994a43e', '1506794778202-cad84cf45f1d', '1492562080023-ab3db95bfbce',
+    '1617113930975-f9c7243ae527', '1531938716357-224c16b5ace3', '1521341957697-b93449760f30',
+  ],
+  bottoms: [
+    '1516257984-b1b4d707412e', '1490578474895-699cd4e2cf59', '1509087859087-a384654eca4d',
+    '1512353087810-25dfcd100962',
+  ],
+  outerwear: [
+    '1520975954732-35dd22299614', '1503443207922-dff7d543fd0e', '1519085360753-af0119f7cbe7',
+    '1564859228273-274232fdb516', '1479064555552-3ef4979f8908', '1495105787522-5334e3ffa0ef',
+  ],
+  shoes: [
+    '1449505278894-297fdb3edbc1', '1611558709798-e009c8fd7706', '1610384104075-e05c8cf200c3',
+    '1520006403909-838d6b92c22e', '1516762689617-e1cffcef479d',
+  ],
+  accessories: [
+    '1467043237213-65f2da53396f', '1593642632823-8f785ba67e45', '1520006403909-838d6b92c22e',
+    '1512353087810-25dfcd100962',
+  ],
+};
+
 const SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
   tops: ['XS', 'S', 'M', 'L', 'XL'],
   bottoms: ['24', '25', '26', '27', '28', '29', '30', '31', '32'],
@@ -98,6 +124,27 @@ const SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
   outerwear: ['XS', 'S', 'M', 'L', 'XL'],
   shoes: ['6', '7', '8', '9', '10', '11'],
 };
+
+const MENS_SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
+  tops: ['S', 'M', 'L', 'XL', 'XXL'],
+  bottoms: ['28', '30', '32', '34', '36', '38'],
+  outerwear: ['S', 'M', 'L', 'XL', 'XXL'],
+  shoes: ['8', '9', '10', '11', '12', '13'],
+};
+
+/**
+ * Rows whose pieces are genuinely cross-department - performance wear,
+ * heritage workwear, sneakers, caps. They pass every wardrobe focus, so a
+ * menswear profile still sees the Carhartt chore coat and the Salomons.
+ */
+const UNISEX_IDS = new Set([
+  't002', 't004', 't006', 't027', 't028', 't041', 't053', 't054', 't055', 't060',
+  'b003', 'b026', 'b029', 'b030', 'b033', 'b035', 'b041', 'b042', 'b043',
+  'o003', 'o005', 'o007', 'o018', 'o020', 'o024', 'o025', 'o029', 'o034', 'o035', 'o042',
+  's002', 's004', 's009', 's010', 's011', 's012', 's017', 's018', 's025', 's026', 's029',
+  's034', 's035', 's036', 's039', 's040', 's047', 's050',
+  'a009', 'a010', 'a013', 'a015', 'a016', 'a020', 'a025', 'a030', 'a032', 'a033', 'a034', 'a042',
+]);
 
 /**
  * One product per line:
@@ -417,14 +464,113 @@ const ROWS: Row[] = [
   ['a048', 'Pre-Loved Silk Tie Scarf', 'Ferragamo', 'Poshmark', 'accessories', 'silk scarf', 'navy print', 65, 220, 'luxe vintage detail', 1],
   ['a049', 'Vintage Beaded Bag', 'Unbranded Artisan', 'Etsy', 'accessories', 'beaded bag', 'pearl white', 55, 0, 'vintage evening artisan', 1],
   ['a050', 'Secondhand Burgundy Bag', 'Longchamp', 'Vestiaire Collective', 'accessories', 'burgundy bag', 'burgundy', 88, 195, 'burgundy classic vintage', 1],
+
+  // ---- MENSWEAR: TOPS (24) ----
+  ['mt001', 'Oxford Button-Down Shirt', 'J.Crew', 'J.Crew', 'tops', 'oxford shirt', 'white', 69.5, 0, 'classic preppy business'],
+  ['mt002', 'Poplin Dress Shirt', 'Charles Tyrwhitt', 'Charles Tyrwhitt', 'tops', 'dress shirt', 'light blue', 79, 99, 'formal business crisp'],
+  ['mt003', 'Heavyweight Pocket Tee', 'Carhartt', 'Carhartt', 'tops', 'pocket tee', 'moss', 24.99, 0, 'workwear durable casual'],
+  ['mt004', 'Merino Crewneck Sweater', 'Quince', 'Quince', 'tops', 'merino sweater', 'charcoal', 49.9, 0, 'minimalist classic knit'],
+  ['mt005', 'Cable Knit Fisherman Sweater', 'L.L.Bean', 'L.L.Bean', 'tops', 'cable knit sweater', 'natural', 89, 0, 'heritage cable knit'],
+  ['mt006', 'Burgundy Lambswool Sweater', 'Uniqlo', 'Uniqlo', 'tops', 'burgundy sweater', 'burgundy', 39.9, 0, 'burgundy classic knit'],
+  ['mt007', 'Half-Zip Merino Pullover', 'Banana Republic', 'Banana Republic', 'tops', 'half-zip sweater', 'navy', 110, 140, 'polished layered smart-casual'],
+  ['mt008', 'Pique Polo', 'Lacoste', 'Lacoste', 'tops', 'polo', 'navy', 98, 0, 'preppy classic sporty'],
+  ['mt009', 'Rugby Stripe Shirt', 'Rowing Blazers', 'Rowing Blazers', 'tops', 'rugby shirt', 'green navy stripe', 129, 0, 'preppy rugby collegiate'],
+  ['mt010', 'Flannel Overshirt', 'Portuguese Flannel', 'Portuguese Flannel', 'tops', 'plaid flannel shirt', 'red plaid', 95, 0, 'plaid heritage layered'],
+  ['mt011', 'Linen Camp Collar Shirt', 'Todd Snyder', 'Todd Snyder', 'tops', 'linen shirt', 'sand', 128, 0, 'relaxed summer resort'],
+  ['mt012', 'Chambray Work Shirt', "Levi's", "Levi's", 'tops', 'chambray shirt', 'chambray blue', 69.5, 0, 'denim workwear casual'],
+  ['mt013', 'Turtleneck Sweater', 'COS', 'COS', 'tops', 'turtleneck sweater', 'black', 89, 0, 'minimalist sharp knit'],
+  ['mt014', 'Cuban Collar Knit Polo', 'Percival', 'Percival', 'tops', 'knit polo', 'cream', 115, 0, 'retro polished texture'],
+  ['mt015', 'Selvedge Denim Western Shirt', 'RRL', 'Ralph Lauren', 'tops', 'denim western shirt', 'dark wash', 245, 0, 'western denim heritage'],
+  ['mt016', 'Waffle Henley', 'Madewell', 'Madewell', 'tops', 'henley', 'oatmeal', 55, 0, 'casual layered texture'],
+  ['mt017', 'Striped Breton Shirt', 'Armor Lux', 'Armor Lux', 'tops', 'breton shirt', 'navy stripe', 75, 0, 'french classic nautical'],
+  ['mt018', 'Tech Performance Polo', 'Lululemon', 'Lululemon', 'tops', 'tech polo', 'black', 88, 0, 'technical polished sporty'],
+  ['mt019', 'Vintage Wash Sweatshirt', 'Abercrombie', 'Abercrombie', 'tops', 'crewneck sweatshirt', 'faded navy', 60, 0, 'casual vintage-wash relaxed'],
+  ['mt020', 'Shawl Collar Cardigan', 'Wallace & Barnes', 'J.Crew', 'tops', 'shawl cardigan', 'chestnut', 148, 188, 'heritage cozy texture'],
+  ['mt021', 'Sheer-Knit Layering Tee', 'Our Legacy', 'Our Legacy', 'tops', 'sheer knit tee', 'black', 160, 0, 'fashion-forward sheer edgy'],
+  ['mt022', 'Vintage Rugby Shirt', 'Polo Ralph Lauren', 'Poshmark', 'tops', 'rugby shirt', 'navy gold stripe', 42, 125, 'preppy rugby vintage', 1],
+  ['mt023', 'Pre-Owned Cashmere Sweater', 'Brunello Cucinelli', 'The RealReal', 'tops', 'cashmere sweater', 'dove gray', 225, 895, 'luxe minimal vintage', 1],
+  ['mt024', 'Secondhand Flannel Shirt', 'Pendleton', 'ThredUp', 'tops', 'plaid flannel shirt', 'green plaid', 38, 109, 'plaid heritage vintage', 1],
+
+  // ---- MENSWEAR: BOTTOMS (16) ----
+  ['mb001', 'Slim-Straight Selvedge Jeans', "Levi's", "Levi's", 'bottoms', 'selvedge jeans', 'indigo', 128, 0, 'denim classic slim-straight'],
+  ['mb002', 'Athletic Taper Jeans', 'Madewell', 'Madewell', 'bottoms', 'tapered jeans', 'medium wash', 98, 0, 'denim tapered everyday'],
+  ['mb003', 'Pleated Wide-Leg Trousers', 'COS', 'COS', 'bottoms', 'wide-leg trousers', 'grey', 135, 0, 'wide-leg pleated tailored'],
+  ['mb004', 'Wide-Leg Wool Trousers', 'Arket', 'Arket', 'bottoms', 'wide-leg trousers', 'camel', 149, 0, 'wide-leg tailored scandi'],
+  ['mb005', 'Flat-Front Chinos', 'Bonobos', 'Bonobos', 'bottoms', 'chinos', 'khaki', 99, 0, 'classic chino smart-casual'],
+  ['mb006', 'Garment-Dyed Chinos', 'Todd Snyder', 'Todd Snyder', 'bottoms', 'chinos', 'olive', 128, 158, 'relaxed chino heritage'],
+  ['mb007', 'Wool Dress Trousers', 'Suitsupply', 'Suitsupply', 'bottoms', 'dress trousers', 'charcoal', 169, 0, 'formal tailored business'],
+  ['mb008', 'Corduroy Five-Pocket Pants', 'J.Crew', 'J.Crew', 'bottoms', 'corduroy pants', 'chestnut', 98, 128, 'heritage corduroy fall'],
+  ['mb009', 'Fatigue Utility Pants', 'Stan Ray', 'Stan Ray', 'bottoms', 'fatigue pants', 'olive', 88, 0, 'utility military relaxed'],
+  ['mb010', 'Linen Drawstring Trousers', 'Quince', 'Quince', 'bottoms', 'linen trousers', 'natural', 44.9, 0, 'linen relaxed summer'],
+  ['mb011', 'Tech Chino Jogger', 'Lululemon', 'Lululemon', 'bottoms', 'tech joggers', 'black', 128, 0, 'technical tapered commute'],
+  ['mb012', 'Sweat Shorts', 'Nike', 'Nike', 'bottoms', 'sweat shorts', 'heather gray', 45, 0, 'sporty casual soft'],
+  ['mb013', 'Tailored Suit Trousers', 'Zara', 'Zara', 'bottoms', 'suit trousers', 'navy', 69.9, 0, 'tailored sharp business'],
+  ['mb014', 'Vintage 501 Jeans', "Levi's", 'Depop', 'bottoms', 'straight jeans', 'faded indigo', 48, 0, 'vintage denim straight', 1],
+  ['mb015', 'Pre-Owned Wool Trousers', 'Ermenegildo Zegna', 'The RealReal', 'bottoms', 'wool trousers', 'grey', 95, 395, 'tailored luxe vintage', 1],
+  ['mb016', 'Secondhand Cargo Pants', 'Carhartt', 'Depop', 'bottoms', 'cargo pants', 'duck brown', 45, 0, 'utility workwear vintage', 1],
+
+  // ---- MENSWEAR: OUTERWEAR (14) ----
+  ['mo001', 'Unstructured Cotton Blazer', 'Todd Snyder', 'Todd Snyder', 'outerwear', 'unstructured blazer', 'navy', 398, 0, 'tailored unstructured smart'],
+  ['mo002', 'Wool Topcoat', 'Suitsupply', 'Suitsupply', 'outerwear', 'wool topcoat', 'camel', 499, 0, 'classic tailored winter'],
+  ['mo003', 'Waxed Trucker Jacket', 'Flint and Tinder', 'Huckberry', 'outerwear', 'waxed trucker jacket', 'tan', 228, 0, 'barn waxed heritage'],
+  ['mo004', 'Suede Bomber Jacket', 'Banana Republic', 'Banana Republic', 'outerwear', 'suede bomber', 'tan', 450, 550, 'suede bomber luxe'],
+  ['mo005', 'Harrington Jacket', 'Baracuta', 'Baracuta', 'outerwear', 'harrington jacket', 'stone', 395, 0, 'heritage mod classic'],
+  ['mo006', 'Denim Trucker Jacket', "Levi's", "Levi's", 'outerwear', 'denim trucker jacket', 'mid wash', 79, 0, 'denim classic casual'],
+  ['mo007', 'Quilted Field Jacket', 'Barbour', 'Barbour', 'outerwear', 'quilted field jacket', 'olive', 300, 0, 'barn quilted heritage'],
+  ['mo008', 'Leather Cafe Racer Jacket', 'Schott', 'Schott', 'outerwear', 'leather jacket', 'black', 750, 0, 'moto leather edgy'],
+  ['mo009', 'Burgundy Suede Chore Coat', 'Massimo Dutti', 'Massimo Dutti', 'outerwear', 'suede chore jacket', 'burgundy', 349, 0, 'burgundy suede statement'],
+  ['mo010', 'Fleece-Lined Parka', 'The North Face', 'REI', 'outerwear', 'parka', 'black', 350, 0, 'warm technical winter'],
+  ['mo011', 'Double-Breasted Overcoat', 'Zara', 'Zara', 'outerwear', 'double-breasted coat', 'grey', 169, 0, 'tailored sharp winter'],
+  ['mo012', 'Pre-Owned Waxed Jacket', 'Barbour', 'Vestiaire Collective', 'outerwear', 'waxed jacket', 'olive', 165, 400, 'barn waxed vintage', 1],
+  ['mo013', 'Vintage Suede Jacket', 'Polo Ralph Lauren', 'The RealReal', 'outerwear', 'suede jacket', 'chocolate', 245, 795, 'suede heritage vintage', 1],
+  ['mo014', 'Secondhand Denim Jacket', 'Wrangler', 'ThredUp', 'outerwear', 'denim jacket', 'faded wash', 32, 89, 'denim vintage casual', 1],
+
+  // ---- MENSWEAR: SHOES (16) ----
+  ['ms001', 'Horsebit Leather Loafers', 'G.H. Bass', 'G.H. Bass', 'shoes', 'horsebit loafers', 'burgundy', 185, 0, 'loafer burgundy preppy'],
+  ['ms002', 'Penny Loafers', 'Weejuns G.H. Bass', 'G.H. Bass', 'shoes', 'penny loafers', 'dark brown', 175, 0, 'loafer preppy classic'],
+  ['ms003', 'Suede Chukka Boots', 'Clarks', 'Clarks', 'shoes', 'suede chukka boots', 'sand', 150, 0, 'suede boot casual'],
+  ['ms004', 'Leather Derby Shoes', 'Grant Stone', 'Grant Stone', 'shoes', 'derby shoes', 'chestnut', 340, 0, 'classic welted formal'],
+  ['ms005', 'Cap-Toe Oxford Shoes', 'Allen Edmonds', 'Allen Edmonds', 'shoes', 'oxford dress shoes', 'black', 395, 0, 'formal business classic'],
+  ['ms006', 'White Leather Court Sneakers', 'Oliver Cabell', 'Oliver Cabell', 'shoes', 'leather sneakers', 'white', 188, 0, 'minimalist versatile clean'],
+  ['ms007', 'German Army Trainers', 'Beckett Simonon', 'Beckett Simonon', 'shoes', 'retro trainers', 'white gum', 149, 0, 'retro trainer minimal'],
+  ['ms008', 'Suede Desert Boots', 'Clarks', 'Clarks', 'shoes', 'desert boots', 'taupe', 140, 0, 'suede casual heritage'],
+  ['ms009', 'Leather Chelsea Boots', 'Thursday Boot Co', 'Thursday Boot Co', 'shoes', 'chelsea boots', 'brown', 199, 0, 'boot versatile smart-casual'],
+  ['ms010', 'Moc Toe Work Boots', 'Red Wing', 'Red Wing', 'shoes', 'work boots', 'amber', 330, 0, 'workwear heritage boot'],
+  ['ms011', 'Canvas Deck Sneakers', 'Sperry', 'Sperry', 'shoes', 'boat shoes', 'navy', 95, 0, 'preppy nautical summer'],
+  ['ms012', 'Leather Slide Sandals', 'Birkenstock', 'Birkenstock', 'shoes', 'leather sandals', 'taupe', 135, 0, 'summer comfort minimal'],
+  ['ms013', 'Burgundy Tassel Loafers', 'Meermin', 'Meermin', 'shoes', 'tassel loafers', 'burgundy', 220, 0, 'loafer burgundy polished'],
+  ['ms014', 'Pre-Owned Derby Shoes', 'Church’s', 'The RealReal', 'shoes', 'derby shoes', 'black', 265, 890, 'formal welted vintage', 1],
+  ['ms015', 'Vintage Chukka Boots', 'Clarks', 'Poshmark', 'shoes', 'suede chukka boots', 'sand', 58, 150, 'suede vintage casual', 1],
+  ['ms016', 'Secondhand Penny Loafers', 'Alden', 'Vestiaire Collective', 'shoes', 'penny loafers', 'color 8 burgundy', 320, 720, 'loafer burgundy vintage', 1],
+
+  // ---- MENSWEAR: ACCESSORIES (10) ----
+  ['ma001', 'Leather Dress Belt', 'Allen Edmonds', 'Allen Edmonds', 'accessories', 'leather belt', 'black', 98, 0, 'formal classic staple'],
+  ['ma002', 'Braided Leather Belt', 'J.Crew', 'J.Crew', 'accessories', 'braided belt', 'tan', 55, 0, 'casual preppy summer'],
+  ['ma003', 'Silk Knit Tie', 'The Tie Bar', 'The Tie Bar', 'accessories', 'knit tie', 'burgundy', 35, 0, 'burgundy polished texture'],
+  ['ma004', 'Wool Grandad Flat Cap', 'Stetson', 'Stetson', 'accessories', 'flat cap', 'brown herringbone', 75, 0, 'heritage classic fall'],
+  ['ma005', 'Leather Briefcase', 'Satchel & Page', 'Satchel & Page', 'accessories', 'leather briefcase', 'chestnut', 385, 0, 'work heritage leather'],
+  ['ma006', 'Canvas Messenger Bag', 'Filson', 'Filson', 'accessories', 'messenger bag', 'otter green', 225, 0, 'heritage utility work'],
+  ['ma007', 'Field Watch', 'Hamilton', 'Hamilton', 'accessories', 'field watch', 'khaki', 545, 0, 'heritage classic everyday'],
+  ['ma008', 'Wool Scarf', 'Johnstons of Elgin', 'Johnstons of Elgin', 'accessories', 'wool scarf', 'camel', 95, 0, 'classic cozy winter'],
+  ['ma009', 'Vintage Silk Tie', 'Hermès', 'The RealReal', 'accessories', 'silk tie', 'navy print', 85, 240, 'luxe polished vintage', 1],
+  ['ma010', 'Pre-Owned Leather Duffle', 'Coach', 'ThredUp', 'accessories', 'leather duffle', 'saddle', 145, 495, 'travel heritage vintage', 1],
 ];
 
-const categoryCounters: Partial<Record<ItemCategory, number>> = {};
+const poolCounters: Record<string, number> = {};
+
+/** Department by id convention: 'm'-prefixed rows are menswear, UNISEX_IDS pass every focus, everything else is womenswear. */
+function departmentOf(id: string): 'women' | 'men' | 'unisex' {
+  if (id.startsWith('m')) return 'men';
+  return UNISEX_IDS.has(id) ? 'unisex' : 'women';
+}
 
 function build(row: Row): Product {
   const [id, name, brand, retailer, category, subcategory, color, price, originalPrice, styleTags, secondhand] = row;
-  const pool = IMAGE_POOLS[category];
-  const index = (categoryCounters[category] = (categoryCounters[category] ?? -1) + 1);
+  const department = departmentOf(id);
+  const pool =
+    department === 'men' ? MENS_IMAGE_POOLS[category] || IMAGE_POOLS[category] : IMAGE_POOLS[category];
+  const counterKey = `${category}:${department === 'men' ? 'm' : 'w'}`;
+  const index = (poolCounters[counterKey] = (poolCounters[counterKey] ?? -1) + 1);
   return {
     id: `p-${id}`,
     name,
@@ -437,10 +583,11 @@ function build(row: Row): Product {
     currency: 'USD',
     imageUrl: `https://images.unsplash.com/photo-${pool[index % pool.length]}?w=600`,
     color,
-    sizeRange: SIZE_RANGES[category],
+    sizeRange: department === 'men' ? MENS_SIZE_RANGES[category] : SIZE_RANGES[category],
     styleTags: styleTags.split(' '),
     sourceUrl: link(retailer, brand, name),
     inStock: true,
+    department,
     ...(secondhand ? { condition: 'secondhand' as const } : {}),
   };
 }

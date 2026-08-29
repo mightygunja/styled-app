@@ -37,16 +37,30 @@ import { getCurrentUserId } from '../services/api';
 import { styleProfileService } from '../services/firestore';
 import {
   BODY_TYPES,
+  WOMENS_BODY_TYPES,
+  MENS_BODY_TYPES,
   BODY_TYPE_GUIDES,
   STYLE_ARCHETYPES,
   buildBodyAnalysisResult,
   BodyType,
   PersonalStyleProfile,
+  WardrobeFocus,
 } from '../models/personalStyleProfile';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
-type Step = 'welcome' | 'body' | 'words' | 'occasion' | 'never' | 'reveal';
-const SURVEY_STEPS: Step[] = ['body', 'words', 'occasion', 'never'];
+type Step = 'welcome' | 'focus' | 'body' | 'words' | 'occasion' | 'never' | 'reveal';
+const SURVEY_STEPS: Step[] = ['focus', 'body', 'words', 'occasion', 'never'];
+
+/**
+ * The first question, because every later question depends on it: which
+ * body types to offer, which hard-line options make sense, and which
+ * department every recommendation and outbound link should live in.
+ */
+const FOCUS_OPTIONS: Array<{ key: WardrobeFocus; label: string; line: string }> = [
+  { key: 'womens', label: 'Womenswear', line: 'Dresses and skirts included — the full range' },
+  { key: 'mens', label: 'Menswear', line: 'Tailoring, denim, knits — menswear cuts and sizing' },
+  { key: 'all', label: 'A bit of both', line: 'Show everything; I dress across the aisle' },
+];
 
 /** Short, neutral shape descriptors. Factual, not flattering or apologetic. */
 const BODY_DESCRIPTORS: Record<BodyType, string> = {
@@ -58,6 +72,11 @@ const BODY_DESCRIPTORS: Record<BodyType, string> = {
   rectangle: 'Fairly straight through shoulders, waist and hips',
   apple: 'Middle carries more, legs lead',
   diamond: 'Narrow shoulders and hips, fuller middle',
+  mTrapezoid: 'Shoulders broader than the waist, even taper',
+  mRectangle: 'Shoulders, chest and waist about the same width',
+  mTriangle: 'Waist and hips carry more than the shoulders',
+  mOval: 'Middle is the fullest point',
+  mInvertedTriangle: 'Broad shoulders and chest, narrow waist',
 };
 
 const OCCASIONS = [
@@ -68,11 +87,11 @@ const OCCASIONS = [
 ];
 
 /**
- * Never-wear options. The label is what the user reads; `rule` is the
- * lowercase substring the matchers weigh against product text, so it has to
- * be a word that actually appears in product names and tags.
+ * Never-wear options, per wardrobe focus. The label is what the user reads;
+ * `rule` is the lowercase substring the matchers weigh against product text,
+ * so it has to be a word that actually appears in product names and tags.
  */
-const NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
+const WOMENS_NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
   { label: 'Heels', rule: 'heel' },
   { label: 'Skirts', rule: 'skirt' },
   { label: 'Dresses', rule: 'dress' },
@@ -85,6 +104,34 @@ const NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
   { label: 'Animal print', rule: 'animal print' },
 ];
 
+const MENS_NEVER_OPTIONS: Array<{ label: string; rule: string }> = [
+  { label: 'Shorts', rule: 'shorts' },
+  { label: 'Sleeveless', rule: 'sleeveless' },
+  { label: 'Skinny fits', rule: 'skinny' },
+  { label: 'Oversized fits', rule: 'oversized' },
+  { label: 'Turtlenecks', rule: 'turtleneck' },
+  { label: 'Loafers', rule: 'loafer' },
+  { label: 'Leather', rule: 'leather' },
+  { label: 'Animal print', rule: 'animal print' },
+];
+
+function neverOptionsFor(focus: WardrobeFocus | null): Array<{ label: string; rule: string }> {
+  if (focus === 'mens') return MENS_NEVER_OPTIONS;
+  if (focus === 'womens') return WOMENS_NEVER_OPTIONS;
+  const seen = new Set<string>();
+  return [...WOMENS_NEVER_OPTIONS, ...MENS_NEVER_OPTIONS].filter(o => {
+    if (seen.has(o.rule)) return false;
+    seen.add(o.rule);
+    return true;
+  });
+}
+
+function bodyTypesFor(focus: WardrobeFocus | null): readonly BodyType[] {
+  if (focus === 'mens') return MENS_BODY_TYPES;
+  if (focus === 'womens') return WOMENS_BODY_TYPES;
+  return BODY_TYPES;
+}
+
 const MAX_WORDS = 3;
 
 export default function OnboardingScreen() {
@@ -95,6 +142,7 @@ export default function OnboardingScreen() {
   // bit decides the closing copy and whether completion pops or swaps stacks.
   const presentedAsRoute = navigation.canGoBack();
   const [step, setStep] = useState<Step>('welcome');
+  const [focus, setFocus] = useState<WardrobeFocus | null>(null);
   const [bodyType, setBodyType] = useState<BodyType | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [occasionIndex, setOccasionIndex] = useState<number | null>(null);
@@ -111,6 +159,7 @@ export default function OnboardingScreen() {
     lifestyleWeights: OCCASIONS[occasionIndex ?? 3].weights,
     styleArchetypes: words,
     avoidRules: nevers,
+    wardrobeFocus: focus ?? 'all',
     // Colours are absent, not invented - they arrive when the user does the
     // colour analysis. The engines treat a missing palette as "no signal".
     colorProfile: { primary: [], secondary: [], stretch: [] },
@@ -230,7 +279,7 @@ export default function OnboardingScreen() {
             title={`Hi, ${firstName} — let's begin`}
             variant="primary"
             fullWidth
-            onPress={() => setStep('body')}
+            onPress={() => setStep('focus')}
           />
           {presentedAsRoute && (
             <TouchableOpacity style={styles.notNow} onPress={() => navigation.goBack()}>
@@ -238,6 +287,48 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
           )}
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (step === 'focus') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.surveyContent}>
+          {progress('focus')}
+          <Text style={styles.eyebrow}>YOUR WARDROBE</Text>
+          <Text style={styles.question}>Whose wardrobe are we dressing?</Text>
+          <Text style={styles.questionNote}>
+            This decides which cuts, sizes and pieces you'll ever be shown — every
+            recommendation and every shopping link stays in your department.
+          </Text>
+          {FOCUS_OPTIONS.map(option => (
+            <TouchableOpacity
+              key={option.key}
+              style={[styles.option, focus === option.key && styles.optionActive]}
+              onPress={() => {
+                setFocus(option.key);
+                // A change of department invalidates a previously chosen build.
+                setBodyType(null);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.optionTitle, focus === option.key && styles.optionTitleActive]}>
+                {option.label}
+              </Text>
+              <Text style={styles.optionLine}>{option.line}</Text>
+            </TouchableOpacity>
+          ))}
+          <View style={styles.stepFooter}>
+            <Button
+              title="Continue"
+              variant="primary"
+              fullWidth
+              disabled={focus === null}
+              onPress={() => setStep('body')}
+            />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -252,19 +343,21 @@ export default function OnboardingScreen() {
           <Text style={styles.questionNote}>
             This sets which cuts and silhouettes get recommended. Skip it and nothing is assumed.
           </Text>
-          {BODY_TYPES.map(type => (
-            <TouchableOpacity
-              key={type}
-              style={[styles.option, bodyType === type && styles.optionActive]}
-              onPress={() => setBodyType(current => (current === type ? null : type))}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.optionTitle, bodyType === type && styles.optionTitleActive]}>
-                {BODY_TYPE_GUIDES[type].label}
-              </Text>
-              <Text style={styles.optionLine}>{BODY_DESCRIPTORS[type]}</Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.optionGrid}>
+            {bodyTypesFor(focus).map(type => (
+              <TouchableOpacity
+                key={type}
+                style={[styles.option, styles.optionHalf, bodyType === type && styles.optionActive]}
+                onPress={() => setBodyType(current => (current === type ? null : type))}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.optionTitle, bodyType === type && styles.optionTitleActive]}>
+                  {BODY_TYPE_GUIDES[type].label}
+                </Text>
+                <Text style={styles.optionLine}>{BODY_DESCRIPTORS[type]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <View style={styles.stepFooter}>
             <Button
               title={bodyType ? 'Continue' : 'Skip for now'}
@@ -374,7 +467,7 @@ export default function OnboardingScreen() {
             exception — and it will always say so.
           </Text>
           <View style={styles.chipWrap}>
-            {NEVER_OPTIONS.map(option => {
+            {neverOptionsFor(focus).map(option => {
               const active = nevers.includes(option.rule);
               return (
                 <TouchableOpacity
@@ -418,6 +511,14 @@ export default function OnboardingScreen() {
         </Text>
 
         <View style={styles.revealList}>
+          {focus && (
+            <View style={styles.revealRow}>
+              <Text style={styles.revealKey}>DRESSING</Text>
+              <Text style={styles.revealValue}>
+                {FOCUS_OPTIONS.find(o => o.key === focus)?.label ?? 'Everything'}
+              </Text>
+            </View>
+          )}
           {bodyType && (
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>CUTS</Text>
@@ -483,7 +584,7 @@ const styles = StyleSheet.create({
     color: colors.camel,
     marginBottom: 14,
   },
-  heroTitle: { fontFamily: fonts.serif, fontSize: 40, lineHeight: 46, color: colors.bone },
+  heroTitle: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 40, color: colors.bone },
   heroTitleAccent: { fontFamily: fonts.serifItalic, color: colors.camel },
   heroSubtitle: {
     fontFamily: fonts.sans,
@@ -509,13 +610,17 @@ const styles = StyleSheet.create({
   progressFill: { height: 2, backgroundColor: colors.ink },
   progressLabel: { ...textType.microLabel, fontSize: 9, color: colors.inkFaint },
 
-  eyebrow: { ...textType.eyebrow, marginBottom: 12 },
-  question: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 35, color: colors.ink },
+  eyebrow: { ...textType.eyebrow, marginBottom: 10 },
+  // A survey question is a form label with good manners, not a headline.
+  // The old 30px serif read as shouting on desktop web - the smaller scale
+  // with the same face keeps the editorial voice at a professional volume.
+  question: { fontFamily: fonts.serif, fontSize: 24, lineHeight: 30, color: colors.ink },
   questionNote: {
     ...textType.body,
     fontSize: 13,
+    lineHeight: 19,
     color: colors.inkMuted,
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: spacing.lg,
   },
 
@@ -523,13 +628,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
     marginBottom: 10,
   },
+  // Long option lists (body types especially) run two-up so the whole
+  // question fits on a screen and the continue button stays in reach -
+  // the old single column pushed it far below the fold.
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  optionHalf: { width: '48.6%' },
   optionActive: { borderColor: colors.ink, backgroundColor: colors.sand },
-  optionTitle: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
+  optionTitle: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
   optionTitleActive: { fontFamily: fonts.sansSemiBold },
-  optionLine: { ...textType.body, fontSize: 12, color: colors.inkMuted, marginTop: 3 },
+  optionLine: { ...textType.body, fontSize: 11.5, lineHeight: 16, color: colors.inkMuted, marginTop: 3 },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
@@ -544,9 +659,16 @@ const styles = StyleSheet.create({
   chipTextActive: { fontFamily: fonts.sansMedium, color: colors.white },
   selectionEcho: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: spacing.md },
 
-  stepFooter: { marginTop: 'auto', paddingTop: spacing.section },
+  // Anchored under a hairline so the action reads as part of the form, not
+  // an afterthought floating below it.
+  stepFooter: {
+    marginTop: 'auto',
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+  },
 
-  revealTitle: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 38, color: colors.ink },
+  revealTitle: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 32, color: colors.ink },
   revealList: { marginTop: spacing.lg },
   revealRow: {
     flexDirection: 'row',

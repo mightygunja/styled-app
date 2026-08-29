@@ -49,6 +49,8 @@ export default function TrendInsightsScreen() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [place, setPlace] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Whose wardrobe this is - keeps outbound searches in the right department.
+  const [focus, setFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
   // Guards the async AI upgrade against landing over a newer load.
   const loadIdRef = useRef(0);
 
@@ -64,6 +66,7 @@ export default function TrendInsightsScreen() {
       ]);
       await shopperSignals.load();
       setPlace(weather?.city ?? null);
+      setFocus(profile?.wardrobeFocus);
 
       const closetItems: Item[] = ((closetResponse as any).data || []).map((item: any) => ({
         id: item.id,
@@ -111,10 +114,19 @@ export default function TrendInsightsScreen() {
     }, [load])
   );
 
-  /** The vetted piece this user is missing for the trend, when there is one. */
-  const gapFor = (remix: TrendRemix): string | undefined =>
-    remix.personalization?.gapNote ??
-    (remix.wearableToday ? undefined : remix.trend.entryPiece);
+  /**
+   * The vetted piece this user is missing for the trend, when there is one -
+   * qualified by department so every downstream search lands in the right
+   * aisle ("men's plaid shirt", not a mixed rack).
+   */
+  const gapFor = (remix: TrendRemix): string | undefined => {
+    const gap =
+      remix.personalization?.gapNote ??
+      (remix.wearableToday ? undefined : remix.trend.entryPiece);
+    if (!gap) return undefined;
+    const prefix = focus === 'mens' ? "men's " : focus === 'womens' ? "women's " : '';
+    return prefix && !gap.toLowerCase().startsWith(prefix) ? `${prefix}${gap}` : gap;
+  };
 
   /**
    * Primary action. When the report names a specific missing piece, "Find

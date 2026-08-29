@@ -23,6 +23,8 @@ export interface ProfileMatchContext {
   recommendedSilhouettes?: string[];
   /** Per-category fit guidance, e.g. categoryGuidance.bottoms -> ["high-waisted", "wide-leg"]. */
   categoryGuidance?: Record<string, string[]>;
+  /** Whose wardrobe: womenswear, menswear, or both. Absent reads as 'all'. */
+  wardrobeFocus?: 'womens' | 'mens' | 'all';
 }
 
 export async function buildProfileMatchContext(userId: string): Promise<ProfileMatchContext | undefined> {
@@ -42,6 +44,7 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
       categoryGuidance: savedProfile.bodyAnalysis?.categoryGuidance as
         | Record<string, string[]>
         | undefined,
+      wardrobeFocus: savedProfile.wardrobeFocus,
     };
   } catch (error) {
     console.error('Error loading style profile context:', error);
