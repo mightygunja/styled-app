@@ -103,7 +103,7 @@ const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
  * Any catalogue product whose retailer is in the map monetizes through Awin
  * automatically; everything else falls back to the tagged Amazon search.
  */
-const AWIN_AFFILIATE_ID = '';
+const AWIN_AFFILIATE_ID = '3063969';
 const AWIN_MERCHANTS: Record<string, string> = {
   // 'Etsy': '<awinmid>',  <- paste the advertiser id once the Etsy program approves
 };
