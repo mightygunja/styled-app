@@ -319,7 +319,10 @@ export async function personalizeRemixes(
   if (closetItems.length < 3 || remixes.length === 0) return null;
 
   const top = remixes.slice(0, 8);
-  const sig = reportSignature(top.map(r => r.trend.id), closetItems);
+  // wardrobeFocus is part of the signature: switching department must
+  // invalidate cached gap suggestions, or a menswear user could see
+  // yesterday's womenswear "worth adding" lines for a day.
+  const sig = `${reportSignature(top.map(r => r.trend.id), closetItems)}:${profile?.wardrobeFocus ?? 'all'}`;
 
   try {
     const raw = await AsyncStorage.getItem(REPORT_CACHE_KEY);

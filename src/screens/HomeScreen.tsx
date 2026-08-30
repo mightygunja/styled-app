@@ -20,7 +20,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { outfitsService } from '../services/firestore';
+import { outfitsService, styleProfileService } from '../services/firestore';
+import { WardrobeFocus } from '../models/personalStyleProfile';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
 import { getStyleVoice } from '../services/styleVoice';
 import { OutfitRecommendation, OccasionType } from '../services/recommendationEngine';
@@ -140,6 +141,11 @@ export default function HomeScreen() {
     }
   }, [swapTargetId]);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
+  // Accounts from before the wardrobe-focus question exists see everything
+  // mixed. Rather than guessing, Home asks once - one tap, saved to the
+  // profile, and every surface filters to their department from then on.
+  const [needsWardrobeFocus, setNeedsWardrobeFocus] = useState(false);
+  const [savingFocus, setSavingFocus] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
   // Trend remixes: what's moving in the world, anchored to this closet.
   // Regular mode renders the lead one as a card; starter mode (empty
@@ -165,6 +171,30 @@ export default function HomeScreen() {
   const dismissProfilePrompt = () => {
     setShowProfilePrompt(false);
     AsyncStorage.setItem(PROFILE_PROMPT_DISMISSED_KEY, '1').catch(() => {});
+  };
+
+  /**
+   * One tap answers the department question for a pre-existing profile:
+   * read-modify-write the saved profile, then rebuild the whole screen so
+   * looks, trends and the rail immediately filter to their department.
+   */
+  const chooseWardrobeFocus = async (focus: WardrobeFocus) => {
+    if (savingFocus) return;
+    setSavingFocus(true);
+    try {
+      const userId = getCurrentUserId();
+      const profile = await styleProfileService.getStyleProfile(userId);
+      if (profile) {
+        await styleProfileService.saveStyleProfile(userId, { ...profile, wardrobeFocus: focus });
+      }
+      setNeedsWardrobeFocus(false);
+      await loadDressMeToday(occasion);
+    } catch (error) {
+      console.error('Could not save wardrobe focus:', error);
+      showToast('Could not save that — try again', 'error');
+    } finally {
+      setSavingFocus(false);
+    }
   };
 
   // Coming back from the survey modal: if a profile now exists, the offer has
@@ -235,6 +265,9 @@ export default function HomeScreen() {
       AsyncStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY)
         .then(dismissed => setShowProfilePrompt(!dismissed && !matchContext))
         .catch(() => setShowProfilePrompt(false));
+
+      // A profile that predates the wardrobe-focus question: ask, once.
+      setNeedsWardrobeFocus(!!matchContext && !matchContext.wardrobeFocus);
 
       // Avoid rules are a strong preference for owned clothes, not a veto:
       // "I don't wear skirts" still steers the daily looks away from the one
@@ -765,6 +798,39 @@ export default function HomeScreen() {
             <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>
           </View>
 
+          {/* One-tap department question for accounts whose profile predates
+              it. Until answered, every surface mixes menswear and womenswear
+              - which reads as the app not knowing them. */}
+          {needsWardrobeFocus && (
+            <View style={styles.focusPrompt}>
+              <Text style={styles.focusPromptEyebrow}>ONE QUICK QUESTION</Text>
+              <Text style={styles.focusPromptTitle}>Whose wardrobe are we dressing?</Text>
+              <Text style={styles.focusPromptLine}>
+                Answer once and every look, trend and shopping pick stays in your department.
+              </Text>
+              <View style={styles.focusPromptActions}>
+                {(
+                  [
+                    { key: 'womens', label: 'Womenswear' },
+                    { key: 'mens', label: 'Menswear' },
+                    { key: 'all', label: 'Both' },
+                  ] as Array<{ key: WardrobeFocus; label: string }>
+                ).map(option => (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.focusOption, savingFocus && { opacity: 0.5 }]}
+                    disabled={savingFocus}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Dress me in ${option.label}`}
+                    onPress={() => chooseWardrobeFocus(option.key)}
+                  >
+                    <Text style={styles.focusOptionText}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* One-time offer of the survey to accounts that predate it. Only
               renders when no style profile exists, and "Not now" dismisses it
               permanently - a prompt that nags stops being an offer. */}
@@ -971,6 +1037,32 @@ const styles = StyleSheet.create({
   profilePromptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   profilePromptDismiss: { paddingVertical: 12 },
   profilePromptDismissText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
+  focusPrompt: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 20,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.camel,
+  },
+  focusPromptEyebrow: { ...textType.eyebrow, fontSize: 9, color: colors.camel, marginBottom: 8 },
+  focusPromptTitle: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 26, color: colors.ink },
+  focusPromptLine: {
+    ...textType.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  focusPromptActions: { flexDirection: 'row', gap: 10 },
+  focusOption: {
+    flex: 1,
+    backgroundColor: colors.ink,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  focusOptionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   starterBanner: {
     marginHorizontal: 20,
     marginBottom: 16,
