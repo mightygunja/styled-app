@@ -10,6 +10,7 @@ import { adminService } from '../services/adminService';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
+import BackButton from '../components/BackButton';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -106,6 +107,9 @@ export default function AccountScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.headerBar}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
@@ -119,6 +123,11 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Every pushed screen carries the back bar; this one arriving from
+          More without it left users stranded on their own account page. */}
+      <View style={styles.headerBar}>
+        <BackButton />
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <View style={styles.avatar}>
@@ -335,6 +344,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bone,
+  },
+  headerBar: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   loadingContainer: {
     flex: 1,
