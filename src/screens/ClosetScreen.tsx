@@ -135,8 +135,9 @@ export default function ClosetScreen() {
             <Text style={styles.addButtonText}>+ ADD</Text>
           </TouchableOpacity>
         </View>
+        {/* wornCount is a lifetime counter, so the copy claims no more than that. */}
         {items.length >0 && (
-          <Text style={styles.insightLine}>Worn on average <Text style={styles.insightAccent}>{avgWearsPerPiece}×</Text>per piece this season.
+          <Text style={styles.insightLine}>Worn on average <Text style={styles.insightAccent}>{avgWearsPerPiece}×</Text> per piece so far.
           </Text>
         )}
         <ScrollView
@@ -269,7 +270,16 @@ export default function ClosetScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.gridImageWrap}>
-                  <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
+                  {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
+                  ) : (
+                    // Receipt-imported items arrive without a photo; the tile
+                    // says so and tapping through to the item lets you add one.
+                    <View style={styles.photoNeeded}>
+                      <Ionicons name="camera-outline" size={22} color={colors.inkFaint} />
+                      <Text style={styles.photoNeededText}>Add photo</Text>
+                    </View>
+                  )}
                   {item.wornCount >0 && (
                     <View style={styles.wornBadge}>
                       <Text style={styles.wornBadgeText}>{item.wornCount}×</Text>
@@ -493,6 +503,21 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '100%',
     height: '100%',
+  },
+  photoNeeded: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.hair,
+    borderStyle: 'dashed',
+  },
+  photoNeededText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    color: colors.inkFaint,
+    marginTop: 6,
   },
   wornBadge: {
     position: 'absolute',

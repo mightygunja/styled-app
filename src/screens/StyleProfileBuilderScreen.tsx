@@ -25,6 +25,10 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type BuilderStep = 'lifestyle' | 'archetypes' | 'colors' | 'avoid' | 'fit' | 'guidance' | 'review';
 
+// Body areas offered on the fit step. Neutral wording that works across
+// wardrobes - the Body & Fit analysis writes the same fitPreferences shape.
+const FIT_AREAS = ['shoulders', 'chest', 'waist', 'midsection', 'hips', 'legs', 'arms', 'neckline'];
+
 export default function StyleProfileBuilderScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { toast, showToast, hideToast } = useToast();
@@ -117,6 +121,27 @@ export default function StyleProfileBuilderScreen() {
     setStyleProfile({
       ...styleProfile,
       avoidRules: styleProfile.avoidRules.filter(r => r !== rule),
+    });
+  };
+
+  // An area can be highlighted or downplayed, never both - selecting it on
+  // one list clears it from the other.
+  const toggleFitArea = (list: 'highlight' | 'downplay', area: string) => {
+    setStyleProfile(prev => {
+      const current = prev.fitPreferences[list] || [];
+      const adding = !current.includes(area);
+      const next = adding ? [...current, area] : current.filter(a => a !== area);
+      const other: 'highlight' | 'downplay' = list === 'highlight' ? 'downplay' : 'highlight';
+      const otherNext = adding
+        ? (prev.fitPreferences[other] || []).filter(a => a !== area)
+        : prev.fitPreferences[other] || [];
+      return {
+        ...prev,
+        fitPreferences:
+          list === 'highlight'
+            ? { highlight: next, downplay: otherNext }
+            : { highlight: otherNext, downplay: next },
+      };
     });
   };
 
@@ -391,22 +416,58 @@ export default function StyleProfileBuilderScreen() {
     );
   };
 
-  const renderFitStep = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Fit preferences (Optional)</Text>
-      <Text style={styles.stepSubtitle}>
-        This helps us recommend flattering silhouettes
-      </Text>
+  const renderFitStep = () => {
+    const highlight = styleProfile.fitPreferences.highlight || [];
+    const downplay = styleProfile.fitPreferences.downplay || [];
+    return (
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepTitle}>Fit preferences (Optional)</Text>
+        <Text style={styles.stepSubtitle}>
+          This helps us recommend silhouettes cut for you
+        </Text>
 
-      <Text style={styles.fitLabel}>Areas to highlight:</Text>
-      <Text style={styles.fitHint}>e.g., shoulders, waist, legs</Text>
-      
-      <Text style={styles.fitLabel}>Areas to downplay:</Text>
-      <Text style={styles.fitHint}>e.g., hips, arms, midsection</Text>
-      
-      <Text style={styles.skipText}>You can skip this step and add it later</Text>
-    </View>
-  );
+        <Text style={styles.fitLabel}>Areas to highlight:</Text>
+        <View style={styles.colorTags}>
+          {FIT_AREAS.map(area => {
+            const selected = highlight.includes(area);
+            return (
+              <TouchableOpacity
+                key={area}
+                style={[styles.colorTag, selected && styles.fitChipSelected]}
+                onPress={() => toggleFitArea('highlight', area)}
+              >
+                <Text style={[styles.colorTagText, selected && styles.fitChipTextSelected]}>
+                  {area}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={styles.fitLabel}>Areas to downplay:</Text>
+        <View style={styles.colorTags}>
+          {FIT_AREAS.map(area => {
+            const selected = downplay.includes(area);
+            return (
+              <TouchableOpacity
+                key={area}
+                style={[styles.colorTag, selected && styles.fitChipSelected]}
+                onPress={() => toggleFitArea('downplay', area)}
+              >
+                <Text style={[styles.colorTagText, selected && styles.fitChipTextSelected]}>
+                  {area}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={styles.skipText}>
+          Leave both empty to skip - the Body & Fit analysis can fill these in for you later.
+        </Text>
+      </View>
+    );
+  };
 
   const renderGuidanceStep = () => (
     <View style={styles.stepContainer}>
@@ -491,6 +552,22 @@ export default function StyleProfileBuilderScreen() {
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Primary Colors</Text>
         <Text style={styles.reviewText}>{styleProfile.colorProfile.primary.join(', ') || 'None added'}</Text>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <Text style={styles.reviewLabel}>Fit Preferences</Text>
+        <Text style={styles.reviewText}>
+          {(styleProfile.fitPreferences.highlight?.length || styleProfile.fitPreferences.downplay?.length)
+            ? [
+                styleProfile.fitPreferences.highlight?.length
+                  ? `Highlight: ${styleProfile.fitPreferences.highlight.join(', ')}`
+                  : null,
+                styleProfile.fitPreferences.downplay?.length
+                  ? `Downplay: ${styleProfile.fitPreferences.downplay.join(', ')}`
+                  : null,
+              ].filter(Boolean).join(' · ')
+            : 'None set'}
+        </Text>
       </View>
 
       <View style={styles.reviewSection}>
@@ -818,6 +895,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     fontSize: 14,
     color: ds.inkFaint,
+  },
+  fitChipSelected: {
+    backgroundColor: ds.ink,
+    borderColor: ds.ink,
+  },
+  fitChipTextSelected: {
+    color: ds.bone,
   },
 
   // ---- Fit ----

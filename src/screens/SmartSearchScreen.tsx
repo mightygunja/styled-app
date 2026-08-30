@@ -43,24 +43,26 @@ export default function SmartSearchScreen() {
   const [discoverySections, setDiscoverySections] = useState<DiscoverySection[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<SearchCategory>('all');
   const [sortBy, setSortBy] = useState<SortBy>('relevance');
-  const [showFilters, setShowFilters] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
+  // Only categories the search index actually contains: closet items, the
+  // editorial style guides, and people. "Looks" and "Posts" chips used to sit
+  // here too, but nothing indexes looks or posts, so those searches could only
+  // ever dead-end at "No results found".
   const categories: { id: SearchCategory; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'items', label: 'Items' },
-    { id: 'looks', label: 'Looks' },
     { id: 'styles', label: 'Styles' },
-    { id: 'posts', label: 'Posts' },
     { id: 'users', label: 'Users' },
   ];
 
+  // Only sorts the service genuinely implements. Two price sorts used to be
+  // declared here too, but most closet items have no price, so they mostly
+  // shuffled zeros - dropped rather than pretended.
   const sortOptions: { id: SortBy; label: string }[] = [
     { id: 'relevance', label: 'Relevance' },
-    { id: 'recent', label: 'Recent' },
-    { id: 'popular', label: 'Popular' },
-    { id: 'price_low', label: 'Price: Low to High' },
-    { id: 'price_high', label: 'Price: High to Low' },
+    { id: 'recent', label: 'Recently added' },
+    { id: 'popular', label: 'Most worn' },
   ];
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function SmartSearchScreen() {
     }
   };
 
-  const handleSearch = async (query?: string) => {
+  const handleSearch = async (query?: string, sortOverride?: SortBy) => {
     const searchText = query || searchQuery.trim();
     if (!searchText) return;
 
@@ -103,7 +105,9 @@ export default function SmartSearchScreen() {
       const searchResults = await smartSearchService.search(getCurrentUserId(), {
         query: searchText,
         category: selectedCategory,
-        sortBy,
+        // setSortBy hasn't landed yet when the sort button re-runs the
+        // search, so the new value arrives as an explicit override.
+        sortBy: sortOverride ?? sortBy,
       });
       setResults(searchResults);
     } catch (error) {
@@ -163,17 +167,16 @@ export default function SmartSearchScreen() {
             {result.subtitle}
           </Text>
         )}
+        {/* No "% match" badge here: the relevance score is an additive
+            ranking weight, not a percentage - it happily exceeds 100 and
+            rendered as impossible stats like "120% match". It still orders
+            the results; it just isn't shown as a number. */}
         <View style={styles.resultMeta}>
           <View style={styles.resultType}>
             <Text style={styles.resultTypeText}>
               {result.type === 'item' ? 'ITEM' : result.type === 'style' ? 'STYLE' : 'PERSON'}
             </Text>
           </View>
-          {result.relevanceScore >0 && (
-            <Text style={styles.relevanceScore}>
-              {Math.round(result.relevanceScore)}% match
-            </Text>
-          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -286,10 +289,9 @@ export default function SmartSearchScreen() {
               accessibilityRole="button"
               accessibilityLabel="Change sort order"
               onPress={() => {
-                const order: SortBy[] = ['relevance', 'recent', 'popular'];
-                const next = order[(order.indexOf(sortBy) + 1) % order.length];
+                const next = sortOptions[(sortOptions.findIndex(s => s.id === sortBy) + 1) % sortOptions.length].id;
                 setSortBy(next);
-                handleSearch();
+                handleSearch(undefined, next);
               }}
             >
               <Text style={styles.toolbarButtonText}>Sort: {sortOptions.find(s =>s.id === sortBy)?.label}
@@ -604,11 +606,6 @@ const styles = StyleSheet.create({
   resultTypeText: {
     fontSize: 12,
   },
-  relevanceScore: {
-    fontSize: 11,
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
-  },
   emptyState: {
     padding: 60,
     alignItems: 'center',
@@ -649,11 +646,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.inkMuted,
     marginTop: 2,
-  },
-  seeAllButton: {
-    fontSize: 14,
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
   },
   discoveryGrid: {
     flexDirection: 'row',

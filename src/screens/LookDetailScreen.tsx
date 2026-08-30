@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   Linking,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Look, Item } from '../types';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
-import BackButton from '../components/BackButton';
 import { colors, fonts } from '../theme/designSystem';
 
 interface LookDetailScreenProps {
@@ -51,9 +51,19 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
         );
         setPaletteLooks(samePaletteLooks);
       }
+
+      // Seed the favorite state from the user's real favorites. The heart
+      // used to open blank every time, so tapping it on an already-favorited
+      // look silently removed it while claiming to add it.
+      try {
+        const favoritesResponse = await lookAPI.getFavorites(getCurrentUserId());
+        setIsFavorited(favoritesResponse.data.some(favorite => favorite.id === lookId));
+      } catch (favoriteError) {
+        console.error('Error loading favorite state:', favoriteError);
+      }
     } catch (error) {
       console.error('Error fetching look detail:', error);
-      alert('Failed to load look details. Check console.');
+      Alert.alert('Something went wrong', "Couldn't load that look. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -65,10 +75,10 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       const response = await lookAPI.toggleFavorite(lookId, getCurrentUserId());
       console.log('Favorite response:', response);
       setIsFavorited(response.isFavorited);
-      alert(`Look ${response.isFavorited ? 'added to' : 'removed from'} favorites!`);
+      Alert.alert(response.isFavorited ? 'Added to favorites' : 'Removed from favorites');
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      alert('Failed to toggle favorite. Check console.');
+      Alert.alert('Something went wrong', "Couldn't update your favorites. Please try again.");
     }
   };
 
@@ -79,7 +89,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       setLoading(false);
       
       if (response.data.length === 0) {
-        alert('No similar items found in your closet. Try adding more items!');
+        Alert.alert('No matches yet', 'Nothing in your closet matches this look. Add more items and try again.');
         return;
       }
       
@@ -91,7 +101,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     } catch (error) {
       setLoading(false);
       console.error('Error finding closet items:', error);
-      alert('Failed to find similar items in your closet');
+      Alert.alert('Something went wrong', "Couldn't search your closet. Please try again.");
     }
   };
 
@@ -99,7 +109,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     const shoppableItems = items.filter(item =>item.affiliateLink);
 
     if (shoppableItems.length === 0) {
-      alert('No shoppable links available for this look yet');
+      Alert.alert('Not shoppable yet', 'No shop links are available for this look yet.');
       return;
     }
 
@@ -110,7 +120,8 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       }
 
       if (shoppableItems.length >1) {
-        alert(
+        Alert.alert(
+          'Opening first item',
           `Opening "${shoppableItems[0].name}". ${shoppableItems.length - 1} more item${
             shoppableItems.length - 1 === 1 ? '' : 's'
           } in this look can be shopped individually below.`
@@ -118,7 +129,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       }
     } catch (error) {
       console.error('Error opening shop links:', error);
-      alert('Failed to open shop link. Check console.');
+      Alert.alert('Something went wrong', "Couldn't open that shop link. Please try again.");
     }
   };
 
@@ -134,14 +145,14 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
         if (canOpen) {
           await Linking.openURL(item.affiliateLink);
         } else {
-          alert('Invalid link URL');
+          Alert.alert('Link unavailable', "That shop link can't be opened on this device.");
         }
       } else {
-        alert('No affiliate link available for this item');
+        Alert.alert('Not shoppable yet', 'No shop link is available for this item yet.');
       }
     } catch (error) {
       console.error('Error opening link:', error);
-      alert('Failed to open shop link. Check console.');
+      Alert.alert('Something went wrong', "Couldn't open that shop link. Please try again.");
     }
   };
 
@@ -177,7 +188,8 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton style={styles.backButton} />
+      {/* One back control: the arrow overlaid on the hero image. A second,
+          ink-block BackButton used to render above it. */}
       <ScrollView>
         {/* Hero Image */}
         <View style={styles.imageContainer}>

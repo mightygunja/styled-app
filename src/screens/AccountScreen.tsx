@@ -179,7 +179,10 @@ export default function AccountScreen() {
           <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('Settings')}>
             <View>
               <Text style={styles.prefTitle}>Settings</Text>
-              <Text style={styles.prefSubtitle}>NOTIFICATIONS · LANGUAGE · ACCESSIBILITY</Text>
+              {/* Subtitle names what Settings actually holds. It used to
+                  promise notifications, language and accessibility - rows
+                  that saved a bit nothing read. */}
+              <Text style={styles.prefSubtitle}>SOCIAL FEED</Text>
             </View>
             <Text style={styles.prefArrow}>›</Text>
           </TouchableOpacity>

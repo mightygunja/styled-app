@@ -431,7 +431,7 @@ export function GuideColorSeasonsScreen() {
       </LI>
       <LI>
         <B>Winter</B> — cool and vivid: true black, pure white, cobalt, fuchsia. The only
-        season that wears black effortlessly; muted earth tones read as fatigue.
+        season that wears black without help; muted earth tones read as fatigue.
       </LI>
       <H>How to test at home</H>
       <P>
@@ -583,7 +583,7 @@ export function GuideWeddingGuestScreen() {
       </LI>
       <LI>
         <B>No code given?</B> Read the venue and the hour. Evening plus ballroom reads
-        cocktail-to-formal; afternoon plus barn or garden reads elevated daytime. A ceremony in
+        cocktail-to-formal; afternoon plus barn or garden reads dressed-up daytime. A ceremony in
         a house of worship adds covered shoulders until the reception, whatever the code.
       </LI>
       <H>The four rules that actually matter</H>
@@ -769,7 +769,7 @@ export function GuideSustainableScreen() {
         The donation bin is where the guilt goes, not always where the clothes go — a large
         share of donations are landfilled or shipped abroad into markets that can't absorb
         them. Better exits, in order: sell or give directly to a person who wants the piece
-        (resale platforms make this nearly effortless), donate only clean items with real life
+        (resale platforms make this straightforward), donate only clean items with real life
         left, and route true end-of-life textiles to fabric recycling rather than the bin.
         A garment that leaves your closet into someone's rotation is a success; one that
         leaves it for a landfill via a feel-good middleman is not.

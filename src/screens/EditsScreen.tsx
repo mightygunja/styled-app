@@ -219,6 +219,9 @@ export default function EditsScreen() {
                   {selectedStylist?.id === s.id && <Text style={styles.tick}>✓</Text>}
                 </TouchableOpacity>
               ))}
+              {/* Honest about the transaction model: no payment rail exists. */}
+              <Text style={styles.paymentNote}>You pay your stylist directly. Nothing is charged in the app.
+              </Text>
 
               <Text style={styles.modalLabel}>ANYTHING THEY SHOULD KNOW? (OPTIONAL)</Text>
               <TextInput
@@ -315,6 +318,7 @@ const styles = StyleSheet.create({
   stylistName: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
   stylistMeta: { ...textType.meta, fontSize: 11, marginTop: 3 },
   tick: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: colors.ink },
+  paymentNote: { ...textType.body, fontSize: 12, color: colors.inkMuted, lineHeight: 18, marginTop: 10 },
 
   briefInput: {
     ...textType.body,

@@ -17,6 +17,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 import BrandWordmark from '../components/BrandWordmark';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
@@ -33,6 +34,7 @@ function PublicPage({
   children: React.ReactNode;
 }) {
   const navigation = useNavigation();
+  const { user, isNewUser } = useAuth();
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -41,7 +43,9 @@ function PublicPage({
           accessibilityLabel="Back"
           onPress={() => {
             if (navigation.canGoBack()) navigation.goBack();
-            else (navigation as any).navigate('Login');
+            // Cold load (deep link / web refresh) - route to whichever branch
+            // this user's navigator actually has, as GuideScreens does.
+            else (navigation as any).navigate(user ? (isNewUser ? 'Onboarding' : 'MainTabs') : 'Login');
           }}
           style={styles.back}
         >

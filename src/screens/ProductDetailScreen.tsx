@@ -12,11 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
-import { getActiveAdapter, activeProviderName } from '../services/affiliateNetwork';
+import { getActiveAdapter, activeProviderName, curatedCatalogNotice } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import {
   spendProfile,
@@ -37,7 +38,7 @@ type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
 export default function ProductDetailScreen() {
   const route = useRoute<ProductDetailRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { productId, surface, reason } = route.params;
 
   const [loading, setLoading] = useState(true);
@@ -52,14 +53,20 @@ export default function ProductDetailScreen() {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      const [product, profile, closetResponse, savedId] = await Promise.all([
+      const [liveProduct, profile, closetResponse, saved] = await Promise.all([
         getActiveAdapter().getById(productId),
         buildProfileMatchContext(userId),
         closetAPI.getItems(userId),
-        wishlistService.isSaved(userId, productId),
+        wishlistService.getSaved(userId, productId),
       ]);
+      // The adapter can lose track of a product the user saved - curated ids
+      // get renamed, and live providers can't resolve an id from a previous
+      // session. The wishlist doc keeps a snapshot of what they saw, so a
+      // saved item always opens instead of dead-ending.
+      const product = liveProduct ?? saved?.product ?? null;
       if (!product) {
         setMatched(null);
+        setWishlistDocId(saved?.id ?? null);
         return;
       }
       const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
@@ -95,7 +102,7 @@ export default function ProductDetailScreen() {
           closetResponse.data || []
         )
       );
-      setWishlistDocId(savedId);
+      setWishlistDocId(saved?.id ?? null);
     } catch (error) {
       console.error('Error loading product:', error);
     } finally {
@@ -171,6 +178,9 @@ export default function ProductDetailScreen() {
         <View style={styles.header}><BackButton /></View>
         <View style={styles.loadingBox}>
           <Text style={styles.emptyText}>This item is no longer available.</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Shop')}>
+            <Text style={styles.emptyLink}>Browse the shop →</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -183,7 +193,7 @@ export default function ProductDetailScreen() {
       <View style={styles.header}>
         <BackButton />
         <TouchableOpacity style={styles.wishlistToggle} onPress={() => toggleWishlist(product)}>
-          <Text style={styles.wishlistToggleText}>{wishlistDocId ? '♥ SAVED' : '♡ SAVE'}</Text>
+          <Text style={styles.wishlistToggleText}>{wishlistDocId ? 'SAVED' : 'SAVE'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -205,6 +215,14 @@ export default function ProductDetailScreen() {
             )}
           </View>
           <Text style={styles.retailer}>at {product.retailer}</Text>
+
+          {/* Amazon's operating agreement requires its disclosure wherever
+              its links appear, and the shop button below is one - and the
+              same line owns up that the photo above is representative, not
+              the SKU, before the user compares it to the landing page. */}
+          {!!curatedCatalogNotice() && (
+            <Text style={styles.catalogNotice}>{curatedCatalogNotice()}</Text>
+          )}
 
           {(budget || (wearForecast && wearForecast.verdict !== 'unknown')) && (
             <View style={styles.affordabilityBox}>
@@ -343,6 +361,11 @@ const styles = StyleSheet.create({
     ...textType.body,
     color: colors.inkMuted,
   },
+  emptyLink: {
+    ...textType.body,
+    color: colors.camel,
+    marginTop: 8,
+  },
   heroImage: {
     width: '100%',
     height: 420,
@@ -415,6 +438,12 @@ const styles = StyleSheet.create({
   retailer: {
     ...textType.meta,
     marginTop: 4,
+  },
+  catalogNotice: {
+    ...textType.meta,
+    fontSize: 11,
+    color: colors.tobacco,
+    marginTop: 10,
   },
   // The unlock is the headline argument, so it gets the only filled panel on
   // the page rather than sharing the hairline-rule treatment of the reasons.

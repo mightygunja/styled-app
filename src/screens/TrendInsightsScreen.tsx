@@ -284,7 +284,12 @@ export default function TrendInsightsScreen() {
                 <TouchableOpacity
                   key={tag.hashtag}
                   style={styles.tagChip}
-                  onPress={() => navigation.navigate('Explore')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`See community posts — #${tag.hashtag}`}
+                  // These chips promise community posts, so they go to the
+                  // community feed - not Explore, which is product discovery
+                  // and has no concept of a hashtag.
+                  onPress={() => navigation.navigate('SocialFeed')}
                 >
                   <Text style={styles.tagText}>#{tag.hashtag}</Text>
                   <Text style={styles.tagCount}>{tag.postCount}</Text>

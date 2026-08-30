@@ -336,6 +336,28 @@ export function classifyBodyTypeFromQuiz(answers: {
 }
 
 /**
+ * Menswear counterpart to classifyBodyTypeFromQuiz - same deterministic,
+ * on-device approach, mapped to the five menswear frames. Used when the
+ * saved wardrobeFocus is 'mens', so a menswear user is never classified
+ * into a women's body type.
+ */
+export function classifyMensBodyTypeFromQuiz(answers: {
+  shouldersVsWaist: 'narrower' | 'similar' | 'broader';
+  chestVsWaist: 'chestFuller' | 'waistFuller' | 'balanced';
+  fullestArea: 'shoulders' | 'chest' | 'midsection' | 'hips' | 'balanced';
+  taper: 'strong' | 'slight' | 'none';
+}): BodyType {
+  const { shouldersVsWaist, chestVsWaist, fullestArea, taper } = answers;
+
+  if (fullestArea === 'midsection' || chestVsWaist === 'waistFuller') return 'mOval';
+  if (shouldersVsWaist === 'narrower' || fullestArea === 'hips') return 'mTriangle';
+  if (shouldersVsWaist === 'broader') {
+    return taper === 'strong' ? 'mInvertedTriangle' : 'mTrapezoid';
+  }
+  return 'mRectangle';
+}
+
+/**
  * Builds a full BodyAnalysisResult from a classified body type, using the
  * static guide content. Used by both the quiz flow and as a fallback when
  * an AI photo estimate is missing fields.
@@ -404,7 +426,11 @@ export function wardrobeFitCheck(
     }
   }
 
-  const coreCategories = ['tops', 'bottoms', 'dresses'];
+  // Only flag gaps in categories this body type actually has guidance for -
+  // the menswear frames carry no dress guidance, so 'dresses' is never a gap.
+  const coreCategories = (['tops', 'bottoms', 'dresses'] as const).filter(
+    c => BODY_TYPE_GUIDES[bodyType].categoryGuidance[c].length > 0
+  );
   const gapCategories = coreCategories.filter(c => !matchedCategories.has(c));
 
   return { matches, gapCategories };

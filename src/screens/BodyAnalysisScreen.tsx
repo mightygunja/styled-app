@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,24 +18,30 @@ import {
   BodyType,
   BODY_TYPE_GUIDES,
   DEFAULT_PERSONAL_STYLE_PROFILE,
+  WardrobeFocus,
   classifyBodyTypeFromQuiz,
+  classifyMensBodyTypeFromQuiz,
   buildBodyAnalysisResult,
   wardrobeFitCheck,
 } from '../models/personalStyleProfile';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type ScreenState = 'quiz' | 'refining' | 'results';
+type ScreenState = 'loading' | 'quiz' | 'refining' | 'results';
 
 interface QuizOption<T extends string> {
   value: T;
   label: string;
 }
 
-const QUESTIONS: {
-  key: 'shouldersVsHips' | 'waistDefinition' | 'bustVsHip' | 'fullestArea';
+interface QuizQuestion {
+  key: string;
   prompt: string;
   options: QuizOption<string>[];
-}[] = [
+}
+
+// The women's question set - also shown for 'all' and unset focus, since
+// those profiles may span either wardrobe and this set predates the split.
+const WOMENS_QUESTIONS: QuizQuestion[] = [
   {
     key: 'shouldersVsHips',
     prompt: 'How do your shoulders compare to your hips?',
@@ -76,11 +82,55 @@ const QUESTIONS: {
   },
 ];
 
+// Menswear question set - feeds classifyMensBodyTypeFromQuiz, which only
+// returns the five menswear frames OnboardingScreen offers for this focus.
+const MENS_QUESTIONS: QuizQuestion[] = [
+  {
+    key: 'shouldersVsWaist',
+    prompt: 'How do your shoulders compare to your waist?',
+    options: [
+      { value: 'narrower', label: 'Shoulders are narrower than my waist' },
+      { value: 'similar', label: 'About the same width' },
+      { value: 'broader', label: 'Shoulders are broader than my waist' },
+    ],
+  },
+  {
+    key: 'chestVsWaist',
+    prompt: 'Is your chest or waist fuller?',
+    options: [
+      { value: 'chestFuller', label: 'Chest is fuller' },
+      { value: 'waistFuller', label: 'Waist is fuller' },
+      { value: 'balanced', label: 'About balanced' },
+    ],
+  },
+  {
+    key: 'fullestArea',
+    prompt: 'Where do you carry the most fullness overall?',
+    options: [
+      { value: 'shoulders', label: 'Shoulders' },
+      { value: 'chest', label: 'Chest' },
+      { value: 'midsection', label: 'Waist / midsection' },
+      { value: 'hips', label: 'Hips' },
+      { value: 'balanced', label: 'Evenly balanced' },
+    ],
+  },
+  {
+    key: 'taper',
+    prompt: 'How much does your torso taper from shoulders to waist?',
+    options: [
+      { value: 'strong', label: 'A clear V - noticeably narrower at the waist' },
+      { value: 'slight', label: 'A slight taper' },
+      { value: 'none', label: 'Barely any taper' },
+    ],
+  },
+];
+
 export default function BodyAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { toast, showToast, hideToast } = useToast();
 
-  const [screenState, setScreenState] = useState<ScreenState>('quiz');
+  const [screenState, setScreenState] = useState<ScreenState>('loading');
+  const [wardrobeFocus, setWardrobeFocus] = useState<WardrobeFocus>('all');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [bodyType, setBodyType] = useState<BodyType | null>(null);
@@ -88,6 +138,26 @@ export default function BodyAnalysisScreen() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [fitCheck, setFitCheck] = useState<{ matchCount: number; sampleItems: string[]; gapCategories: string[] } | null>(null);
   const [applying, setApplying] = useState(false);
+
+  // The saved wardrobe focus decides which question set and classifier to
+  // use, so a menswear user is asked about chest and taper, not bust - and
+  // can only land on a menswear frame. Wording, not a data dependency: if
+  // the profile read fails we default to the combined-wardrobe set.
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await styleProfileService.getStyleProfile(getCurrentUserId());
+        setWardrobeFocus(saved?.wardrobeFocus ?? 'all');
+      } catch (error) {
+        console.error('Error loading wardrobe focus:', error);
+      } finally {
+        setScreenState('quiz');
+      }
+    })();
+  }, []);
+
+  const isMens = wardrobeFocus === 'mens';
+  const questions = isMens ? MENS_QUESTIONS : WOMENS_QUESTIONS;
 
   const runWardrobeFitCheck = async (type: BodyType) => {
     try {
@@ -108,17 +178,19 @@ export default function BodyAnalysisScreen() {
   };
 
   const selectAnswer = (value: string) => {
-    const question = QUESTIONS[questionIndex];
+    const question = questions[questionIndex];
     const nextAnswers = { ...answers, [question.key]: value };
     setAnswers(nextAnswers);
 
-    if (questionIndex < QUESTIONS.length - 1) {
+    if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       return;
     }
 
     // All 4 answered - classify instantly, on-device, no network call
-    const type = classifyBodyTypeFromQuiz(nextAnswers as any);
+    const type = isMens
+      ? classifyMensBodyTypeFromQuiz(nextAnswers as any)
+      : classifyBodyTypeFromQuiz(nextAnswers as any);
     setBodyType(type);
     setScreenState('results');
     runWardrobeFitCheck(type);
@@ -191,7 +263,7 @@ export default function BodyAnalysisScreen() {
   };
 
   const guide = bodyType ? BODY_TYPE_GUIDES[bodyType] : null;
-  const question = QUESTIONS[questionIndex];
+  const question = questions[questionIndex];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -200,9 +272,15 @@ export default function BodyAnalysisScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {screenState === 'loading' && (
+          <View style={styles.analyzingBox}>
+            <ActivityIndicator size="large" color={colors.ink} />
+          </View>
+        )}
+
         {screenState === 'quiz' && (
           <>
-            <Text style={styles.eyebrow}>BODY & FIT ANALYSIS · QUESTION {questionIndex + 1} OF {QUESTIONS.length}</Text>
+            <Text style={styles.eyebrow}>BODY & FIT ANALYSIS · QUESTION {questionIndex + 1} OF {questions.length}</Text>
             <Text style={styles.title}>{question.prompt}</Text>
             <View style={styles.optionsList}>
               {question.options.map((opt) => (
@@ -270,7 +348,11 @@ export default function BodyAnalysisScreen() {
             </View>
 
             <Text style={styles.sectionLabel}>WHAT TO WEAR, BY CATEGORY</Text>
-            {(['tops', 'bottoms', 'dresses', 'shoes', 'outerwear'] as const).map((cat) => (
+            {/* Menswear guides carry no dress guidance - skip empty categories
+                rather than rendering a bare heading. */}
+            {(['tops', 'bottoms', 'dresses', 'shoes', 'outerwear'] as const)
+              .filter((cat) => guide.categoryGuidance[cat].length > 0)
+              .map((cat) => (
               <View key={cat} style={styles.categoryBlock}>
                 <Text style={styles.categoryName}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</Text>
                 {guide.categoryGuidance[cat].map((tip, i) => (

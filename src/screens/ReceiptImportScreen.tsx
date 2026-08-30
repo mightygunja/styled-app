@@ -164,7 +164,7 @@ export default function ReceiptImportScreen() {
 
       Alert.alert(
         'Added to your closet',
-        `${chosen.length} item${chosen.length === 1 ? '' : 's'} imported. Add photos when you get a chance — they're needed for outfit building.`,
+        `${chosen.length} item${chosen.length === 1 ? '' : 's'} imported. Tap an item in your closet to add its photo — outfit building needs one.`,
         [{ text: 'Done', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {

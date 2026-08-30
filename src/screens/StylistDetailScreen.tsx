@@ -17,6 +17,7 @@ import { Calendar } from 'react-native-calendars';
 import { Stylist, StylistReview, TimeSlot, SessionType } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
+import BackButton from '../components/BackButton';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -131,6 +132,7 @@ export default function StylistDetailScreen() {
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
+          <BackButton />
         </View>
 
         {/* Cover Image */}
@@ -383,6 +385,10 @@ export default function StylistDetailScreen() {
                   <Text style={styles.summaryTotalLabel}>Total</Text>
                   <Text style={styles.summaryTotalValue}>${sessionPrice.toFixed(0)}</Text>
                 </View>
+                {/* Honest about the transaction model: there is no payment
+                    rail in the app, so say so at the moment of commitment. */}
+                <Text style={styles.paymentNote}>You pay your stylist directly. Nothing is charged in the app.
+                </Text>
               </View>
             )}
           </ScrollView>
@@ -599,6 +605,7 @@ const styles = StyleSheet.create({
   },
   summaryTotalLabel: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.ink },
   summaryTotalValue: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
+  paymentNote: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted, lineHeight: 18, marginTop: 4 },
 
   modalFooter: {
     paddingHorizontal: 24,

@@ -40,25 +40,46 @@ export default function EventDetailScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // RSVPs used to be one-way: once you were "going" the button locked forever.
+  // Plans change, so attending toggles - cancelling deletes the record and
+  // gives the spot back.
   const handleRsvp = async () => {
     setRsvping(true);
     haptics.impact();
     try {
-      await groupService.rsvpEvent(eventId, getCurrentUserId(), 'going');
-      setAttending(true);
-      setEvent(e => e ? { ...e, attendees: e.attendees + 1 } : e);
+      if (attending) {
+        await groupService.cancelRsvp(eventId, getCurrentUserId());
+        setAttending(false);
+        setEvent(e => e ? { ...e, attendees: Math.max(0, e.attendees - 1) } : e);
+      } else {
+        await groupService.rsvpEvent(eventId, getCurrentUserId(), 'going');
+        setAttending(true);
+        setEvent(e => e ? { ...e, attendees: e.attendees + 1 } : e);
+      }
     } catch (error) {
-      console.error('Error RSVPing:', error);
+      console.error('Error updating RSVP:', error);
     } finally {
       setRsvping(false);
     }
   };
 
-  if (loading || !event) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}><BackButton /></View>
         <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.ink} /></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!event) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}><BackButton /></View>
+        <View style={styles.content}>
+          <Text style={styles.title}>Event not found</Text>
+          <Text style={styles.description}>It may have been cancelled or removed.</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -77,12 +98,14 @@ export default function EventDetailScreen() {
         <Text style={styles.meta}>{event.attendees}{event.maxAttendees ? ` / ${event.maxAttendees}` : ''} attending</Text>
         <Text style={styles.description}>{event.description}</Text>
 
+        {attending && <Text style={styles.attendingNote}>You're going.</Text>}
         <Button
-          title={attending ? "You're going" : rsvping ? 'RSVPing…' : "I'm going"}
+          title={rsvping ? (attending ? 'Cancelling…' : 'RSVPing…') : attending ? 'Cancel RSVP' : "I'm going"}
           onPress={handleRsvp}
-          disabled={attending || rsvping}
+          disabled={rsvping}
+          variant={attending ? 'secondary' : 'primary'}
           fullWidth
-          style={{ marginTop: spacing.section }}
+          style={{ marginTop: attending ? spacing.sm : spacing.section }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -99,4 +122,5 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink },
   meta: { ...textType.meta, marginTop: 6 },
   description: { ...textType.body, color: colors.inkMuted, marginTop: 16 },
+  attendingNote: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink, marginTop: spacing.section },
 });

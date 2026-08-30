@@ -195,6 +195,8 @@ export interface StylistReview {
   sessionType: SessionType;
   createdAt: string;
   helpful: number;
+  /** The reviewer's explicit yes/no answer; older reviews predate the field. */
+  wouldRecommend?: boolean;
 }
 
 export interface TimeSlot {

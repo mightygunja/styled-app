@@ -55,7 +55,7 @@ const ARCHETYPES: Record<StyleCategory, StyleVoiceResult> = {
     rarelyYou: ['Minimal styling', 'Athletic fabrics', 'Ultra-modern cuts'],
   },
   athleisure: {
-    archetype: 'Elevated Casual',
+    archetype: 'Soft Utility',
     tagline: 'You dress for a day that could go anywhere.',
     description:
       'Soft structure, easy layering, and performance fabrics styled to look considered rather than accidental.',
@@ -71,7 +71,7 @@ const ARCHETYPES: Record<StyleCategory, StyleVoiceResult> = {
     rarelyYou: ['Casual knits', 'Distressed denim', 'Oversized fits'],
   },
   casual: {
-    archetype: 'Elevated Casual',
+    archetype: 'Considered Casual',
     tagline: 'You dress for comfort that still looks put-together.',
     description:
       'Easy separates and soft neutrals, styled with just enough structure to read intentional.',

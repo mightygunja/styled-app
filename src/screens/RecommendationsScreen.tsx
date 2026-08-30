@@ -9,7 +9,6 @@ import {
   RefreshControl,
   Image,
   FlatList,
-  Alert,
   Pressable,
   Animated,
 } from 'react-native';
@@ -17,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
+import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
@@ -46,11 +45,18 @@ export default function RecommendationsScreen() {
     loadRecommendations();
   }, []);
 
+  /**
+   * Every section here only claims what its filter actually does. The old
+   * version dressed arbitrary array slices up as "Most favorited this week"
+   * and "Items similar to what you own" - engagement and similarity data
+   * that did not exist anywhere.
+   */
   const loadRecommendations = async () => {
     try {
       setLoading(true);
 
-      // Get user's favorite looks to understand preferences
+      // The user's favorites - used for the heart state and to pick which
+      // occasion section to lead with.
       let userFavorites: any[] = [];
       try {
         const favoritesResponse = await lookAPI.getFavorites(getCurrentUserId());
@@ -60,79 +66,17 @@ export default function RecommendationsScreen() {
         console.log('Could not load favorites, using empty array');
       }
 
-      // Get user's closet to understand what they own
-      let closetItems: any[] = [];
-      try {
-        const closetResponse = await closetAPI.getItems(getCurrentUserId());
-        closetItems = closetResponse.data || [];
-      } catch (error) {
-        console.log('Could not load closet, using empty array');
-      }
-
-      // Analyze user preferences
       const preferredOccasions = analyzeOccasions(userFavorites);
-      const preferredCategories = analyzeCategories(closetItems);
       const currentSeason = getCurrentSeason();
 
       // Build recommendation categories
       const recs: RecommendationCategory[] = [];
 
       const usedLookIds = new Set<string>();
-      
-      // 1. Based on favorites
-      if (userFavorites.length >0) {
-        const similarLooks = await getSimilarLooks(userFavorites[0].lookId);
-        const uniqueLooks = similarLooks.filter(look => {
-          if (usedLookIds.has(look.id)) return false;
-          usedLookIds.add(look.id);
-          return true;
-        });
-        if (uniqueLooks.length >0) {
-          recs.push({
-            title: 'More Like Your Favorites',
-            subtitle: 'Based on looks you loved',
-            looks: uniqueLooks,
-            reason: 'Similar to your favorited looks',
-          });
-        }
-      }
 
-      // 2. Based on closet
-      if (closetItems.length >0) {
-        const matchingLooks = await getMatchingLooks(preferredCategories);
-        const uniqueLooks = matchingLooks.filter(look => {
-          if (usedLookIds.has(look.id)) return false;
-          usedLookIds.add(look.id);
-          return true;
-        });
-        if (uniqueLooks.length >0) {
-          recs.push({
-            title: 'Match Your Closet',
-            subtitle: 'Looks you can recreate',
-            looks: uniqueLooks,
-            reason: 'Items similar to what you own',
-          });
-        }
-      }
-
-      // 3. Seasonal recommendations
-      const seasonalLooks = await getSeasonalLooks(currentSeason);
-      const uniqueSeasonalLooks = seasonalLooks.filter(look => {
-        if (usedLookIds.has(look.id)) return false;
-        usedLookIds.add(look.id);
-        return true;
-      });
-      if (uniqueSeasonalLooks.length >0) {
-        recs.push({
-          title: `${currentSeason} Essentials`,
-          subtitle: 'Perfect for this season',
-          looks: uniqueSeasonalLooks,
-          reason: `Trending for ${currentSeason}`,
-        });
-      }
-
-      // 4. Occasion-based
-      if (preferredOccasions.length >0) {
+      // 1. Occasion-based - only when favorites exist, so "the occasion you
+      // favorite most" is a real observation, not a default.
+      if (userFavorites.length >0 && preferredOccasions.length >0) {
         const occasionLooks = await getOccasionLooks(preferredOccasions[0]);
         const uniqueLooks = occasionLooks.filter(look => {
           if (usedLookIds.has(look.id)) return false;
@@ -144,24 +88,40 @@ export default function RecommendationsScreen() {
             title: `${preferredOccasions[0]} Looks`,
             subtitle: 'For your lifestyle',
             looks: uniqueLooks,
-            reason: `Based on your ${preferredOccasions[0].toLowerCase()} style`,
+            reason: `You favorite ${preferredOccasions[0].toLowerCase()} looks most`,
           });
         }
       }
 
-      // 5. Trending
-      const trendingLooks = await getTrendingLooks();
-      const uniqueTrendingLooks = trendingLooks.filter(look => {
+      // 2. Seasonal - only looks actually tagged for the current season.
+      const seasonalLooks = await getSeasonalLooks(currentSeason);
+      const uniqueSeasonalLooks = seasonalLooks.filter(look => {
         if (usedLookIds.has(look.id)) return false;
         usedLookIds.add(look.id);
         return true;
       });
-      if (uniqueTrendingLooks.length >0) {
+      if (uniqueSeasonalLooks.length >0) {
         recs.push({
-          title: 'Trending Now',
-          subtitle: 'Popular with other users',
-          looks: uniqueTrendingLooks,
-          reason: 'Most favorited this week',
+          title: `${currentSeason} Looks`,
+          subtitle: 'In season now',
+          looks: uniqueSeasonalLooks,
+          reason: `Tagged for ${currentSeason.toLowerCase()}`,
+        });
+      }
+
+      // 3. The lookbook itself - no personalization claim attached.
+      const lookbookLooks = await getLookbookLooks();
+      const uniqueLookbookLooks = lookbookLooks.filter(look => {
+        if (usedLookIds.has(look.id)) return false;
+        usedLookIds.add(look.id);
+        return true;
+      });
+      if (uniqueLookbookLooks.length >0) {
+        recs.push({
+          title: 'From the Lookbook',
+          subtitle: 'Browse the collection',
+          looks: uniqueLookbookLooks,
+          reason: 'A place to start',
         });
       }
 
@@ -190,15 +150,6 @@ export default function RecommendationsScreen() {
       .map(([occasion]) =>occasion);
   };
 
-  const analyzeCategories = (items: any[]) => {
-    const categories: Record<string, number> = {};
-    items.forEach(item => {
-      const category = item.category || 'other';
-      categories[category] = (categories[category] || 0) + 1;
-    });
-    return Object.keys(categories);
-  };
-
   const getCurrentSeason = () => {
     const month = new Date().getMonth();
     if (month >= 2 && month <= 4) return 'Spring';
@@ -207,31 +158,13 @@ export default function RecommendationsScreen() {
     return 'Winter';
   };
 
-  const getSimilarLooks = async (lookId: string) => {
-    try {
-      // In a real app, this would use embeddings to find similar looks
-      const response = await lookAPI.getAll({});
-      return response.data.slice(0, 5);
-    } catch (error) {
-      return [];
-    }
-  };
-
-  const getMatchingLooks = async (categories: string[]) => {
-    try {
-      const response = await lookAPI.getAll({});
-      return response.data.slice(5, 10);
-    } catch (error) {
-      return [];
-    }
-  };
-
   const getSeasonalLooks = async (season: string) => {
     try {
       const response = await lookAPI.getAll({});
-      // Filter by season if available
+      // Strictly looks tagged for the season - an untagged look is not
+      // "in season", it is unknown.
       return response.data
-        .filter((look: Look) => !look.season || look.season === season)
+        .filter((look: Look) => look.season === season)
         .slice(0, 5);
     } catch (error) {
       return [];
@@ -247,10 +180,9 @@ export default function RecommendationsScreen() {
     }
   };
 
-  const getTrendingLooks = async () => {
+  const getLookbookLooks = async () => {
     try {
       const response = await lookAPI.getAll({});
-      // In a real app, sort by favorite count or views
       return response.data.slice(0, 5);
     } catch (error) {
       return [];
@@ -315,18 +247,9 @@ export default function RecommendationsScreen() {
         }
       >
         <View style={styles.intro}>
-          <Text style={styles.introTitle}>Personalized Recommendations</Text>
-          <Text style={styles.introText}>Curated looks based on your style, closet, and preferences
+          <Text style={styles.introTitle}>Looks to browse</Text>
+          <Text style={styles.introText}>From the lookbook, grouped by season and the occasions you favorite
           </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: colors.ink, padding: 12, marginTop: 12 }}
-            onPress={() => {
-              console.log('TEST BUTTON PRESSED!');
-              Alert.alert('Touch Works!', 'Touch is working on this screen');
-            }}
-          >
-            <Text style={{ color: colors.white, textAlign: 'center' }}>Test Touch (Tap Me)</Text>
-          </TouchableOpacity>
         </View>
 
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -337,12 +260,7 @@ export default function RecommendationsScreen() {
                 <Text style={styles.categoryTitle}>{category.title}</Text>
                 <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
               </View>
-              <TouchableOpacity onPress={() => {
-                console.log('See All pressed for:', category.title);
-                Alert.alert('Coming Soon', `View all ${category.title} recommendations`);
-              }}>
-                <Text style={styles.seeAllButton}>See All →</Text>
-              </TouchableOpacity>
+              {/* No "See All" until a full category list exists to see. */}
             </View>
 
             <View style={styles.reasonBadge}>
@@ -368,12 +286,12 @@ export default function RecommendationsScreen() {
 
         {recommendations.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>No Recommendations Yet</Text>
-            <Text style={styles.emptyStateText}>Start by favoriting some looks and adding items to your closet!
+            <Text style={styles.emptyStateTitle}>Nothing to show yet</Text>
+            <Text style={styles.emptyStateText}>Favorite a few looks on the home feed and this screen gets sharper.
             </Text>
             <TouchableOpacity
               style={styles.emptyStateButton}
-              onPress={() =>navigation.goBack()}
+              onPress={() =>navigation.navigate('MainTabs', { screen: 'Home' })}
             >
               <Text style={styles.emptyStateButtonText}>Browse Looks</Text>
             </TouchableOpacity>

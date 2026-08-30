@@ -8,6 +8,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Look } from '../types';
 import { scale } from '../utils/animations';
 import { colors, fonts } from '../theme/designSystem';
@@ -63,13 +64,21 @@ export default function LookCard({
     >
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: imageError ? 'https://via.placeholder.com/400x500' : look.imageUrl }}
-          style={styles.image}
-          resizeMode="cover"
-          onError={() => setImageError(true)}
-        />
-        
+        {imageError ? (
+          // Local fallback - a remote placeholder service is just a second
+          // request that can fail.
+          <View style={[styles.image, styles.imageFallback]}>
+            <Text style={styles.imageFallbackText}>Image unavailable</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: look.imageUrl }}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setImageError(true)}
+          />
+        )}
+
         {/* Favorite button */}
         <TouchableOpacity
           style={styles.favoriteButton}
@@ -77,9 +86,11 @@ export default function LookCard({
           activeOpacity={0.7}
           disabled={false}
         >
-          <Text style={styles.favoriteIcon}>
-            {isFav ? '❤️' : '🤍'}
-          </Text>
+          <Ionicons
+            name={isFav ? 'heart' : 'heart-outline'}
+            size={24}
+            color={colors.ink}
+          />
         </TouchableOpacity>
 
         {/* Sponsored badge */}
@@ -146,6 +157,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  imageFallback: {
+    backgroundColor: colors.paper,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageFallbackText: {
+    fontSize: 13,
+    color: colors.inkFaint,
+    fontFamily: fonts.sansMedium,
+  },
   favoriteButton: {
     position: 'absolute',
     top: 12,
@@ -163,9 +184,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
-  },
-  favoriteIcon: {
-    fontSize: 24,
   },
   sponsoredBadge: {
     position: 'absolute',

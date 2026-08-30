@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -17,8 +18,6 @@ import { RootStackParamList } from '../navigation/types';
 import {
   sessionNotesService,
   SessionNote,
-  StyleRecommendation,
-  SessionDeliverable,
   NoteCategory,
 } from '../services/sessionNotesService';
 import Toast from '../components/Toast';
@@ -42,35 +41,23 @@ export default function SessionNotesScreen() {
   const { sessionId } = route.params;
 
   const [notes, setNotes] = useState<SessionNote[]>([]);
-  const [recommendations, setRecommendations] = useState<StyleRecommendation[]>([]);
-  const [deliverables, setDeliverables] = useState<SessionDeliverable[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<NoteCategory>('observation');
-  const [activeTab, setActiveTab] = useState<'notes' | 'recommendations' | 'deliverables'>('notes');
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     loadSessionData();
   }, [sessionId]);
 
+  // Recommendations and deliverables tabs are gone: no stylist-side tool
+  // exists to author either, so both were permanently empty for every user.
+  // Bring them back only alongside the tool that populates them.
   const loadSessionData = async () => {
     try {
       setLoading(true);
-      
-      // Create mock data if this is a new session
-      await sessionNotesService.createMockSessionData(sessionId);
-      
-      const [notesData, recsData, delsData] = await Promise.all([
-        sessionNotesService.getSessionNotes(sessionId),
-        sessionNotesService.getRecommendations(sessionId),
-        sessionNotesService.getDeliverables(sessionId),
-      ]);
-
-      setNotes(notesData);
-      setRecommendations(recsData);
-      setDeliverables(delsData);
+      setNotes(await sessionNotesService.getSessionNotes(sessionId));
     } catch (error) {
       console.error('Error loading session data:', error);
       showToast('Failed to load session notes', 'error');
@@ -126,11 +113,15 @@ export default function SessionNotesScreen() {
     );
   };
 
+  // Hands the real note text to the system share sheet - not a claimed PDF.
   const handleExportNotes = async () => {
+    if (notes.length === 0) {
+      showToast('No notes to export yet', 'error');
+      return;
+    }
     try {
-      const pdfUrl = await sessionNotesService.exportNotes(sessionId);
-      showToast('Notes exported successfully', 'success');
-      // In production, would open PDF or share
+      const text = await sessionNotesService.exportNotes(sessionId);
+      await Share.share({ message: text });
     } catch (error) {
       showToast('Failed to export notes', 'error');
     }
@@ -167,48 +158,6 @@ export default function SessionNotesScreen() {
     </View>
   );
 
-  const renderRecommendation = (rec: StyleRecommendation) => (
-    <View key={rec.id} style={styles.recommendationCard}>
-      <View style={styles.recHeader}>
-        <Text style={styles.recTitle}>{rec.title}</Text>
-        <View style={[styles.priorityBadge, styles[`priority${rec.priority}`]]}>
-          <Text style={styles.priorityText}>{rec.priority}</Text>
-        </View>
-      </View>
-      <Text style={styles.recDescription}>{rec.description}</Text>
-      <View style={styles.recFooter}>
-        <View style={styles.recCategory}>
-          <Text style={styles.recCategoryText}>{rec.category}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderDeliverable = (del: SessionDeliverable) => (
-    <View key={del.id} style={styles.deliverableCard}>
-      <View style={styles.delHeader}>
-        <Text style={styles.delIcon}>
-          {del.type === 'lookbook' ? '' : del.type === 'shopping-list' ? '' : del.type === 'style-guide' ? '' : ''}
-        </Text>
-        <View style={styles.delInfo}>
-          <Text style={styles.delTitle}>{del.title}</Text>
-          <Text style={styles.delType}>{del.type.replace('-', ' ')}</Text>
-        </View>
-      </View>
-      <Text style={styles.delDescription}>{del.description}</Text>
-      {del.items && del.items.length >0 && (
-        <View style={styles.delItems}>
-          {del.items.map((item, index) => (
-            <Text key={index} style={styles.delItem}>• {item}</Text>
-          ))}
-        </View>
-      )}
-      <TouchableOpacity style={styles.downloadButton}>
-        <Text style={styles.downloadButtonText}>Download</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -229,77 +178,27 @@ export default function SessionNotesScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Session Notes</Text>
         <TouchableOpacity onPress={handleExportNotes}>
-                  </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'notes' && styles.tabActive]}
-          onPress={() =>setActiveTab('notes')}
-        >
-          <Text style={[styles.tabText, activeTab === 'notes' && styles.tabTextActive]}>Notes ({notes.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'recommendations' && styles.tabActive]}
-          onPress={() =>setActiveTab('recommendations')}
-        >
-          <Text style={[styles.tabText, activeTab === 'recommendations' && styles.tabTextActive]}>Recommendations ({recommendations.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'deliverables' && styles.tabActive]}
-          onPress={() =>setActiveTab('deliverables')}
-        >
-          <Text style={[styles.tabText, activeTab === 'deliverables' && styles.tabTextActive]}>Deliverables ({deliverables.length})
-          </Text>
+          <Text style={styles.exportButton}>Export</Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       <ScrollView style={styles.content}>
-        {activeTab === 'notes' && (
-          <View style={styles.notesContainer}>
-            {notes.map(renderNote)}
-            {notes.length === 0 && (
-              <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No notes yet</Text>
-                <Text style={styles.emptySubtext}>Add notes during your session</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {activeTab === 'recommendations' && (
-          <View style={styles.recommendationsContainer}>
-            {recommendations.map(renderRecommendation)}
-            {recommendations.length === 0 && (
-              <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No recommendations yet</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {activeTab === 'deliverables' && (
-          <View style={styles.deliverablesContainer}>
-            {deliverables.map(renderDeliverable)}
-            {deliverables.length === 0 && (
-              <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No deliverables yet</Text>
-              </View>
-            )}
-          </View>
-        )}
+        <View style={styles.notesContainer}>
+          {notes.map(renderNote)}
+          {notes.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No notes yet</Text>
+              <Text style={styles.emptySubtext}>Add notes during your session</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Add Note Button */}
-      {activeTab === 'notes' && (
-        <TouchableOpacity style={styles.fab} onPress={() =>setShowAddNote(true)}>
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={styles.fab} onPress={() =>setShowAddNote(true)}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
 
       {/* Add Note Modal */}
       <Modal
@@ -394,30 +293,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   exportButton: {
-    fontSize: 20,
-  },
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.ink,
-  },
-  tabText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: fonts.sansMedium,
     color: colors.inkMuted,
-  },
-  tabTextActive: {
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
   },
   content: {
     flex: 1,
@@ -473,125 +351,6 @@ const styles = StyleSheet.create({
   noteDate: {
     fontSize: 12,
     color: colors.inkFaint,
-  },
-  recommendationsContainer: {
-    padding: 20,
-  },
-  recommendationCard: {
-    backgroundColor: colors.card,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.hair,
-  },
-  recHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  recTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginRight: 8,
-  },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  priorityhigh: {
-    backgroundColor: colors.sand,
-  },
-  prioritymedium: {
-    backgroundColor: colors.sand,
-  },
-  prioritylow: {
-    backgroundColor: colors.sand,
-  },
-  priorityText: {
-    fontSize: 11,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  recDescription: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  recFooter: {
-    flexDirection: 'row',
-  },
-  recCategory: {
-    backgroundColor: colors.paper,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  recCategoryText: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    fontFamily: fonts.sansMedium,
-  },
-  deliverablesContainer: {
-    padding: 20,
-  },
-  deliverableCard: {
-    backgroundColor: colors.card,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.hair,
-  },
-  delHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  delIcon: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  delInfo: {
-    flex: 1,
-  },
-  delTitle: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginBottom: 2,
-  },
-  delType: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    textTransform: 'capitalize',
-  },
-  delDescription: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  delItems: {
-    backgroundColor: colors.paper,
-    padding: 12,
-    marginBottom: 12,
-  },
-  delItem: {
-    fontSize: 13,
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  downloadButton: {
-    backgroundColor: colors.ink,
-    padding: 12,
-    alignItems: 'center',
-  },
-  downloadButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
   },
   emptyState: {
     padding: 60,

@@ -13,9 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { recommendationEngine, OutfitRecommendation, OccasionType, WeatherCondition } from '../services/recommendationEngine';
-import { aiStyleService } from '../services/aiStyleService';
-import { getCurrentWeather } from '../services/weatherService';
+import { dailyOutfitService, DailyOutfit, OccasionKey } from '../services/dailyOutfitService';
+import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { Item } from '../types';
@@ -30,17 +29,16 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SmartRecommendationsScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
-  const [selectedOccasion, setSelectedOccasion] = useState<OccasionType>('casual');
+  const [outfits, setOutfits] = useState<DailyOutfit[]>([]);
+  const [selectedOccasion, setSelectedOccasion] = useState<OccasionKey>('casual');
   const [loading, setLoading] = useState(true);
-  const [weather, setWeather] = useState<{ condition: WeatherCondition; temperature: number }>({
-    condition: 'sunny',
-    temperature: 72,
-  });
+  // Null when no real reading exists - outfits then rank on occasion and
+  // closet alone rather than being dressed for invented conditions.
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [weatherLoaded, setWeatherLoaded] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
-  const occasions: OccasionType[] = ['casual', 'work', 'formal', 'date', 'workout', 'party'];
+  const occasions: OccasionKey[] = ['casual', 'work', 'formal', 'date', 'workout', 'party'];
 
   useEffect(() => {
     getCurrentWeather().then(real => {
@@ -55,6 +53,13 @@ export default function SmartRecommendationsScreen() {
     }
   }, [selectedOccasion, weatherLoaded]);
 
+  /**
+   * Same engine as Home's Dress Me Today. The old recommendationEngine fed
+   * this screen four "variants" that all called one deterministic picker with
+   * identical arguments - the same garments under different headlines.
+   * dailyOutfitService scores pairs jointly and diversifies the set, so the
+   * two surfaces now give one consistent answer.
+   */
   const loadRecommendations = async () => {
     try {
       setLoading(true);
@@ -76,22 +81,22 @@ export default function SmartRecommendationsScreen() {
         tags: item.tags,
         seasons: item.seasons,
         style: item.style,
+        occasion: item.occasion,
+        // Formality is read off real garment attributes, not keyword regexes.
+        subcategory: item.subcategory,
+        pattern: item.pattern,
+        fabricTexture: item.fabricTexture,
+        fitType: item.fitType,
       }));
 
-      // Get style profile
-      const styleProfile = await aiStyleService.analyzeStyle(items);
-
-      // Generate recommendations
-      const recs = await recommendationEngine.generateRecommendations(
-        items,
-        styleProfile,
-        {
-          occasion: selectedOccasion,
-          weather,
-        }
-      );
-
-      setRecommendations(recs);
+      const pool = dailyOutfitService.buildOutfits(items, {
+        occasion: selectedOccasion,
+        weather: weather
+          ? { condition: weather.condition, temperature: weather.temperature }
+          : undefined,
+        count: 4,
+      });
+      setOutfits(dailyOutfitService.composeOutfits(pool, selectedOccasion));
     } catch (error) {
       console.error('Error loading recommendations:', error);
       showToast('Failed to load recommendations', 'error');
@@ -100,12 +105,12 @@ export default function SmartRecommendationsScreen() {
     }
   };
 
-  const handleAcceptRecommendation = async (rec: OutfitRecommendation) => {
+  const handleAcceptRecommendation = async (rec: DailyOutfit) => {
     try {
       await outfitsService.create(
         getCurrentUserId(),
-        rec.items.map(item =>item.id),
-        rec.occasion,
+        rec.items.map(item => item.id),
+        selectedOccasion,
         rec.title
       );
       showToast('Outfit saved!', 'success');
@@ -115,8 +120,8 @@ export default function SmartRecommendationsScreen() {
     }
   };
 
-  const getOccasionEmoji = (occasion: OccasionType): string => {
-    const emojiMap: { [key in OccasionType]: string } = {
+  const getOccasionEmoji = (occasion: OccasionKey): string => {
+    const emojiMap: { [key in OccasionKey]: string } = {
       casual: '',
       work: '▭',
       formal: '◇',
@@ -129,17 +134,13 @@ export default function SmartRecommendationsScreen() {
     return emojiMap[occasion];
   };
 
-  const renderRecommendation = (rec: OutfitRecommendation) => (
+  const renderRecommendation = (rec: DailyOutfit) => (
     <View key={rec.id} style={styles.recCard}>
       {/* Header */}
       <View style={styles.recHeader}>
         <View>
           <Text style={styles.recTitle}>{rec.title}</Text>
-          <Text style={styles.recDescription}>{rec.description}</Text>
-        </View>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.scoreNumber}>{rec.suitabilityScore}</Text>
-          <Text style={styles.scoreLabel}>Score</Text>
+          <Text style={styles.recDescription}>{rec.note}</Text>
         </View>
       </View>
 
@@ -155,25 +156,18 @@ export default function SmartRecommendationsScreen() {
         ))}
       </View>
 
-      {/* Reasoning */}
-      <View style={styles.reasoningSection}>
-        <Text style={styles.reasoningTitle}>Why this works:</Text>
-        {rec.reasoning.map((reason, index) => (
-          <View key={index} style={styles.reasonItem}>
-            <Text style={styles.reasonBullet}>•</Text>
-            <Text style={styles.reasonText}>{reason}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Tags */}
-      <View style={styles.tagsContainer}>
-        {rec.tags.map((tag, index) => (
-          <View key={index} style={styles.tag}>
-            <Text style={styles.tagText}>#{tag}</Text>
-          </View>
-        ))}
-      </View>
+      {/* Reasoning - the engine's countable pairing reasons, nothing invented */}
+      {rec.reasons.length > 0 && (
+        <View style={styles.reasoningSection}>
+          <Text style={styles.reasoningTitle}>Why this works:</Text>
+          {rec.reasons.map((reason, index) => (
+            <View key={index} style={styles.reasonItem}>
+              <Text style={styles.reasonBullet}>•</Text>
+              <Text style={styles.reasonText}>{reason}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -183,24 +177,14 @@ export default function SmartRecommendationsScreen() {
         >
           <Text style={styles.acceptButtonText}>✓ Save Outfit</Text>
         </TouchableOpacity>
+        {/* The builder opens empty - "Build your own" says so, where
+            "Modify" promised to carry this outfit over and didn't. */}
         <TouchableOpacity
           style={styles.modifyButton}
           onPress={() =>navigation.navigate('SmartOutfitBuilder')}
         >
-          <Text style={styles.modifyButtonText}>Modify</Text>
+          <Text style={styles.modifyButtonText}>Build your own</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Badges */}
-      <View style={styles.badges}>
-        {rec.weatherSuitable && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Weather-ready</Text>
-          </View>
-        )}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}> {rec.styleMatch}% Style Match</Text>
-        </View>
       </View>
     </View>
   );
@@ -229,18 +213,26 @@ export default function SmartRecommendationsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Weather Info */}
-      <View style={styles.weatherCard}>
-        <Text style={styles.weatherIcon}>
-          {{ sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀' }[weather.condition]}
-        </Text>
-        <View>
-          <Text style={styles.weatherTemp}>{weather.temperature}°F</Text>
+      {/* Weather Info - a real reading or an honest absence, never 72°-and-sunny invented */}
+      {weather ? (
+        <View style={styles.weatherCard}>
+          <Text style={styles.weatherIcon}>
+            {{ sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀' }[weather.condition]}
+          </Text>
+          <View>
+            <Text style={styles.weatherTemp}>{weather.temperature}°F</Text>
+            <Text style={styles.weatherCondition}>
+              {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.weatherCard}>
           <Text style={styles.weatherCondition}>
-            {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}
+            Weather is unavailable right now — outfits are ranked on occasion and your closet alone.
           </Text>
         </View>
-      </View>
+      )}
 
       {/* Occasion Selector */}
       <ScrollView
@@ -273,9 +265,9 @@ export default function SmartRecommendationsScreen() {
 
       {/* Recommendations */}
       <ScrollView>
-        {recommendations.length === 0 ? (
+        {outfits.length === 0 ? (
           <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No recommendations available</Text>
+            <Text style={styles.emptyText}>No recommendations available</Text>
             <Text style={styles.emptySubtext}>Add more items to your closet for better recommendations
             </Text>
           </View>
@@ -283,10 +275,10 @@ export default function SmartRecommendationsScreen() {
           <>
             <View style={styles.recCount}>
               <Text style={styles.recCountText}>
-                {recommendations.length} outfit{recommendations.length !== 1 ? 's' : ''} for you
+                {outfits.length} outfit{outfits.length !== 1 ? 's' : ''} for you
               </Text>
             </View>
-            {recommendations.map(renderRecommendation)}
+            {outfits.map(renderRecommendation)}
           </>
         )}
         <View style={{ height: 40 }} />
@@ -429,22 +421,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.inkMuted,
   },
-  scoreContainer: {
-    alignItems: 'center',
-    backgroundColor: colors.sand,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  scoreNumber: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-  },
-  scoreLabel: {
-    fontSize: 11,
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
-  },
   itemsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -490,26 +466,9 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     lineHeight: 18,
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  tag: {
-    backgroundColor: colors.sand,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    color: colors.tobacco,
-    fontFamily: fonts.sansSemiBold,
-  },
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
   },
   acceptButton: {
     flex: 1,
@@ -532,23 +491,6 @@ const styles = StyleSheet.create({
   modifyButtonText: {
     color: colors.inkMuted,
     fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
-  },
-  badges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  badge: {
-    backgroundColor: colors.sand,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.sand,
-  },
-  badgeText: {
-    fontSize: 12,
-    color: colors.tobacco,
     fontFamily: fonts.sansSemiBold,
   },
   emptyState: {

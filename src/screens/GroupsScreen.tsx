@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -30,6 +31,11 @@ export default function GroupsScreen() {
   const [upcomingEvents, setUpcomingEvents] = useState<GroupEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [creating, setCreating] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -59,6 +65,33 @@ export default function GroupsScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  // groupService.createGroup existed but nothing called it, which meant groups
+  // could only ever be seeded straight into Firestore. This form is the way in.
+  const handleCreateGroup = async () => {
+    const name = newName.trim();
+    const description = newDescription.trim();
+    const category = newCategory.trim();
+    if (!name || !description || !category) {
+      showToast('A name, a line about it, and a category are all needed', 'error');
+      return;
+    }
+    setCreating(true);
+    try {
+      await groupService.createGroup(getCurrentUserId(), name, description, category);
+      setShowCreate(false);
+      setNewName('');
+      setNewDescription('');
+      setNewCategory('');
+      showToast('Group created', 'success');
+      await loadData();
+    } catch (error) {
+      console.error('Error creating group:', error);
+      showToast('Could not create the group', 'error');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const formatEventDate = (dateString: string) => {
@@ -99,12 +132,12 @@ export default function GroupsScreen() {
           <Text style={styles.categoryText}>{group.category}</Text>
         </View>
 
+        {/* Members only. The posts count used to sit alongside it, but group
+            posts can't be viewed or written anywhere, so the number promised
+            a feed that doesn't exist. */}
         <View style={styles.groupStats}>
           <View style={styles.stat}>
-                        <Text style={styles.statText}>{group.members} members</Text>
-          </View>
-          <View style={styles.stat}>
-                        <Text style={styles.statText}>{group.posts} posts</Text>
+            <Text style={styles.statText}>{group.members} {group.members === 1 ? 'member' : 'members'}</Text>
           </View>
         </View>
       </View>
@@ -151,7 +184,13 @@ export default function GroupsScreen() {
             {event.attendees} going
             {event.maxAttendees && ` • ${event.maxAttendees - event.attendees} spots left`}
           </Text>
-          <TouchableOpacity style={styles.rsvpButton}>
+          {/* A nested Touchable swallows the tap, so without its own handler
+              this button did nothing at all. The real RSVP lives on the
+              event detail screen - send the tap there. */}
+          <TouchableOpacity
+            style={styles.rsvpButton}
+            onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+          >
             <Text style={styles.rsvpButtonText}>RSVP</Text>
           </TouchableOpacity>
         </View>
@@ -179,7 +218,7 @@ export default function GroupsScreen() {
         <Text style={styles.eyebrow}>COMMUNITY</Text>
         <Text style={styles.title}>Groups & events</Text>
         <Text style={styles.subtitle}>
-          Places to talk style with people who dress like you — and things to turn up to.
+          Groups built around how people dress, and the events they run — virtual and in person.
         </Text>
       </View>
 
@@ -216,11 +255,55 @@ export default function GroupsScreen() {
       >
         {activeTab === 'discover' && (
           <>
+            {!showCreate ? (
+              <TouchableOpacity style={styles.startGroupButton} onPress={() => setShowCreate(true)}>
+                <Text style={styles.startGroupText}>Start a group</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.createForm}>
+                <Text style={styles.createLabel}>NEW GROUP</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  placeholderTextColor={colors.inkFaint}
+                  value={newName}
+                  onChangeText={setNewName}
+                />
+                <TextInput
+                  style={[styles.input, styles.inputMultiline]}
+                  placeholder="What it's about"
+                  placeholderTextColor={colors.inkFaint}
+                  value={newDescription}
+                  onChangeText={setNewDescription}
+                  multiline
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Category — e.g. Vintage, Menswear"
+                  placeholderTextColor={colors.inkFaint}
+                  value={newCategory}
+                  onChangeText={setNewCategory}
+                />
+                <View style={styles.createActions}>
+                  <TouchableOpacity style={styles.createCancel} onPress={() => setShowCreate(false)}>
+                    <Text style={styles.createCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.createSubmit}
+                    onPress={handleCreateGroup}
+                    disabled={creating}
+                  >
+                    <Text style={styles.createSubmitText}>{creating ? 'Creating…' : 'Create group'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {allGroups.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyText}>No groups yet</Text>
                 <Text style={styles.emptySubtext}>
-                  Groups appear here as the community grows.
+                  Nobody has started one. The first group here could be yours.
                 </Text>
               </View>
             ) : (
@@ -487,6 +570,75 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   rsvpButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.white,
+  },
+  startGroupButton: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  startGroupText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.ink,
+  },
+  createForm: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    padding: 16,
+  },
+  createLabel: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.tobacco,
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.paper,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.ink,
+    marginBottom: 10,
+  },
+  inputMultiline: {
+    minHeight: 64,
+    textAlignVertical: 'top',
+  },
+  createActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  createCancel: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  createCancelText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.inkMuted,
+  },
+  createSubmit: {
+    backgroundColor: colors.ink,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  createSubmitText: {
     fontFamily: fonts.sansMedium,
     fontSize: 13,
     color: colors.white,

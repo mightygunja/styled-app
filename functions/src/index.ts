@@ -3387,12 +3387,15 @@ export const reviewStylistApplication = functions
     // Told in-app rather than by email: there is no transactional email
     // provider wired up, and a notification is something this app can actually
     // deliver today.
+    // Field names match the client's Notification interface (`message`,
+    // `isRead`) - the first version wrote `body`/`read` and the one real
+    // notification an approved stylist ever received never rendered.
     await db.collection('notifications').add({
       userId: applicationId,
       type: 'system',
       title: "You're approved as a 33 Trends stylist",
-      body: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
-      read: false,
+      message: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
+      isRead: false,
       createdAt: admin.firestore.Timestamp.now(),
     });
 
@@ -4068,7 +4071,7 @@ Rules:
 Return ONLY valid JSON:
 {
   "looks": [{ "title": "string", "itemIds": ["ids"], "occasion": "short label", "rationale": "1-2 sentences" }],
-  "gaps": [{ "category": "category", "description": "what's missing", "whyNeeded": "1 sentence" }],
+  "gaps": [{ "category": "tops|bottoms|dresses|outerwear|shoes|accessories|bags", "description": "what's missing", "whyNeeded": "1 sentence" }],
   "stylistNote": "one paragraph"
 }`,
           },

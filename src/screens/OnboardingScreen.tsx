@@ -268,7 +268,7 @@ export default function OnboardingScreen() {
               Meet your <Text style={styles.heroTitleAccent}>stylist</Text>.
             </Text>
             <Text style={styles.heroSubtitle}>
-              Four questions, so your stylist knows where you're starting from. Then we bring you
+              Five questions, so your stylist knows where you're starting from. Then we bring you
               what's actually moving in fashion — and show you how to wear it as you.
             </Text>
           </View>

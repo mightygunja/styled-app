@@ -108,7 +108,7 @@ export default function SavedOutfitsScreen() {
             <Button
               title="Build an outfit"
               variant="primary"
-              onPress={() => navigation.navigate('OutfitBuilder', {})}
+              onPress={() => navigation.navigate('SmartOutfitBuilder')}
               style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}
             />
           </View>

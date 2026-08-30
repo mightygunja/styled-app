@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BackButton from '../components/BackButton';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
@@ -18,17 +17,19 @@ const CATEGORIES = [
   { id: 'accessories', label: 'Accessories' },
 ];
 
+// Swatches represent the garment's actual colour, so these are real hues -
+// the design-system palette is for chrome, not for tagging clothes.
 const COLORS = [
-  { id: 'black', label: 'Black', hex: colors.ink },
+  { id: 'black', label: 'Black', hex: '#1A1A1A' },
   { id: 'white', label: 'White', hex: '#FFFFFF' },
-  { id: 'gray', label: 'Gray', hex: colors.inkFaint },
-  { id: 'red', label: 'Red', hex: colors.ink },
-  { id: 'blue', label: 'Blue', hex: colors.tobacco },
-  { id: 'green', label: 'Green', hex: colors.camel },
-  { id: 'yellow', label: 'Yellow', hex: colors.camel },
+  { id: 'gray', label: 'Gray', hex: '#9CA3AF' },
+  { id: 'red', label: 'Red', hex: '#DC2626' },
+  { id: 'blue', label: 'Blue', hex: '#2563EB' },
+  { id: 'green', label: 'Green', hex: '#16A34A' },
+  { id: 'yellow', label: 'Yellow', hex: '#EAB308' },
   { id: 'pink', label: 'Pink', hex: '#EC4899' },
-  { id: 'purple', label: 'Purple', hex: colors.tobacco },
-  { id: 'brown', label: 'Brown', hex: colors.tobacco },
+  { id: 'purple', label: 'Purple', hex: '#7C3AED' },
+  { id: 'brown', label: 'Brown', hex: '#8B5A2B' },
 ];
 
 export default function AddClosetItemScreen() {
@@ -95,7 +96,6 @@ export default function AddClosetItemScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton />
       <ScrollView style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -233,7 +233,7 @@ export default function AddClosetItemScreen() {
       
       <SuccessAnimation
         visible={showSuccess}
-        message="Item added to closet! "
+        message="Item added to closet"
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();

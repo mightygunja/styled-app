@@ -10,7 +10,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
 import { generateOutfitSuggestions, OutfitSuggestion } from '../services/outfitPairing';
 import { outfitsService } from '../services/firestore';
@@ -23,7 +25,9 @@ const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
 
 export default function SmartOutfitBuilderScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'SmartOutfitBuilder'>>();
+  const sourceItemId = route.params?.sourceItemId;
   const [closetItems, setClosetItems] = useState<ClosetItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<ClosetItem[]>([]);
   const [suggestions, setSuggestions] = useState<OutfitSuggestion[]>([]);
@@ -47,6 +51,12 @@ export default function SmartOutfitBuilderScreen() {
       setLoading(true);
       const response = await closetAPI.getItems(getCurrentUserId());
       setClosetItems(response.data);
+      // Arriving from an item's "Create Outfit" button starts the outfit
+      // with that piece already in it.
+      if (sourceItemId) {
+        const source = response.data.find((i: any) => i.id === sourceItemId);
+        if (source) setSelectedItems([source as any]);
+      }
     } catch (error) {
       console.error('Error loading closet:', error);
       showToast('Failed to load closet items', 'error');
@@ -73,7 +83,7 @@ export default function SmartOutfitBuilderScreen() {
 
   const applySuggestion = (suggestion: OutfitSuggestion) => {
     setSelectedItems(suggestion.items);
-    showToast('Outfit applied! ', 'success');
+    showToast('Outfit applied', 'success');
   };
 
   const saveOutfit = async () => {
@@ -129,8 +139,14 @@ export default function SmartOutfitBuilderScreen() {
           <Text style={styles.sectionTitle}>Your Outfit ({selectedItems.length} items)</Text>
           {selectedItems.length === 0 ? (
             <View style={styles.emptyPreview}>
-              <Text style={styles.emptyText}>Tap items below to build your outfit</Text>
-              <Text style={styles.emptySubtext}>or choose from AI suggestions</Text>
+              {closetItems.length === 0 ? (
+                <Text style={styles.emptyText}>Add items to your closet to build outfits</Text>
+              ) : (
+                <>
+                  <Text style={styles.emptyText}>Tap items below to build your outfit</Text>
+                  <Text style={styles.emptySubtext}>or choose from AI suggestions</Text>
+                </>
+              )}
             </View>
           ) : (
             <View style={styles.previewGrid}>
@@ -175,7 +191,7 @@ export default function SmartOutfitBuilderScreen() {
         {/* AI Suggestions */}
         {suggestions.length >0 && (
           <View style={styles.suggestionsSection}>
-            <Text style={styles.sectionTitle}>AI Suggestions </Text>
+            <Text style={styles.sectionTitle}>AI Suggestions</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {suggestions.map(suggestion => (
                 <TouchableOpacity
@@ -212,6 +228,19 @@ export default function SmartOutfitBuilderScreen() {
         {/* Closet Items Grid */}
         <View style={styles.closetSection}>
           <Text style={styles.sectionTitle}>Your Closet</Text>
+          {closetItems.length === 0 && (
+            <View style={styles.emptyCloset}>
+              <Text style={styles.emptyClosetText}>
+                Your closet is empty. Add your first item to start building outfits.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyClosetButton}
+                onPress={() => navigation.navigate('AddClosetItem')}
+              >
+                <Text style={styles.emptyClosetButtonText}>Add an item</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={styles.itemsGrid}>
             {closetItems.map(item => {
               const isSelected = selectedItems.some(i =>i.id === item.id);
@@ -239,7 +268,7 @@ export default function SmartOutfitBuilderScreen() {
 
       <SuccessAnimation
         visible={showSuccess}
-        message="Outfit saved! "
+        message="Outfit saved"
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();
@@ -435,6 +464,28 @@ const styles = StyleSheet.create({
   closetSection: {
     padding: 20,
     paddingTop: 0,
+  },
+  emptyCloset: {
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: colors.paper,
+  },
+  emptyClosetText: {
+    fontSize: 14,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  emptyClosetButton: {
+    backgroundColor: colors.ink,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  emptyClosetButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontFamily: fonts.sansSemiBold,
   },
   itemsGrid: {
     flexDirection: 'row',

@@ -55,7 +55,6 @@ export interface StyleGuide {
 export interface SearchSuggestion {
   query: string;
   category: SearchCategory;
-  popularity: number;
 }
 
 export interface DiscoverySection {
@@ -68,11 +67,20 @@ export interface DiscoverySection {
 
 class SmartSearchService {
   private searchHistory: Map<string, SearchQuery[]> = new Map();
-  private popularSearches: SearchSuggestion[] = [];
 
-  constructor() {
-    this.initializeMockData();
-  }
+  // Static example queries showing what the search understands. These are not
+  // "popular searches" - there is no usage data behind them, so they carry no
+  // popularity numbers and are never framed as trending.
+  private exampleSearches: SearchSuggestion[] = [
+    { query: 'black jeans', category: 'items' },
+    { query: 'white sneakers', category: 'items' },
+    { query: 'navy blazer', category: 'items' },
+    { query: 'summer dress', category: 'items' },
+    { query: 'minimalist style', category: 'styles' },
+    { query: 'streetwear', category: 'styles' },
+    { query: 'work wardrobe', category: 'styles' },
+    { query: 'vintage style', category: 'styles' },
+  ];
 
   /**
    * Perform smart search
@@ -372,10 +380,18 @@ class SmartSearchService {
         sorted.sort((a, b) => b.relevanceScore - a.relevanceScore);
         break;
       case 'recent':
-        // Would sort by creation date in real implementation
+        // closetAPI.getItems returns items newest-first (createdAt desc) and
+        // getAllSearchableContent preserves that order, so "recently added"
+        // is the insertion order - nothing to re-sort.
         break;
       case 'popular':
-        // Would sort by engagement in real implementation
+        // "Most worn" - the only real popularity signal the app has is the
+        // user's own wear counts. Non-item results sink to the end.
+        sorted.sort((a, b) => {
+          const wornA = a.type === 'item' ? (a.data as Item).wornCount || 0 : -1;
+          const wornB = b.type === 'item' ? (b.data as Item).wornCount || 0 : -1;
+          return wornB - wornA;
+        });
         break;
       case 'price_low':
         sorted.sort((a, b) => {
@@ -403,13 +419,13 @@ class SmartSearchService {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     if (!query.trim()) {
-      return this.popularSearches.slice(0, 5);
+      return this.exampleSearches.slice(0, 5);
     }
 
     const lowerQuery = query.toLowerCase();
-    
+
     // Filter suggestions that match query
-    const filtered = this.popularSearches.filter(s => 
+    const filtered = this.exampleSearches.filter(s =>
       s.query.toLowerCase().includes(lowerQuery)
     );
 
@@ -491,22 +507,6 @@ class SmartSearchService {
     }
     
     this.searchHistory.set(userId, history);
-  }
-
-  /**
-   * Initialize mock data
-   */
-  private initializeMockData(): void {
-    this.popularSearches = [
-      { query: 'black jeans', category: 'items', popularity: 95 },
-      { query: 'minimalist style', category: 'styles', popularity: 88 },
-      { query: 'white sneakers', category: 'items', popularity: 82 },
-      { query: 'casual outfit', category: 'looks', popularity: 78 },
-      { query: 'work attire', category: 'looks', popularity: 75 },
-      { query: 'streetwear', category: 'styles', popularity: 72 },
-      { query: 'summer dress', category: 'items', popularity: 68 },
-      { query: 'vintage style', category: 'styles', popularity: 65 },
-    ];
   }
 }
 

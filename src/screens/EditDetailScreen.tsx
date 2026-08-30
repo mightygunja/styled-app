@@ -5,7 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Image,
+  Modal,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -17,9 +19,14 @@ import Button from '../components/Button';
 import { RootStackParamList } from '../navigation/types';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 import { styleEditService, StyleEdit, coverageStats } from '../services/styleEditService';
+import { ItemCategory } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditDetailRouteProp = RouteProp<RootStackParamList, 'EditDetail'>;
+
+const SHOP_CATEGORIES: ItemCategory[] = [
+  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags',
+];
 
 export default function EditDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -28,6 +35,9 @@ export default function EditDetailScreen() {
 
   const [edit, setEdit] = useState<StyleEdit | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [revisionNote, setRevisionNote] = useState('');
+  const [submittingRevision, setSubmittingRevision] = useState(false);
 
   useEffect(() => {
     load();
@@ -48,28 +58,31 @@ export default function EditDetailScreen() {
     [edit]
   );
 
-  const handleRequestRevision = () => {
-    Alert.alert(
-      'Ask for another pass?',
-      'Your stylist will see this Edit again and can rework it.',
-      [
-        {
-          text: 'Request revision',
-          onPress: async () => {
-            try {
-              await styleEditService.requestRevision(
-                editId,
-                'Client asked for another pass from the Edit view.'
-              );
-              load();
-            } catch (error: any) {
-              Alert.alert('Could not request', error?.message || 'Please try again.');
-            }
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  // The revision note goes to the stylist word for word, so it has to be the
+  // client's own reason - a canned sentence gave them nothing to act on.
+  const handleSubmitRevision = async () => {
+    const note = revisionNote.trim();
+    if (!note) return;
+    try {
+      setSubmittingRevision(true);
+      await styleEditService.requestRevision(editId, note);
+      setShowRevisionModal(false);
+      setRevisionNote('');
+      load();
+    } catch (error: any) {
+      Alert.alert('Could not request', error?.message || 'Please try again.');
+    } finally {
+      setSubmittingRevision(false);
+    }
+  };
+
+  // gap.category is model-drafted text - only pass it to Shop when it is a
+  // category the Shop chips can actually represent, otherwise land unfiltered
+  // rather than on an inexplicably empty grid.
+  const openGapInShop = (rawCategory: string) => {
+    const normalized = (rawCategory || '').toLowerCase().trim();
+    const category = SHOP_CATEGORIES.find(c => c === normalized || c === `${normalized}s`);
+    navigation.navigate('Shop', category ? { category, matchedOnly: true } : { matchedOnly: true });
   };
 
   if (loading) {
@@ -165,7 +178,7 @@ export default function EditDetailScreen() {
                 key={`${gap.category}-${i}`}
                 style={styles.gapRow}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('Shop', { category: gap.category as any, matchedOnly: true })}
+                onPress={() => openGapInShop(gap.category)}
               >
                 <View style={styles.gapInfo}>
                   <Text style={styles.gapTitle}>{gap.description}</Text>
@@ -185,12 +198,52 @@ export default function EditDetailScreen() {
           <Button
             title="Ask for another pass"
             variant="secondary"
-            onPress={handleRequestRevision}
+            onPress={() => setShowRevisionModal(true)}
             fullWidth
             style={{ marginTop: spacing.section }}
           />
         )}
       </ScrollView>
+
+      {/* Revision request: a short free-text reason the stylist sees verbatim. */}
+      <Modal
+        visible={showRevisionModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowRevisionModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowRevisionModal(false)}>
+              <Text style={styles.modalClose}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Another pass</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <ScrollView contentContainerStyle={styles.modalBody}>
+            <Text style={styles.modalHint}>
+              Tell {edit.stylistName} what you'd like changed. It goes to them word for word, so
+              the more specific, the better the rework.
+            </Text>
+            <TextInput
+              style={styles.revisionInput}
+              placeholder="The work looks land, but the weekend ones feel too dressy…"
+              placeholderTextColor={colors.inkFaint}
+              value={revisionNote}
+              onChangeText={setRevisionNote}
+              multiline
+              textAlignVertical="top"
+            />
+            <Button
+              title={submittingRevision ? 'Sending…' : 'Request revision'}
+              onPress={handleSubmitRevision}
+              fullWidth
+              disabled={submittingRevision || !revisionNote.trim()}
+              style={{ marginTop: spacing.lg }}
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -251,5 +304,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.tobacco,
     marginTop: spacing.section,
+  },
+
+  modalContainer: { flex: 1, backgroundColor: colors.bone },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  modalClose: { fontSize: 20, color: colors.inkMuted },
+  modalTitle: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
+  modalBody: { paddingHorizontal: spacing.page, paddingBottom: 40 },
+  modalHint: { ...textType.body, color: colors.inkMuted, lineHeight: 22, marginBottom: spacing.md },
+  revisionInput: {
+    ...textType.body,
+    color: colors.ink,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 120,
   },
 });

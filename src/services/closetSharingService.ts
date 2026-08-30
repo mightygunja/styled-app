@@ -30,6 +30,8 @@ export interface ClosetShare {
   ownerId: string;
   ownerName: string;
   viewerId: string;
+  /** Display name captured at share time so the owner's share list shows a person, not a uid. */
+  viewerName?: string;
   /** When false, prices and cost-per-wear are stripped before the viewer sees anything. */
   includePrices: boolean;
   createdAt: string;
@@ -56,6 +58,7 @@ export const closetSharingService = {
     ownerId: string,
     ownerName: string,
     viewerId: string,
+    viewerName: string,
     includePrices: boolean
   ): Promise<ClosetShare> => {
     if (ownerId === viewerId) {
@@ -67,6 +70,7 @@ export const closetSharingService = {
       ownerId,
       ownerName,
       viewerId,
+      viewerName,
       includePrices,
       createdAt: new Date().toISOString(),
     };

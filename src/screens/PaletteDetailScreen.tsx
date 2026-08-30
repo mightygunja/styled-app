@@ -95,16 +95,6 @@ export default function PaletteDetailScreen() {
     <SafeAreaView style={styles.container}>
       <BackButton />
       <ScrollView style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButtonSmall}
-            onPress={() =>navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Palette Info */}
         <View style={styles.paletteSection}>
           <Text style={styles.paletteName}>{palette.name}</Text>
@@ -190,19 +180,14 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginBottom: 20,
   },
-  header: {
-    padding: 16,
-  },
-  backButtonSmall: {
-    alignSelf: 'flex-start',
-  },
   backButton: {
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
   backButtonText: {
-    color: colors.ink,
+    // White on ink - this label used to be ink on ink, an invisible button.
+    color: colors.white,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
   },

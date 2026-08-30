@@ -46,7 +46,10 @@ export default function NotificationsScreen() {
       // Load actor profiles
       const notifsWithActors = await Promise.all(
         notifs.map(async (notif) => {
-          const actor = await userProfileService.getUserProfile(notif.actorId);
+          // System notifications come from the backend with no acting user.
+          const actor = notif.actorId
+            ? await userProfileService.getUserProfile(notif.actorId)
+            : null;
           return { ...notif, actor: actor || undefined };
         })
       );
@@ -85,7 +88,9 @@ export default function NotificationsScreen() {
         }
         break;
       case 'follow':
-        navigation.navigate('UserProfile', { userId: notification.actorId });
+        if (notification.actorId) {
+          navigation.navigate('UserProfile', { userId: notification.actorId });
+        }
         break;
       case 'message':
         if (notification.targetId) {
@@ -166,6 +171,8 @@ export default function NotificationsScreen() {
         return 'CHALLENGE';
       case 'group_invite':
         return 'GROUP';
+      case 'system':
+        return 'ACCOUNT';
       default:
         return null;
     }

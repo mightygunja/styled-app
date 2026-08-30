@@ -516,7 +516,8 @@ export const reviewsService = {
     sessionId: string,
     sessionType: SessionType,
     rating: number,
-    comment: string
+    comment: string,
+    wouldRecommend: boolean
   ): Promise<StylistReview> => {
     const reviewData = {
       stylistId,
@@ -526,6 +527,7 @@ export const reviewsService = {
       comment,
       sessionType,
       sessionId,
+      wouldRecommend,
       helpful: 0,
       createdAt: Timestamp.now(),
     };
@@ -624,6 +626,26 @@ export const wishlistService = {
     );
     const snapshot = await getDocs(q);
     return snapshot.empty ? null : snapshot.docs[0].id;
+  },
+
+  /** The saved doc for this product, snapshot included. ProductDetail falls
+   *  back to the snapshot when the live adapter can no longer resolve the id
+   *  (curated ids get renamed; live providers can't resolve ids from a past
+   *  session), so a saved item always opens instead of dead-ending. */
+  getSaved: async (
+    userId: string,
+    productId: string
+  ): Promise<{ id: string; product: Product } | null> => {
+    const q = query(
+      collection(db, 'wishlistItems'),
+      where('userId', '==', userId),
+      where('productId', '==', productId),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    const d = snapshot.docs[0];
+    return { id: d.id, product: d.data().product as Product };
   },
 
   add: async (userId: string, product: Product): Promise<string> => {

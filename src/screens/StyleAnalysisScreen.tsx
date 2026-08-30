@@ -314,7 +314,19 @@ export default function StyleAnalysisScreen() {
                   <Text style={styles.insightTitle}>{insight.title}</Text>
                   <Text style={styles.insightDescription}>{insight.description}</Text>
                   {insight.actionable && insight.action && (
-                    <TouchableOpacity style={styles.insightAction}>
+                    <TouchableOpacity
+                      style={styles.insightAction}
+                      onPress={() => {
+                        // Color insights lead to the color analysis; gap and
+                        // balance insights lead to the shop, where matches
+                        // against the profile fill what's missing.
+                        if (insight.id === 'color-diversity') {
+                          navigation.navigate('ColorAnalysis');
+                        } else {
+                          navigation.navigate('Shop', { matchedOnly: true });
+                        }
+                      }}
+                    >
                       <Text style={styles.insightActionText}>{insight.action} →</Text>
                     </TouchableOpacity>
                   )}

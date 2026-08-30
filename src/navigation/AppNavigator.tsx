@@ -293,7 +293,9 @@ const linking = {
       EventDetail: 'events/:eventId',
       AddClosetItem: 'closet/add',
       ClosetItemDetail: 'closet/item/:closetItemId',
-      SimilarItems: 'closet/similar',
+      // SimilarItems deliberately has no URL: its params carry a computed,
+      // non-serializable match list, so a cold load from an address bar could
+      // never reconstruct them.
       OutfitBuilder: 'outfits/new',
       SavedOutfits: 'outfits',
       OutfitPlanner: 'planner',

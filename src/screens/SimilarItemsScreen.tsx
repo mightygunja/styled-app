@@ -18,7 +18,11 @@ interface Match {
 export default function SimilarItemsScreen() {
   const navigation = useNavigation();
   const route = useRoute<SimilarItemsRouteProp>();
-  const { similarItems } = route.params;
+  // Guard: on a cold load (deep link, web refresh) the computed match list is
+  // gone. Fall back to an empty list; the empty state below explains itself.
+  const similarItems = Array.isArray(route.params?.similarItems)
+    ? route.params.similarItems
+    : [];
 
   const renderItem = ({ item }: { item: Match }) => {
     const closetItem = item.item;

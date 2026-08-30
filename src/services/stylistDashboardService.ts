@@ -66,7 +66,9 @@ class StylistDashboardService {
       totalEarnings: sum(completed),
       thisMonth: sum(thisMonth),
       lastMonth: sum(lastMonth),
-      pendingPayouts: sum(bookings.filter(b => b.status === 'completed')), // no real payout system yet
+      // No payout system exists, so nothing is ever genuinely pending -
+      // reporting lifetime earnings as "pending" implied money owed.
+      pendingPayouts: 0,
       completedSessions: completed.length,
       upcomingSessions: upcoming.length,
     };

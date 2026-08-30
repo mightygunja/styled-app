@@ -77,6 +77,7 @@ export default function ClosetSharingScreen() {
         getCurrentUserId(),
         getCurrentUserName(),
         viewerId,
+        displayName,
         includePrices
       );
       setSearchText('');
@@ -250,7 +251,9 @@ export default function ClosetSharingScreen() {
                 {myShares.map(share => (
                   <View key={share.id} style={styles.row}>
                     <View style={styles.rowInfo}>
-                      <Text style={styles.rowName}>{share.viewerId}</Text>
+                      {/* viewerName exists on shares made after it was captured;
+                          the uid fallback keeps older shares revocable. */}
+                      <Text style={styles.rowName}>{share.viewerName || share.viewerId}</Text>
                       <Text style={styles.rowMeta}>
                         {share.includePrices ? 'Prices visible' : 'Prices hidden'}
                       </Text>

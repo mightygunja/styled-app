@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
@@ -7,6 +7,13 @@ import { colors, fonts, type as textType } from '../theme/designSystem';
 import { userSettingsService, UserSettings, DEFAULT_USER_SETTINGS } from '../services/userSettingsService';
 import { getCurrentUserId } from '../services/api';
 
+/**
+ * Only settings the app actually reads live here. This screen used to carry
+ * accessibility, language, push/email and offline-cache rows whose switches
+ * persisted a bit that nothing read back - they flipped, saved, reloaded, and
+ * changed no behavior anywhere. Those rows are gone until the behavior they
+ * name exists.
+ */
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -49,29 +56,6 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Settings</Text>
 
-        <Text style={styles.sectionLabel}>ACCESSIBILITY</Text>
-        <View style={styles.card}>
-          <ToggleRow label="Large text" value={settings.largeText} onToggle={() => toggle('largeText')} />
-          <ToggleRow label="Reduce motion" value={settings.reduceMotion} onToggle={() => toggle('reduceMotion')} />
-          <ToggleRow label="High contrast" value={settings.highContrast} onToggle={() => toggle('highContrast')} last />
-        </View>
-
-        <Text style={styles.sectionLabel}>LANGUAGE & REGION</Text>
-        <View style={styles.card}>
-          <View style={[styles.row, styles.rowLast]}>
-            <View>
-              <Text style={styles.rowLabel}>{settings.language}</Text>
-              <Text style={styles.rowSubtitle}>{settings.region}</Text>
-            </View>
-          </View>
-        </View>
-
-        <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
-        <View style={styles.card}>
-          <ToggleRow label="Push notifications" value={settings.pushNotifications} onToggle={() => toggle('pushNotifications')} />
-          <ToggleRow label="Email updates" value={settings.emailUpdates} onToggle={() => toggle('emailUpdates')} last />
-        </View>
-
         <Text style={styles.sectionLabel}>SOCIAL FEED</Text>
         <View style={styles.card}>
           <ToggleRow
@@ -81,16 +65,9 @@ export default function SettingsScreen() {
             last
           />
         </View>
-
-        <Text style={styles.sectionLabel}>DATA</Text>
-        <View style={styles.card}>
-          <ToggleRow
-            label="Cache closet for offline viewing"
-            value={settings.offlineCacheEnabled}
-            onToggle={() => toggle('offlineCacheEnabled')}
-            last
-          />
-        </View>
+        <Text style={styles.sectionNote}>
+          When this is on, your feed keeps posts from people you follow and your own.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -119,5 +96,5 @@ const styles = StyleSheet.create({
   },
   rowLast: { borderBottomWidth: 0 },
   rowLabel: { fontFamily: fonts.sans, fontSize: 15, color: colors.ink },
-  rowSubtitle: { ...textType.meta, marginTop: 2 },
+  sectionNote: { ...textType.meta, marginTop: 8 },
 });

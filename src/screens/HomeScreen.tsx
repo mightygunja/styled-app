@@ -119,7 +119,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [occasion, setOccasion] = useState<OccasionType>('work');
-  const [weather, setWeather] = useState<CurrentWeather>({ condition: 'sunny', temperature: 72 });
+  // Null until a real reading lands - the hero says nothing about weather
+  // rather than asserting invented conditions.
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [archetype, setArchetype] = useState<string>('Quiet Luxe');
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [lookIndex, setLookIndex] = useState(0);
@@ -163,7 +165,7 @@ export default function HomeScreen() {
   // made its own Cloud Function call and waited on the model.
   const closetItemsRef = useRef<Item[]>([]);
   const styleProfileRef = useRef<StyleProfile | null>(null);
-  const weatherRef = useRef<CurrentWeather>({ condition: 'sunny', temperature: 72 });
+  const weatherRef = useRef<CurrentWeather | null>(null);
   const poolsRef = useRef<OutfitPools | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -328,13 +330,19 @@ export default function HomeScreen() {
       // registry read is session-cached, so this is cheap.
       let trendLines: string[] = [];
       try {
-        const remixes = await trendRemixService.loadTrendRemixes(wearable, matchContext, {
-          city: weatherResult.city,
-          region: weatherResult.region,
-          country: weatherResult.country,
-          temperature: weatherResult.temperature,
-          condition: weatherResult.condition,
-        });
+        const remixes = await trendRemixService.loadTrendRemixes(
+          wearable,
+          matchContext,
+          weatherResult
+            ? {
+                city: weatherResult.city,
+                region: weatherResult.region,
+                country: weatherResult.country,
+                temperature: weatherResult.temperature,
+                condition: weatherResult.condition,
+              }
+            : undefined
+        );
         setTrendRemixes(remixes.slice(0, 3));
         trendLines = trendRemixService.wearableTrendLines(remixes);
       } catch {
@@ -355,10 +363,11 @@ export default function HomeScreen() {
             : 'Starting out'
       );
 
-      const weatherContext = {
-        condition: weatherResult.condition,
-        temperature: weatherResult.temperature,
-      };
+      // Undefined when no real reading exists: the outfit engine then scores
+      // on occasion and closet alone instead of dressing for invented weather.
+      const weatherContext = weatherResult
+        ? { condition: weatherResult.condition, temperature: weatherResult.temperature }
+        : undefined;
 
       // Cold start: a closet that cannot make a single top-and-bottom pair
       // would leave Dress Me Today as a dead end. Compose looks from the shop
@@ -829,7 +838,8 @@ export default function HomeScreen() {
             <Text style={styles.heroTitle}>
               {greeting}, <Text style={styles.heroTitleAccent}>{firstName}</Text>.
             </Text>
-            <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>
+            {/* Only a real reading earns a weather line - no invented 72°. */}
+            {weather && <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>}
           </View>
 
           {/* One-tap department question for accounts whose profile predates

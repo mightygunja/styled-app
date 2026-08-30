@@ -33,13 +33,15 @@ export type NotificationType =
   | 'stylist_booking'
   | 'session_reminder'
   | 'challenge_invite'
-  | 'group_invite';
+  | 'group_invite'
+  // Written by the backend (e.g. stylist approval) - no acting user behind it.
+  | 'system';
 
 export interface Notification {
   id: string;
   userId: string;
   type: NotificationType;
-  actorId: string;
+  actorId?: string;
   actor?: UserProfile;
   targetId?: string;
   targetType?: 'post' | 'comment' | 'message' | 'session' | 'challenge' | 'group';

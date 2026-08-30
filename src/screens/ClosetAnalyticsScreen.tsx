@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { colors, fonts } from '../theme/designSystem';
 
@@ -29,7 +31,7 @@ interface AnalyticsData {
 }
 
 export default function ClosetAnalyticsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,11 +63,19 @@ export default function ClosetAnalyticsScreen() {
         colorBreakdown[color] = (colorBreakdown[color] || 0) + 1;
       });
 
-      // Season breakdown
+      // Season breakdown - items store a `seasons` array (from AI
+      // classification), and an item can belong to more than one.
       const seasonBreakdown: { [key: string]: number } = {};
       items.forEach((item: any) => {
-        const season = item.season || 'All Season';
-        seasonBreakdown[season] = (seasonBreakdown[season] || 0) + 1;
+        const seasons: string[] = Array.isArray(item.seasons) ? item.seasons : [];
+        if (seasons.length === 0) {
+          seasonBreakdown['All Season'] = (seasonBreakdown['All Season'] || 0) + 1;
+        } else {
+          seasons.forEach(s => {
+            const label = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+            seasonBreakdown[label] = (seasonBreakdown[label] || 0) + 1;
+          });
+        }
       });
 
       // Most/least worn - sorted by real wornCount
@@ -103,6 +113,7 @@ export default function ClosetAnalyticsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Analyzing your closet...</Text>
@@ -114,6 +125,7 @@ export default function ClosetAnalyticsScreen() {
   if (!analytics) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Unable to load analytics</Text>
         </View>
@@ -121,9 +133,37 @@ export default function ClosetAnalyticsScreen() {
     );
   }
 
+  // Analytics over an empty closet would be a page of zeros and blank charts,
+  // so send the user to the one action that changes that.
+  if (analytics.totalItems === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <BackButton />
+        <View style={styles.errorContainer}>
+          <Text style={styles.emptyTitle}>Nothing to analyze yet</Text>
+          <Text style={styles.emptyText}>
+            Add items to your closet and this page will show what you own, what you wear, and
+            what it costs per wear.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => navigation.navigate('AddClosetItem')}
+          >
+            <Text style={styles.emptyButtonText}>Add an item</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // The insights below read the top entry, so sort by count first -
+  // object-key order is just item-iteration order.
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const topCategory = Object.entries(analytics.categoryBreakdown).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topColor = Object.entries(analytics.colorBreakdown).sort((a, b) => b[1] - a[1])[0]?.[0];
+
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton />
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
@@ -210,7 +250,7 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Most Worn Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Most Worn Items </Text>
+          <Text style={styles.sectionTitle}>Most Worn Items</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {analytics.mostWornItems.map((item: any) => (
               <View key={item.id} style={styles.itemCard}>
@@ -226,7 +266,7 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Least Worn Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Least Worn Items </Text>
+          <Text style={styles.sectionTitle}>Least Worn Items</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {analytics.leastWornItems.map((item: any) => (
               <View key={item.id} style={styles.itemCard}>
@@ -242,18 +282,23 @@ export default function ClosetAnalyticsScreen() {
 
         {/* Insights */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Insights </Text>
+          <Text style={styles.sectionTitle}>Insights</Text>
+          {topCategory && (
+            <View style={styles.insightCard}>
+              <Text style={styles.insightText}>
+                {capitalize(topCategory)} is your largest category
+              </Text>
+            </View>
+          )}
+          {topColor && (
+            <View style={styles.insightCard}>
+              <Text style={styles.insightText}>
+                {capitalize(topColor)} is your most common color
+              </Text>
+            </View>
+          )}
           <View style={styles.insightCard}>
-                        <Text style={styles.insightText}>You wear {Object.keys(analytics.categoryBreakdown)[0]} items most often
-            </Text>
-          </View>
-          <View style={styles.insightCard}>
-                        <Text style={styles.insightText}>
-              {Object.keys(analytics.colorBreakdown)[0]} is your most common color
-            </Text>
-          </View>
-          <View style={styles.insightCard}>
-                        <Text style={styles.insightText}>
+            <Text style={styles.insightText}>
               {Object.keys(analytics.costPerWear).length >0
                 ? `Average cost per wear: $${(
                     Object.values(analytics.costPerWear).reduce((sum, v) =>sum + v, 0) /
@@ -291,6 +336,30 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: colors.ink,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 32,
+  },
+  emptyButton: {
+    backgroundColor: colors.ink,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  emptyButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontFamily: fonts.sansSemiBold,
   },
   header: {
     flexDirection: 'row',

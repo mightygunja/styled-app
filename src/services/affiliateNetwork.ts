@@ -681,20 +681,21 @@ export function amazonSearchUrl(query: string): string {
 export function curatedCatalogNotice(): string | null {
   if (MARKETPLACE_PROVIDER === 'mock') {
     return (
-      'Showing a sample catalogue. Connect a retail partner and these become live, purchasable ' +
-      'products — the scoring is already real.'
+      'Showing a sample catalogue with representative photos, not exact product shots. Connect ' +
+      'a retail partner and these become live, purchasable products — the scoring is already real.'
     );
   }
   if (MARKETPLACE_PROVIDER === 'amazon') {
     return (
-      'Picks curated by us; each links to a matching search on Amazon rather than a specific ' +
-      'in-stock item. As an Amazon Associate we earn from qualifying purchases.'
+      'Picks curated by us; photos are representative, not exact product shots, and each piece ' +
+      'links to a matching search on Amazon rather than a specific in-stock item. As an Amazon ' +
+      'Associate we earn from qualifying purchases.'
     );
   }
   if (MARKETPLACE_PROVIDER === 'starter') {
     return (
-      'A mix of picks curated by us (linking to matching Amazon searches) and live eBay ' +
-      'listings. As an Amazon Associate we earn from qualifying purchases.'
+      'A mix of picks curated by us (representative photos, linking to matching Amazon ' +
+      'searches) and live eBay listings. As an Amazon Associate we earn from qualifying purchases.'
     );
   }
   return null;

@@ -187,6 +187,12 @@ function localeFit(
  * are demoted (harder for cautious users, gently for adventurous ones) and
  * carry the crossed rule so every surface can say it out loud.
  *
+ * "Not my thing" is honoured per trend, not just as a global mood: one
+ * dismissal sinks that trend to the bottom of every surface, a second
+ * removes it outright. Saying it twice is the user repeating themselves -
+ * bringing the trend back at rank one after that would make the control
+ * a lie.
+ *
  * With a LocaleContext the ranking is also local: the same published pool
  * orders differently per city, weather, and street-style scene.
  */
@@ -196,10 +202,13 @@ export function buildRemixes(
   profile?: ProfileMatchContext,
   locale?: LocaleContext
 ): TrendRemix[] {
-  const adventurousness = trendAdventurousness(shopperSignals.current());
+  const signals = shopperSignals.current();
+  const adventurousness = trendAdventurousness(signals);
+  const dismissals = signals.trendDismissals || {};
 
   return trends
     .filter(t => t.stage !== 'fading' || adventurousness < 0.4)
+    .filter(t => (dismissals[t.id] || 0) < 2)
     .map(trend => {
       const { anchors, supporting } = trendCoverage(trend, closetItems);
       const wearableToday = anchors.length > 0;
@@ -224,6 +233,9 @@ export function buildRemixes(
         (0.55 + 0.45 * e.remix.adjacency) *
         (e.remix.wearableToday ? 1.35 : 1) *
         (e.remix.challengesAvoidRule ? 0.35 + 0.4 * adventurousness : 1) *
+        // An explicit "not my thing" outweighs every promotion signal - the
+        // trend still exists, but at the bottom, not back at rank one.
+        (dismissals[e.remix.trend.id] ? 0.05 : 1) *
         e.localeMultiplier;
       return weight(b) - weight(a);
     })
@@ -246,6 +258,9 @@ export async function loadTrendRemixes(
     locale?.city && !locale.localeStyle
       ? getLocaleStyle(locale.city, locale.region, locale.country).catch(() => undefined)
       : Promise.resolve(locale?.localeStyle),
+    // Warm the signals cache so per-trend dismissals and adventurousness are
+    // read from storage, not an empty default, whichever screen calls first.
+    shopperSignals.load().catch(() => undefined),
   ]);
   return buildRemixes(
     trends,

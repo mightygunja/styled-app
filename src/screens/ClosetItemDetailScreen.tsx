@@ -4,7 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
-import { closetAPI, ClosetItem } from '../services/api';
+import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
+import { uploadImageToFirebase } from '../services/firebaseStorage';
+import { readAsStringAsync } from 'expo-file-system/legacy';
+import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -21,7 +24,37 @@ export default function ClosetItemDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [removingBackground, setRemovingBackground] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [addingPhoto, setAddingPhoto] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+
+  /**
+   * Attaches a photo to an item that was created without one (receipt imports
+   * store needsPhoto: true and an empty imageUrl). This is the only add-photo
+   * path for an existing item, so the placeholder below has to offer it.
+   */
+  const handlePhotoSelected = async (uri: string) => {
+    setAddingPhoto(true);
+    try {
+      const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+      const imageUrl = await uploadImageToFirebase(
+        `data:image/jpeg;base64,${base64}`,
+        getCurrentUserId()
+      );
+      await closetAPI.update(closetItemId, {
+        imageUrl,
+        thumbnailUrl: imageUrl,
+        needsPhoto: false,
+      } as any);
+      setItem(prev => (prev ? ({ ...prev, imageUrl } as ClosetItem) : prev));
+      showToast('Photo added', 'success');
+    } catch (error: any) {
+      console.error('Error adding photo:', error);
+      Alert.alert('Could not add the photo', error?.message || 'Please try again.');
+    } finally {
+      setAddingPhoto(false);
+    }
+  };
 
   /**
    * Cuts the garment out onto transparency for a cleaner closet grid.
@@ -131,6 +164,7 @@ export default function ClosetItemDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
@@ -141,6 +175,7 @@ export default function ClosetItemDetailScreen() {
   if (!item) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Item not found</Text>
         </View>
@@ -161,15 +196,26 @@ export default function ClosetItemDetailScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Image */}
-        <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
-
-        {/* AI Confidence Badge */}
-        {item.aiConfidence !== undefined && item.aiConfidence !== null && (
-          <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>AI Detected ({Math.round(item.aiConfidence * 100)}% confident)
-            </Text>
-          </View>
+        {/* Image - items imported from receipts arrive without one, so the
+            blank slot doubles as the add-photo control. */}
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+        ) : (
+          <TouchableOpacity
+            style={[styles.image, styles.addPhotoPlaceholder]}
+            onPress={() => setShowPhotoModal(true)}
+            disabled={addingPhoto}
+            activeOpacity={0.8}
+          >
+            {addingPhoto ? (
+              <ActivityIndicator size="large" color={colors.ink} />
+            ) : (
+              <>
+                <Text style={styles.addPhotoText}>No photo yet</Text>
+                <Text style={styles.addPhotoSubtext}>Tap to add one — outfit building needs it</Text>
+              </>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Basic Info */}
@@ -315,7 +361,7 @@ export default function ClosetItemDetailScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={styles.outfitButton} 
-            onPress={() =>navigation.navigate('OutfitBuilder', { sourceItemId: closetItemId })}
+            onPress={() =>navigation.navigate('SmartOutfitBuilder' as any, { sourceItemId: closetItemId })}
           >
             <Text style={styles.outfitButtonText}>Create Outfit</Text>
           </TouchableOpacity>
@@ -334,15 +380,24 @@ export default function ClosetItemDetailScreen() {
             disabled={removingBackground}
           >
             <Text style={styles.cutoutButtonText}>
-              {removingBackground ? 'Cutting it out…' : '  Remove background'}
+              {removingBackground ? 'Cutting it out…' : 'Remove background'}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
       
+      <PhotoUploadModal
+        visible={showPhotoModal}
+        onClose={() => setShowPhotoModal(false)}
+        onPhotoSelected={uri => {
+          setShowPhotoModal(false);
+          handlePhotoSelected(uri);
+        }}
+      />
+
       <SuccessAnimation
         visible={showSuccess}
-        message="Marked as worn! "
+        message="Marked as worn!"
         onComplete={() =>setShowSuccess(false)}
         duration={1500}
       />
@@ -396,18 +451,24 @@ const styles = StyleSheet.create({
     aspectRatio: 0.75,
     backgroundColor: colors.paper,
   },
-  aiBadge: {
-    backgroundColor: colors.sand,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.ink,
-    padding: 12,
-    margin: 16,
-    marginBottom: 0,
+  addPhotoPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.hair,
+    borderStyle: 'dashed',
+    padding: 32,
   },
-  aiBadgeText: {
-    fontSize: 14,
-    color: colors.tobacco,
+  addPhotoText: {
+    fontSize: 16,
+    color: colors.inkMuted,
     fontFamily: fonts.sansSemiBold,
+    marginBottom: 8,
+  },
+  addPhotoSubtext: {
+    fontSize: 13,
+    color: colors.inkFaint,
+    textAlign: 'center',
   },
   section: {
     padding: 20,

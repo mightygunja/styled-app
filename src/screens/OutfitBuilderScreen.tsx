@@ -43,6 +43,30 @@ export default function OutfitBuilderScreen() {
     { id: 'athletic', label: 'Athletic' },
   ];
 
+  // Nothing in the app writes an `occasion` field onto closet items, so the
+  // filter matches on what the AI classification actually stores - style,
+  // tags, and subcategory - using the same keyword buckets as outfitPairing.
+  const occasionPatterns: Record<string, RegExp> = {
+    casual: /casual|everyday|relaxed|denim|jean|sneaker|tee/,
+    work: /formal|business|professional|blazer|button|trouser|structured/,
+    formal: /formal|suit|gown|tuxedo|evening|cocktail/,
+    athletic: /athletic|sport|gym|active|yoga|running|legging/,
+  };
+
+  const matchesOccasion = (item: ClosetItem, occasionId: string): boolean => {
+    const pattern = occasionPatterns[occasionId];
+    if (!pattern) return false;
+    const haystack = [
+      item.occasion || '',
+      (item as any).style || '',
+      item.subcategory || '',
+      ...(item.tags || []),
+    ]
+      .join(' ')
+      .toLowerCase();
+    return pattern.test(haystack);
+  };
+
   useEffect(() => {
     if (sourceItemId) {
       loadOutfitSuggestions();
@@ -246,10 +270,7 @@ export default function OutfitBuilderScreen() {
 
     // Filter items by occasion
     const itemsToFilter = sourceItem ? getOutfitPairings(sourceItem, allItems) : allItems;
-    const filtered = itemsToFilter.filter(item => {
-      const itemOccasion = item.occasion?.toLowerCase();
-      return itemOccasion === occasion.toLowerCase();
-    });
+    const filtered = itemsToFilter.filter(item => matchesOccasion(item, occasion));
     
     console.log(`OutfitBuilder: Filtered to ${filtered.length} items for occasion: ${occasion}`);
     setSuggestedItems(filtered);
@@ -381,8 +402,8 @@ export default function OutfitBuilderScreen() {
           {suggestedItems.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
-                {selectedOccasion 
-                  ? `No items found for ${selectedOccasion}. Try selecting "All" or add items with this occasion to your closet.`
+                {selectedOccasion
+                  ? `Nothing in your closet reads as ${selectedOccasion}. Try "All".`
                   : allItems.length === 0
                     ? 'No items in your closet yet. Add some items to get started!'
                     : 'No matching items found. Try adjusting your filters.'}
@@ -420,7 +441,7 @@ export default function OutfitBuilderScreen() {
       
       <SuccessAnimation
         visible={showSuccess}
-        message={`Outfit with ${selectedItems.length} items saved! `}
+        message={`Outfit with ${selectedItems.length} items saved`}
         onComplete={() => {
           setShowSuccess(false);
           navigation.goBack();

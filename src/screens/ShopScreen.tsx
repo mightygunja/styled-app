@@ -64,6 +64,7 @@ export default function ShopScreen() {
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [sort, setSort] = useState<ProductSort>('match');
   const [products, setProducts] = useState<MatchedProduct[]>([]);
+  const [wardrobeFocus, setWardrobeFocus] = useState<'womens' | 'mens' | 'all'>('all');
   const [allTrends, setAllTrends] = useState<FashionTrend[]>([]);
   // "Shopping the trend" focus, set when a trend surface sent the user here.
   // Filters and orders the grid to pieces that actually carry the trend.
@@ -78,6 +79,7 @@ export default function ShopScreen() {
       // (Sovrn) use it to return better candidates; keyword providers ignore
       // the extra fields harmlessly.
       const profile = await buildProfileMatchContext(userId);
+      setWardrobeFocus(profile?.wardrobeFocus ?? 'all');
 
       const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
@@ -207,6 +209,26 @@ export default function ShopScreen() {
     [trendFiltered, matchedOnly]
   );
 
+  // A menswear focus never sees a dress - departmentAllowed drops the whole
+  // category, so offering the chip would guarantee an empty grid. Hide it
+  // rather than explain it.
+  const categoryFilters = useMemo(
+    () =>
+      wardrobeFocus === 'mens'
+        ? CATEGORY_FILTERS.filter(f => f.value !== 'dresses')
+        : CATEGORY_FILTERS,
+    [wardrobeFocus]
+  );
+
+  // If a route param or an earlier tap left Dresses selected before the
+  // profile loaded, snap back to All so the user isn't stuck on a filter
+  // whose chip no longer exists.
+  useEffect(() => {
+    if (wardrobeFocus === 'mens' && category === 'dresses') {
+      setCategory('all');
+    }
+  }, [wardrobeFocus, category]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -286,7 +308,7 @@ export default function ShopScreen() {
         style={styles.categoryScroll}
         contentContainerStyle={styles.categoryContent}
       >
-        {CATEGORY_FILTERS.map(item => (
+        {categoryFilters.map(item => (
           <Chip
             key={item.value}
             label={item.label}

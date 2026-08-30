@@ -41,6 +41,9 @@ const SECTIONS: MoreSection[] = [
     items: [
       { label: 'Edits', subtitle: 'A STYLIST ON YOUR OWN CLOSET', icon: 'sparkles-outline', route: 'Edits' },
       { label: 'The Trend Report', subtitle: "WHAT'S MOVING, RANKED FOR YOU", icon: 'trending-up-outline', route: 'TrendInsights' },
+      { label: 'Wardrobe analysis', subtitle: 'YOUR STYLES, COLORS AND BRANDS IN NUMBERS', icon: 'analytics-outline', route: 'StyleAnalysis' },
+      { label: 'Outfit ideas', subtitle: 'OUTFITS FROM YOUR CLOSET, BY OCCASION', icon: 'shirt-outline', route: 'SmartRecommendations' },
+      { label: 'Looks to browse', subtitle: 'THE LOOKBOOK, BY SEASON AND OCCASION', icon: 'book-outline', route: 'Recommendations' },
     ],
   },
   {

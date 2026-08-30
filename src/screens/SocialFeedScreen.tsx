@@ -19,6 +19,7 @@ import BackButton from '../components/BackButton';
 import { socialFeedService, Post } from '../services/socialFeedService';
 import { userProfileService, FollowSuggestion } from '../services/userProfileService';
 import { exploreService } from '../services/exploreService';
+import { userSettingsService } from '../services/userSettingsService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
@@ -38,17 +39,46 @@ export default function SocialFeedScreen() {
   // someone needs a way out.
   const [suggestions, setSuggestions] = useState<FollowSuggestion[]>([]);
   const [discoverable, setDiscoverable] = useState<Post[]>([]);
+  // Paging state. The feed used to be hard-capped at the newest 10 posts -
+  // anything older simply vanished from the app.
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // When set, the screen shows public posts carrying this tag instead of the
+  // feed. Tags rendered as links but did nothing before this.
+  const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
+
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadFeed();
   }, []);
 
+  // The "Show following only" toggle in Settings is a real filter here, not a
+  // stored bit nothing reads: when it's on, the feed keeps posts from people
+  // the user follows plus their own. A settings failure falls back to the
+  // unfiltered feed rather than an empty screen.
+  const applyFeedSettings = async (userId: string, feedPosts: Post[]): Promise<Post[]> => {
+    try {
+      const settings = await userSettingsService.get(userId);
+      if (!settings.feedShowFollowingOnly) return feedPosts;
+      const following = await userProfileService.getFollowing(userId);
+      const followedIds = new Set(following.map(profile => profile.userId));
+      return feedPosts.filter(post => post.userId === userId || followedIds.has(post.userId));
+    } catch (error) {
+      console.error('Error applying feed settings:', error);
+      return feedPosts;
+    }
+  };
+
   const loadFeed = async () => {
     try {
       setLoading(true);
-      const feedPosts = await socialFeedService.getFeed(getCurrentUserId());
-      
+      const userId = getCurrentUserId();
+      const fetchedPosts = await socialFeedService.getFeed(userId);
+      const feedPosts = await applyFeedSettings(userId, fetchedPosts);
+
       // Load user profiles for posts
       const postsWithUsers = await Promise.all(
         feedPosts.map(async (post) => {
@@ -60,10 +90,13 @@ export default function SocialFeedScreen() {
       );
       
       setPosts(postsWithUsers);
+      setActiveHashtag(null);
+      setPage(1);
+      // Paging tracks what the server returned, not what the filter kept.
+      setHasMore(fetchedPosts.length === PAGE_SIZE);
 
       // Suggestions are enrichment - they load after the feed and never block
       // it, and they stay empty rather than inventing anyone.
-      const userId = getCurrentUserId();
       userProfileService
         .getFollowSuggestions(userId, 8)
         .then(setSuggestions)
@@ -90,9 +123,66 @@ export default function SocialFeedScreen() {
     }
   };
 
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || activeHashtag) return;
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const userId = getCurrentUserId();
+      const fetchedPosts = await socialFeedService.getFeed(userId, nextPage, PAGE_SIZE);
+      const morePosts = await applyFeedSettings(userId, fetchedPosts);
+      const moreWithUsers = await Promise.all(
+        morePosts.map(async (post) => {
+          const user = await userProfileService.getUserProfile(post.userId);
+          return { ...post, user: user || undefined };
+        })
+      );
+      setPosts(prev => [
+        ...prev,
+        ...moreWithUsers.filter(p => !prev.some(existing => existing.id === p.id)),
+      ]);
+      setPage(nextPage);
+      setHasMore(fetchedPosts.length === PAGE_SIZE);
+    } catch (error) {
+      showToast('Could not load older posts', 'error');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Public posts carrying one tag, newest first, with the same like/save
+  // state the feed loads. Replaces the empty onPress the hashtags shipped with.
+  const loadHashtag = async (tag: string) => {
+    try {
+      setLoading(true);
+      const userId = getCurrentUserId();
+      const tagPosts = await socialFeedService.searchByHashtag(tag);
+      const withState = await Promise.all(
+        tagPosts.map(async (post) => {
+          const [user, isLiked, isSaved] = await Promise.all([
+            userProfileService.getUserProfile(post.userId),
+            socialFeedService.isPostLiked(post.id, userId),
+            socialFeedService.isPostSaved(post.id, userId),
+          ]);
+          return { ...post, user: user || undefined, isLiked, isSaved };
+        })
+      );
+      setActiveHashtag(tag);
+      setPosts(withState);
+    } catch (error) {
+      showToast('Could not load that tag', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadFeed();
+    if (activeHashtag) {
+      await loadHashtag(activeHashtag);
+    } else {
+      await loadFeed();
+    }
     setRefreshing(false);
   };
 
@@ -240,7 +330,7 @@ export default function SocialFeedScreen() {
         {post.hashtags.length >0 && (
           <View style={styles.hashtagsContainer}>
             {post.hashtags.map((tag, index) => (
-              <TouchableOpacity key={index} onPress={() => {}}>
+              <TouchableOpacity key={index} onPress={() => loadHashtag(tag)}>
                 <Text style={styles.hashtag}>#{tag} </Text>
               </TouchableOpacity>
             ))}
@@ -283,30 +373,57 @@ export default function SocialFeedScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
       >
-        <View style={styles.intro}>
-          <Text style={styles.eyebrow}>COMMUNITY</Text>
-          <Text style={styles.title}>The feed</Text>
-          <Text style={styles.subtitle}>Looks from the people you follow, newest first.</Text>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => navigation.navigate('CreatePost')}
-          >
-            <Text style={styles.createButtonText}>Share a look</Text>
-          </TouchableOpacity>
-        </View>
+        {activeHashtag ? (
+          <View style={styles.intro}>
+            <Text style={styles.eyebrow}>TAGGED</Text>
+            <Text style={styles.title}>#{activeHashtag}</Text>
+            <Text style={styles.subtitle}>Public posts using this tag, newest first.</Text>
+            <TouchableOpacity style={styles.clearTagButton} onPress={loadFeed}>
+              <Text style={styles.clearTagButtonText}>Back to the feed</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.intro}>
+            <Text style={styles.eyebrow}>COMMUNITY</Text>
+            <Text style={styles.title}>The feed</Text>
+            {/* The feed is every public post, so the copy says so - it used to
+                claim it was driven by who you follow, which was never true. */}
+            <Text style={styles.subtitle}>The newest public looks from the community.</Text>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => navigation.navigate('CreatePost')}
+            >
+              <Text style={styles.createButtonText}>Share a look</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {posts.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Your feed is quiet</Text>
+            <Text style={styles.emptyText}>
+              {activeHashtag ? 'Nothing under this tag' : 'The feed is quiet'}
+            </Text>
             <Text style={styles.emptySubtext}>
-              Posts from people you follow appear here. Follow a few to get it going.
+              {activeHashtag
+                ? 'No public posts use this tag yet.'
+                : 'No one has posted yet. Share a look to start it off.'}
             </Text>
           </View>
         )}
 
         {posts.map(renderPost)}
 
-        {suggestions.length > 0 && (
+        {!activeHashtag && posts.length > 0 && hasMore && (
+          <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore} disabled={loadingMore}>
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={colors.ink} />
+            ) : (
+              <Text style={styles.loadMoreButtonText}>Load older posts</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {!activeHashtag && suggestions.length > 0 && (
           <View style={styles.railSection}>
             <Text style={styles.railLabel}>PEOPLE TO FOLLOW</Text>
             {suggestions.map(({ user, reason }) => (
@@ -338,7 +455,7 @@ export default function SocialFeedScreen() {
           </View>
         )}
 
-        {discoverable.length > 0 && (
+        {!activeHashtag && discoverable.length > 0 && (
           <View style={styles.railSection}>
             <Text style={styles.railLabel}>WHAT'S MOVING</Text>
             <Text style={styles.railNote}>
@@ -426,6 +543,36 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: 14,
     color: colors.white,
+  },
+  clearTagButton: {
+    alignSelf: 'flex-start',
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  clearTagButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  loadMoreButton: {
+    alignSelf: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.card,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    minWidth: 160,
+    alignItems: 'center',
+  },
+  loadMoreButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.ink,
   },
   // A hairline rule between posts rather than an 8px slab of paper. The
   // separation should read as editorial, not as a gap in the page.

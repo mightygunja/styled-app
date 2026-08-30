@@ -45,7 +45,8 @@ class ReviewService {
       submission.sessionId,
       submission.sessionType,
       submission.rating,
-      submission.comment
+      submission.comment,
+      submission.wouldRecommend
     );
   }
 
@@ -81,7 +82,11 @@ class ReviewService {
       ratingDistribution[r.rating] = (ratingDistribution[r.rating] || 0) + 1;
     });
 
-    const recommendationRate = reviews.filter(r => r.rating >= 4).length / reviews.length;
+    // Use the reviewer's explicit answer where it was stored; reviews that
+    // predate the wouldRecommend field fall back to their rating.
+    const recommendationRate =
+      reviews.filter(r => (r.wouldRecommend !== undefined ? r.wouldRecommend : r.rating >= 4)).length /
+      reviews.length;
 
     return {
       averageRating,

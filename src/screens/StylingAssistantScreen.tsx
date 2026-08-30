@@ -32,10 +32,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const OCCASIONS = ['Casual', 'Work', 'Formal', 'Date', 'Workout', 'Party'];
 const MOODS = ['Confident', 'Relaxed', 'Adventurous', 'Professional', 'Romantic', 'Energetic'];
 
-const WEATHER_ICON: Record<string, string> = {
-  sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀',
-};
-
 const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
@@ -371,7 +367,7 @@ export default function StylingAssistantScreen() {
 
               <TouchableOpacity style={styles.getOutfitButton} onPress={handleGetOutfit} disabled={sending}>
                 <Text style={styles.getOutfitButtonText}>
-                  Get Recommendation {weather ? `(${WEATHER_ICON[weather.condition]} ${weather.temperature}°F)` : ''}
+                  Get Recommendation {weather ? `(${weather.temperature}° · ${weather.condition})` : ''}
                 </Text>
               </TouchableOpacity>
             </View>

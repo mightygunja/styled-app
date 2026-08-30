@@ -40,6 +40,11 @@ export default function UserProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
+  // Saved posts load lazily the first time their tab opens. The tab used to
+  // render the same grid as Posts, so nothing anyone saved ever surfaced.
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [savedLoaded, setSavedLoaded] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const isOwnProfile = userId === getCurrentUserId();
@@ -47,6 +52,26 @@ export default function UserProfileScreen() {
   useEffect(() => {
     loadProfile();
   }, [userId]);
+
+  useEffect(() => {
+    if (activeTab === 'saved' && isOwnProfile && !savedLoaded && !savedLoading) {
+      loadSavedPosts();
+    }
+  }, [activeTab]);
+
+  const loadSavedPosts = async () => {
+    try {
+      setSavedLoading(true);
+      const data = await socialFeedService.getSavedPosts(userId);
+      setSavedPosts(data);
+      setSavedLoaded(true);
+    } catch (error) {
+      console.error('Error loading saved posts:', error);
+      showToast('Failed to load saved posts', 'error');
+    } finally {
+      setSavedLoading(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -250,6 +275,21 @@ export default function UserProfileScreen() {
             <Text style={styles.emptyTitle}>Saved posts are private</Text>
             <Text style={styles.emptyText}>Only {profile.displayName} can see this.</Text>
           </View>
+        ) : activeTab === 'saved' ? (
+          savedLoading ? (
+            <View style={styles.savedLoading}>
+              <ActivityIndicator size="small" color={colors.ink} />
+            </View>
+          ) : savedPosts.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+              <Text style={styles.emptyText}>
+                Save a look from the feed and it will be kept here.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.grid}>{savedPosts.map(renderPost)}</View>
+          )
         ) : posts.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>No posts yet</Text>
@@ -365,6 +405,7 @@ const styles = StyleSheet.create({
   },
   multipleCount: { fontFamily: fonts.sansMedium, fontSize: 10, color: colors.white },
 
+  savedLoading: { paddingVertical: spacing.section, alignItems: 'center' },
   emptyBox: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },

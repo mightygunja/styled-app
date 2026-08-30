@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -124,23 +124,16 @@ export default function BeforeAfterPhotosScreen() {
     }
   };
 
-  const handleShare = async (pairId: string) => {
+  // Real system share sheet with the real uploaded photo URLs - no
+  // fabricated "link copied" claim. The former Export button is gone: there
+  // is no media-library integration to genuinely save a file with.
+  const handleShare = async (pair: PhotoPair) => {
     try {
-      const shareUrl = await beforeAfterService.shareTransformation(pairId, 'instagram');
-      showToast('Share link copied!', 'success');
-      // In production, would open share sheet
+      await Share.share({
+        message: `Before: ${pair.beforePhoto.imageUrl}\nAfter: ${pair.afterPhoto.imageUrl}`,
+      });
     } catch (error) {
-      showToast('Failed to share', 'error');
-    }
-  };
-
-  const handleExport = async (pairId: string) => {
-    try {
-      const exportUrl = await beforeAfterService.exportComparison(pairId);
-      showToast('Comparison exported!', 'success');
-      // In production, would save to device
-    } catch (error) {
-      showToast('Failed to export', 'error');
+      showToast('Could not open the share sheet', 'error');
     }
   };
 
@@ -175,11 +168,8 @@ export default function BeforeAfterPhotosScreen() {
 
       {/* Actions */}
       <View style={styles.pairActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() =>handleShare(pair.id)}>
+        <TouchableOpacity style={styles.actionButton} onPress={() =>handleShare(pair)}>
                     <Text style={styles.actionText}>Share</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() =>handleExport(pair.id)}>
-                    <Text style={styles.actionText}>Export</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -212,7 +202,6 @@ export default function BeforeAfterPhotosScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() =>navigation.goBack()}>

@@ -111,7 +111,6 @@ export const closetAPI = {
         notes: data.notes || null,
         price: typeof data.price === 'number' ? data.price : null,
         embedding,
-        aiConfidence: 0.9,
       };
 
       const item = await closetService.create(userId, itemData);

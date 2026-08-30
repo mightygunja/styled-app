@@ -60,11 +60,23 @@ export default function GroupDetailScreen() {
     }
   };
 
-  if (loading || !group) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}><BackButton /></View>
         <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.ink} /></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!group) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}><BackButton /></View>
+        <View style={styles.content}>
+          <Text style={styles.title}>Group not found</Text>
+          <Text style={styles.description}>It may have been closed or removed.</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -76,7 +88,10 @@ export default function GroupDetailScreen() {
         {group.imageUrl && <Image source={{ uri: group.imageUrl }} style={styles.hero} resizeMode="cover" />}
         <Text style={styles.eyebrow}>{group.category.toUpperCase()} · {group.privacy.toUpperCase()}</Text>
         <Text style={styles.title}>{group.name}</Text>
-        <Text style={styles.meta}>{group.members} members · {group.posts} posts</Text>
+        {/* Only the members figure is shown. A posts count was advertised here
+            too, but group posts can't be read or written anywhere in the app,
+            so the number promised a feed that doesn't exist. */}
+        <Text style={styles.meta}>{group.members} {group.members === 1 ? 'member' : 'members'}</Text>
         <Text style={styles.description}>{group.description}</Text>
 
         {!isMember && (

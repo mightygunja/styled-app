@@ -265,15 +265,24 @@ export default function ChallengeDetailScreen() {
                 </Text>
               )}
 
-              <TouchableOpacity
-                style={[styles.voteButton, entry.hasVoted && styles.voteButtonActive]}
-                onPress={() => handleVote(entry.id)}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.voteText, entry.hasVoted && styles.voteTextActive]}>
-                  {entry.hasVoted ? 'VOTED' : 'VOTE'} · {entry.votes}
+              {/* Voting closes with the challenge - a live vote button on a
+                  finished challenge let anyone quietly rewrite the standings.
+                  Once it's over, the count is just a number. */}
+              {isOpen ? (
+                <TouchableOpacity
+                  style={[styles.voteButton, entry.hasVoted && styles.voteButtonActive]}
+                  onPress={() => handleVote(entry.id)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.voteText, entry.hasVoted && styles.voteTextActive]}>
+                    {entry.hasVoted ? 'VOTED' : 'VOTE'} · {entry.votes}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.voteClosed}>
+                  {entry.votes} {entry.votes === 1 ? 'VOTE' : 'VOTES'} · FINAL
                 </Text>
-              </TouchableOpacity>
+              )}
             </View>
           ))
         )}
@@ -366,4 +375,11 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   voteTextActive: { color: colors.bone },
+  voteClosed: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.inkFaint,
+    marginTop: spacing.sm,
+  },
 });

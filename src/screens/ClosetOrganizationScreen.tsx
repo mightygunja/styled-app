@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -72,9 +73,17 @@ export default function ClosetOrganizationScreen() {
 
       // Get closet items
       const response = await closetAPI.getItems(getCurrentUserId());
+      // Items the user already chose to keep during a declutter review are
+      // flagged on the document so they stop being re-suggested.
+      const keptIds = new Set<string>(
+        response.data.filter((item: any) => item.declutterKeep).map((item: any) => item.id)
+      );
       const closetItems: Item[] = response.data.map((item: any) => ({
         id: item.id,
-        name: item.name || 'Item',
+        // Closet items have no name field - compose one from what the AI
+        // classification actually stores, like the sharing screen does.
+        name:
+          [item.color, item.subcategory || item.category].filter(Boolean).join(' ') || 'Item',
         imageUrl: item.imageUrl,
         category: item.category as any,
         color: item.color,
@@ -99,7 +108,7 @@ export default function ClosetOrganizationScreen() {
 
       // Get declutter suggestions
       const suggestions = await closetOrganizationService.getDeclutterSuggestions(closetItems);
-      setDeclutterSuggestions(suggestions);
+      setDeclutterSuggestions(suggestions.filter(s => !keptIds.has(s.item.id)));
 
       // Get capsule wardrobe, personalized with color/body/style profile data when available
       let profileContext: CapsuleProfileContext | undefined;
@@ -146,6 +155,44 @@ export default function ClosetOrganizationScreen() {
     } catch (error) {
       console.error('Error generating plan:', error);
     }
+  };
+
+  // "Keep" writes a flag on the item so this suggestion never comes back;
+  // "Donate" removes the item from the closet after a confirm.
+  const handleKeep = async (suggestion: DeclutterSuggestion) => {
+    try {
+      await closetAPI.update(suggestion.item.id, { declutterKeep: true });
+      setDeclutterSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+      showToast('Kept. It will not be suggested again.', 'success');
+    } catch (error) {
+      console.error('Error keeping item:', error);
+      showToast('Could not save that decision', 'error');
+    }
+  };
+
+  const handleDonate = (suggestion: DeclutterSuggestion) => {
+    Alert.alert(
+      'Donate this item?',
+      'This removes it from your closet. The clothes are yours to pass on.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await closetAPI.deleteItem(suggestion.item.id);
+              setDeclutterSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+              setItems(prev => prev.filter(i => i.id !== suggestion.item.id));
+              showToast('Removed from your closet', 'success');
+            } catch (error) {
+              console.error('Error removing item:', error);
+              showToast('Could not remove the item', 'error');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const getDeclutterReasonLabel = (reason: string): string => {
@@ -216,10 +263,13 @@ export default function ClosetOrganizationScreen() {
           <Text style={styles.declutterConfidenceValue}>{suggestion.confidence}%</Text>
         </View>
         <View style={styles.declutterActions}>
-          <TouchableOpacity style={styles.declutterActionButton}>
+          <TouchableOpacity style={styles.declutterActionButton} onPress={() => handleKeep(suggestion)}>
             <Text style={styles.declutterActionText}>Keep</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.declutterActionButton, styles.declutterActionButtonPrimary]}>
+          <TouchableOpacity
+            style={[styles.declutterActionButton, styles.declutterActionButtonPrimary]}
+            onPress={() => handleDonate(suggestion)}
+          >
             <Text style={styles.declutterActionTextPrimary}>Donate</Text>
           </TouchableOpacity>
         </View>
@@ -246,6 +296,7 @@ export default function ClosetOrganizationScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={ds.ink} />
           <Text style={styles.loadingText}>Organizing your closet...</Text>
@@ -256,7 +307,6 @@ export default function ClosetOrganizationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackButton />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() =>navigation.goBack()}>
@@ -603,6 +653,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: ds.inkMuted,
     lineHeight: 16,
+    textTransform: 'capitalize',
   },
   moreCard: {
     justifyContent: 'center',
@@ -704,6 +755,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     color: ds.ink,
     marginBottom: 8,
+    textTransform: 'capitalize',
   },
   declutterReason: {
     alignSelf: 'flex-start',

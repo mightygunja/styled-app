@@ -133,6 +133,17 @@ class GroupService {
       await updateDoc(doc(db, 'groupEvents', eventId), { attendees: increment(1) });
     }
   }
+
+  async cancelRsvp(eventId: string, userId: string): Promise<void> {
+    const snap = await getDocs(query(
+      collection(db, 'eventAttendees'),
+      where('eventId', '==', eventId),
+      where('userId', '==', userId)
+    ));
+    if (snap.empty) return;
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    await updateDoc(doc(db, 'groupEvents', eventId), { attendees: increment(-1) });
+  }
 }
 
 export const groupService = new GroupService();

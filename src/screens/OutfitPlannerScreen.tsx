@@ -392,6 +392,13 @@ export default function OutfitPlannerScreen() {
     );
   };
 
+  // Stats scoped to the month the label claims. PLANNED used to count every
+  // outfit ever saved, and WORN was a literal 0 that ignored markWorn entirely.
+  const now = new Date();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthOutfits = Object.values(plannedOutfits).filter(o => o.date.startsWith(monthPrefix));
+  const monthWornCount = monthOutfits.filter(o => o.worn).length;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* One back control. There was a shared BackButton and a hand-rolled
@@ -479,11 +486,11 @@ export default function OutfitPlannerScreen() {
           <Text style={styles.statsTitle}>THIS MONTH</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{Object.keys(plannedOutfits).length}</Text>
+              <Text style={styles.statNumber}>{monthOutfits.length}</Text>
               <Text style={styles.statLabel}>PLANNED</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{monthWornCount}</Text>
               <Text style={styles.statLabel}>WORN</Text>
             </View>
           </View>

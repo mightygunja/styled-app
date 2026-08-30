@@ -76,11 +76,35 @@ export default function StyleProfileScreen() {
     }, [loadStyleProfile, loadColorAnalysis])
   );
 
-  if (loading || !profile || !voice) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Loading finished but nothing arrived - a failed closet load or analysis.
+  // Say so and offer a retry rather than spinning forever on a main tab.
+  if (!profile || !voice) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>We couldn't load your style profile.</Text>
+          <Text style={styles.errorHint}>Check your connection and try again.</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setLoading(true);
+              loadStyleProfile();
+              loadColorAnalysis();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.retryButtonText}>Try again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -261,6 +285,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontFamily: fonts.serifMedium,
+    fontSize: 18,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  errorHint: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.inkMuted,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 24,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+  },
+  retryButtonText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: colors.bone,
   },
   content: {
     padding: 20,

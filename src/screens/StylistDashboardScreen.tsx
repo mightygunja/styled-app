@@ -92,11 +92,13 @@ export default function StylistDashboardScreen() {
             </Text>
             <Text style={styles.earningsStatLabel}>This Month</Text>
           </View>
+          {/* Last month, not "pending payouts" - there is no payout system,
+              so nothing is ever genuinely pending. */}
           <View style={styles.earningsStat}>
             <Text style={styles.earningsStatValue}>
-              ${earnings?.pendingPayouts.toFixed(0) || 0}
+              ${earnings?.lastMonth.toFixed(0) || 0}
             </Text>
-            <Text style={styles.earningsStatLabel}>Pending</Text>
+            <Text style={styles.earningsStatLabel}>Last Month</Text>
           </View>
         </View>
       </View>
@@ -167,8 +169,11 @@ export default function StylistDashboardScreen() {
             </View>
             <View style={styles.sessionFooter}>
               <Text style={styles.sessionDuration}>{session.duration} minutes</Text>
-              <TouchableOpacity style={styles.viewButton}>
-                <Text style={styles.viewButtonText}>View Details</Text>
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={() =>navigation.navigate('SessionNotes', { sessionId: session.id })}
+              >
+                <Text style={styles.viewButtonText}>View Notes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -180,6 +185,12 @@ export default function StylistDashboardScreen() {
   const renderClients = () => (
     <View style={styles.clientsContainer}>
       <Text style={styles.sectionTitle}>Your Clients ({clients.length})</Text>
+      {clients.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No clients yet</Text>
+          <Text style={styles.emptySubtext}>Clients appear here after their first booking with you.</Text>
+        </View>
+      )}
       {clients.map((client) => (
         <View key={client.id} style={styles.clientCard}>
           <View style={styles.clientHeader}>
@@ -612,5 +623,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });

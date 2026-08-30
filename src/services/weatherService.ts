@@ -22,8 +22,6 @@ export interface CurrentWeather {
   country?: string;
 }
 
-const FALLBACK_WEATHER: CurrentWeather = { condition: 'sunny', temperature: 72 };
-
 function mapWeatherCode(code: number, temperatureF: number): WeatherCondition {
   // WMO weather interpretation codes (used by Open-Meteo)
   if (code >= 71 && code <= 77) return 'snowy';
@@ -102,10 +100,15 @@ async function getIpCoords(): Promise<Coords | null> {
   }
 }
 
-export async function getCurrentWeather(): Promise<CurrentWeather> {
+/**
+ * Real conditions or nothing. Returns null when location or the forecast
+ * cannot be fetched - callers render without a weather line and skip weather
+ * scoring, rather than presenting an invented 72°-and-sunny as fact.
+ */
+export async function getCurrentWeather(): Promise<CurrentWeather | null> {
   try {
     const coords = (await getDeviceCoords()) || (await getIpCoords());
-    if (!coords) return FALLBACK_WEATHER;
+    if (!coords) return null;
 
     const weatherController = new AbortController();
     const weatherTimeout = setTimeout(() => weatherController.abort(), 5000);
@@ -114,13 +117,13 @@ export async function getCurrentWeather(): Promise<CurrentWeather> {
       { signal: weatherController.signal }
     );
     clearTimeout(weatherTimeout);
-    if (!weatherRes.ok) return FALLBACK_WEATHER;
+    if (!weatherRes.ok) return null;
     const data = await weatherRes.json();
 
     const temperature = Math.round(data.current?.temperature_2m);
     const code = data.current?.weather_code;
     if (typeof temperature !== 'number' || isNaN(temperature) || typeof code !== 'number') {
-      return FALLBACK_WEATHER;
+      return null;
     }
 
     return {
@@ -131,8 +134,8 @@ export async function getCurrentWeather(): Promise<CurrentWeather> {
       country: coords.country,
     };
   } catch (error) {
-    console.log('Could not fetch real weather, using fallback', error);
-    return FALLBACK_WEATHER;
+    console.log('Could not fetch real weather', error);
+    return null;
   }
 }
 
