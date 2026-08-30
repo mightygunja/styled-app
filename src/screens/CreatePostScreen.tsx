@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, PostType } from '../services/socialFeedService';
+import { challengeService } from '../services/challengeService';
 import { uploadImageToFirebase } from '../services/firebaseStorage';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
@@ -37,6 +38,9 @@ const POST_TYPES: { id: PostType; label: string }[] = [
 
 export default function CreatePostScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'CreatePost'>>();
+  // Arriving from a challenge: publishing also submits this post as the entry.
+  const challengeId = route.params?.challengeId;
   const [postType, setPostType] = useState<PostType>('outfit');
   const [images, setImages] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
@@ -101,7 +105,7 @@ export default function CreatePostScreen() {
         })
       );
 
-      await socialFeedService.createPost(
+      const post = await socialFeedService.createPost(
         getCurrentUserId(),
         postType,
         uploadedUrls,
@@ -109,6 +113,17 @@ export default function CreatePostScreen() {
         hashtagArray,
         'public'
       );
+
+      // Entering a challenge is publishing a post INTO it - this is the
+      // submission path that used to not exist anywhere in the UI.
+      if (challengeId && post?.id) {
+        await challengeService
+          .submitEntry(challengeId, getCurrentUserId(), post.id, uploadedUrls[0], caption)
+          .catch(error => {
+            console.error('Post published but challenge entry failed:', error);
+            showToast('Posted, but the challenge entry failed — try again from the challenge', 'error');
+          });
+      }
 
       setShowSuccess(true);
     } catch (error) {

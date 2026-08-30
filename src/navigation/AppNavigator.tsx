@@ -14,6 +14,7 @@ import ClosetItemDetailScreen from '../screens/ClosetItemDetailScreen';
 import SimilarItemsScreen from '../screens/SimilarItemsScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import OutfitBuilderScreen from '../screens/OutfitBuilderScreen';
+import SavedOutfitsScreen from '../screens/SavedOutfitsScreen';
 import OutfitPlannerScreen from '../screens/OutfitPlannerScreen';
 import PackingListScreen from '../screens/PackingListScreen';
 import ResaleScreen from '../screens/ResaleScreen';
@@ -294,6 +295,7 @@ const linking = {
       ClosetItemDetail: 'closet/item/:closetItemId',
       SimilarItems: 'closet/similar',
       OutfitBuilder: 'outfits/new',
+      SavedOutfits: 'outfits',
       OutfitPlanner: 'planner',
       PackingList: 'packing',
       SmartSearch: 'search',
@@ -446,6 +448,7 @@ export default function AppNavigator() {
             <Stack.Screen name="ClosetItemDetail" component={ClosetItemDetailScreen} />
             <Stack.Screen name="SimilarItems" component={SimilarItemsScreen} options={{ presentation: 'card' }} />
             <Stack.Screen name="Favorites" component={FavoritesScreen} />
+            <Stack.Screen name="SavedOutfits" component={SavedOutfitsScreen} />
             <Stack.Screen name="OutfitBuilder" component={OutfitBuilderScreen} />
             <Stack.Screen name="OutfitPlanner" component={OutfitPlannerScreen} />
             <Stack.Screen name="PackingList" component={PackingListScreen} />

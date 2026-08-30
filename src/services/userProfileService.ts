@@ -22,6 +22,9 @@ import {
   increment,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+// Cycle-safe: notificationService imports only the UserProfile TYPE from
+// this module, which TypeScript erases at emit.
+import { notificationService } from './notificationService';
 
 export interface RealUserInfo {
   displayName?: string | null;
@@ -61,22 +64,7 @@ export interface FollowSuggestion {
   mutualFollowers: number;
 }
 
-const DEFAULT_PROFILE_POOL = [
-  { displayName: 'Alex Johnson', username: 'alexj', bio: 'Fashion enthusiast 👗', styleTags: ['modern', 'chic'] },
-  { displayName: 'Sam Wilson', username: 'samw', bio: 'Style blogger ✨', styleTags: ['trendy', 'bold'] },
-  { displayName: 'Jordan Lee', username: 'jordanl', bio: 'Minimalist wardrobe 🤍', styleTags: ['minimalist', 'modern'] },
-  { displayName: 'Taylor Brown', username: 'taylorbrown', bio: 'Vintage lover 🕰️', styleTags: ['vintage', 'retro'] },
-];
-
 class UserProfileService {
-  private hashUserId(userId: string): number {
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-      hash = (hash * 31 + userId.charCodeAt(i)) % DEFAULT_PROFILE_POOL.length;
-    }
-    return Math.abs(hash);
-  }
-
   private buildDefaultProfile(userId: string, realUserInfo?: RealUserInfo): Omit<UserProfile, 'id'> {
     // A real signed-in user creating their own profile for the first time: seed it
     // from their actual Firebase Auth identity, not a random demo persona.
@@ -98,17 +86,16 @@ class UserProfileService {
       };
     }
 
-    // Encountering another user's id with no profile doc yet (e.g. a seeded sample
-    // account) - give them a deterministic-but-placeholder persona.
-    const base = DEFAULT_PROFILE_POOL[this.hashUserId(userId)];
+    // Another user's id with no profile doc yet. Honest placeholder, never a
+    // persona: no invented name, bio, city or stock face. The old version
+    // assigned real users fake identities ("Alex Johnson from New York")
+    // and even persisted them - fabricated people in a real community.
     return {
       userId,
-      displayName: base.displayName,
-      username: base.username,
-      bio: base.bio,
-      profileImageUrl: `https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200`,
-      location: 'New York, NY',
-      styleTags: base.styleTags,
+      displayName: '33 Trends member',
+      username: `member-${userId.slice(0, 6).toLowerCase()}`,
+      bio: '',
+      styleTags: [],
       isPrivate: false,
       stats: { followers: 0, following: 0, posts: 0, looks: 0 },
       createdAt: new Date().toISOString(),
@@ -129,7 +116,12 @@ class UserProfileService {
     }
 
     const newProfile = this.buildDefaultProfile(userId, realUserInfo);
-    await setDoc(ref, newProfile);
+    // Persist only when this is the signed-in user's own first-time profile
+    // (realUserInfo present). Writing the placeholder for OTHER users would
+    // stamp their public profile with data they never chose.
+    if (realUserInfo) {
+      await setDoc(ref, newProfile);
+    }
     return { id: userId, ...newProfile };
   }
 
@@ -163,10 +155,31 @@ class UserProfileService {
       createdAt: Timestamp.now(),
     });
 
+    // Stat bumps are best-effort: the other user's profile doc may not exist
+    // yet (placeholders are no longer persisted on their behalf), and rules
+    // only let an owner write their own profile.
     await Promise.all([
-      updateDoc(doc(db, 'userProfiles', followerId), { 'stats.following': increment(1) }),
-      updateDoc(doc(db, 'userProfiles', followingId), { 'stats.followers': increment(1) }),
+      updateDoc(doc(db, 'userProfiles', followerId), { 'stats.following': increment(1) }).catch(() => {}),
+      updateDoc(doc(db, 'userProfiles', followingId), { 'stats.followers': increment(1) }).catch(() => {}),
     ]);
+
+    // The moment that makes Notifications real: tell the person they gained
+    // a follower. Fire-and-forget - a follow must never fail on this.
+    (async () => {
+      try {
+        const follower = await this.getUserProfile(followerId);
+        await notificationService.createNotification({
+          userId: followingId,
+          type: 'follow',
+          actorId: followerId,
+          title: 'New follower',
+          message: `${follower?.displayName || 'A member'} started following you`,
+          isRead: false,
+        });
+      } catch (error) {
+        console.log('Could not create follow notification', error);
+      }
+    })();
 
     return true;
   }

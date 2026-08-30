@@ -121,25 +121,17 @@ export default function StylistDashboardScreen() {
         </View>
       </View>
 
-      {/* Performance Metrics */}
+      {/* Performance: only metrics the data can actually back. Response and
+          rebook rates were invented placeholders (and rendered 10000% via a
+          double percent conversion) - a dashboard that fabricates numbers
+          teaches stylists to distrust the real ones. completionRate arrives
+          already as a percent. */}
       <View style={styles.metricsCard}>
         <Text style={styles.cardTitle}>Performance</Text>
         <View style={styles.metricRow}>
-          <Text style={styles.metricLabel}>Response Rate</Text>
-          <Text style={styles.metricValue}>
-            {((stats?.responseRate || 0) * 100).toFixed(0)}%
-          </Text>
-        </View>
-        <View style={styles.metricRow}>
           <Text style={styles.metricLabel}>Completion Rate</Text>
           <Text style={styles.metricValue}>
-            {((stats?.completionRate || 0) * 100).toFixed(0)}%
-          </Text>
-        </View>
-        <View style={styles.metricRow}>
-          <Text style={styles.metricLabel}>Rebook Rate</Text>
-          <Text style={styles.metricValue}>
-            {((stats?.rebookRate || 0) * 100).toFixed(0)}%
+            {(stats?.completionRate || 0).toFixed(0)}%
           </Text>
         </View>
       </View>

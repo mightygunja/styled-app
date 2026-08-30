@@ -31,7 +31,8 @@ export type RootStackParamList = {
   Followers: { userId: string };
   Following: { userId: string };
   SocialFeed: undefined;
-  CreatePost: undefined;
+  /** With challengeId, the published post is also submitted as that challenge's entry. */
+  CreatePost: { challengeId?: string } | undefined;
   PostDetail: { postId: string };
   Explore: undefined;
   Notifications: undefined;
@@ -55,6 +56,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   ProfileSurvey: undefined;
   Favorites: undefined;
+  SavedOutfits: undefined;
   OutfitBuilder: { sourceItemId?: string };
   OutfitPlanner: undefined;
   PackingList: undefined;

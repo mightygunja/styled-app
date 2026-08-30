@@ -89,13 +89,15 @@ export const closetAPI = {
       const embedding = (embeddingResult.data as any).embedding;
       console.log('Embedding length:', embedding?.length);
 
-      // Create item in Firestore
+      // Create item in Firestore. The user's explicit selections beat the
+      // AI's guess - the Add Item form promises "AI will detect if not
+      // selected", which means a selection is a correction, not a hint.
       const itemData = {
         imageUrl,
         thumbnailUrl: imageUrl, // Could add thumbnail generation later
-        category: classification.category,
+        category: data.category || classification.category,
         subcategory: classification.subcategory,
-        color: classification.color,
+        color: data.color || classification.color,
         secondaryColors: classification.secondaryColors || [],
         pattern: classification.pattern,
         neckline: classification.neckline,

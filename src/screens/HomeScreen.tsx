@@ -343,7 +343,17 @@ export default function HomeScreen() {
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
       styleProfileRef.current = styleProfile;
-      setArchetype(getStyleVoice(styleProfile).archetype);
+      // The archetype pill only claims an analysis when there is a closet to
+      // analyze. With nothing scanned yet, fall back to what the user told
+      // us in the survey - or say honestly that we're starting out.
+      const surveyWord = matchContext?.styleArchetypes?.[0];
+      setArchetype(
+        items.length >= 3
+          ? getStyleVoice(styleProfile).archetype
+          : surveyWord
+            ? surveyWord.charAt(0).toUpperCase() + surveyWord.slice(1)
+            : 'Starting out'
+      );
 
       const weatherContext = {
         condition: weatherResult.condition,

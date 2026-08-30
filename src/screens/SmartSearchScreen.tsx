@@ -121,8 +121,38 @@ export default function SmartSearchScreen() {
     setSortBy('relevance');
   };
 
+  /** Every result opens its real destination - these cards used to have no
+   *  onPress at all, so search worked and tapping did nothing. */
+  const openResult = (result: SearchResult) => {
+    switch (result.type) {
+      case 'item':
+        navigation.navigate('ClosetItemDetail', { closetItemId: result.id });
+        return;
+      case 'look':
+        navigation.navigate('LookDetail', { lookId: result.id });
+        return;
+      case 'post':
+        navigation.navigate('PostDetail', { postId: result.id });
+        return;
+      case 'user':
+        navigation.navigate('UserProfile', { userId: result.id });
+        return;
+      case 'style':
+        // Style results are the editorial guides; their id is the route.
+        navigation.navigate(result.id as any);
+        return;
+    }
+  };
+
   const renderSearchResult = (result: SearchResult) => (
-    <TouchableOpacity key={result.id} style={styles.resultCard}>
+    <TouchableOpacity
+      key={result.id}
+      style={styles.resultCard}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${result.title}`}
+      onPress={() => openResult(result)}
+    >
       <Image source={{ uri: result.imageUrl }} style={styles.resultImage} />
       <View style={styles.resultInfo}>
         <Text style={styles.resultTitle} numberOfLines={2}>
@@ -158,14 +188,18 @@ export default function SmartSearchScreen() {
             <Text style={styles.discoverySectionSubtitle}>{section.subtitle}</Text>
           )}
         </View>
-        <TouchableOpacity>
-          <Text style={styles.seeAllButton}>See All →</Text>
-        </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.discoveryGrid}>
           {section.items.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.discoveryCard}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.discoveryCard}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${item.title}`}
+              onPress={() => openResult(item)}
+            >
               <Image source={{ uri: item.imageUrl }} style={styles.discoveryImage} />
               <Text style={styles.discoveryTitle} numberOfLines={2}>
                 {item.title}
@@ -240,16 +274,26 @@ export default function SmartSearchScreen() {
         ))}
       </ScrollView>
 
-      {/* Sort & Filter */}
+      {/* Result count. A previous toolbar here offered "Sort" and "Filters"
+          buttons whose onPress did not exist - controls that look
+          interactive and do nothing are worse than no controls. Sort cycles
+          via the button below instead. */}
       {results.length >0 && (
         <View style={styles.toolbarContainer}>
           <View style={styles.toolbar}>
-            <TouchableOpacity style={styles.toolbarButton}>
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              accessibilityRole="button"
+              accessibilityLabel="Change sort order"
+              onPress={() => {
+                const order: SortBy[] = ['relevance', 'recent', 'popular'];
+                const next = order[(order.indexOf(sortBy) + 1) % order.length];
+                setSortBy(next);
+                handleSearch();
+              }}
+            >
               <Text style={styles.toolbarButtonText}>Sort: {sortOptions.find(s =>s.id === sortBy)?.label}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.toolbarButton}>
-              <Text style={styles.toolbarButtonText}>Filters</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.resultCount}>

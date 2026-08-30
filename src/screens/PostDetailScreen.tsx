@@ -62,12 +62,13 @@ export default function PostDetailScreen() {
   const loadPost = async () => {
     try {
       setLoading(true);
-      const [feedPosts, postComments] = await Promise.all([
-        socialFeedService.getFeed(getCurrentUserId()),
+      // Fetch the post by id directly - searching the newest feed page for
+      // it made every older post's detail view a "Post not found" dead end.
+      const [foundPost, postComments] = await Promise.all([
+        socialFeedService.getPostById(postId),
         socialFeedService.getPostComments(postId),
       ]);
 
-      const foundPost = feedPosts.find(p => p.id === postId);
       if (foundPost) {
         const user = await userProfileService.getUserProfile(foundPost.userId);
         setPost({ ...foundPost, user: user || undefined });

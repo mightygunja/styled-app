@@ -9,6 +9,7 @@ import { Item, Look } from '../types';
 import { Post } from './socialFeedService';
 import { UserProfile, userProfileService } from './userProfileService';
 import { closetAPI, getCurrentUserId } from './api';
+import { GUIDES } from '../screens/GuideScreens';
 
 export type SearchCategory = 'all' | 'items' | 'looks' | 'posts' | 'users' | 'styles';
 export type SortBy = 'relevance' | 'recent' | 'popular' | 'price_low' | 'price_high';
@@ -211,45 +212,27 @@ class SmartSearchService {
       console.error('Error loading closet items for search:', error);
     }
 
-    // Mock style guides
-    const mockStyleGuides: StyleGuide[] = [
-      {
-        id: 'style-1',
-        title: 'Minimalist Wardrobe Essentials',
-        description: 'Build a versatile wardrobe with timeless pieces',
-        imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400',
-        category: 'minimalist',
-        tips: [
-          'Stick to neutral colors',
-          'Invest in quality basics',
-          'Choose versatile pieces',
-        ],
-        relatedItems: ['item-1'],
-      },
-      {
-        id: 'style-2',
-        title: 'Streetwear Style Guide',
-        description: 'Master the urban streetwear aesthetic',
-        imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400',
-        category: 'streetwear',
-        tips: [
-          'Mix high and low fashion',
-          'Layer your outfits',
-          'Accessorize with statement pieces',
-        ],
-        relatedItems: ['item-2', 'item-3'],
-      },
-    ];
-
-    mockStyleGuides.forEach(guide => {
+    // Real style guides - the app's fifteen editorial guides, searchable by
+    // title and description. The result id IS the guide's navigation route,
+    // so tapping a style result opens the actual guide. (This replaced two
+    // hardcoded mock guides that had nowhere to navigate to.)
+    GUIDES.forEach(guide => {
       results.push({
-        id: guide.id,
+        id: guide.route,
         type: 'style',
         title: guide.title,
         subtitle: guide.description,
-        imageUrl: guide.imageUrl,
+        imageUrl: '',
         relevanceScore: 0,
-        data: guide,
+        data: {
+          id: guide.route,
+          title: guide.title,
+          description: guide.description,
+          imageUrl: '',
+          category: guide.label,
+          tips: [],
+          relatedItems: [],
+        },
         matchedTerms: [],
       });
     });

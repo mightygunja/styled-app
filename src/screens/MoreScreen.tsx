@@ -32,7 +32,8 @@ const SECTIONS: MoreSection[] = [
       { label: 'Import a receipt', subtitle: 'ADD A WHOLE HAUL AT ONCE', icon: 'receipt-outline', route: 'ReceiptImport' },
       { label: 'Closet sharing', subtitle: 'SHARE WITH PEOPLE YOU TRUST', icon: 'people-circle-outline', route: 'ClosetSharing' },
       { label: 'Smart search', subtitle: 'FIND ITEMS IN YOUR CLOSET', icon: 'search-outline', route: 'SmartSearch' },
-      { label: 'Favorites', subtitle: 'SAVED LOOKS', icon: 'heart-outline', route: 'Favorites' },
+      { label: 'Saved outfits', subtitle: 'LOOKS YOU SAVED TO WEAR AGAIN', icon: 'albums-outline', route: 'SavedOutfits' },
+      { label: 'Favorites', subtitle: "LOOKS YOU'VE HEARTED", icon: 'heart-outline', route: 'Favorites' },
     ],
   },
   {

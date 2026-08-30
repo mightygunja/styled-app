@@ -209,6 +209,19 @@ export default function ChallengeDetailScreen() {
           />
         )}
 
+        {/* Joining used to be the end of the road - there was no way to
+            actually enter. The entry IS a post, so entering goes through
+            CreatePost carrying the challenge id. */}
+        {isOpen && hasJoined && (
+          <Button
+            title="Submit an entry"
+            variant="secondary"
+            fullWidth
+            onPress={() => navigation.navigate('CreatePost', { challengeId })}
+            style={{ marginTop: 10 }}
+          />
+        )}
+
         <Text style={styles.sectionLabel}>
           {entries.length > 0 ? `ENTRIES · ${entries.length}` : 'ENTRIES'}
         </Text>

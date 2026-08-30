@@ -24,6 +24,38 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile, userProfileService } from './userProfileService';
+import { notificationService } from './notificationService';
+
+/**
+ * Fire-and-forget activity notification. Nothing user-facing may block or
+ * fail on it - but without these, the Notifications screen was a permanent
+ * empty promise: no code anywhere created like/comment notifications.
+ */
+async function notifyActivity(
+  recipientId: string,
+  actorId: string,
+  type: 'like' | 'comment',
+  postId: string,
+  message: (actorName: string) => string,
+  title: string
+): Promise<void> {
+  if (recipientId === actorId) return; // never notify people about themselves
+  try {
+    const actor = await userProfileService.getUserProfile(actorId);
+    await notificationService.createNotification({
+      userId: recipientId,
+      type,
+      actorId,
+      targetId: postId,
+      targetType: 'post',
+      title,
+      message: message(actor?.displayName || 'A member'),
+      isRead: false,
+    });
+  } catch (error) {
+    console.log('Could not create activity notification', error);
+  }
+}
 
 export type PostType = 'transformation' | 'outfit' | 'closet' | 'tip' | 'product';
 export type PostPrivacy = 'public' | 'followers' | 'private';
@@ -197,6 +229,16 @@ class SocialFeedService {
   }
 
   /**
+   * One post by id, straight from its document. PostDetail used to search
+   * the 10-newest feed page for the id, so every older post's detail link
+   * rendered "Post not found".
+   */
+  async getPostById(postId: string): Promise<Post | null> {
+    const snap = await getDoc(doc(db, 'posts', postId));
+    return snap.exists() ? toPost(snap.id, snap.data()) : null;
+  }
+
+  /**
    * Delete post
    */
   async deletePost(postId: string, userId: string): Promise<boolean> {
@@ -230,6 +272,15 @@ class SocialFeedService {
 
     await addDoc(collection(db, 'postLikes'), { postId, userId, createdAt: Timestamp.now() });
     await updateDoc(postRef, { likes: increment(1) });
+
+    notifyActivity(
+      postSnap.data().userId,
+      userId,
+      'like',
+      postId,
+      name => `${name} liked your post`,
+      'New like'
+    );
 
     return true;
   }
@@ -275,6 +326,21 @@ class SocialFeedService {
 
     const docRef = await addDoc(collection(db, 'postComments'), data);
     await updateDoc(doc(db, 'posts', postId), { comments: increment(1) }).catch(() => {});
+
+    getDoc(doc(db, 'posts', postId))
+      .then(postSnap => {
+        if (postSnap.exists()) {
+          notifyActivity(
+            postSnap.data().userId,
+            userId,
+            'comment',
+            postId,
+            name => `${name} commented: "${text.slice(0, 60)}${text.length > 60 ? '…' : ''}"`,
+            'New comment'
+          );
+        }
+      })
+      .catch(() => {});
 
     return toComment(docRef.id, data);
   }

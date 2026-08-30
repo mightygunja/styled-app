@@ -32,9 +32,8 @@ export interface DashboardStats {
   totalClients: number;
   averageRating: number;
   totalReviews: number;
-  responseRate: number;
+  /** Percent (0-100), computed from real bookings. */
   completionRate: number;
-  rebookRate: number;
 }
 
 function toIso(v: any): string {
@@ -114,9 +113,7 @@ class StylistDashboardService {
       totalClients: clients.size,
       averageRating: ratings.length > 0 ? ratings.reduce((s, r) => s + r, 0) / ratings.length : 0,
       totalReviews: ratings.length,
-      responseRate: 100, // no messaging-response tracking exists yet
       completionRate: bookings.length > 0 ? Math.round((completed / bookings.length) * 100) : 0,
-      rebookRate: 0, // needs repeat-client analysis beyond current scope
     };
   }
 
