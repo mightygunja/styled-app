@@ -186,6 +186,19 @@ export default function HomeScreen() {
       const profile = await styleProfileService.getStyleProfile(userId);
       if (profile) {
         await styleProfileService.saveStyleProfile(userId, { ...profile, wardrobeFocus: focus });
+      } else {
+        // Survey-dismissers have no profile to write onto. Save a minimal
+        // one carrying only their answer - empty taste fields read as "no
+        // signal" to every engine, so nothing about them is invented.
+        await styleProfileService.saveStyleProfile(userId, {
+          lifestyleWeights: { work: 0.25, casual: 0.35, social: 0.25, travel: 0.15 },
+          styleArchetypes: [],
+          avoidRules: [],
+          colorProfile: { primary: [], secondary: [], stretch: [] },
+          fitPreferences: {},
+          guidanceLevel: 'guided',
+          wardrobeFocus: focus,
+        });
       }
       setNeedsWardrobeFocus(false);
       await loadDressMeToday(occasion);
@@ -263,11 +276,22 @@ export default function HomeScreen() {
       // No saved profile at all means this account predates the survey -
       // offer it once, unless the user has already said not now.
       AsyncStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY)
-        .then(dismissed => setShowProfilePrompt(!dismissed && !matchContext))
-        .catch(() => setShowProfilePrompt(false));
-
-      // A profile that predates the wardrobe-focus question: ask, once.
-      setNeedsWardrobeFocus(!!matchContext && !matchContext.wardrobeFocus);
+        .then(dismissed => {
+          const surveyOffered = !dismissed && !matchContext;
+          setShowProfilePrompt(surveyOffered);
+          // The department question, for whoever hasn't answered it through
+          // any door: profiles that predate the question, and users who
+          // permanently dismissed the survey (they have no profile at all,
+          // so nothing else will ever ask them). Never alongside the survey
+          // offer - the survey's first step IS this question.
+          setNeedsWardrobeFocus(
+            matchContext ? !matchContext.wardrobeFocus : !!dismissed
+          );
+        })
+        .catch(() => {
+          setShowProfilePrompt(false);
+          setNeedsWardrobeFocus(!!matchContext && !matchContext.wardrobeFocus);
+        });
 
       // Avoid rules are a strong preference for owned clothes, not a veto:
       // "I don't wear skirts" still steers the daily looks away from the one
