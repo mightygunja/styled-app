@@ -597,3 +597,31 @@ function build(row: Row): Product {
 }
 
 export const MOCK_CATALOG: Product[] = ROWS.map(build);
+
+/**
+ * The catalogue in a category- and department-interleaved order.
+ *
+ * The adapter paginates, and file order is grouped by category (70 tops
+ * first), so "the first 60 items" used to mean "tops only" - which starved
+ * the starter-outfit engine of bottoms entirely and made a new account's
+ * Home go blank. Round-robin across category×department buckets makes any
+ * page of any size a representative slice of the whole catalogue.
+ */
+export const BALANCED_CATALOG: Product[] = (() => {
+  const buckets = new Map<string, Product[]>();
+  MOCK_CATALOG.forEach(product => {
+    const key = `${product.category}:${product.department}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(product);
+    else buckets.set(key, [product]);
+  });
+  const lists = Array.from(buckets.values());
+  const longest = Math.max(...lists.map(l => l.length));
+  const out: Product[] = [];
+  for (let i = 0; i < longest; i++) {
+    for (const list of lists) {
+      if (list[i]) out.push(list[i]);
+    }
+  }
+  return out;
+})();

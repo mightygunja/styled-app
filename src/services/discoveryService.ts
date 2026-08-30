@@ -431,7 +431,10 @@ export async function buildStarterPools(
       colors: profile?.recommendedColors?.slice(0, 6),
       styleArchetypes: profile?.styleArchetypes,
       silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
-      pageSize: 60,
+      // Deep page on purpose: a department-focused profile keeps only its
+      // own share of the results, and the outfit engine needs tops AND
+      // bottoms left over after that cut to compose anything.
+      pageSize: 160,
     })
     .catch(() => ({ products: [] as Product[] }));
 

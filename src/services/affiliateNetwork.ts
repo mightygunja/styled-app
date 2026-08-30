@@ -39,7 +39,7 @@ import {
   applyFiltersLocally,
   sortProducts,
 } from '../models/product';
-import { MOCK_CATALOG } from '../data/mockProductCatalog';
+import { MOCK_CATALOG, BALANCED_CATALOG } from '../data/mockProductCatalog';
 
 /**
  * 'both' runs Sovrn and Rakuten together and merges the results, which is what
@@ -166,7 +166,11 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
   async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
     // Simulated network latency so loading states are exercised realistically.
     await new Promise(resolve => setTimeout(resolve, 300));
-    const filtered = sortProducts(applyFiltersLocally(MOCK_CATALOG, filters), filters.sort);
+    // BALANCED_CATALOG, not MOCK_CATALOG: pagination truncates, and the raw
+    // catalogue is grouped by category, so a page of the raw order is all
+    // tops - which starved the outfit engine of bottoms and blanked the
+    // starter Home. The balanced order makes every page a category mix.
+    const filtered = sortProducts(applyFiltersLocally(BALANCED_CATALOG, filters), filters.sort);
     return paginate(filtered, filters);
   }
 
