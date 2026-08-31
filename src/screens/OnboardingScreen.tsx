@@ -260,6 +260,10 @@ export default function OnboardingScreen() {
           // login stage and app icon are made of.
           source={require('../../assets/textures/tailored.png')}
           style={styles.heroBg}
+          // react-native-web sizes the image layer to the PNG's intrinsic
+          // 560x762 unless told otherwise, leaving a bare strip beside the
+          // texture on any container wider than the asset (desktop web).
+          imageStyle={{ width: '100%', height: '100%' }}
           resizeMode="cover"
         >
           <View style={styles.heroContent}>
