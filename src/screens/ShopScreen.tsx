@@ -59,7 +59,18 @@ export default function ShopScreen() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ItemCategory | 'all'>(route.params?.category || 'all');
-  const [matchedOnly, setMatchedOnly] = useState(!!route.params?.matchedOnly);
+  // On web the param arrives as a string, where "false" is truthy — compare,
+  // don't coerce. String(undefined) is "undefined", so absent stays off.
+  const [matchedOnly, setMatchedOnly] = useState(
+    String(route.params?.matchedOnly) === 'true'
+  );
+  const toggleMatchedOnly = () => {
+    const next = !matchedOnly;
+    setMatchedOnly(next);
+    // Keep the address bar honest on web: without this the URL pins the old
+    // value and a refresh silently re-enables the filter the user turned off.
+    navigation.setParams({ matchedOnly: next ? true : undefined });
+  };
   const [secondhandOnly, setSecondhandOnly] = useState(false);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [sort, setSort] = useState<ProductSort>('match');
@@ -335,7 +346,7 @@ export default function ShopScreen() {
         <Chip
           label="Matched to you"
           active={matchedOnly}
-          onPress={() => setMatchedOnly(!matchedOnly)}
+          onPress={toggleMatchedOnly}
           style={styles.chipSpacing}
         />
         <Chip

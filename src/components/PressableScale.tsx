@@ -1,12 +1,20 @@
 import React, { ReactNode } from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { Platform, StyleProp, TouchableOpacity as RNTouchableOpacity, ViewStyle } from 'react-native';
+import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 import { haptics } from '../utils/haptics';
+
+// The gesture-handler Touchable silently swallows presses on web (observed on
+// every Chip inside Shop's horizontal ScrollViews: clicks never reached
+// onPress). React Native's own Touchable is reliable on web; gesture-handler
+// stays on native, where it composes with swipe gestures.
+const TouchableOpacity = (Platform.OS === 'web'
+  ? RNTouchableOpacity
+  : GHTouchableOpacity) as typeof GHTouchableOpacity;
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
