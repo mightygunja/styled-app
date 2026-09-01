@@ -91,7 +91,10 @@ export default function ShopScreen() {
           styleArchetypes: profile?.styleArchetypes,
           silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
           sort,
-          pageSize: 60,
+          // Deep enough to cover the largest catalogue category (tops, 94):
+          // a 60-item page silently cut the tail of every big category — the
+          // newest additions, since balanced order puts them last per bucket.
+          pageSize: 160,
         }),
         closetAPI.getItems(userId),
         shopperSignals.load(),
