@@ -87,7 +87,11 @@ export default function ShopScreen() {
           category: category === 'all' ? undefined : category,
           condition: secondhandOnly ? 'secondhand' : undefined,
           onSaleOnly: onSaleOnly || undefined,
-          colors: profile?.recommendedColors?.slice(0, 6),
+          // Palette is deliberately NOT sent: colors is a hard filter, and it
+          // was deleting whole subcategories from browse and search (every
+          // sunglass is black/tortoise/gold — none survive a warm palette).
+          // Color affinity is scoring's job: scoreAndRankProducts boosts
+          // palette hits, knows neutrals, and penalizes avoid-list colors.
           styleArchetypes: profile?.styleArchetypes,
           silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
           sort,
@@ -245,7 +249,7 @@ export default function ShopScreen() {
         <Text style={styles.eyebrow}>SHOP</Text>
         <Text style={styles.title}>Shop your matches</Text>
         <Text style={styles.subtitle}>
-          Filtered against your color season, body & fit profile, style archetypes, and what's already in your closet.
+          Ranked against your color season, body & fit profile, style archetypes, and what's already in your closet.
         </Text>
         {!!curatedCatalogNotice() && (
           <Text style={styles.devNotice}>{curatedCatalogNotice()}</Text>
