@@ -105,7 +105,8 @@ const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
  */
 const AWIN_AFFILIATE_ID = '3063969';
 const AWIN_MERCHANTS: Record<string, string> = {
-  // 'Etsy': '<awinmid>',  <- paste the advertiser id once the Etsy program approves
+  Otra: '96299', // Otra Eyewear — programme joined 2026-09-01
+  // Etsy moved networks: its affiliate programme lives on Rakuten, not Awin.
 };
 
 function awinDeeplink(product: Product): string | null {

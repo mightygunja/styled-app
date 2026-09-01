@@ -39,6 +39,10 @@ const RETAILER_SEARCH: Record<string, (query: string) => string> = {
   // renders real results). Etsy links must live on etsy.com so the Awin
   // deeplink layer has a merchant URL to wrap.
   Etsy: q => `https://www.etsy.com/search?q=${encodeURIComponent(q)}`,
+  // Verified in-browser 2026-09-01 ("OTRA Stevie - Black" -> 5 results).
+  // Links must live on otraeyewear.com so the Awin deeplink layer (merchant
+  // id 96299 in affiliateNetwork.ts) has a merchant URL to wrap.
+  Otra: q => `https://otraeyewear.com/search?q=${encodeURIComponent(q)}`,
 };
 
 function link(retailer: string, brand: string, name: string): string {
@@ -178,6 +182,7 @@ const UNISEX_IDS = new Set([
   's002', 's004', 's009', 's010', 's011', 's012', 's017', 's018', 's025', 's026', 's029',
   's034', 's035', 's036', 's039', 's040', 's047', 's050',
   'a009', 'a010', 'a013', 'a015', 'a016', 'a020', 'a025', 'a030', 'a032', 'a033', 'a034', 'a042',
+  'a051', 'a055', 'a056',
 ]);
 
 /**
@@ -498,6 +503,16 @@ const ROWS: Row[] = [
   ['a048', 'Pre-Loved Silk Tie Scarf', 'Ferragamo', 'Poshmark', 'accessories', 'silk scarf', 'navy print', 65, 220, 'luxe vintage detail', 1],
   ['a049', 'Vintage Beaded Bag', 'Unbranded Artisan', 'Etsy', 'accessories', 'beaded bag', 'pearl white', 55, 0, 'vintage evening artisan', 1],
   ['a050', 'Secondhand Burgundy Bag', 'Longchamp', 'Vestiaire Collective', 'accessories', 'burgundy bag', 'burgundy', 88, 195, 'burgundy classic vintage', 1],
+
+  // Otra Eyewear — Awin merchant 96299 (joined 2026-09-01). Names, colours
+  // and prices taken from otraeyewear.com/collections/all on 2026-09-01;
+  // name format matches the site's own listings so the search link lands.
+  ['a051', 'Stevie - Black', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black', 65, 0, 'retro everyday polished'],
+  ['a052', 'Stevie - Tortoiseshell / Brown', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'tortoise', 65, 0, 'retro classic summer'],
+  ['a053', 'Presley - Tort/ Blue Fade', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'tortoise blue', 70, 0, 'statement modern summer'],
+  ['a054', 'Mae - Black/ Light Pink', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black pink', 70, 0, 'feminine soft statement'],
+  ['a055', 'Kent - Gold/ Brown', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'gold brown', 75, 0, 'classic refined everyday'],
+  ['a056', 'Onyx - Black/ Smoke', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black', 80, 0, 'sleek minimal modern'],
 
   // ---- MENSWEAR: TOPS (24) ----
   ['mt001', 'Oxford Button-Down Shirt', 'J.Crew', 'J.Crew', 'tops', 'oxford shirt', 'white', 69.5, 0, 'classic preppy business'],
