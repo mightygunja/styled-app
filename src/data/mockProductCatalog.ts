@@ -182,7 +182,9 @@ const UNISEX_IDS = new Set([
   's002', 's004', 's009', 's010', 's011', 's012', 's017', 's018', 's025', 's026', 's029',
   's034', 's035', 's036', 's039', 's040', 's047', 's050',
   'a009', 'a010', 'a013', 'a015', 'a016', 'a020', 'a025', 'a030', 'a032', 'a033', 'a034', 'a042',
-  'a051', 'a055', 'a056',
+  // a056 Onyx deliberately NOT unisex: its product photo is a female model
+  // wearing a cat-eye wrap (viewed 2026-09-01).
+  'a051', 'a055',
 ]);
 
 /**
@@ -510,7 +512,7 @@ const ROWS: Row[] = [
   ['a051', 'Stevie - Black', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black', 65, 0, 'retro everyday polished'],
   ['a052', 'Stevie - Tortoiseshell / Brown', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'tortoise', 65, 0, 'retro classic summer'],
   ['a053', 'Presley - Tort/ Blue Fade', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'tortoise blue', 70, 0, 'statement modern summer'],
-  ['a054', 'Mae - Black/ Light Pink', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black pink', 70, 0, 'feminine soft statement'],
+  ['a054', 'Mae - Black/ Light Pink', 'OTRA', 'Otra', 'accessories', 'shield sunglasses', 'black pink', 70, 0, 'statement sport modern'],
   ['a055', 'Kent - Gold/ Brown', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'gold brown', 75, 0, 'classic refined everyday'],
   ['a056', 'Onyx - Black/ Smoke', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black', 80, 0, 'sleek minimal modern'],
 
@@ -605,6 +607,42 @@ const ROWS: Row[] = [
   ['ma010', 'Pre-Owned Leather Duffle', 'Coach', 'ThredUp', 'accessories', 'leather duffle', 'saddle', 145, 495, 'travel heritage vintage', 1],
 ];
 
+/**
+ * Exact per-item data for partnered merchants, keyed by row id. Unlike the
+ * rest of the catalogue (representative pool photos + verified search links),
+ * a partnered merchant's own product pages and CDN photography are real,
+ * stable, and individually verified - so their cards show the actual item
+ * and click straight through to its product page (which the Awin deeplink
+ * layer wraps for commission). Every image below was downloaded and VIEWED,
+ * every URL fetched, on 2026-09-01.
+ */
+const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
+  a051: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/stevie_black_front.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/stevie-blacksmoke',
+  },
+  a052: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/25NovOtraProduct32.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/stevie-tort-brown',
+  },
+  a053: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/PresleyTortBlueFront.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/presley-tort-blue-fade',
+  },
+  a054: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/MaeBlackfront.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/mae-black-light-pink',
+  },
+  a055: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/KentGoldFront.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/kent-gold-brown',
+  },
+  a056: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/ONYX-1-WEB.jpg?width=600',
+    sourceUrl: 'https://www.otraeyewear.com/products/onyx-black-smoke',
+  },
+};
+
 const poolCounters: Record<string, number> = {};
 
 /** Department by id convention: 'm'-prefixed rows are menswear, UNISEX_IDS pass every focus, everything else is womenswear. */
@@ -634,11 +672,11 @@ function build(row: Row): Product {
     price,
     originalPrice: originalPrice || undefined,
     currency: 'USD',
-    imageUrl: `https://images.unsplash.com/photo-${pool[index % pool.length]}?w=600`,
+    imageUrl: EXACT_ITEMS[id]?.imageUrl ?? `https://images.unsplash.com/photo-${pool[index % pool.length]}?w=600`,
     color,
     sizeRange: department === 'men' ? MENS_SIZE_RANGES[category] : SIZE_RANGES[category],
     styleTags: styleTags.split(' '),
-    sourceUrl: link(retailer, brand, name),
+    sourceUrl: EXACT_ITEMS[id]?.sourceUrl ?? link(retailer, brand, name),
     inStock: true,
     department,
     ...(secondhand ? { condition: 'secondhand' as const } : {}),
