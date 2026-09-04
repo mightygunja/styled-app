@@ -22,7 +22,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   benefitCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   benefitIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   },
   upgradeCard: {
     backgroundColor: ds.ink,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 24,
   },
   upgradeTitle: {
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
   statCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   statIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     marginTop: 8,
   },
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   },
   noStatsCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 32,
     alignItems: 'center',
   },
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   noStatsButtonText: {
     fontSize: 14,
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     color: ds.white,
   },
   comparisonTable: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: ds.hair,
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
   comparisonUpgradeButton: {
     backgroundColor: ds.ink,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginTop: 16,
   },

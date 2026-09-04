@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Look, Item } from '../types';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface LookDetailScreenProps {
   route: {
@@ -399,6 +399,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: colors.ink,
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
     left: 16,
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     right: 16,
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -468,6 +469,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -487,6 +489,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   paletteCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
   },
@@ -508,7 +511,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: colors.card,
   },
@@ -536,6 +539,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: 120,
     height: 160,
   },
@@ -555,6 +559,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   heroBadge: {
+    borderRadius: radius.sm,
     backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -565,6 +570,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   budgetBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -606,6 +612,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   shopButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -617,6 +624,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   shopAllButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 16,
     alignItems: 'center',
@@ -639,6 +647,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hair,
   },
   miniLookImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 180,
     backgroundColor: colors.paper,
@@ -665,6 +674,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shopMyClosetButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.tobacco,
     padding: 16,
     marginTop: 20,

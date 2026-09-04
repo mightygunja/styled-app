@@ -25,7 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   batteryBar: {
     width: 40,
     height: 20,
-    borderRadius: 4,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.card,
     padding: 2,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   batteryFill: {
     height: '100%',
     backgroundColor: colors.card,
-    borderRadius: 2,
+    borderRadius: radius.sm,
   },
   batteryText: {
     fontSize: 11,
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -721,11 +721,12 @@ const styles = StyleSheet.create({
   },
   outfitCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: 16,
   },
   outfitImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 200,
   },
@@ -771,7 +772,7 @@ const styles = StyleSheet.create({
   },
   itemsList: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   itemsTitle: {
@@ -799,14 +800,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 8,
   },
   activityIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -831,11 +832,12 @@ const styles = StyleSheet.create({
   suggestionCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: 12,
   },
   suggestionImage: {
+    borderRadius: radius.sm,
     width: 100,
     height: 100,
   },
@@ -862,6 +864,7 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
   },
   matchBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -883,7 +886,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -948,7 +951,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     marginBottom: 16,
   },
   pairButtonText: {

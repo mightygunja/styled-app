@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { FilterOptions } from '../types';
 import { PRICE_BANDS, BODY_TYPES, LIFESTYLE_FILTERS } from '../constants';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface FilterBarProps {
   onFilterChange: (filters: FilterOptions) => void;
@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   filterButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   filterChip: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -301,6 +303,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -325,6 +328,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   clearButton: {
+    borderRadius: radius.full,
     flex: 1,
     paddingVertical: 14,
     borderWidth: 1,
@@ -337,6 +341,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   applyButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 14,

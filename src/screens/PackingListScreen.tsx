@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, DateData } from 'react-native-calendars';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import { packingListService } from '../services/packingListService';
 import {
@@ -483,6 +483,7 @@ const styles = StyleSheet.create({
   helper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
 
   input: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -496,6 +497,7 @@ const styles = StyleSheet.create({
   resultRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.hair },
   resultText: { ...textType.body, color: colors.ink },
   selectedDestination: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -508,6 +510,7 @@ const styles = StyleSheet.create({
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
+    borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 9,
     backgroundColor: colors.paper,
@@ -533,15 +536,18 @@ const styles = StyleSheet.create({
   savedMeta: { ...textType.meta, fontSize: 12, marginTop: 3 },
   chevron: { fontSize: 22, color: colors.inkFaint },
 
-  coverageCard: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
+  coverageCard: {
+    borderRadius: radius.sm, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   coverageNumber: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
   coverageHeadline: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
-  noticeBox: { marginTop: spacing.sm, backgroundColor: colors.sand, padding: 14 },
+  noticeBox: {
+    borderRadius: radius.md, marginTop: spacing.sm, backgroundColor: colors.sand, padding: 14 },
   noticeText: { ...textType.body, fontSize: 12, color: colors.inkMuted },
 
   forecastStrip: { marginHorizontal: -spacing.page, paddingHorizontal: spacing.page },
   forecastDay: {
+    borderRadius: radius.md,
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -561,7 +567,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  itemThumb: { width: 52, height: 52, marginRight: 12, backgroundColor: colors.paper },
+  itemThumb: {
+    borderRadius: radius.sm, width: 52, height: 52, marginRight: 12, backgroundColor: colors.paper },
   itemInfo: { flex: 1 },
   itemName: {
     fontFamily: fonts.sansMedium,
@@ -576,7 +583,8 @@ const styles = StyleSheet.create({
   dayPlanDate: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
   dayPlanOccasion: { ...textType.meta, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 },
   dayPlanThumbs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  dayThumb: { width: 44, height: 44, backgroundColor: colors.paper },
+  dayThumb: {
+    borderRadius: radius.sm, width: 44, height: 44, backgroundColor: colors.paper },
   dayPlanNote: { ...textType.body, fontSize: 12, color: colors.inkMuted, marginTop: 10 },
 
   gapsIntro: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },

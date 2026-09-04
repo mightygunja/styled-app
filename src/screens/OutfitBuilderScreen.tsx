@@ -18,7 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
 import { ClosetItem, Season } from '../types';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'OutfitBuilder'>;
@@ -501,6 +501,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sourceItemCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     backgroundColor: colors.paper,
     padding: 16,
@@ -508,6 +509,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   sourceItemImage: {
+    borderRadius: radius.sm,
     width: 80,
     height: 80,
   },
@@ -538,6 +540,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectedItemImage: {
+    borderRadius: radius.sm,
     width: 80,
     height: 80,
     borderWidth: 2,
@@ -550,7 +553,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -575,6 +578,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
   },
@@ -585,7 +589,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -628,6 +632,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   occasionButton: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

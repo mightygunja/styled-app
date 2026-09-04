@@ -23,7 +23,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: colors.ink,
-    borderRadius: 10,
+    borderRadius: radius.full,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginLeft: 6,
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 32,
     alignItems: 'center',
   },
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   notificationCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
   notificationIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
   notificationImage: {
     width: '100%',
     height: 120,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginBottom: 8,
   },
   notificationMeta: {
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   actionButtonText: {
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
   },
   scheduleCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
   scheduleIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   scheduleTimeIcon: {
     fontSize: 14,
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   scheduleFrequencyText: {
     fontSize: 13,
@@ -1001,7 +1001,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -1021,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   quietHoursCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginTop: 8,
   },
@@ -1041,7 +1041,7 @@ const styles = StyleSheet.create({
   },
   analyticsCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   analyticsRow: {

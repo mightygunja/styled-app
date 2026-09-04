@@ -32,7 +32,7 @@ import { useToast } from '../hooks/useToast';
 import { outfitsService, SavedOutfit } from '../services/firestore';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -174,11 +174,13 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8, lineHeight: 21 },
 
   card: {
+    borderRadius: radius.md,
     marginTop: spacing.lg,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -190,6 +192,7 @@ const styles = StyleSheet.create({
   cardMeta: { ...textType.eyebrow, fontSize: 9, marginTop: 4 },
   remove: { ...textType.eyebrow, fontSize: 10, color: colors.tobacco, paddingVertical: 4 },
   thumbRow: { flexDirection: 'row', gap: 8 },
-  thumb: { width: 84, height: 104, backgroundColor: colors.paper },
+  thumb: {
+    borderRadius: radius.sm, width: 84, height: 104, backgroundColor: colors.paper },
   missingNote: { ...textType.meta, fontSize: 11, color: colors.inkFaint, marginTop: 8 },
 });

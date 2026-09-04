@@ -26,7 +26,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width, height } = Dimensions.get('window');
 
@@ -480,6 +480,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.paper,
   },
   previewImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
   fitBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radius.full,
   },
   fitBadgeText: {
     fontSize: 14,
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   arLabelText: {
     fontSize: 12,
@@ -513,6 +514,7 @@ const styles = StyleSheet.create({
     color: ds.white,
   },
   scoreContainer: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     padding: 20,
     backgroundColor: ds.paper,
@@ -523,7 +525,7 @@ const styles = StyleSheet.create({
   scoreCircle: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: radius.full,
     backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
   },
   measurementCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -589,7 +591,7 @@ const styles = StyleSheet.create({
   measurementStatus: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -617,7 +619,7 @@ const styles = StyleSheet.create({
   },
   recommendationsCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   recommendationItem: {
@@ -643,7 +645,7 @@ const styles = StyleSheet.create({
   sizeCard: {
     width: 100,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: ds.paper,
     borderWidth: 2,
     borderColor: ds.hair,
@@ -681,7 +683,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: ds.hair,
     alignItems: 'center',
@@ -704,6 +706,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
+    borderRadius: radius.lg,
     backgroundColor: ds.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -736,7 +739,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
@@ -751,7 +754,7 @@ const styles = StyleSheet.create({
   fitOption: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: ds.paper,
     borderWidth: 2,
     borderColor: ds.hair,
@@ -772,7 +775,7 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: ds.ink,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginTop: 10,
   },

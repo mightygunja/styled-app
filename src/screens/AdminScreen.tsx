@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
 import { RootStackParamList } from '../navigation/types';
 import { adminService } from '../services/adminService';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -130,7 +130,8 @@ const styles = StyleSheet.create({
   rowDetail: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: 4 },
   chevron: { fontSize: 20, color: colors.inkFaint },
 
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });

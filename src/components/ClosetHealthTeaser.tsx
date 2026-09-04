@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface ClosetHealthTeaserProps {
   tier: 'free' | 'plus' | 'premium';
@@ -84,6 +84,7 @@ export default function ClosetHealthTeaser({
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 20,
     marginVertical: 16,
@@ -124,6 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   upgradeButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -137,6 +139,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   scoreContainer: {
+    borderRadius: radius.md,
     alignItems: 'center',
     paddingVertical: 16,
     backgroundColor: colors.paper,

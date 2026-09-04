@@ -797,11 +797,27 @@ export default function HomeScreen() {
               buttons). */}
           <BrandWordmark variant="header" />
           <View style={styles.headerRightRow}>
-            <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
-              <Ionicons name="bag-outline" size={20} color={colors.ink} />
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => navigation.navigate('Shop')}
+              accessibilityRole="button"
+              accessibilityLabel="Shop"
+            >
+              <View style={styles.menuIconSlot}>
+                <Ionicons name="bag-outline" size={20} color={colors.ink} />
+              </View>
+              <Text style={styles.menuButtonLabel}>SHOP</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
-              <Text style={styles.socialIcon}>◎</Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => navigation.navigate('SocialFeed')}
+              accessibilityRole="button"
+              accessibilityLabel="Community feed"
+            >
+              <View style={styles.menuIconSlot}>
+                <Text style={styles.socialIcon}>◎</Text>
+              </View>
+              <Text style={styles.menuButtonLabel}>COMMUNITY</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -818,11 +834,27 @@ export default function HomeScreen() {
               <View style={styles.heroTopRight}>
                 {isDesktop && (
                   <>
-                    <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('Shop')}>
-                      <Ionicons name="bag-outline" size={20} color={colors.ink} />
+                    <TouchableOpacity
+                      style={styles.menuButton}
+                      onPress={() => navigation.navigate('Shop')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Shop"
+                    >
+                      <View style={styles.menuIconSlot}>
+                        <Ionicons name="bag-outline" size={20} color={colors.ink} />
+                      </View>
+                      <Text style={styles.menuButtonLabel}>SHOP</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuButton} onPress={() => navigation.navigate('SocialFeed')}>
-                      <Text style={styles.socialIcon}>◎</Text>
+                    <TouchableOpacity
+                      style={styles.menuButton}
+                      onPress={() => navigation.navigate('SocialFeed')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Community feed"
+                    >
+                      <View style={styles.menuIconSlot}>
+                        <Text style={styles.socialIcon}>◎</Text>
+                      </View>
+                      <Text style={styles.menuButtonLabel}>COMMUNITY</Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -1031,11 +1063,28 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
     backgroundColor: colors.bone,
   },
+  // Wide enough for the caption beneath the glyph — the ◎ read as a mystery
+  // without one.
   menuButton: {
-    width: 40,
-    height: 40,
+    minWidth: 52,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Both glyphs sit in the same fixed-height slot so the captions share a
+  // baseline — the ◎ is a text glyph with taller line metrics than the
+  // 20px bag icon, which used to push its caption a few pixels lower.
+  menuIconSlot: {
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonLabel: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 7,
+    letterSpacing: 1,
+    color: colors.inkMuted,
+    marginTop: 2,
   },
   headerSpacer: {
     width: 40,
@@ -1045,7 +1094,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   socialIcon: {
-    fontSize: 22,
+    fontSize: 20,
+    lineHeight: 24,
     color: colors.ink,
   },
   headerTitle: {
@@ -1061,6 +1111,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 24,
     backgroundColor: colors.paper,
+    borderRadius: radius.md,
     padding: 20,
   },
   profilePromptEyebrow: { ...textType.eyebrow, marginBottom: 10 },
@@ -1074,7 +1125,8 @@ const styles = StyleSheet.create({
   },
   profilePromptActions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 16 },
   profilePromptButton: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
+    borderRadius: radius.full,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
@@ -1086,6 +1138,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 20,
     backgroundColor: colors.paper,
+    borderRadius: radius.md,
     borderLeftWidth: 2,
     borderLeftColor: colors.camel,
   },
@@ -1102,7 +1155,8 @@ const styles = StyleSheet.create({
   focusPromptActions: { flexDirection: 'row', gap: 10 },
   focusOption: {
     flex: 1,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
+    borderRadius: radius.full,
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -1112,6 +1166,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.hair,
+    borderRadius: radius.md,
     padding: 14,
   },
   starterEyebrow: { ...textType.eyebrow, fontSize: 9, marginBottom: 6 },
@@ -1161,6 +1216,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
+    borderRadius: radius.full,
     backgroundColor: colors.white,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -1288,6 +1344,7 @@ const styles = StyleSheet.create({
   swapOptionImage: {
     width: '100%',
     aspectRatio: 1,
+    borderRadius: radius.sm,
     backgroundColor: colors.paper,
   },
   swapOptionName: {
@@ -1301,6 +1358,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: colors.hair,
+    borderRadius: radius.md,
+    // Clips the full-bleed hero image to the card's rounded corners.
+    overflow: 'hidden',
     backgroundColor: colors.card,
   },
   heroImage: {
@@ -1319,6 +1379,7 @@ const styles = StyleSheet.create({
   thumbImage: {
     width: '100%',
     aspectRatio: 1,
+    borderRadius: radius.sm,
     backgroundColor: colors.paper,
   },
   thumbPlaceholder: {
@@ -1368,6 +1429,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 12,
     padding: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
   },
   gapText: {
@@ -1385,6 +1447,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: colors.hair,
+    borderRadius: radius.md,
     backgroundColor: colors.card,
   },
   emptyText: {
@@ -1411,7 +1474,7 @@ const styles = StyleSheet.create({
   starterRail: { marginTop: 28 },
   starterRailContent: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
   starterRailCard: { width: 128 },
-  starterRailImage: { width: 128, height: 160, backgroundColor: colors.paper },
+  starterRailImage: { width: 128, height: 160, borderRadius: radius.sm, backgroundColor: colors.paper },
   starterRailName: {
     fontFamily: fonts.sans,
     fontSize: 11,
@@ -1425,6 +1488,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
     padding: 20,
     backgroundColor: colors.paper,
+    borderRadius: radius.md,
     borderLeftWidth: 2,
     borderLeftColor: colors.camel,
   },
@@ -1445,6 +1509,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 28,
     padding: 18,
+    borderRadius: radius.md,
     backgroundColor: colors.ink,
   },
   shopBannerCopy: {
@@ -1466,7 +1531,7 @@ const styles = StyleSheet.create({
   shopBannerArrow: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.bone,
     justifyContent: 'center',

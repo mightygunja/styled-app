@@ -10,7 +10,7 @@ import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { bodyAnalysisAPI, PhotoBodyEstimate } from '../services/firebaseApi';
 import { styleProfileService } from '../services/firestore';
@@ -463,6 +463,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionRow: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -489,6 +490,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   photoCard: {
+    borderRadius: radius.sm,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     padding: 16,
@@ -532,11 +534,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.section,
   },
   chipHighlight: {
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   chipDownplay: {
+    borderRadius: radius.md,
     backgroundColor: colors.hair,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -576,6 +580,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fitCheckBox: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
   },

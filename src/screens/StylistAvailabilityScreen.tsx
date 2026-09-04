@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, DateData } from 'react-native-calendars';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import {
   stylistAvailabilityService,
@@ -301,6 +301,7 @@ const styles = StyleSheet.create({
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   timeChip: {
+    borderRadius: radius.full,
     paddingHorizontal: 11,
     paddingVertical: 7,
     backgroundColor: colors.paper,

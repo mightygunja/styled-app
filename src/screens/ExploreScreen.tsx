@@ -36,7 +36,7 @@ import {
 import { curatedCatalogNotice } from '../services/affiliateNetwork';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { shopperSignals } from '../services/shopperSignals';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -333,6 +333,7 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
   noticeBox: {
+    borderRadius: radius.md,
     marginTop: spacing.lg,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -340,10 +341,12 @@ const styles = StyleSheet.create({
   },
   noticeText: { ...textType.meta, fontSize: 12, lineHeight: 18 },
 
-  summaryBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  summaryBox: {
+    borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
   summaryLabel: { ...textType.eyebrow, marginBottom: 10 },
   summaryText: { ...textType.body, color: colors.ink, lineHeight: 22 },
   summaryAction: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.md,
     backgroundColor: colors.ink,
@@ -359,6 +362,7 @@ const styles = StyleSheet.create({
   // the camel rule is the same "trend voice" marker used on Home and the
   // Trend Report.
   stretchSection: {
+    borderRadius: radius.md,
     marginTop: spacing.section,
     padding: spacing.md,
     backgroundColor: colors.paper,
@@ -384,7 +388,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  thumb: { width: 76, height: 96, backgroundColor: colors.paper },
+  thumb: {
+    borderRadius: radius.sm, width: 76, height: 96, backgroundColor: colors.paper },
   rowText: { flex: 1, marginLeft: 14 },
   emphasis: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco, marginBottom: 4 },
   productName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
@@ -392,7 +397,8 @@ const styles = StyleSheet.create({
   reason: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6, lineHeight: 19 },
   concern: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkFaint, marginTop: 4 },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 

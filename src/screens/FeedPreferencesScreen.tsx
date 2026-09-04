@@ -18,7 +18,7 @@ import { socialFeedService, FeedPreferences, PostType } from '../services/social
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.hair,
     justifyContent: 'center',
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radius.full,
     justifyContent: 'center',
   },
   addButtonDisabled: {
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     paddingRight: 8,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: radius.full,
     gap: 6,
   },
   hashtagText: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: colors.sand,
     margin: 20,
-    borderRadius: 12,
+    borderRadius: radius.md,
     gap: 12,
   },
   infoIcon: {

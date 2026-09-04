@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface MonthlyInsightCardProps {
   insight: string;
@@ -60,6 +60,7 @@ function getCurrentMonth(): string {
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 20,
     marginVertical: 16,
@@ -91,6 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   premiumTease: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,

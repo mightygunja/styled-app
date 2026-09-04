@@ -10,7 +10,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { styleProfileService } from '../services/firestore';
 import { ColorAnalysisResult, BodyAnalysisResult, BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -301,6 +301,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
+    borderRadius: radius.full,
     marginTop: 24,
     backgroundColor: colors.ink,
     paddingHorizontal: 28,
@@ -340,9 +341,11 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   swatchWrap: {
+    borderRadius: radius.sm,
     width: 60,
   },
   swatch: {
+    borderRadius: radius.sm,
     width: 56,
     height: 56,
     borderWidth: 1,
@@ -359,6 +362,7 @@ const styles = StyleSheet.create({
     ...textType.meta,
   },
   colorAnalysisCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 18,
   },
@@ -374,6 +378,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   miniSwatch: {
+    borderRadius: radius.sm,
     width: 24,
     height: 24,
     borderWidth: 1,

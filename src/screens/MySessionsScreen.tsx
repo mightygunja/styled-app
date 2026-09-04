@@ -16,7 +16,7 @@ import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
 import { StylingSession } from '../types';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -246,6 +246,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   bookButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 14,
@@ -259,6 +260,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sessionCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
   stylistImage: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     marginRight: 12,
   },
@@ -301,6 +303,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   sessionDetails: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 12,
     marginBottom: 16,
@@ -324,6 +327,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   confirmedNote: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 14,
@@ -334,6 +338,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   joinButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.ink,
     padding: 14,
@@ -345,6 +350,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   notesButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 14,

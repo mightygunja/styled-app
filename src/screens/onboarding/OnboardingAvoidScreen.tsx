@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 
+import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingAvoid'>;
 
 // Common avoid-rules with friendly, non-judgmental descriptions
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     borderWidth: 2,
     borderColor: '#DED7CF',
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: '#DED7CF',
     alignItems: 'center',
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#161616',
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 24,
     backgroundColor: '#2B1F1A',
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#C62828',
-    borderRadius: 20,
+    borderRadius: radius.full,
     paddingVertical: 8,
     paddingLeft: 16,
     paddingRight: 12,
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
   previewContainer: {
     padding: 16,
     backgroundColor: '#FEF2F2',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: '#FEE2E2',
   },
@@ -345,7 +346,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

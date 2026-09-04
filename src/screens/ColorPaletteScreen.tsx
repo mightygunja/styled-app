@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 interface TrendingColor {
   name: string;
@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
     color: ds.ink,
   },
   monthBanner: {
+    borderRadius: radius.md,
     padding: 24,
     backgroundColor: ds.sand,
     borderBottomWidth: 1,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
   },
   colorCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginRight: 16,
     borderWidth: 1,
     borderColor: ds.hair,
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
   },
   patternCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
   popularityBarFill: {
     height: '100%',
     backgroundColor: ds.ink,
-    borderRadius: 4,
+    borderRadius: radius.sm,
   },
   popularityText: {
     fontSize: 13,
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 8,
     gap: 12,

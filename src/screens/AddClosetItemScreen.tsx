@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, radius, fonts } from '../theme/designSystem';
 
 const CATEGORIES = [
   { id: 'tops', label: 'Tops' },
@@ -283,11 +283,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   image: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 0.75,
     backgroundColor: colors.paper,
   },
   changeImageButton: {
+    borderRadius: radius.sm,
     position: 'absolute',
     bottom: 16,
     left: 16,
@@ -302,6 +304,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   imagePlaceholder: {
+    borderRadius: radius.md,
     aspectRatio: 0.75,
     backgroundColor: colors.paper,
     borderWidth: 2,
@@ -342,6 +345,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionCard: {
+    borderRadius: radius.md,
     width: '30%',
     aspectRatio: 1,
     backgroundColor: colors.paper,
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
   colorOption: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -398,6 +402,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   input: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,

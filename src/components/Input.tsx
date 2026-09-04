@@ -7,7 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.card,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingVertical: 12,

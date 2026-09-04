@@ -10,7 +10,7 @@ import {
   NativeModules,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface Props {
   onError: (message: string) => void;
@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     backgroundColor: colors.white,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -264,6 +265,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   devNotice: {
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     padding: 14,

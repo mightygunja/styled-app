@@ -21,7 +21,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - spacing.page * 2 - 8) / 3;
@@ -328,11 +328,11 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
   identityRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg },
-  profileImage: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.paper },
+  profileImage: { width: 76, height: 76, borderRadius: radius.full, backgroundColor: colors.paper },
   profileImagePlaceholder: {
     width: 76,
     height: 76,
-    borderRadius: 38,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -352,6 +352,7 @@ const styles = StyleSheet.create({
   location: { ...textType.meta, marginTop: spacing.md },
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm },
   tag: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -361,8 +362,10 @@ const styles = StyleSheet.create({
   tagText: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted },
 
   actionButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
-  primaryButton: { flex: 1, backgroundColor: colors.ink, paddingVertical: 14, alignItems: 'center' },
+  primaryButton: {
+    borderRadius: radius.full, flex: 1, backgroundColor: colors.ink, paddingVertical: 14, alignItems: 'center' },
   primaryButtonInline: {
+    borderRadius: radius.md,
     backgroundColor: colors.ink,
     paddingVertical: 14,
     paddingHorizontal: spacing.lg,
@@ -372,6 +375,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
   secondaryButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.card,
     paddingVertical: 14,
@@ -394,8 +398,10 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: spacing.md },
   gridItem: { width: GRID_SIZE, height: GRID_SIZE },
-  gridImage: { width: '100%', height: '100%', backgroundColor: colors.paper },
+  gridImage: {
+    borderRadius: radius.sm, width: '100%', height: '100%', backgroundColor: colors.paper },
   multipleIndicator: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 6,
     right: 6,
@@ -406,7 +412,8 @@ const styles = StyleSheet.create({
   multipleCount: { fontFamily: fonts.sansMedium, fontSize: 10, color: colors.white },
 
   savedLoading: { paddingVertical: spacing.section, alignItems: 'center' },
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });

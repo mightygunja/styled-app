@@ -22,7 +22,7 @@ import {
 } from '../services/voiceCommandService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   voiceButton: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   transcriptContainer: {
     width: '100%',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 16,
   },
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   },
   resultContainer: {
     width: '100%',
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     gap: 12,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   },
   helpCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     gap: 16,
   },
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     alignItems: 'center',
   },
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 8,
     gap: 12,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   topCommandRank: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },

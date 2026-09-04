@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { styleEditService, StyleEdit, coverageStats } from '../services/styleEditService';
 import { ItemCategory } from '../types';
 
@@ -258,11 +258,13 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
 
-  coverageCard: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
+  coverageCard: {
+    borderRadius: radius.sm, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   coverageNumber: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
   coverageSub: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
 
-  noteCard: { backgroundColor: colors.sand, padding: spacing.lg, marginTop: spacing.sm },
+  noteCard: {
+    borderRadius: radius.md, backgroundColor: colors.sand, padding: spacing.lg, marginTop: spacing.sm },
   noteLabel: { ...textType.microLabel, color: colors.tobacco, marginBottom: 8 },
   noteText: { ...textType.body, color: colors.ink, lineHeight: 22 },
 
@@ -283,7 +285,8 @@ const styles = StyleSheet.create({
   lookTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
   lookOccasion: { ...textType.microLabel, color: colors.inkFaint, marginTop: 4 },
   lookItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.md },
-  lookThumb: { width: 76, height: 76, backgroundColor: colors.paper },
+  lookThumb: {
+    borderRadius: radius.sm, width: 76, height: 76, backgroundColor: colors.paper },
   lookRationale: { ...textType.body, color: colors.inkMuted, marginTop: spacing.md, lineHeight: 22 },
 
   gapsIntro: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
@@ -320,6 +323,7 @@ const styles = StyleSheet.create({
   modalBody: { paddingHorizontal: spacing.page, paddingBottom: 40 },
   modalHint: { ...textType.body, color: colors.inkMuted, lineHeight: 22, marginBottom: spacing.md },
   revisionInput: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,

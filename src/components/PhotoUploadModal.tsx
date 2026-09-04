@@ -13,7 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 import AnimatedModal from './AnimatedModal';
 import { scale } from '../utils/animations';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface PhotoUploadModalProps {
   visible: boolean;
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
@@ -315,6 +315,7 @@ const styles = StyleSheet.create({
   },
 
   guidanceSection: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     marginBottom: 20,
@@ -336,6 +337,7 @@ const styles = StyleSheet.create({
 
   actionButtons: { gap: 10 },
   actionButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 16,
     alignItems: 'center',
@@ -346,6 +348,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   actionButtonSecondary: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -367,13 +370,15 @@ const styles = StyleSheet.create({
   // Percentage width plus aspectRatio, so the preview fits whatever the
   // parent gives it instead of assuming the screen width.
   imagePreview: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 3 / 4,
     backgroundColor: colors.paper,
     marginBottom: 20,
     overflow: 'hidden',
   },
-  previewImage: { width: '100%', height: '100%' },
+  previewImage: {
+    borderRadius: radius.sm, width: '100%', height: '100%' },
 
   filtersTitle: {
     fontFamily: fonts.sansSemiBold,
@@ -385,6 +390,7 @@ const styles = StyleSheet.create({
   filtersRow: { marginHorizontal: -20 },
   filtersScroll: { paddingHorizontal: 20, gap: 8 },
   filterButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: colors.card,
@@ -406,6 +412,7 @@ const styles = StyleSheet.create({
   },
 
   doneButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 16,
     alignItems: 'center',

@@ -23,7 +23,7 @@ import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 
 const ITEM_SIZE = 64;
 
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   headerAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -508,6 +508,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   contextStrip: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     paddingHorizontal: 20,
     paddingVertical: 8,
@@ -520,6 +521,7 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
   },
   contextStripPrompt: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -568,6 +570,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pickerChip: {
+    borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: 'transparent',
@@ -588,6 +591,7 @@ const styles = StyleSheet.create({
     color: colors.bone,
   },
   getOutfitButton: {
+    borderRadius: radius.full,
     marginTop: 16,
     backgroundColor: colors.ink,
     paddingVertical: 14,
@@ -659,6 +663,7 @@ const styles = StyleSheet.create({
     // so the whole outfit is always visible without any nested scroll view.
   },
   outfitItemImage: {
+    borderRadius: radius.sm,
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     backgroundColor: colors.sand,
@@ -673,6 +678,7 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
   },
   saveOutfitButton: {
+    borderRadius: radius.full,
     marginTop: 8,
     paddingVertical: 10,
     backgroundColor: 'transparent',
@@ -698,6 +704,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   typingBubble: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
   },
@@ -724,6 +731,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   suggestionChip: {
+    borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: 'transparent',
@@ -745,6 +753,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
@@ -755,6 +764,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   sendButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,

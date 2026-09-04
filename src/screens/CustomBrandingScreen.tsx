@@ -24,7 +24,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   upgradeButtonText: {
     fontSize: 12,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   brandCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.card,
     borderWidth: 1,
     borderColor: ds.hair,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.full,
     justifyContent: 'center',
   },
   saveButtonText: {
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   logoPreview: {
     width: 120,
     height: 120,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: ds.hair,
   },
   colorGrid: {
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.full,
     marginBottom: 6,
     borderWidth: 2,
     borderColor: ds.hair,
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   featureCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
@@ -746,11 +746,12 @@ const styles = StyleSheet.create({
   },
   templateCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     marginBottom: 16,
   },
   templateImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 160,
     backgroundColor: ds.hair,
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   premiumBadgeText: {
     fontSize: 10,
@@ -793,14 +794,14 @@ const styles = StyleSheet.create({
   templateColorSwatch: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: ds.hair,
   },
   applyButton: {
     backgroundColor: ds.ink,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   applyButtonText: {
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
   },
   upgradeCard: {
     backgroundColor: ds.ink,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 24,
     alignItems: 'center',
   },
@@ -834,7 +835,7 @@ const styles = StyleSheet.create({
   },
   lockedCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 32,
     alignItems: 'center',
   },
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   lockedButtonText: {
     fontSize: 14,
@@ -867,7 +868,7 @@ const styles = StyleSheet.create({
   },
   customizeCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
   customizeButton: {
     backgroundColor: ds.ink,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   customizeButtonText: {

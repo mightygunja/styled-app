@@ -24,7 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -653,6 +653,7 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
   },
   infoBanner: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.sand,
@@ -683,7 +684,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -740,14 +741,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
   widgetIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
   sizeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radius.full,
   },
   sizeBadgeText: {
     fontSize: 10,
@@ -792,7 +793,7 @@ const styles = StyleSheet.create({
   instructionCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -834,7 +835,7 @@ const styles = StyleSheet.create({
   widgetPreviewSmall: {
     width: 155,
     height: 155,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.paper,
   },
@@ -842,16 +843,18 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 329,
     height: 155,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.paper,
     flexDirection: 'row',
   },
   previewImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
   previewImageMedium: {
+    borderRadius: radius.sm,
     width: 155,
     height: 155,
   },
@@ -944,7 +947,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -964,14 +967,14 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 8,
   },
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radius.full,
     marginBottom: 4,
   },
   optionButtonActive: {
@@ -997,7 +1000,7 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
@@ -1023,7 +1026,7 @@ const styles = StyleSheet.create({
     right: 12,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1034,7 +1037,7 @@ const styles = StyleSheet.create({
   },
   analyticsCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   analyticsRow: {

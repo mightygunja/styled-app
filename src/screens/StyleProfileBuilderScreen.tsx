@@ -19,7 +19,7 @@ import { styleProfileService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -766,6 +766,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   sliderButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 18,
     paddingVertical: 8,
     borderWidth: 1,
@@ -786,6 +787,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   archetypeCard: {
+    borderRadius: radius.md,
     width: '47.5%',
     padding: 16,
     borderWidth: 1,
@@ -839,6 +841,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   colorInput: {
+    borderRadius: radius.md,
     flex: 1,
     fontFamily: fonts.sans,
     fontSize: 15,
@@ -850,6 +853,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   addButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 20,
     justifyContent: 'center',
     backgroundColor: ds.ink,
@@ -866,6 +870,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   colorTag: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -876,6 +881,7 @@ const styles = StyleSheet.create({
     borderColor: ds.hair,
   },
   avoidTag: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -931,6 +937,7 @@ const styles = StyleSheet.create({
 
   // ---- Guidance ----
   guidanceOption: {
+    borderRadius: radius.md,
     padding: 18,
     borderWidth: 1,
     borderColor: ds.hair,
@@ -990,6 +997,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.bone,
   },
   nextButton: {
+    borderRadius: radius.full,
     backgroundColor: ds.ink,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1001,6 +1009,7 @@ const styles = StyleSheet.create({
     color: ds.bone,
   },
   saveButton: {
+    borderRadius: radius.full,
     backgroundColor: ds.ink,
     paddingVertical: 16,
     alignItems: 'center',

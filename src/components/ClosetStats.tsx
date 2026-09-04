@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface ClosetStatsProps {
   totalItems: number;
@@ -74,6 +74,7 @@ export default function ClosetStats({
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     padding: 16,
     backgroundColor: colors.card,
   },
@@ -83,6 +84,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 24,
     alignItems: 'center',
@@ -120,6 +122,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   categoryCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   wornItem: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

@@ -17,7 +17,7 @@ import { lookAPI, getCurrentUserId } from '../services/api';
 import { Look } from '../types';
 import LookCard from '../components/LookCard';
 import { fadeIn } from '../utils/animations';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backButton: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -209,6 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   browseButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,

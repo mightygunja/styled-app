@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getActiveAdapter, activeProviderName, curatedCatalogNotice } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import {
@@ -339,6 +339,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   wishlistToggle: {
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: 12,
@@ -389,6 +390,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   affordabilityBox: {
+    borderRadius: radius.md,
     marginTop: spacing.md,
     backgroundColor: colors.paper,
     padding: 14,
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   saleBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -448,6 +451,7 @@ const styles = StyleSheet.create({
   // The unlock is the headline argument, so it gets the only filled panel on
   // the page rather than sharing the hairline-rule treatment of the reasons.
   unlockBox: {
+    borderRadius: radius.md,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     padding: spacing.lg,
@@ -505,6 +509,7 @@ const styles = StyleSheet.create({
     color: colors.inkFaint,
   },
   concernBox: {
+    borderRadius: radius.md,
     marginTop: spacing.lg,
     backgroundColor: colors.sand,
     padding: spacing.md,
@@ -540,6 +545,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ownedBox: {
+    borderRadius: radius.md,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     padding: 14,

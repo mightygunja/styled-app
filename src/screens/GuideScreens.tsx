@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import BrandWordmark from '../components/BrandWordmark';
 import { useAuth } from '../contexts/AuthContext';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 export interface GuideMeta {
   route: string;
@@ -1089,6 +1089,7 @@ const styles = StyleSheet.create({
   liDot: { color: colors.camel, fontSize: 16, lineHeight: 22 },
 
   cta: {
+    borderRadius: radius.full,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     borderWidth: 1,
@@ -1106,6 +1107,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   ctaButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 15,
     alignItems: 'center',

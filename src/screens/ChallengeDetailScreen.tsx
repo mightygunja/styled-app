@@ -16,7 +16,7 @@ import Button from '../components/Button';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { challengeService, Challenge, ChallengeEntry } from '../services/challengeService';
 import { userProfileService } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
@@ -326,7 +326,8 @@ const styles = StyleSheet.create({
   statNumber: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
   statLabel: { ...textType.microLabel, color: colors.inkFaint, marginTop: 4 },
 
-  prizeBox: { backgroundColor: colors.sand, padding: spacing.md, marginTop: spacing.lg },
+  prizeBox: {
+    borderRadius: radius.md, backgroundColor: colors.sand, padding: spacing.md, marginTop: spacing.lg },
   prizeLabel: { ...textType.microLabel, color: colors.tobacco, marginBottom: 6 },
   prizeText: { ...textType.body, color: colors.ink },
 
@@ -344,21 +345,23 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
   },
   entryHead: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
-  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.paper },
+  avatar: { width: 32, height: 32, borderRadius: radius.full, backgroundColor: colors.paper },
   avatarPlaceholder: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.tobacco },
   entryName: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink, marginLeft: 10 },
-  entryImage: { width: '100%', height: 320, backgroundColor: colors.paper },
+  entryImage: {
+    borderRadius: radius.sm, width: '100%', height: 320, backgroundColor: colors.paper },
   entryCaption: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: spacing.sm },
 
   voteButton: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
     paddingHorizontal: 14,

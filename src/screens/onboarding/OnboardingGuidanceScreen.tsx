@@ -14,6 +14,7 @@ import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { PersonalStyleProfile } from '../../models/personalStyleProfile';
 
+import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingGuidance'>;
 
 type GuidanceLevel = PersonalStyleProfile['guidanceLevel'];
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     borderWidth: 2,
     borderColor: '#DED7CF',
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
   radio: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: '#DED7CF',
     alignItems: 'center',
@@ -193,13 +194,13 @@ const styles = StyleSheet.create({
   radioDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: radius.full,
     backgroundColor: '#2B1F1A',
   },
   exampleContainer: {
     backgroundColor: '#F4F1ED',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   exampleLabel: {
     fontSize: 12,
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 16,
     backgroundColor: '#F8F6F3',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   noteText: {
     fontSize: 14,
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   nextButton: {
     height: 56,
     backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

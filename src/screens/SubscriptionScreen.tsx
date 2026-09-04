@@ -24,7 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   billingToggle: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.full,
     padding: 4,
     gap: 4,
   },
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   billingOptionActive: {
     backgroundColor: ds.card,
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: radius.full,
     marginTop: 4,
   },
   savingsBadgeText: {
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 24,
     marginBottom: 16,
     borderWidth: 2,
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   popularBadgeText: {
     fontSize: 10,
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   currentPlanButton: {
     backgroundColor: ds.ink,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   currentPlanButtonText: {
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   freePlanButton: {
     backgroundColor: ds.hair,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   freePlanButtonText: {
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   subscribeButton: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   subscribeButtonText: {
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
   },
   upgradeButton: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   upgradeButtonText: {
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     gap: 12,
   },
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   statusBadgeText: {
     fontSize: 11,
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   },
   usageCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     gap: 16,
   },
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: ds.sand,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: ds.sand,
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   reactivateButton: {
     backgroundColor: ds.sand,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: ds.sand,
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   billingStatus: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   billingStatusText: {
     fontSize: 10,

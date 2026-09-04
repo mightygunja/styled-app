@@ -20,7 +20,7 @@ import { outfitsService } from '../services/firestore';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -331,6 +331,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   weatherCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
@@ -358,6 +359,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   occasionChip: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     margin: 20,
     marginTop: 0,
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 20,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -431,6 +433,7 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     backgroundColor: colors.paper,
@@ -471,6 +474,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   acceptButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 12,
@@ -482,6 +486,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   modifyButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderWidth: 1,

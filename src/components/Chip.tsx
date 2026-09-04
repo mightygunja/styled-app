@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 import PressableScale from './PressableScale';
 
 interface ChipProps {
@@ -26,6 +26,7 @@ export default function Chip({ label, active = false, onPress, style }: ChipProp
 
 const styles = StyleSheet.create({
   chip: {
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
     backgroundColor: 'transparent',

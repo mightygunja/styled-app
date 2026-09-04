@@ -26,7 +26,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   assistantAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   userAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: width * 0.7,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 12,
   },
   assistantBubble: {
@@ -387,11 +387,12 @@ const styles = StyleSheet.create({
   productCard: {
     width: 140,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     marginRight: 8,
     overflow: 'hidden',
   },
   productImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 140,
     backgroundColor: colors.hair,
@@ -412,6 +413,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   productButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 8,
     alignItems: 'center',
@@ -431,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
   },
   typingBubble: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderBottomLeftRadius: 4,
     padding: 16,
   },
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -495,7 +497,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 24,
+    borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -505,7 +507,7 @@ const styles = StyleSheet.create({
   sendButton: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',

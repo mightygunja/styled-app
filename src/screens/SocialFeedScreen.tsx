@@ -23,7 +23,7 @@ import { userSettingsService } from '../services/userSettingsService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -533,6 +533,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   createButton: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: 20,
     backgroundColor: colors.ink,
@@ -545,6 +546,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   clearTagButton: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: 20,
     borderWidth: 1,
@@ -559,6 +561,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   loadMoreButton: {
+    borderRadius: radius.full,
     alignSelf: 'center',
     marginBottom: 8,
     borderWidth: 1,
@@ -591,13 +594,13 @@ const styles = StyleSheet.create({
   userAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
   },
   userAvatarPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -623,6 +626,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   typeBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -636,11 +640,13 @@ const styles = StyleSheet.create({
     width: width,
   },
   postImage: {
+    borderRadius: radius.sm,
     width: width,
     height: width,
     backgroundColor: colors.paper,
   },
   imageIndicator: {
+    borderRadius: radius.sm,
     position: 'absolute',
     top: width - 40,
     right: 20,
@@ -713,6 +719,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   emptyState: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     backgroundColor: colors.paper,
@@ -758,11 +765,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  suggestionAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
+  suggestionAvatar: { width: 44, height: 44, borderRadius: radius.full, backgroundColor: colors.paper },
   suggestionAvatarPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     alignItems: 'center',
     justifyContent: 'center',
@@ -780,6 +787,7 @@ const styles = StyleSheet.create({
 
   discoverGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   discoverImage: {
+    borderRadius: radius.sm,
     width: (width - 40 - 8) / 3,
     height: (width - 40 - 8) / 3,
     backgroundColor: colors.paper,

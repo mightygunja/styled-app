@@ -7,7 +7,7 @@ import { RootStackParamList } from '../navigation/types';
 import { Look } from '../types';
 import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   placeholder: {
     backgroundColor: colors.paper,
     padding: 48,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 200,

@@ -9,7 +9,7 @@ import { getCurrentUserId, closetAPI } from '../services/api';
 import ClosetStats from '../components/ClosetStats';
 import { fadeIn } from '../utils/animations';
 import { ClosetGridSkeleton } from '../components/ClosetItemSkeleton';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
   addButton: {
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.ink,
     paddingVertical: 8,
@@ -368,6 +369,7 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   actionChip: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -401,6 +403,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   searchInput: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -415,6 +418,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sortButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: 'transparent',
@@ -496,15 +500,18 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   gridImageWrap: {
+    borderRadius: radius.sm,
     aspectRatio: 0.85,
     backgroundColor: colors.paper,
     position: 'relative',
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
   photoNeeded: {
+    borderRadius: radius.md,
     width: '100%',
     height: '100%',
     alignItems: 'center',
@@ -520,6 +527,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   wornBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     right: 8,

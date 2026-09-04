@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import { stylistAPI } from '../services/stylistAPI';
 import {
@@ -257,11 +257,13 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
   editCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -272,7 +274,8 @@ const styles = StyleSheet.create({
   editFocus: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink, flex: 1 },
   editStylist: { ...textType.meta, fontSize: 12, marginTop: 4 },
   editCoverage: { ...textType.body, fontSize: 13, color: colors.tobacco, marginTop: 8 },
-  statusChip: { backgroundColor: colors.sand, paddingHorizontal: 9, paddingVertical: 4 },
+  statusChip: {
+    borderRadius: radius.full, backgroundColor: colors.sand, paddingHorizontal: 9, paddingVertical: 4 },
   statusChipReady: { backgroundColor: colors.ink },
   statusText: { fontFamily: fonts.sansSemiBold, fontSize: 10, letterSpacing: 0.8, color: colors.ink },
   statusTextReady: { color: colors.white },
@@ -293,6 +296,7 @@ const styles = StyleSheet.create({
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
+    borderRadius: radius.full,
     paddingHorizontal: 13,
     paddingVertical: 8,
     backgroundColor: colors.paper,
@@ -304,6 +308,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.white },
 
   stylistRow: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 13,
@@ -321,6 +326,7 @@ const styles = StyleSheet.create({
   paymentNote: { ...textType.body, fontSize: 12, color: colors.inkMuted, lineHeight: 18, marginTop: 10 },
 
   briefInput: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,

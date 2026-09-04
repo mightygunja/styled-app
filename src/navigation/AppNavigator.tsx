@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View, ActivityIndicator, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -77,6 +78,7 @@ import WishlistScreen from '../screens/WishlistScreen';
 import StyleProfileScreen from '../screens/StyleProfileScreen';
 import AccountScreen from '../screens/AccountScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import IntroScreen, { INTRO_SEEN_KEY } from '../screens/IntroScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { AboutScreen, PrivacyScreen, TermsScreen } from '../screens/PublicPagesScreens';
@@ -120,6 +122,7 @@ const TAB_CONTENT_WIDTH: Record<string, number> = {
 };
 
 const STACK_CONTENT_WIDTH: Record<string, number> = {
+  Intro: 560,
   Shop: 1240,
   Explore: 1240,
   Wishlist: 1240,
@@ -265,6 +268,7 @@ const linking = {
           More: 'more',
         },
       },
+      Intro: 'intro',
       Login: 'login',
       Signup: 'signup',
       Onboarding: 'welcome',
@@ -385,7 +389,17 @@ function syncSeoMeta() {
 export default function AppNavigator() {
   const { user, loading, isNewUser } = useAuth();
 
-  if (loading) {
+  // Whether this install has seen the first-open introduction. Null while
+  // the flag is being read; only the logged-out branch waits on it, and a
+  // storage failure counts as "seen" so nobody gets trapped on the pitch.
+  const [introSeen, setIntroSeen] = React.useState<boolean | null>(null);
+  React.useEffect(() => {
+    AsyncStorage.getItem(INTRO_SEEN_KEY)
+      .then(value => setIntroSeen(!!value))
+      .catch(() => setIntroSeen(true));
+  }, []);
+
+  if (loading || (!user && introSeen === null)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bone }}>
         <ActivityIndicator size="large" color={colors.ink} />
@@ -515,6 +529,11 @@ export default function AppNavigator() {
           </>
         ) : (
           <>
+            {/* First screen wins as the initial route: a fresh install opens
+                on the introduction, every later launch goes straight to
+                Login. Registered (not conditional-initialRouteName) so a
+                deep link to /login still lands on Login directly. */}
+            {!introSeen && <Stack.Screen name="Intro" component={IntroScreen} />}
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
             {publicScreens}

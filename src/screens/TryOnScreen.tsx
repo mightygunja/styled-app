@@ -14,7 +14,7 @@ import { readAsStringAsync } from 'expo-file-system/legacy';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { tryOnAPI } from '../services/firebaseApi';
 import { uploadImageToFirebase } from '../services/firebaseStorage';
@@ -223,7 +223,8 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
   personRow: { flexDirection: 'row', alignItems: 'center' },
-  personThumb: { width: 72, height: 96, backgroundColor: colors.paper, marginRight: 14 },
+  personThumb: {
+    borderRadius: radius.sm, width: 72, height: 96, backgroundColor: colors.paper, marginRight: 14 },
   changeLink: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -235,14 +236,15 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   gridItemSelected: { borderColor: colors.ink },
-  gridImage: { width: '100%', height: '100%' },
+  gridImage: {
+    borderRadius: radius.sm, width: '100%', height: '100%' },
   check: {
     position: 'absolute',
     top: 4,
     right: 4,
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',

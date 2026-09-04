@@ -17,7 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import { messagingService, Conversation } from '../services/messagingService';
 import { userProfileService } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -231,13 +231,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
   },
   avatarPlaceholder: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -283,6 +283,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   unreadBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -295,6 +296,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   emptyState: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     backgroundColor: colors.paper,
     padding: 20,

@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -352,6 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -384,6 +385,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 16,
@@ -445,6 +447,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   colorCard: {
+    borderRadius: radius.md,
     width: (width - 60) / 3,
     backgroundColor: colors.paper,
     padding: 12,
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -473,6 +476,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   seasonCard: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 16,
@@ -497,6 +501,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: 100,
     height: 100,
     backgroundColor: colors.paper,
@@ -512,6 +517,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   insightCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,

@@ -19,7 +19,7 @@ import { outfitsService } from '../services/firestore';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   previewSection: {
+    borderRadius: radius.sm,
     padding: 20,
     backgroundColor: colors.paper,
   },
@@ -333,6 +334,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyPreview: {
+    borderRadius: radius.sm,
     padding: 40,
     alignItems: 'center',
     backgroundColor: colors.card,
@@ -358,6 +360,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   previewImage: {
+    borderRadius: radius.sm,
     width: 80,
     height: 80,
     backgroundColor: colors.paper,
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
     right: -8,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -379,6 +382,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   clearButton: {
+    borderRadius: radius.full,
     marginTop: 12,
     padding: 12,
     backgroundColor: colors.card,
@@ -398,6 +402,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   occasionButton: {
+    borderRadius: radius.full,
     flex: 1,
     padding: 12,
     backgroundColor: colors.paper,
@@ -419,6 +424,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   suggestionCard: {
+    borderRadius: radius.md,
     width: 200,
     marginRight: 12,
     backgroundColor: colors.card,
@@ -431,6 +437,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   suggestionImage: {
+    borderRadius: radius.sm,
     width: 50,
     height: 50,
     backgroundColor: colors.paper,
@@ -452,6 +459,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   applyButton: {
+    borderRadius: radius.full,
     padding: 8,
     backgroundColor: colors.paper,
     alignItems: 'center',
@@ -466,6 +474,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   emptyCloset: {
+    borderRadius: radius.md,
     padding: 32,
     alignItems: 'center',
     backgroundColor: colors.paper,
@@ -478,6 +487,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emptyClosetButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -503,6 +513,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 1,
     borderTopLeftRadius: 6,
@@ -515,7 +526,7 @@ const styles = StyleSheet.create({
     right: 8,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',

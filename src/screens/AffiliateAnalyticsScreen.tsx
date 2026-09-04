@@ -27,7 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { adminService, AffiliateAnalytics } from '../services/adminService';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 const RANGES = [
   { label: '7 days', value: 7 },
@@ -373,6 +373,7 @@ const styles = StyleSheet.create({
   rangeChip: { marginRight: 0 },
 
   noticeBox: {
+    borderRadius: radius.md,
     marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -407,7 +408,8 @@ const styles = StyleSheet.create({
   tableMeta: { ...textType.meta, fontSize: 12, marginTop: 2 },
   tableValue: { fontFamily: fonts.serif, fontSize: 18, color: colors.ink },
 
-  figureBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  figureBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   figureValue: { fontFamily: fonts.serif, fontSize: 40, lineHeight: 44, color: colors.ink },
   figureUnit: { ...textType.body, color: colors.inkMuted, marginTop: 4 },
   figureNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: 10 },
@@ -416,6 +418,7 @@ const styles = StyleSheet.create({
 
   formRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -430,6 +433,7 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.tobacco, marginBottom: 8 },
 
   button: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 14,
     alignItems: 'center',
@@ -438,7 +442,8 @@ const styles = StyleSheet.create({
   buttonDisabled: { backgroundColor: colors.hair },
   buttonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });

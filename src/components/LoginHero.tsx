@@ -27,7 +27,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const CARD_W = 168;
 const CARD_H = CARD_W * 1.36;
@@ -284,7 +284,8 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 10,
   },
-  cardImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  cardImage: {
+    borderRadius: radius.sm, ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   cardFace: { flex: 1, padding: 16 },
   cardMeta: {
     fontFamily: fonts.sansSemiBold,

@@ -18,7 +18,7 @@ import {
 } from '../services/quickAccessService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
   },
   infoBanner: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
   itemIcon: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     right: -4,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -373,14 +374,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     gap: 12,
   },
   availableIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: colors.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 8,
     gap: 12,

@@ -101,6 +101,7 @@ export type RootStackParamList = {
     reason?: string;
   };
   Wishlist: undefined;
+  Intro: undefined;
   Login: undefined;
   Signup: undefined;
   About: undefined;

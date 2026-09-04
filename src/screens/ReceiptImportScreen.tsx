@@ -17,7 +17,7 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import { receiptAPI, ParsedReceipt, ParsedReceiptItem } from '../services/firebaseApi';
 import { closetService } from '../services/firestore';
@@ -323,10 +323,12 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 80, alignItems: 'center' },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
   forwardHelper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
-  addressBox: { backgroundColor: colors.paper, padding: spacing.md },
+  addressBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.md },
   addressText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
   addressHint: { ...textType.meta, fontSize: 11, marginTop: 6 },
   pendingCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
   busyText: { ...textType.body, color: colors.inkMuted, marginTop: 20 },
 
   itemRow: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 14,

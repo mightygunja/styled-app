@@ -21,7 +21,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import BackButton from '../components/BackButton';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type FieldKey = 'name' | 'email' | 'password' | 'confirm';
@@ -253,6 +253,7 @@ const styles = StyleSheet.create({
   label: { ...textType.microLabel, fontSize: 9, color: colors.tobacco, marginBottom: 6 },
   input: {
     backgroundColor: colors.card,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: 16,
@@ -263,6 +264,7 @@ const styles = StyleSheet.create({
   },
   inputFocused: { borderColor: colors.ink },
   errorBox: {
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
     padding: 14,
     marginBottom: 10,
@@ -275,12 +277,13 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
+    borderRadius: radius.full,
     paddingVertical: 17,
     alignItems: 'center',
     marginTop: 4,
   },
-  buttonDisabled: { backgroundColor: colors.hair },
+  buttonDisabled: { opacity: 0.55 },
   buttonText: {
     fontFamily: fonts.sansMedium,
     fontSize: 15,

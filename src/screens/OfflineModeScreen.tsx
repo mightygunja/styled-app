@@ -25,7 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   },
   storageCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: colors.ink,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
   dangerButton: {
     backgroundColor: colors.sand,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.sand,
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   infoRow: {
@@ -736,14 +736,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
   cacheIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   downloadedText: {
     fontSize: 12,
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   downloadButtonText: {
     fontSize: 13,
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 32,
     alignItems: 'center',
   },
@@ -850,14 +850,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
   syncTypeBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
     marginRight: 12,
   },
   syncTypeText: {
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
   syncStatus: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   syncNowButton: {
     backgroundColor: colors.ink,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginTop: 12,
   },

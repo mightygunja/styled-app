@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from '../services/outfitPlannerService';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 import {
   getUpcomingEvents,
   planForSchedule,
@@ -563,6 +563,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   planWeekButton: {
+    borderRadius: radius.full,
     marginHorizontal: 20,
     marginTop: 16,
     padding: 16,
@@ -589,6 +590,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   occasionChip: {
+    borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: colors.paper,
@@ -621,6 +623,7 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   pickerImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
@@ -630,7 +633,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
@@ -664,6 +667,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   selectedDateSection: {
+    borderRadius: radius.md,
     padding: 20,
     backgroundColor: colors.paper,
     margin: 20,
@@ -684,6 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -693,6 +698,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   planButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -717,6 +723,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 20,
@@ -747,6 +754,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   upcomingCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     backgroundColor: colors.paper,
     padding: 16,
@@ -784,6 +792,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   upcomingPreviewImage: {
+    borderRadius: radius.sm,
     width: 40,
     height: 40,
   },
@@ -815,6 +824,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   occasionBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -839,6 +849,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   outfitItemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
     marginBottom: 8,
@@ -849,6 +860,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   notesSection: {
+    borderRadius: radius.md,
     marginTop: 20,
     padding: 16,
     backgroundColor: colors.paper,
@@ -871,6 +883,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hair,
   },
   actionButton: {
+    borderRadius: radius.full,
     flex: 1,
     backgroundColor: colors.ink,
     paddingVertical: 16,

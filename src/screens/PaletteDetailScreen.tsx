@@ -8,7 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { TrendPalette, Look } from '../types';
 import { paletteAPI, lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PaletteDetailRouteProp = RouteProp<RootStackParamList, 'PaletteDetail'>;
@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -192,6 +193,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   paletteSection: {
+    borderRadius: radius.md,
     padding: 20,
     backgroundColor: colors.paper,
     borderBottomWidth: 1,
@@ -216,6 +218,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   colorSwatchLarge: {
+    borderRadius: radius.sm,
     width: 80,
     height: 80,
     justifyContent: 'center',
@@ -232,6 +235,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   occasionBadge: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     backgroundColor: colors.ink,
     paddingHorizontal: 16,

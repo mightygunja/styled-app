@@ -22,7 +22,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -316,11 +316,11 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { color: colors.hair },
   content: { flex: 1 },
   avatarSection: { alignItems: 'center', paddingVertical: 24 },
-  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.paper },
+  avatar: { width: 96, height: 96, borderRadius: radius.full, backgroundColor: colors.paper },
   avatarPlaceholder: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   emailButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 14,
     alignItems: 'center',
@@ -371,6 +372,7 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 14, fontFamily: fonts.sansSemiBold, color: colors.ink, marginBottom: 8 },
   input: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,

@@ -7,7 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { scale } from '../utils/animations';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   circle: {
     width: 116,
     height: 116,
-    borderRadius: 58,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',

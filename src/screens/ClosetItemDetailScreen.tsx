@@ -11,7 +11,7 @@ import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type ClosetItemDetailRouteProp = RouteProp<RootStackParamList, 'ClosetItemDetail'>;
 
@@ -447,11 +447,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   image: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 0.75,
     backgroundColor: colors.paper,
   },
   addPhotoPlaceholder: {
+    borderRadius: radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -512,7 +514,7 @@ const styles = StyleSheet.create({
   colorDot: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: colors.hair,
   },
@@ -522,6 +524,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -532,6 +535,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
   },
   seasonTag: {
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -552,6 +556,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   outfitButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     padding: 16,
     alignItems: 'center',
@@ -562,6 +567,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   cutoutButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     padding: 16,
     alignItems: 'center',
@@ -575,6 +581,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   similarButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.tobacco,
     padding: 16,
     alignItems: 'center',
@@ -585,6 +592,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   wornButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     padding: 16,
     alignItems: 'center',

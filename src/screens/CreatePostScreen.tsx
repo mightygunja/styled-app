@@ -24,7 +24,7 @@ import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -296,6 +296,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   postButton: {
+    borderRadius: radius.full,
     marginHorizontal: 20,
     marginTop: 12,
     marginBottom: 60,
@@ -333,6 +334,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   typeButton: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
@@ -360,6 +362,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addImageButton: {
+    borderRadius: radius.sm,
     width: 120,
     height: 120,
     backgroundColor: colors.paper,
@@ -380,11 +383,13 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   imagePreview: {
+    borderRadius: radius.sm,
     width: 120,
     height: 120,
     position: 'relative',
   },
   previewImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
     backgroundColor: colors.paper,
@@ -395,7 +400,7 @@ const styles = StyleSheet.create({
     right: -8,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -406,6 +411,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   captionInput: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 14,
     fontFamily: fonts.sans,
@@ -423,6 +429,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   hashtagInput: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 14,
     fontFamily: fonts.sans,
@@ -438,6 +445,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   tipsSection: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     padding: 20,

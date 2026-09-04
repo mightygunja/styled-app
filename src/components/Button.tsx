@@ -6,7 +6,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 import PressableScale from './PressableScale';
 
 interface ButtonProps {
@@ -68,7 +68,9 @@ export default function Button({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 0,
+    // The same capsule as the floating tab bar — every button in the app
+    // reads as the one rounded, tappable shape.
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -80,7 +82,9 @@ const styles = StyleSheet.create({
   },
   // Variants
   primary: {
-    backgroundColor: colors.ink,
+    // Brand rust, not ink: near-black at reduced opacity read as a grey,
+    // inactive control. The action colour stays unmistakably "on".
+    backgroundColor: colors.rust,
   },
   secondary: {
     backgroundColor: colors.camel,
@@ -94,7 +98,9 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   disabled: {
-    opacity: 0.4,
+    // Kept brown-family rather than washed to grey, so a not-yet-enabled
+    // Continue still reads as the button you're working toward.
+    opacity: 0.55,
   },
   // Sizes
   smallButton: {

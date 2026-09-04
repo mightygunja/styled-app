@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface TrialReminderBannerProps {
   daysRemaining: number;
@@ -57,6 +57,7 @@ export default function TrialReminderBanner({
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 20,
     marginHorizontal: 16,
@@ -94,6 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ctaButton: {
+    borderRadius: radius.full,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderWidth: 1,

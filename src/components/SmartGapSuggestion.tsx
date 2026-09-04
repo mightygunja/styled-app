@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface SmartGapSuggestionProps {
   message: string;
@@ -34,6 +34,7 @@ export default function SmartGapSuggestion({ message, onDismiss }: SmartGapSugge
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,

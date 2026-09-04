@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { challengeService, Challenge, ChallengeStatus } from '../services/challengeService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -215,11 +215,13 @@ const styles = StyleSheet.create({
 
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
   card: {
+    borderRadius: radius.md,
     marginTop: spacing.lg,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -227,6 +229,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   cardImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 140,
     marginBottom: spacing.md,

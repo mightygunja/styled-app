@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface SoftPaywallProps {
   visible: boolean;
@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   trialCallout: {
+    borderRadius: radius.md,
     backgroundColor: colors.ink,
     padding: 16,
     alignItems: 'center',

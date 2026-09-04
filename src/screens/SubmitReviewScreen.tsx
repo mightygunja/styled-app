@@ -17,7 +17,7 @@ import { SessionType } from '../types';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SubmitReviewRouteProp = RouteProp<RootStackParamList, 'SubmitReview'>;
@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   stylistInfo: {
+    borderRadius: radius.md,
     padding: 20,
     alignItems: 'center',
     backgroundColor: colors.paper,
@@ -266,6 +267,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   commentInput: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     fontSize: 15,
@@ -285,6 +287,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   recommendButton: {
+    borderRadius: radius.full,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,6 +318,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   tipsSection: {
+    borderRadius: radius.md,
     margin: 20,
     padding: 16,
     backgroundColor: colors.sand,
@@ -339,6 +343,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hair,
   },
   submitButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     padding: 16,
     alignItems: 'center',

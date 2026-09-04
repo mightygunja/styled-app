@@ -22,7 +22,7 @@ import {
 } from '../services/sessionNotesService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SessionNotesRouteProp = RouteProp<RootStackParamList, 'SessionNotes'>;
@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   noteCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     marginBottom: 12,
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -434,6 +435,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   categoryButton: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.paper,
@@ -456,6 +458,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   noteInput: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     fontSize: 15,

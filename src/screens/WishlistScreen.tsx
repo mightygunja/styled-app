@@ -5,7 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { wishlistService, WishlistDoc } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import { isOnSale, discountPercent } from '../models/product';
@@ -156,15 +156,18 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   cardImageWrap: {
+    borderRadius: radius.sm,
     aspectRatio: 0.85,
     backgroundColor: colors.paper,
     position: 'relative',
   },
   cardImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
   saleBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     left: 8,

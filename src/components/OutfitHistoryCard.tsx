@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Outfit } from '../services/generateOutfits';
 import { getOutfitUsageMessage } from '../services/outfitHistory';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface OutfitHistoryCardProps {
   outfit: Outfit;
@@ -70,6 +70,7 @@ function formatDate(date: Date): string {
 
 const styles = StyleSheet.create({
   card: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
@@ -82,6 +83,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   imageWrapper: {
+    borderRadius: radius.sm,
     width: 80,
     height: 100,
     marginRight: -15,
@@ -90,6 +92,7 @@ const styles = StyleSheet.create({
     borderColor: colors.card,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
@@ -107,6 +110,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   occasionTag: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,

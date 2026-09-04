@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Look } from '../types';
 import { scale } from '../utils/animations';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 32;
@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   image: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sponsoredBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 12,
     left: 12,
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 12,
     paddingVertical: 6,

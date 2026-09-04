@@ -24,7 +24,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   },
   campaignCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 16,
   },
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   campaignIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radius.full,
   },
   statusBadgeText: {
     fontSize: 10,
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.sand,
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginBottom: 8,
   },
   scheduledIcon: {
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   },
   analyticsCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   analyticsRow: {
@@ -906,11 +906,12 @@ const styles = StyleSheet.create({
   },
   templateCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: 16,
   },
   templateImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
   },
@@ -931,7 +932,7 @@ const styles = StyleSheet.create({
   templateBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radius.full,
   },
   templateBadgeText: {
     fontSize: 10,
@@ -946,7 +947,7 @@ const styles = StyleSheet.create({
   useTemplateButton: {
     backgroundColor: colors.ink,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   useTemplateButtonText: {
@@ -959,7 +960,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -982,7 +983,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -1003,7 +1004,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   verifiedText: {
     fontSize: 13,
@@ -1014,7 +1015,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   verifyEmailButtonText: {
     fontSize: 13,
@@ -1023,7 +1024,7 @@ const styles = StyleSheet.create({
   },
   frequencyCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -1039,7 +1040,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginBottom: 8,
   },
   frequencyOptionActive: {

@@ -30,7 +30,7 @@ import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -533,6 +533,7 @@ const styles = StyleSheet.create({
     color: ds.ink,
   },
   statsBanner: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 20,
@@ -592,6 +593,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   methodChip: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -644,6 +646,7 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     backgroundColor: ds.paper,
@@ -682,6 +685,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tipCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     backgroundColor: ds.paper,
     padding: 16,
@@ -742,6 +746,7 @@ const styles = StyleSheet.create({
     borderColor: ds.hair,
   },
   declutterImage: {
+    borderRadius: radius.sm,
     width: 120,
     height: 160,
     backgroundColor: ds.paper,
@@ -804,6 +809,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   declutterActionButton: {
+    borderRadius: radius.full,
     flex: 1,
     paddingVertical: 8,
     borderWidth: 1,
@@ -855,11 +861,12 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: ds.hair,
   },
   personalizedBadge: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     backgroundColor: ds.sand,
     paddingHorizontal: 12,
@@ -872,6 +879,7 @@ const styles = StyleSheet.create({
     color: ds.tobacco,
   },
   gapsBox: {
+    borderRadius: radius.md,
     marginTop: 16,
     backgroundColor: ds.sand,
     padding: 14,
@@ -888,6 +896,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   capsuleEssentials: {
+    borderRadius: radius.md,
     backgroundColor: ds.paper,
     padding: 16,
     marginBottom: 20,
@@ -930,6 +939,7 @@ const styles = StyleSheet.create({
     width: (width - 56) / 3,
   },
   capsuleItemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: (width - 56) / 3,
     backgroundColor: ds.paper,

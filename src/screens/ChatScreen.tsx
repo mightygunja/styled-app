@@ -21,7 +21,7 @@ import { userProfileService, UserProfile } from '../services/userProfileService'
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
@@ -275,13 +275,13 @@ const styles = StyleSheet.create({
   headerAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
   },
   headerAvatarPlaceholder: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   messageBubble: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -359,6 +360,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   emptyState: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -388,6 +390,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   input: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.card,
     paddingHorizontal: 14,
@@ -402,6 +405,7 @@ const styles = StyleSheet.create({
   // A square button, not a 44px circle - "Send" at the old fontSize of 20 did
   // not fit inside it.
   sendButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 12,

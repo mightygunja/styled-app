@@ -19,7 +19,7 @@ import { groupService, Group, GroupEvent } from '../services/groupService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -425,6 +425,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hair,
   },
   groupImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
     backgroundColor: colors.paper,
@@ -461,6 +462,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryBadge: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
@@ -495,6 +497,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hair,
   },
   eventImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
     backgroundColor: colors.paper,
@@ -517,6 +520,7 @@ const styles = StyleSheet.create({
   // The palette carries no semantic green. Sand and tobacco are how every
   // other badge in the app marks a distinction.
   virtualBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -565,6 +569,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   rsvpButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -575,6 +580,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   startGroupButton: {
+    borderRadius: radius.full,
     marginHorizontal: 20,
     marginTop: 20,
     borderWidth: 1,
@@ -588,6 +594,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   createForm: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     backgroundColor: colors.card,
@@ -603,6 +610,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     backgroundColor: colors.paper,
@@ -634,6 +642,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   createSubmit: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -644,6 +653,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   emptyState: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     backgroundColor: colors.paper,

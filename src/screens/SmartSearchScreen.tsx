@@ -27,7 +27,7 @@ import {
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (width - 60) / 2;
@@ -425,6 +425,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchBar: {
+    borderRadius: radius.md,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -449,6 +450,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   searchButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 20,
     justifyContent: 'center',
@@ -468,6 +470,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
+    borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -504,6 +507,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   toolbarButton: {
+    borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
@@ -575,6 +579,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: GRID_ITEM_SIZE,
     backgroundColor: colors.paper,
@@ -599,6 +604,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultType: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -653,9 +659,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   discoveryCard: {
+    borderRadius: radius.sm,
     width: 140,
   },
   discoveryImage: {
+    borderRadius: radius.sm,
     width: 140,
     height: 140,
     backgroundColor: colors.paper,

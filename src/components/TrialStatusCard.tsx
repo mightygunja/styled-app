@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface TrialStatusCardProps {
   trialEndDate: Date;
@@ -77,6 +77,7 @@ export default function TrialStatusCard({
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     marginVertical: 12,
@@ -111,6 +112,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
+    borderRadius: radius.full,
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.ink,
@@ -122,6 +124,7 @@ const styles = StyleSheet.create({
     color: colors.sand,
   },
   secondaryButton: {
+    borderRadius: radius.full,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 2,

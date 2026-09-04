@@ -46,7 +46,7 @@ import {
   PersonalStyleProfile,
   WardrobeFocus,
 } from '../models/personalStyleProfile';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 
 type Step = 'welcome' | 'focus' | 'body' | 'words' | 'occasion' | 'never' | 'reveal';
 const SURVEY_STEPS: Step[] = ['focus', 'body', 'words', 'occasion', 'never'];
@@ -630,6 +630,7 @@ const styles = StyleSheet.create({
 
   option: {
     backgroundColor: colors.card,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: spacing.md,
@@ -653,6 +654,7 @@ const styles = StyleSheet.create({
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     backgroundColor: colors.card,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: 16,

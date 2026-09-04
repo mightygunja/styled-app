@@ -25,7 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -660,6 +660,7 @@ const styles = StyleSheet.create({
     color: ds.tobacco,
   },
   statusBar: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.sand,
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     gap: 12,
@@ -737,7 +738,7 @@ const styles = StyleSheet.create({
   mirrorIcon: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.full,
     backgroundColor: ds.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -772,7 +773,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   featureText: {
     fontSize: 10,
@@ -783,7 +784,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   connectButtonConnected: {
     backgroundColor: ds.ink,
@@ -802,7 +803,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: (width - 52) / 2,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     alignItems: 'center',
   },
@@ -821,7 +822,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.full,
     padding: 16,
     marginBottom: 12,
     gap: 16,
@@ -844,7 +845,7 @@ const styles = StyleSheet.create({
   },
   sessionInfo: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 16,
   },
@@ -866,7 +867,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.full,
     padding: 16,
     alignItems: 'center',
   },
@@ -881,10 +882,11 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
   },
   resultImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 200,
     backgroundColor: ds.hair,
@@ -896,7 +898,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.full,
     marginBottom: 8,
   },
   fitBadgeText: {
@@ -915,7 +917,7 @@ const styles = StyleSheet.create({
   },
   styleCheckCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
   },
   overallScore: {
@@ -985,7 +987,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },

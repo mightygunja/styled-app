@@ -21,7 +21,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   configCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   platformTagText: {
     fontSize: 11,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   featureCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   },
   usageCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
   },
   urlCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
   },
   apiCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   generateButton: {
     backgroundColor: ds.ink,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: ds.paper,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.hair,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   toggleActive: {
     backgroundColor: ds.ink,
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
   },
   legalCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   dangerButton: {
     backgroundColor: ds.sand,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 1,
@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     marginBottom: 16,
   },
   upgradeButtonText: {

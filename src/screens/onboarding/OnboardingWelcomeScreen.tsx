@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 
+import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingWelcome'>;
 
 export default function OnboardingWelcomeScreen() {
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   nextButton: {
     height: 56,
     backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

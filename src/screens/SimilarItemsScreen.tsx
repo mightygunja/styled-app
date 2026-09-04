@@ -5,7 +5,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
 import { RootStackParamList } from '../navigation/types';
 import { ClosetItem } from '../services/api';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type SimilarItemsRouteProp = RouteProp<RootStackParamList, 'SimilarItems'>;
 
@@ -114,7 +114,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  thumb: { width: 76, height: 96, backgroundColor: colors.paper },
+  thumb: {
+    borderRadius: radius.sm, width: 76, height: 96, backgroundColor: colors.paper },
   rowText: { flex: 1, marginLeft: 14 },
   reason: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
   itemName: {
@@ -126,7 +127,8 @@ const styles = StyleSheet.create({
   },
   itemMeta: { ...textType.meta, fontSize: 12, marginTop: 2, textTransform: 'capitalize' },
 
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });

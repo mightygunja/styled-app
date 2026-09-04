@@ -15,7 +15,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { StylistApplication } from '../services/stylistApplicationService';
 
 const listApplicationsFn = httpsCallable(functions, 'listStylistApplications');
@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
   card: {
+    borderRadius: radius.md,
     marginTop: spacing.lg,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -223,6 +224,7 @@ const styles = StyleSheet.create({
   link: { ...textType.body, fontSize: 13, color: colors.tobacco, marginTop: 2 },
 
   noteInput: {
+    borderRadius: radius.md,
     ...textType.body,
     fontSize: 13,
     color: colors.ink,

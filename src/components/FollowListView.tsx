@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from './BackButton';
 import { RootStackParamList } from '../navigation/types';
 import { userProfileService, UserProfile } from '../services/userProfileService';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -131,11 +131,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
+  avatar: { width: 44, height: 44, borderRadius: radius.full, backgroundColor: colors.paper },
   avatarPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -146,7 +146,8 @@ const styles = StyleSheet.create({
   username: { ...textType.meta, fontSize: 12, marginTop: 2 },
   chevron: { fontSize: 20, color: colors.inkFaint },
 
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 });

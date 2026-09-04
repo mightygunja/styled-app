@@ -10,7 +10,7 @@ import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { colorAnalysisAPI, getCurrentUserId } from '../services/firebaseApi';
 import { styleProfileService } from '../services/firestore';
 import { ColorAnalysisResult, ColorSwatch, DEFAULT_PERSONAL_STYLE_PROFILE } from '../models/personalStyleProfile';
@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   tipsBox: {
+    borderRadius: radius.md,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     padding: spacing.lg,
@@ -267,9 +268,11 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   swatchWrap: {
+    borderRadius: radius.sm,
     width: 72,
   },
   swatch: {
+    borderRadius: radius.sm,
     width: 64,
     height: 64,
     borderWidth: 1,

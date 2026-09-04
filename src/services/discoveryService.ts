@@ -442,7 +442,19 @@ export async function buildStarterPools(
   // avoid-rule preferences still order the pool.
   const ranked = scoreAndRankProducts(result.products, profile, [], {});
 
-  const pool: Item[] = ranked.slice(0, 40).map(({ product }) => ({
+  // With no declared wardrobe focus there is nothing safe to assume about
+  // department, and a mixed rack is the one thing this surface must never
+  // be: menswear shown to a woman (or the reverse) reads as the app not
+  // knowing who it is dressing. Until the department question is answered
+  // (Home asks it in this exact state), dress the starter looks from
+  // cross-department pieces only — their photography is neutral by contract
+  // (see UNISEX_IMAGE_POOLS in mockProductCatalog).
+  const safeRanked =
+    profile?.wardrobeFocus
+      ? ranked
+      : ranked.filter(({ product }) => !product.department || product.department === 'unisex');
+
+  const pool: Item[] = safeRanked.slice(0, 40).map(({ product }) => ({
     id: product.id,
     name: product.name,
     imageUrl: product.imageUrl,

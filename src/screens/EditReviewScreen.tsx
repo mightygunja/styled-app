@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import { styleEditService, StyleEdit, coverageStats } from '../services/styleEditService';
 
@@ -270,10 +270,12 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 80, alignItems: 'center' },
   coverage: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink, marginTop: spacing.lg },
 
-  revisionBox: { backgroundColor: colors.sand, padding: 14, marginTop: spacing.md },
+  revisionBox: {
+    borderRadius: radius.md, backgroundColor: colors.sand, padding: 14, marginTop: spacing.md },
   revisionText: { ...textType.body, fontSize: 13, color: colors.ink },
 
   noteInput: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -286,6 +288,7 @@ const styles = StyleSheet.create({
   },
 
   lookCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -296,7 +299,8 @@ const styles = StyleSheet.create({
   lookTitle: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink, flex: 1 },
   removeLink: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
   lookItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  lookThumb: { width: 56, height: 56, backgroundColor: colors.paper },
+  lookThumb: {
+    borderRadius: radius.sm, width: 56, height: 56, backgroundColor: colors.paper },
   lookRationale: { ...textType.body, fontSize: 12, color: colors.inkMuted, marginTop: spacing.sm },
 
   row: {

@@ -8,7 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { storeCheckAPI } from '../services/firebaseApi';
 import { styleProfileService } from '../services/firestore';
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noticeBox: {
+    borderRadius: radius.md,
     marginTop: spacing.sm,
     backgroundColor: colors.paper,
     padding: 14,
@@ -373,6 +374,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   priceInput: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -382,6 +384,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   forecastCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: spacing.lg,
   },
@@ -424,12 +427,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   ownedThumb: {
+    borderRadius: radius.sm,
     width: 44,
     height: 44,
     marginRight: 12,
     backgroundColor: colors.paper,
   },
   ownedThumbPlaceholder: {
+    borderRadius: radius.sm,
     width: 44,
     height: 44,
     marginRight: 12,

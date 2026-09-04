@@ -25,7 +25,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   stylistCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 16,
     gap: 16,
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
   stylistImage: {
     width: 100,
     height: 100,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: ds.hair,
   },
   stylistInfo: {
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   specialtyTagText: {
     fontSize: 10,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   viewButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   viewButtonText: {
     fontSize: 13,
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   detailImage: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: radius.full,
     backgroundColor: ds.hair,
     marginBottom: 16,
   },
@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   detailBadgeText: {
     fontSize: 11,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.paper,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   tagText: {
     fontSize: 13,
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: (width - 52) / 2,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   },
   bookButton: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   bookButtonText: {
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   emptyStateButtonText: {
     fontSize: 14,
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   },
   bookingCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 16,
   },
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   bookingImage: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: radius.full,
     backgroundColor: ds.hair,
   },
   bookingInfo: {
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   priorityBadgeText: {
     fontSize: 11,
@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ds.ink,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   bookingActionText: {
@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ds.paper,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     alignItems: 'center',
   },
   bookingActionTextSecondary: {
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     gap: 12,
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
   benefitEnabled: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
   benefitDisabled: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: ds.hair,
     justifyContent: 'center',
     alignItems: 'center',
@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
   upgradeButton: {
     backgroundColor: ds.ink,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     marginTop: 8,
   },

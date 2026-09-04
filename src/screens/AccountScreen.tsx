@@ -11,7 +11,7 @@ import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import BackButton from '../components/BackButton';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, fonts, type as textType, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -392,6 +392,7 @@ const styles = StyleSheet.create({
     ...textType.meta,
   },
   planCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.ink,
     padding: 20,
   },
@@ -407,6 +408,7 @@ const styles = StyleSheet.create({
     color: colors.camel,
   },
   currentBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.camel,
     paddingHorizontal: 8,
     paddingVertical: 4,

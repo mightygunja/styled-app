@@ -17,7 +17,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -435,6 +435,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   overviewCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 20,
   },
@@ -456,6 +457,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   styleCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
@@ -504,6 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
   colorCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
@@ -535,7 +538,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.full,
     marginBottom: 8,
     position: 'relative',
   },
@@ -598,6 +601,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   brandCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
@@ -630,6 +634,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   categoryCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
@@ -672,6 +677,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   insightCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
@@ -709,6 +715,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   statsCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,

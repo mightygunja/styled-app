@@ -23,7 +23,7 @@ import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import LoginHero from '../components/LoginHero';
 import BrandWordmark from '../components/BrandWordmark';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
 import { GUIDES } from './GuideScreens';
 
@@ -493,6 +493,7 @@ const styles = StyleSheet.create({
   form: { marginTop: spacing.section, gap: 12 },
   input: {
     backgroundColor: colors.card,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: 16,
@@ -505,6 +506,7 @@ const styles = StyleSheet.create({
   // state - the same distinction the rest of the app uses.
   inputFocused: { borderColor: colors.ink },
   errorBox: {
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
     padding: 14,
   },
@@ -516,12 +518,13 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
+    borderRadius: radius.full,
     paddingVertical: 17,
     alignItems: 'center',
     marginTop: 4,
   },
-  buttonDisabled: { backgroundColor: colors.hair },
+  buttonDisabled: { opacity: 0.55 },
   buttonText: {
     fontFamily: fonts.sansMedium,
     fontSize: 15,
@@ -570,6 +573,7 @@ const styles = StyleSheet.create({
   standfirstFree: { fontFamily: fonts.sansSemiBold, color: colors.ink },
 
   freeBox: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: spacing.lg,
     marginTop: spacing.xs,

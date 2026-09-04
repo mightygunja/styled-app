@@ -20,7 +20,7 @@ import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   methodCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   defaultText: {
     fontSize: 11,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     backgroundColor: colors.paper,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     backgroundColor: colors.paper,
-    borderRadius: 16,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: colors.hair,
     borderStyle: 'dashed',
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   },
   transactionCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: radius.full,
   },
   statuscompleted: {
     backgroundColor: colors.sand,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     fontSize: 16,
     color: colors.ink,
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.sand,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginTop: 8,
   },
   securityIcon: {
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: colors.ink,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   submitButtonDisabled: {

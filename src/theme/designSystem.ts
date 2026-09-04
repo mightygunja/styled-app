@@ -11,6 +11,11 @@ export const colors = {
   sand: '#F2EBE3',
   camel: '#B89664',
   tobacco: '#7A5C43',
+  /**
+   * The brand rust — sampled from the "33." logotype (33 logo_FINAL.png).
+   * The action colour: primary buttons and anything that says "tap me".
+   */
+  rust: '#8F4D35',
   ink: '#1C1C1C',
   card: '#FFFFFF',
   hair: 'rgba(28, 28, 28, 0.08)',
@@ -60,10 +65,20 @@ export const spacing = {
   page: 24,
 } as const;
 
+/**
+ * Corner radii. The reference is the floating tab bar's capsule (`full`):
+ * every box in the app rounds toward it — `md` for cards, option rows and
+ * inputs, `sm` for thumbnails and small controls, `lg` for modals and large
+ * feature cards, `full` for buttons, chips and pills. Sharp corners
+ * (`none`) are reserved for full-bleed imagery and hairlines. Values match
+ * the radii the majority of screens already used (8/12/16), so adopting
+ * the token is a no-op where a screen was already right.
+ */
 export const radius = {
   none: 0,
-  sm: 2,
-  md: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
   full: 999,
 } as const;
 

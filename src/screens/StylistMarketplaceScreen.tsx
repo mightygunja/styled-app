@@ -17,7 +17,7 @@ import Chip from '../components/Chip';
 import { Stylist } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type Filter = 'all' | 'top-rated' | 'affordable';
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
 
   searchInput: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -235,11 +236,13 @@ const styles = StyleSheet.create({
 
   resultsCount: { ...textType.microLabel, color: colors.inkFaint, marginTop: spacing.lg },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
   card: {
+    borderRadius: radius.md,
     marginTop: spacing.md,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -249,11 +252,11 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'flex-start' },
   // Avatars stay circular - the system's square corners are for panels and
   // controls, not for portraits.
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.paper },
+  avatar: { width: 56, height: 56, borderRadius: radius.full, backgroundColor: colors.paper },
   avatarPlaceholder: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     alignItems: 'center',
     justifyContent: 'center',

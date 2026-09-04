@@ -23,7 +23,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -413,11 +413,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.md,
   },
-  userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.paper },
+  userAvatar: { width: 44, height: 44, borderRadius: radius.full, backgroundColor: colors.paper },
   userAvatarPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -429,7 +429,8 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 20, color: colors.inkFaint },
 
   imagesContainer: { width },
-  postImage: { width, height: width, backgroundColor: colors.paper },
+  postImage: {
+    borderRadius: radius.sm, width, height: width, backgroundColor: colors.paper },
 
   body: { paddingHorizontal: spacing.page, paddingTop: spacing.md },
   captionText: { ...textType.body, color: colors.ink },
@@ -454,7 +455,8 @@ const styles = StyleSheet.create({
   commentsSection: { padding: spacing.page, paddingBottom: 40 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: spacing.md },
 
-  emptyBox: { backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
@@ -466,11 +468,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
   },
   replyRow: { marginLeft: spacing.lg, borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 },
-  commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.paper },
+  commentAvatar: { width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.paper },
   commentAvatarPlaceholder: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -508,6 +510,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   commentInput: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -520,6 +523,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   sendButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,

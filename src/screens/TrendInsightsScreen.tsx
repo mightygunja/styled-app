@@ -23,15 +23,18 @@
  * it is a real signal about this app's users, but it is not the world.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
 import BackButton from '../components/BackButton';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
+import { BALANCED_CATALOG } from '../data/mockProductCatalog';
+import { Product } from '../models/product';
+import { FashionTrend } from '../models/fashionTrend';
 import { trendInsightsService, TrendingTag } from '../services/trendInsightsService';
 import { trendRemixService, TrendRemix, anchorDisplayLabel } from '../services/trendRemixService';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
@@ -41,6 +44,67 @@ import { amazonSearchUrl } from '../services/affiliateNetwork';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+/**
+ * Catalogue pieces that illustrate a trend, kept in the user's department —
+ * the visual "here is what this style actually looks like" beneath each
+ * trend's description.
+ *
+ * Scored, not first-match: a keyGarments hit is the anchor (3), and the
+ * trend's silhouettes, keyColors and archetypes each add 1. Only pieces
+ * scoring >= 3 qualify — so either a named garment of the trend, or a
+ * silhouette hit corroborated by both its palette and its archetype. A
+ * bare silhouette word is NOT enough: "layered" once put a gold necklace
+ * and a zip hoodie under Sheer Layering, and "fitted" put a work sheath
+ * under Heritage Sport. Distinct categories are preferred so four
+ * thumbnails read as a look, not four pairs of the same trouser, but a
+ * category slot is never filled by a weaker match than the rule allows.
+ * Fewer than two qualifying pieces renders nothing — one lonely thumbnail
+ * under a trend reads worse than no rail at all.
+ */
+function looksForTrend(
+  trend: FashionTrend,
+  focus: 'womens' | 'mens' | 'all' | undefined,
+  limit: number = 4
+): Product[] {
+  const inDepartment = (product: Product) => {
+    if (!focus || focus === 'all') return true;
+    const department = product.department;
+    if (!department || department === 'unisex') return true;
+    return focus === 'womens' ? department === 'women' : department === 'men';
+  };
+
+  const scored: Array<{ score: number; product: Product }> = [];
+  for (const product of BALANCED_CATALOG) {
+    if (!inDepartment(product)) continue;
+    const text = [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])]
+      .join(' ')
+      .toLowerCase();
+    const color = (product.color ?? '').toLowerCase();
+    const garmentHit = trend.keyGarments.some(g => text.includes(g));
+    const silhouetteHit = trend.silhouettes.some(s => text.includes(s));
+    const colorHit = !!color && trend.keyColors.some(k => color.includes(k) || k.includes(color));
+    const archetypeHit = (product.styleTags ?? []).some(tag => trend.archetypes.includes(tag));
+    const score =
+      (garmentHit ? 3 : 0) + (silhouetteHit ? 1 : 0) + (colorHit ? 1 : 0) + (archetypeHit ? 1 : 0);
+    if (score >= 3) scored.push({ score, product });
+  }
+  scored.sort((a, b) => b.score - a.score);
+
+  const picks: Product[] = [];
+  const usedCategories = new Set<string>();
+  // Two passes: distinct categories first, then fill remaining slots.
+  for (const requireNewCategory of [true, false]) {
+    for (const { product } of scored) {
+      if (picks.length >= limit) break;
+      if (picks.includes(product)) continue;
+      if (requireNewCategory && usedCategories.has(product.category)) continue;
+      picks.push(product);
+      usedCategories.add(product.category);
+    }
+  }
+  return picks.length >= 2 ? picks : [];
+}
 
 export default function TrendInsightsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -161,6 +225,14 @@ export default function TrendInsightsScreen() {
 
   const visible = remixes.filter(r => !dismissed.has(r.trend.id));
 
+  // The catalogue pass is pure text matching over ~300 rows; memoised so it
+  // runs once per report, not on every render.
+  const trendLooks = useMemo(() => {
+    const byTrend = new Map<string, Product[]>();
+    remixes.forEach(remix => byTrend.set(remix.trend.id, looksForTrend(remix.trend, focus)));
+    return byTrend;
+  }, [remixes, focus]);
+
   const anchorLine = (remix: TrendRemix): string =>
     `Wear it today: your ${remix.anchors.slice(0, 3).map(anchorDisplayLabel).join(', ')}.`;
 
@@ -239,6 +311,42 @@ export default function TrendInsightsScreen() {
                 ) : null}
 
                 <Text style={styles.stylingNote}>{trend.stylingNote}</Text>
+
+                {(trendLooks.get(trend.id) ?? []).length > 0 && (
+                  <View style={styles.lookRail}>
+                    <Text style={styles.lookRailLabel}>THE LOOK, IN PIECES</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.lookRailContent}
+                    >
+                      {(trendLooks.get(trend.id) ?? []).map(product => (
+                        <TouchableOpacity
+                          key={product.id}
+                          style={styles.lookCard}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${trend.name} look: ${product.name}`}
+                          onPress={() =>
+                            navigation.navigate('ProductDetail', {
+                              productId: product.id,
+                              surface: 'shop',
+                            })
+                          }
+                        >
+                          <Image
+                            source={{ uri: product.imageUrl }}
+                            style={styles.lookImage}
+                            resizeMode="cover"
+                          />
+                          <Text style={styles.lookName} numberOfLines={1}>
+                            {product.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
 
                 <View style={styles.actionRow}>
                   <TouchableOpacity
@@ -342,6 +450,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     padding: spacing.md,
     backgroundColor: colors.paper,
+    borderRadius: radius.md,
     borderLeftWidth: 2,
     borderLeftColor: colors.camel,
   },
@@ -357,8 +466,25 @@ const styles = StyleSheet.create({
 
   stylingNote: { ...textType.body, fontSize: 13, lineHeight: 20, color: colors.ink, marginTop: spacing.md },
 
+  lookRail: { marginTop: spacing.md },
+  lookRailLabel: { ...textType.eyebrow, fontSize: 9, marginBottom: 8 },
+  lookRailContent: { gap: 10 },
+  lookCard: { width: 104 },
+  lookImage: {
+    width: 104,
+    height: 130,
+    borderRadius: radius.sm,
+    backgroundColor: colors.paper,
+  },
+  lookName: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.inkMuted, marginTop: 4 },
+
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: spacing.md },
-  shopAction: { backgroundColor: colors.ink, paddingHorizontal: 16, paddingVertical: 11 },
+  shopAction: {
+    backgroundColor: colors.rust,
+    borderRadius: radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
   shopActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   dismissAction: { paddingVertical: 11 },
   dismissActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint },
@@ -373,6 +499,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderColor: colors.hair,
+    borderRadius: radius.full,
     backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,

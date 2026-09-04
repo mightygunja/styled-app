@@ -26,7 +26,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { FashionTrend } from '../models/fashionTrend';
 import { trendService } from '../services/trendService';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 const STATUS_ORDER: Record<string, number> = { draft: 0, published: 1, archived: 2 };
 
@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
   draftButton: {
+    borderRadius: radius.full,
     marginTop: spacing.lg,
     backgroundColor: colors.ink,
     paddingVertical: 14,
@@ -217,7 +218,8 @@ const styles = StyleSheet.create({
   draftButtonBusy: { opacity: 0.6 },
   draftButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
 
-  emptyBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
   emptyText: { ...textType.body, color: colors.inkMuted, lineHeight: 21 },
 
   row: {
@@ -228,6 +230,7 @@ const styles = StyleSheet.create({
   },
   rowHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statusPill: {
+    borderRadius: radius.full,
     fontFamily: fonts.sansSemiBold,
     fontSize: 9,
     letterSpacing: 1.2,
@@ -244,7 +247,8 @@ const styles = StyleSheet.create({
   rowSummary: { ...textType.body, fontSize: 13, lineHeight: 19, color: colors.inkMuted, marginTop: 4 },
   rowDetail: { ...textType.meta, fontSize: 11, lineHeight: 17, marginTop: 6 },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: spacing.md },
-  publishAction: { backgroundColor: colors.ink, paddingHorizontal: 16, paddingVertical: 10 },
+  publishAction: {
+    borderRadius: radius.full, backgroundColor: colors.ink, paddingHorizontal: 16, paddingVertical: 10 },
   publishActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   archiveAction: { paddingVertical: 10 },
   archiveActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint },

@@ -24,7 +24,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   upgradeButtonText: {
     fontSize: 12,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.paper,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radius.full,
     marginRight: 8,
   },
   filterChipActive: {
@@ -485,11 +485,12 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     backgroundColor: ds.paper,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     marginBottom: 16,
   },
   contentImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 200,
     backgroundColor: ds.hair,
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   newBadgeText: {
     fontSize: 10,
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   featuredBadgeText: {
     fontSize: 12,
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   accessBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   accessBadgeText: {
     fontSize: 9,
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
   authorImage: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: ds.hair,
   },
   authorInfo: {
@@ -596,7 +597,7 @@ const styles = StyleSheet.create({
   likeButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: ds.paper,
     justifyContent: 'center',
     alignItems: 'center',
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   tagText: {
     fontSize: 11,
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   emptyStateButtonText: {
     fontSize: 14,

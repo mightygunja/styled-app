@@ -19,7 +19,7 @@ import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   markAllButton: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: 16,
     borderWidth: 1,
@@ -357,13 +358,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
   },
   avatarPlaceholder: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
@@ -421,6 +422,7 @@ const styles = StyleSheet.create({
     color: colors.inkFaint,
   },
   emptyState: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     backgroundColor: colors.paper,
     padding: 20,

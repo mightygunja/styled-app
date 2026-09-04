@@ -45,7 +45,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type Tab = 'overview' | 'breakdown' | 'reduce';
@@ -384,12 +384,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
-  totalBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  totalBox: {
+    borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
   totalLabel: { ...textType.eyebrow, marginBottom: 8 },
   totalValue: { fontFamily: fonts.serif, fontSize: 56, lineHeight: 60, color: colors.ink },
   totalUnit: { ...textType.body, color: colors.inkMuted, marginTop: 4 },
 
   noticeBox: {
+    borderRadius: radius.md,
     marginTop: spacing.sm,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -422,7 +424,8 @@ const styles = StyleSheet.create({
   barFill: { height: 2, backgroundColor: colors.ink },
   barFillMuted: { backgroundColor: colors.inkFaint },
 
-  figureBox: { backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.sm },
+  figureBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.sm },
   figureValue: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
   figureUnit: { ...textType.body, color: colors.inkMuted, marginTop: 4 },
 
@@ -474,10 +477,12 @@ const styles = StyleSheet.create({
   steps: { marginTop: spacing.sm },
   step: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6, lineHeight: 19 },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   emptyAction: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.md,
     backgroundColor: colors.ink,

@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, radius, fonts, type as textType, spacing } from '../theme/designSystem';
 import { getActiveAdapter, curatedCatalogNotice, amazonSearchUrl } from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
@@ -467,6 +467,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   wishlistButton: {
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
     paddingHorizontal: 12,
@@ -504,6 +505,7 @@ const styles = StyleSheet.create({
   },
   // Same camel-rule "trend voice" treatment as Home and the Trend Report.
   trendFocusBox: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginTop: 12,
@@ -530,6 +532,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   searchInput: {
+    borderRadius: radius.md,
     marginHorizontal: spacing.page,
     marginTop: spacing.sm,
     backgroundColor: colors.card,
@@ -605,15 +608,18 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   cardImageWrap: {
+    borderRadius: radius.sm,
     aspectRatio: 0.85,
     backgroundColor: colors.paper,
     position: 'relative',
   },
   cardImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
   saleBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     left: 8,
@@ -627,6 +633,7 @@ const styles = StyleSheet.create({
     color: colors.bone,
   },
   unlockBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     right: 8,
@@ -647,6 +654,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   matchBadge: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     right: 8,

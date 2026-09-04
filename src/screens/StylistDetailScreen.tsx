@@ -21,7 +21,7 @@ import BackButton from '../components/BackButton';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -440,11 +440,12 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 24, paddingTop: 12 },
   backButton: { display: 'none' },
 
-  coverImage: { width: '100%', height: 180, backgroundColor: colors.paper },
+  coverImage: {
+    borderRadius: radius.sm, width: '100%', height: 180, backgroundColor: colors.paper },
 
   profileSection: { flexDirection: 'row', alignItems: 'flex-start', padding: 24 },
   // Portraits stay circular; the square corners are for panels and controls.
-  profileImage: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.paper },
+  profileImage: { width: 72, height: 72, borderRadius: radius.full, backgroundColor: colors.paper },
   profileInfo: { flex: 1, marginLeft: 16 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, flexShrink: 1 },
@@ -477,6 +478,7 @@ const styles = StyleSheet.create({
 
   specialtiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   specialtyTag: {
+    borderRadius: radius.full,
     paddingHorizontal: 12,
     paddingVertical: 7,
     backgroundColor: colors.paper,
@@ -490,7 +492,8 @@ const styles = StyleSheet.create({
   certText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted, flex: 1 },
 
   portfolioItem: { width: 200, marginRight: 12 },
-  portfolioImage: { width: 200, height: 240, backgroundColor: colors.paper },
+  portfolioImage: {
+    borderRadius: radius.sm, width: 200, height: 240, backgroundColor: colors.paper },
   portfolioTitle: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink, marginTop: 8 },
   portfolioDesc: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted, marginTop: 3 },
 
@@ -506,7 +509,8 @@ const styles = StyleSheet.create({
   reviewComment: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, color: colors.inkMuted, marginTop: 8 },
   reviewDate: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkFaint, marginTop: 8 },
 
-  pricingCard: { marginHorizontal: 24, backgroundColor: colors.paper, padding: 20, marginBottom: 32 },
+  pricingCard: {
+    borderRadius: radius.md, marginHorizontal: 24, backgroundColor: colors.paper, padding: 20, marginBottom: 32 },
   hourlyRate: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   pricingNote: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
 
@@ -523,7 +527,8 @@ const styles = StyleSheet.create({
   },
   bookBarLabel: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkFaint },
   bookBarPrice: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
-  bookBarButton: { backgroundColor: colors.ink, paddingHorizontal: 28, paddingVertical: 15 },
+  bookBarButton: {
+    borderRadius: radius.full, backgroundColor: colors.ink, paddingHorizontal: 28, paddingVertical: 15 },
   bookBarButtonText: {
     fontFamily: fonts.sansSemiBold,
     fontSize: 14,
@@ -555,6 +560,7 @@ const styles = StyleSheet.create({
 
   sessionTypesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   sessionTypeCard: {
+    borderRadius: radius.md,
     width: '47.5%',
     padding: 16,
     borderWidth: 1,
@@ -573,6 +579,7 @@ const styles = StyleSheet.create({
 
   timeSlotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   timeSlot: {
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderWidth: 1,
@@ -614,7 +621,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.hair,
   },
-  confirmButton: { backgroundColor: colors.ink, paddingVertical: 16, alignItems: 'center' },
+  confirmButton: {
+    borderRadius: radius.full, backgroundColor: colors.ink, paddingVertical: 16, alignItems: 'center' },
   confirmButtonDisabled: { opacity: 0.4 },
   confirmButtonText: {
     fontFamily: fonts.sansSemiBold,

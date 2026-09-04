@@ -25,7 +25,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -472,6 +472,7 @@ const styles = StyleSheet.create({
     color: ds.ink,
   },
   modelInfo: {
+    borderRadius: radius.md,
     backgroundColor: ds.sand,
     padding: 12,
     alignItems: 'center',
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   },
   recommendationCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   relevanceScoreText: {
     fontSize: 12,
@@ -568,11 +569,12 @@ const styles = StyleSheet.create({
   },
   trendCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: 16,
   },
   trendImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 150,
     backgroundColor: ds.hair,
@@ -595,7 +597,7 @@ const styles = StyleSheet.create({
   confidenceBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   confidenceBadgeText: {
     fontSize: 12,
@@ -686,7 +688,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: ds.sand,
   },
@@ -704,7 +706,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: (width - 52) / 2,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     alignItems: 'center',
   },
@@ -723,7 +725,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     gap: 12,
@@ -731,7 +733,7 @@ const styles = StyleSheet.create({
   categoryRank: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     backgroundColor: ds.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -758,7 +760,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   categoryGrowthText: {
     fontSize: 13,
@@ -767,7 +769,7 @@ const styles = StyleSheet.create({
   },
   alignmentCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
   },
   alignmentScore: {
@@ -804,7 +806,7 @@ const styles = StyleSheet.create({
   },
   forecastCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
   },
   forecastTitle: {
@@ -822,7 +824,7 @@ const styles = StyleSheet.create({
   colorCard: {
     flexDirection: 'row',
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     gap: 16,
@@ -830,7 +832,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 80,
     height: 80,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: ds.hair,
   },
@@ -862,7 +864,7 @@ const styles = StyleSheet.create({
   },
   alertCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderLeftWidth: 4,
     padding: 16,
     marginBottom: 12,
@@ -876,7 +878,7 @@ const styles = StyleSheet.create({
   alertType: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   alertTypeText: {
     fontSize: 10,

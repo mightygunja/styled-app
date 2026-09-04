@@ -21,7 +21,7 @@ import {
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -558,6 +558,7 @@ const styles = StyleSheet.create({
     color: colors.tobacco,
   },
   updateBanner: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 12,
     alignItems: 'center',
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: (width - 52) / 2,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     backgroundColor: colors.ink,
-    borderRadius: 3,
+    borderRadius: radius.sm,
   },
   categoryPercentage: {
     fontSize: 11,
@@ -679,7 +680,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.full,
     marginBottom: 8,
     borderWidth: 2,
     borderColor: colors.hair,
@@ -707,7 +708,7 @@ const styles = StyleSheet.create({
   wearCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -720,7 +721,7 @@ const styles = StyleSheet.create({
   wearImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.hair,
     marginBottom: 12,
   },
@@ -742,7 +743,7 @@ const styles = StyleSheet.create({
   frequencyCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -771,7 +772,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 24,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginRight: 12,
   },
@@ -801,7 +802,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 20,
     backgroundColor: colors.paper,
-    borderRadius: 10,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginRight: 12,
   },
@@ -829,7 +830,7 @@ const styles = StyleSheet.create({
   trendBarFill: {
     width: '100%',
     backgroundColor: colors.ink,
-    borderRadius: 4,
+    borderRadius: radius.sm,
     minHeight: 20,
   },
   trendLabel: {
@@ -839,7 +840,7 @@ const styles = StyleSheet.create({
   },
   cpwCard: {
     backgroundColor: colors.ink,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 24,
     alignItems: 'center',
   },
@@ -857,7 +858,7 @@ const styles = StyleSheet.create({
   valueCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 12,
     alignItems: 'center',
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
   valueImage: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.hair,
     marginRight: 12,
   },
@@ -894,7 +895,7 @@ const styles = StyleSheet.create({
   valueBadge: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -909,7 +910,7 @@ const styles = StyleSheet.create({
   },
   opportunityCard: {
     backgroundColor: colors.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -936,7 +937,7 @@ const styles = StyleSheet.create({
   budgetCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },
@@ -952,7 +953,7 @@ const styles = StyleSheet.create({
   },
   timelineCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -979,7 +980,7 @@ const styles = StyleSheet.create({
   },
   shiftCard: {
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -1020,7 +1021,7 @@ const styles = StyleSheet.create({
   sustainabilityCard: {
     flexDirection: 'row',
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     gap: 16,
   },
@@ -1029,7 +1030,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.ink,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   sustainabilityValue: {
     fontSize: 32,
@@ -1062,7 +1063,7 @@ const styles = StyleSheet.create({
   outfitCard: {
     flex: 1,
     backgroundColor: colors.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
   },

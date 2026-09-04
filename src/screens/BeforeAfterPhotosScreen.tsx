@@ -20,7 +20,7 @@ import { beforeAfterService, BeforeAfterPhoto, PhotoPair } from '../services/bef
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = (width - 60) / 2;
@@ -384,6 +384,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   pairCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 20,
@@ -400,11 +401,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   comparisonPhoto: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 3 / 4,
     backgroundColor: colors.paper,
   },
   photoLabel: {
+    borderRadius: radius.sm,
     position: 'absolute',
     top: 8,
     left: 8,
@@ -439,6 +442,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionButton: {
+    borderRadius: radius.full,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,10 +468,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   photoCard: {
+    borderRadius: radius.sm,
     width: PHOTO_SIZE,
     position: 'relative',
   },
   gridPhoto: {
+    borderRadius: radius.sm,
     width: '100%',
     aspectRatio: 3 / 4,
     backgroundColor: colors.paper,

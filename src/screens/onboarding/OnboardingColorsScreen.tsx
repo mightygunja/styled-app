@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 
+import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingColors'>;
 
 type ColorCategory = 'primary' | 'secondary' | 'stretch';
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: '#DED7CF',
     gap: 6,
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     backgroundColor: '#2B1F1A',
-    borderRadius: 10,
+    borderRadius: radius.full,
     width: 20,
     height: 20,
     alignItems: 'center',
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   categoryDescription: {
     padding: 16,
     backgroundColor: '#F8F6F3',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginBottom: 20,
   },
   categoryDescriptionTitle: {
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
   colorButton: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
   colorCheckmark: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 16,
     backgroundColor: '#F8F6F3',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   previewLabel: {
     fontSize: 14,
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   nextButton: {
     height: 56,
     backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

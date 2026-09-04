@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { ClosetItem } from '../models/closetItem';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 export interface OutfitCardProps {
   outfit: {
@@ -63,6 +63,7 @@ export default function OutfitCard({ outfit, onPress }: OutfitCardProps) {
 
 const styles = StyleSheet.create({
   card: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 16,
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
     height: 120,
   },
   imageWrapper: {
+    borderRadius: radius.sm,
     width: 100,
     height: 120,
     marginRight: -20,
@@ -83,13 +85,14 @@ const styles = StyleSheet.create({
     borderColor: colors.card,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: '100%',
   },
   moreItemsBadge: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
     color: colors.sand,
   },
   occasionTag: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -115,6 +119,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   explanationContainer: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
   },

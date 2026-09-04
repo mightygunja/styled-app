@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import {
   resaleService,
@@ -220,15 +220,18 @@ const styles = StyleSheet.create({
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
 
   loadingBox: { paddingVertical: 80, alignItems: 'center' },
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
-  summaryCard: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
+  summaryCard: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   summaryNumber: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
   summaryLabel: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
 
   card: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -236,7 +239,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center' },
-  thumb: { width: 60, height: 60, marginRight: 14, backgroundColor: colors.paper },
+  thumb: {
+    borderRadius: radius.sm, width: 60, height: 60, marginRight: 14, backgroundColor: colors.paper },
   cardInfo: { flex: 1 },
   itemName: {
     fontFamily: fonts.sansMedium,
@@ -254,10 +258,12 @@ const styles = StyleSheet.create({
   rationale: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 8 },
 
   platformRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  platformChip: { backgroundColor: colors.sand, paddingHorizontal: 10, paddingVertical: 5 },
+  platformChip: {
+    borderRadius: radius.full, backgroundColor: colors.sand, paddingHorizontal: 10, paddingVertical: 5 },
   platformText: { fontFamily: fonts.sansMedium, fontSize: 11, color: colors.ink },
 
-  listingBox: { marginTop: spacing.md, backgroundColor: colors.paper, padding: 14 },
+  listingBox: {
+    borderRadius: radius.md, marginTop: spacing.md, backgroundColor: colors.paper, padding: 14 },
   listingLabel: { ...textType.microLabel, color: colors.inkFaint, marginBottom: 6 },
   listingTitle: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.ink },
   listingBody: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6 },

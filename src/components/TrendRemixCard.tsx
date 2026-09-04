@@ -10,7 +10,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TrendRemix, anchorDisplayLabel } from '../services/trendRemixService';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 interface Props {
   remix: TrendRemix;
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 18,
     backgroundColor: colors.paper,
+    borderRadius: radius.md,
     borderLeftWidth: 2,
     borderLeftColor: colors.camel,
   },

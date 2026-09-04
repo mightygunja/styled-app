@@ -176,7 +176,9 @@ class ShoppingAssistantService {
       {
         id: 'shop-1',
         name: 'Classic White T-Shirt',
-        imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
+        // Neutral flat-lay shot — the old id was a male model, which read
+        // wrong in a womenswear closet's gap suggestions.
+        imageUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400',
         category: 'tops',
         color: 'white',
         brand: 'Everlane',

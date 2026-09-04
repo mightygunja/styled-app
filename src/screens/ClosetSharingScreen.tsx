@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId, getCurrentUserName } from '../services/firebaseApi';
 import {
   closetSharingService,
@@ -284,7 +284,8 @@ const styles = StyleSheet.create({
   empty: { ...textType.body, color: colors.inkMuted, marginTop: spacing.lg },
 
   tabRow: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
-  tab: { paddingHorizontal: 14, paddingVertical: 9, backgroundColor: colors.paper },
+  tab: {
+    borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: colors.paper },
   tabActive: { backgroundColor: colors.ink },
   tabText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink },
   tabTextActive: { color: colors.white },
@@ -292,6 +293,7 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 60, alignItems: 'center' },
 
   input: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -325,7 +327,8 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
   gridItem: { width: 104 },
-  gridImage: { width: 104, height: 104, backgroundColor: colors.paper },
+  gridImage: {
+    borderRadius: radius.sm, width: 104, height: 104, backgroundColor: colors.paper },
   gridCaption: {
     fontFamily: fonts.sans,
     fontSize: 11,

@@ -21,7 +21,7 @@ import {
 import { StylingSession } from '../types';
 import { getCurrentUserId } from '../services/api';
 import { stylistsService } from '../services/firestore';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -328,6 +328,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   notStylistButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingVertical: 15,
     alignItems: 'center',
@@ -395,6 +396,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   earningsCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.camel,
     padding: 20,
     marginBottom: 20,
@@ -421,6 +423,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   earningsStat: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: 12,
@@ -442,6 +445,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
+    borderRadius: radius.md,
     flex: 1,
     minWidth: '45%',
     backgroundColor: colors.paper,
@@ -459,6 +463,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   metricsCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 20,
     borderWidth: 1,
@@ -491,6 +496,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sessionCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
@@ -514,6 +520,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   sessionPrice: {
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -533,6 +540,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   viewButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -546,6 +554,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   clientCard: {
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     padding: 16,
     marginBottom: 12,
@@ -560,14 +569,14 @@ const styles = StyleSheet.create({
   clientImage: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     marginRight: 12,
   },
   clientImagePlaceholder: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
@@ -596,6 +605,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   clientStat: {
+    borderRadius: radius.md,
     flex: 1,
     backgroundColor: colors.paper,
     padding: 12,

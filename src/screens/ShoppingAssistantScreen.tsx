@@ -26,7 +26,7 @@ import { shoppingListService, ShoppingListEntry } from '../services/firestore';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40;
@@ -521,6 +521,7 @@ const styles = StyleSheet.create({
     color: ds.ink,
   },
   budgetInput: {
+    borderRadius: radius.md,
     padding: 20,
     backgroundColor: ds.paper,
     borderBottomWidth: 1,
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
   budgetField: {
     flex: 1,
     backgroundColor: ds.card,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   applyButtonText: {
     color: ds.white,
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
   },
   recCard: {
     backgroundColor: ds.card,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     marginBottom: 20,
     overflow: 'hidden',
     borderWidth: 1,
@@ -623,6 +624,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   recImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 250,
     backgroundColor: ds.paper,
@@ -649,7 +651,7 @@ const styles = StyleSheet.create({
   priorityBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
   },
   priorityText: {
     fontSize: 11,
@@ -718,7 +720,7 @@ const styles = StyleSheet.create({
   recStatFill: {
     height: '100%',
     backgroundColor: ds.ink,
-    borderRadius: 4,
+    borderRadius: radius.sm,
   },
   recStatValue: {
     fontSize: 12,
@@ -732,7 +734,7 @@ const styles = StyleSheet.create({
   recReasons: {
     backgroundColor: ds.paper,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginBottom: 16,
   },
   recReasonsTitle: {
@@ -765,7 +767,7 @@ const styles = StyleSheet.create({
   recActionButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: ds.hair,
     alignItems: 'center',
@@ -800,7 +802,7 @@ const styles = StyleSheet.create({
   altImage: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: ds.paper,
     marginBottom: 6,
   },
@@ -816,7 +818,7 @@ const styles = StyleSheet.create({
   },
   budgetCard: {
     backgroundColor: ds.card,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -841,14 +843,14 @@ const styles = StyleSheet.create({
   budgetBar: {
     height: 12,
     backgroundColor: ds.paper,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     overflow: 'hidden',
     marginBottom: 8,
   },
   budgetFill: {
     height: '100%',
     backgroundColor: ds.ink,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   budgetFooter: {
     flexDirection: 'row',
@@ -863,7 +865,7 @@ const styles = StyleSheet.create({
   budgetPriority: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   budgetPriorityText: {
     fontSize: 10,
@@ -873,7 +875,7 @@ const styles = StyleSheet.create({
   },
   budgetTips: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginTop: 20,
   },

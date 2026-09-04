@@ -57,17 +57,18 @@ function link(retailer: string, brand: string, name: string): string {
 
 /**
  * Unsplash photo ids, cycled per category. Every id below was BOTH
- * fetch-verified (HTTP 200) and VISUALLY verified on 2026-08-30 - each
- * image was actually viewed and assigned to the pool matching its real
- * content. The first version of these pools assigned ids from memory,
- * which put a woman in a yellow skirt into the menswear bottoms pool and
- * five suited men into the womenswear pools. Do not add an id here
- * without looking at the photo.
+ * fetch-verified (HTTP 200) and VISUALLY re-verified on 2026-09-04 via
+ * per-pool contact sheets - each image was actually viewed and assigned to
+ * the pool matching its real content. That audit removed four men from the
+ * womenswear pools (a white-tee model, two jacket models, a sunglasses
+ * portrait), a sneaker from the dresses pool, and a ladies' handbag from
+ * the mens/unisex accessories. Do not add an id here without looking at
+ * the photo.
  */
 const IMAGE_POOLS: Record<ItemCategory, string[]> = {
   tops: [
-    '1564257631407-4deb1f99d992', '1521572163474-6864f9cf17ab', '1434389677669-e08b4cac3105',
-    '1556821840-3a63f95609a7', '1503342217505-b0a15ec3261c', '1551163943-3f6a855d1153',
+    '1564257631407-4deb1f99d992', '1434389677669-e08b4cac3105',
+    '1503342217505-b0a15ec3261c', '1551163943-3f6a855d1153',
     '1620799140408-edc6dcb6d633', '1611601322175-ef8ec8c85f01', '1550639525-c97d455acf70',
     '1562157873-818bc0726f68', '1618354691373-d851c5c3a990', '1596755094514-f87e34085b2c',
     '1554568218-0f1715e72254', '1525507119028-ed4c629a60a3', '1543087903-1ac2ec7aa8c5',
@@ -81,18 +82,18 @@ const IMAGE_POOLS: Record<ItemCategory, string[]> = {
   ],
   dresses: [
     '1595777457583-95e059d581b8', '1572804013309-59a88b7e92f1', '1515886657613-9f3515b0c78f',
-    '1509631179647-0177331693ae', '1595341888016-a392ef81b7de', '1618932260643-eee4a2f652a6',
+    '1509631179647-0177331693ae', '1618932260643-eee4a2f652a6',
     '1567401893414-76b7b1e5a7a5', '1520006403909-838d6b92c22e',
   ],
   outerwear: [
-    '1544022613-e87ca75a784a', '1601333144130-8cbb312386b6', '1611312449408-fcece27cdbb7',
+    '1544022613-e87ca75a784a', '1611312449408-fcece27cdbb7',
     '1551028719-00167b16eac5', '1539533018447-63fcce2678e3', '1591047139829-d91aecb6caea',
     '1539109136881-3be0616acf4b', '1483985988355-763728e1935b', '1523381210434-271e8be1f52b',
-    '1445205170230-053b83016050', '1487222477894-8943e31ef7b2', '1490481651871-ab68de25d43d',
+    '1445205170230-053b83016050', '1490481651871-ab68de25d43d',
   ],
   shoes: [
     '1549298916-b41d501d3772', '1542291026-7eec264c27ff', '1543163521-1bf539c55dd2',
-    '1608256246200-53e635b5b65f', '1614252369475-531eba835eb1', '1560343090-f0409e92791a',
+    '1608256246200-53e635b5b65f', '1560343090-f0409e92791a',
     '1595950653106-6c9ebd614d3a', '1600185365483-26d7a4cc7519', '1560769629-975ec94e6a86',
     '1519415943484-9fa1873496d4', '1620138546344-7b2c38516edf',
   ],
@@ -129,7 +130,6 @@ const MENS_IMAGE_POOLS: Partial<Record<ItemCategory, string[]>> = {
   ],
   accessories: [
     '1610384104075-e05c8cf200c3', '1531938716357-224c16b5ace3', '1479064555552-3ef4979f8908',
-    '1584917865442-de89df76afd3',
   ],
 };
 
@@ -139,20 +139,17 @@ const MENS_IMAGE_POOLS: Partial<Record<ItemCategory, string[]>> = {
  * either department's view.
  */
 const UNISEX_IMAGE_POOLS: Partial<Record<ItemCategory, string[]>> = {
-  tops: [
-    '1521572163474-6864f9cf17ab', '1618354691373-d851c5c3a990', '1562157873-818bc0726f68',
-    '1556821840-3a63f95609a7',
-  ],
+  tops: ['1618354691373-d851c5c3a990', '1562157873-818bc0726f68'],
   bottoms: ['1604176354204-9268737828e4', '1541840031508-326b77c9a17e', '1560243563-062bfc001d68'],
   outerwear: [
-    '1601333144130-8cbb312386b6', '1611312449408-fcece27cdbb7', '1523381210434-271e8be1f52b',
+    '1611312449408-fcece27cdbb7', '1523381210434-271e8be1f52b',
     '1445205170230-053b83016050',
   ],
   shoes: [
     '1549298916-b41d501d3772', '1542291026-7eec264c27ff', '1600185365483-26d7a4cc7519',
     '1560769629-975ec94e6a86', '1620138546344-7b2c38516edf', '1595950653106-6c9ebd614d3a',
   ],
-  accessories: ['1584917865442-de89df76afd3', '1555529669-e69e7aa0ba9a'],
+  accessories: ['1531938716357-224c16b5ace3', '1555529669-e69e7aa0ba9a'],
 };
 
 const SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {

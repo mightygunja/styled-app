@@ -31,7 +31,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type Tab = 'overview' | 'impact' | 'actions';
@@ -312,7 +312,8 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 34, lineHeight: 38, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
-  gradeBox: { marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
+  gradeBox: {
+    borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
   gradeLabel: { ...textType.eyebrow, marginBottom: 8 },
   gradeValue: { fontFamily: fonts.serif, fontSize: 56, lineHeight: 60, color: colors.ink },
   gradeScore: { ...textType.meta, marginTop: 6 },
@@ -351,12 +352,14 @@ const styles = StyleSheet.create({
   bar: { height: 2, backgroundColor: colors.hair },
   barFill: { height: 2, backgroundColor: colors.ink },
 
-  figureBox: { backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.md },
+  figureBox: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginBottom: spacing.md },
   figureValue: { fontFamily: fonts.serif, fontSize: 40, lineHeight: 44, color: colors.ink },
   figureUnit: { ...textType.body, color: colors.ink, marginTop: 4 },
   figureNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: 10 },
 
   noticeBox: {
+    borderRadius: radius.md,
     marginTop: spacing.sm,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -382,6 +385,7 @@ const styles = StyleSheet.create({
 
   certRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cert: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -390,10 +394,12 @@ const styles = StyleSheet.create({
   },
   certText: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted },
 
-  emptyBox: { marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
+  emptyBox: {
+    borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   emptyAction: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.md,
     backgroundColor: colors.ink,

@@ -23,7 +23,7 @@ import {
 } from '../services/secondhandMarketplaceService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors as ds, fonts } from '../theme/designSystem';
+import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     backgroundColor: ds.ink,
-    borderRadius: 12,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     backgroundColor: ds.paper,
     borderWidth: 2,
     borderColor: ds.hair,
@@ -584,12 +584,13 @@ const styles = StyleSheet.create({
   itemCard: {
     width: (width - 52) / 2,
     backgroundColor: ds.card,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: ds.hair,
   },
   itemImage: {
+    borderRadius: radius.sm,
     width: '100%',
     height: 180,
     backgroundColor: ds.paper,
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   platformBadgeText: {
     fontSize: 14,
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   discountBadgeText: {
     fontSize: 11,
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     marginBottom: 6,
   },
   itemConditionText: {
@@ -704,7 +705,7 @@ const styles = StyleSheet.create({
   },
   platformCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 16,
   },
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   platformRatingText: {
     fontSize: 12,
@@ -782,7 +783,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: ds.ink,
   },
@@ -794,7 +795,7 @@ const styles = StyleSheet.create({
   platformButton: {
     backgroundColor: ds.ink,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: 'center',
   },
   platformButtonText: {
@@ -804,7 +805,7 @@ const styles = StyleSheet.create({
   },
   trendCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -823,7 +824,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.sand,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   trendGrowthText: {
     fontSize: 12,
@@ -850,7 +851,7 @@ const styles = StyleSheet.create({
   },
   dealCard: {
     backgroundColor: ds.sand,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -871,7 +872,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.ink,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   dealDiscountText: {
     fontSize: 12,
@@ -891,7 +892,7 @@ const styles = StyleSheet.create({
     backgroundColor: ds.paper,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: ds.hair,
   },
@@ -902,7 +903,7 @@ const styles = StyleSheet.create({
   },
   impactCard: {
     backgroundColor: ds.paper,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 20,
     gap: 20,
   },

@@ -16,7 +16,7 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
+import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
   helper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 10 },
 
   input: {
+    borderRadius: radius.md,
     ...textType.body,
     color: colors.ink,
     backgroundColor: colors.card,
@@ -340,11 +341,13 @@ const styles = StyleSheet.create({
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipSpacing: { marginBottom: 2 },
 
-  declinedBox: { backgroundColor: colors.sand, padding: spacing.md, marginTop: spacing.lg },
+  declinedBox: {
+    borderRadius: radius.md, backgroundColor: colors.sand, padding: spacing.md, marginTop: spacing.lg },
   declinedLabel: { ...textType.microLabel, color: colors.tobacco, marginBottom: 6 },
   declinedText: { ...textType.body, fontSize: 13, color: colors.ink },
 
-  summaryCard: { backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.section },
+  summaryCard: {
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.section },
   summaryLabel: { ...textType.microLabel, color: colors.inkFaint, marginBottom: 6 },
   summaryValue: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
 

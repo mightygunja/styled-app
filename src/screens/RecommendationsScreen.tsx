@@ -20,7 +20,7 @@ import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -335,6 +335,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   intro: {
+    borderRadius: radius.md,
     padding: 20,
     backgroundColor: colors.paper,
     marginBottom: 8,
@@ -374,6 +375,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   reasonBadge: {
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -399,6 +401,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   lookImage: {
+    borderRadius: radius.sm,
     width: 200,
     height: 250,
   },
@@ -422,7 +425,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.ink,
@@ -451,6 +454,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emptyStateButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
     paddingHorizontal: 24,
     paddingVertical: 12,

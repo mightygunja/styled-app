@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/types';
-import { colors, fonts, type as textType } from '../theme/designSystem';
+import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useAuth } from '../contexts/AuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
   eyebrow: { ...textType.eyebrow, marginBottom: 8 },
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginBottom: 8 },
   profileCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',

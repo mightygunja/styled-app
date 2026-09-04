@@ -15,6 +15,7 @@ import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { validatePersonalStyleProfile } from '../../models/personalStyleProfile';
 
+import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingComplete'>;
 
 export default function OnboardingCompleteScreen() {
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
   trustMessage: {
     backgroundColor: '#F8F6F3',
     padding: 24,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: '#DED7CF',
   },
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 16,
     backgroundColor: '#FEF2F2',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: '#FEE2E2',
   },
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
   completeButton: {
     height: 56,
     backgroundColor: '#2B1F1A',
-    borderRadius: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,

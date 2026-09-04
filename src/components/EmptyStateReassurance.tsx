@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface EmptyStateReassuranceProps {
   type: 'closet' | 'outfits';
@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   tipContainer: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
     width: '100%',
@@ -101,6 +102,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   actionButton: {
+    borderRadius: radius.full,
     height: 56,
     backgroundColor: colors.ink,
     alignItems: 'center',

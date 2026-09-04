@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fonts } from '../theme/designSystem';
+import { colors, fonts, radius } from '../theme/designSystem';
 
 interface SparseClosetBannerProps {
   itemCount: number;
@@ -41,6 +41,7 @@ export default function SparseClosetBanner({ itemCount, onAddItems }: SparseClos
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 20,
     marginVertical: 16,
@@ -62,6 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ctaButton: {
+    borderRadius: radius.full,
     backgroundColor: colors.card,
     paddingVertical: 12,
     paddingHorizontal: 20,
