@@ -43,6 +43,10 @@ const RETAILER_SEARCH: Record<string, (query: string) => string> = {
   // Links must live on otraeyewear.com so the Awin deeplink layer (merchant
   // id 96299 in affiliateNetwork.ts) has a merchant URL to wrap.
   Otra: q => `https://otraeyewear.com/search?q=${encodeURIComponent(q)}`,
+  // Verified in-browser 2026-09-04 ("WANAYOU Cross Back Sports Bra" -> 66
+  // results). Links must live on wanayou.com so the Awin deeplink layer
+  // (merchant id 127939 in affiliateNetwork.ts) has a merchant URL to wrap.
+  WANAYOU: q => `https://wanayou.com/search?q=${encodeURIComponent(q)}`,
 };
 
 function link(retailer: string, brand: string, name: string): string {
@@ -262,6 +266,22 @@ const ROWS: Row[] = [
   ['t068', 'Pre-Loved Cable Knit', 'Aran Crafts', 'ThredUp', 'tops', 'cable knit sweater', 'natural', 42, 130, 'heritage vintage knit', 1],
   ['t069', 'Vintage Rugby Shirt', 'Polo Ralph Lauren', 'Poshmark', 'tops', 'rugby shirt', 'green stripe', 38, 125, 'preppy vintage collegiate', 1],
   ['t070', 'Secondhand Burgundy Knit', 'COS', 'Vestiaire Collective', 'tops', 'burgundy sweater', 'burgundy', 45, 115, 'minimalist vintage knit', 1],
+
+  // WANAYOU - Awin merchant 127939 (joined 2026-09-04). Women's activewear;
+  // 10% commission, 30-day cookie, US only. Titles, colourways and prices
+  // read from wanayou.com/products/*.json on 2026-09-04; every product photo
+  // viewed as a contact sheet the same day (all nine are female models on
+  // womenswear, so these stay out of UNISEX_IDS and out of the mens pools).
+  // One colourway per style - the store lists each colour as its own product.
+  ['t071', 'Cross Back Padded Running Bra', 'WANAYOU', 'WANAYOU', 'tops', 'sports bra', 'black', 18.99, 0, 'athleisure active fitted'],
+  ['t072', 'Cross Back Sports Bra - White', 'WANAYOU', 'WANAYOU', 'tops', 'sports bra', 'white', 22.99, 0, 'athleisure active fitted'],
+  ['t073', 'Adjustable Strap Front Zip Sports Bra', 'WANAYOU', 'WANAYOU', 'tops', 'sports bra', 'black', 32.99, 0, 'athleisure active technical'],
+  ['t074', 'Medium Support Workout Bras - Mauve', 'WANAYOU', 'WANAYOU', 'tops', 'sports bra', 'mauve', 26.99, 0, 'athleisure active seamless'],
+  ['t075', 'Halter Tank Top with Built-in Bra - Color Block', 'WANAYOU', 'WANAYOU', 'tops', 'halter tank', 'black white', 26.99, 0, 'athleisure fitted cropped'],
+  ['t076', 'Halter Tank Top with Built-in Bra - Brown', 'WANAYOU', 'WANAYOU', 'tops', 'halter tank', 'brown', 26.99, 0, 'athleisure fitted cropped'],
+  ['t077', 'Seamless Crew Neck Long Sleeve', 'WANAYOU', 'WANAYOU', 'tops', 'long sleeve top', 'black', 18.99, 0, 'athleisure technical layered'],
+  ['t078', 'Seamless Thumbhole Black Long-Sleeve Shirt', 'WANAYOU', 'WANAYOU', 'tops', 'long sleeve top', 'black', 18.99, 0, 'athleisure technical layered'],
+  ['t079', 'Seamless Thumbhole Long Sleeve - Light Blue', 'WANAYOU', 'WANAYOU', 'tops', 'long sleeve top', 'light blue', 24.99, 0, 'athleisure technical layered'],
 
   // ---- BOTTOMS (58) ----
   ['b001', 'High-Rise Straight Jeans', "Levi's", "Levi's", 'bottoms', 'straight jeans', 'denim blue', 98, 0, 'casual denim everyday high-rise'],
@@ -637,6 +657,42 @@ const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
   a056: {
     imageUrl: 'https://cdn.shopify.com/s/files/1/0515/3557/7245/files/ONYX-1-WEB.jpg?width=600',
     sourceUrl: 'https://www.otraeyewear.com/products/onyx-black-smoke',
+  },
+  t071: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Sports_Bras_for_Women_High_Support_Ribbed_Strappy_Running_Sports_Bra_Black_1.jpg?v=1747807849&width=600',
+    sourceUrl: 'https://wanayou.com/products/sports-bras-for-women-high-support-ribbed-strappy-running-sports-bra-black',
+  },
+  t072: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Cross_Back_Sports_Bra_White_1.jpg?v=1764317651&width=600',
+    sourceUrl: 'https://wanayou.com/products/cross-back-sports-bra-1',
+  },
+  t073: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Zip_Front_Racerback_Post_Surgery_Wireless_Sports_Bra.jpg?v=1785462645&width=600',
+    sourceUrl: 'https://wanayou.com/products/adjustable-strap-front-zip-sports-bra',
+  },
+  t074: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Seamless_Crisscross_Sports_Bra.jpg?v=1781261225&width=600',
+    sourceUrl: 'https://wanayou.com/products/medium-support-workout-bras-3',
+  },
+  t075: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Color_Block_Halter_Tank_Top_with_Built-in_Bra.jpg?v=1786764570&width=600',
+    sourceUrl: 'https://wanayou.com/products/halter-tank-tops-with-built-in-bra',
+  },
+  t076: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Halter_Crop_Tank_Tops.jpg?v=1786766025&width=600',
+    sourceUrl: 'https://wanayou.com/products/halter-tank-tops-with-built-in-bra-3',
+  },
+  t077: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Women_s_Shirt_Long_Sleeve_Dry_Fit_Workout_Tops_Black_4.jpg?v=1764934096&width=600',
+    sourceUrl: 'https://wanayou.com/products/womens-shirt-long-sleeve-dry-fit-workout-tops-black',
+  },
+  t078: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/Seamless_Workout_Shirts_for_Women_Long_Sleeve_Black_1.jpg?v=1764752754&width=600',
+    sourceUrl: 'https://wanayou.com/products/seamless-workout-shirts-for-women-long-sleeve-black',
+  },
+  t079: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/long_sleeve_athletic_shirts_for_women.jpg?v=1777448536&width=600',
+    sourceUrl: 'https://wanayou.com/products/seamless-workout-shirts-for-women-long-sleeve-light-blue',
   },
 };
 

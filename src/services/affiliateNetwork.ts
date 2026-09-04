@@ -106,7 +106,10 @@ const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
 const AWIN_AFFILIATE_ID = '3063969';
 const AWIN_MERCHANTS: Record<string, string> = {
   Otra: '96299', // Otra Eyewear — programme joined 2026-09-01
-  // Etsy moved networks: its affiliate programme lives on Rakuten, not Awin.
+  WANAYOU: '127939', // WANAYOU women's activewear — joined 2026-09-04, 10% / 30-day cookie, US only
+  // Etsy: earlier note here said its programme was on Rakuten. As of
+  // 2026-09-04 the public guidance says Etsy runs on Awin — confirm in the
+  // advertiser directory, then add the id here rather than to RAKUTEN_MERCHANTS.
 };
 
 function awinDeeplink(product: Product): string | null {
