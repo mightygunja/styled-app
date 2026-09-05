@@ -140,6 +140,48 @@ function rakutenDeeplink(product: Product): string | null {
   return `https://click.linksynergy.com/deeplink?id=${encodeURIComponent(RAKUTEN_PUBLISHER_ID)}&mid=${merchantId}&murl=${encodeURIComponent(product.sourceUrl)}`;
 }
 
+/**
+ * impact.com: third network, same shape as Awin and Rakuten but a different
+ * link anatomy. Impact gives each brand its own vanity tracking host (the
+ * .pxf.io family, plus older .sjv.io / .7eer.net domains) and encodes the
+ * route in the PATH rather than the query string:
+ *
+ *   https://<host>/c/<partnerId>/<adId>/<campaignId>?u=<encoded landing page>
+ *
+ * so a merchant needs three values, not one. All of them are public link
+ * parameters, same as the other networks, so they belong in client code.
+ *   IMPACT_PARTNER_ID - your media partner id, account-wide. Shown in the
+ *     Impact dashboard; identical across every brand you join.
+ *   IMPACT_MERCHANTS - retailer name (exactly as it appears in the catalogue)
+ *     -> that brand's host + ad id + campaign id, all three read off any
+ *     tracking link the brand's "Create a link" tool generates after approval.
+ *
+ * Caveat worth knowing before trusting a deeplink: `u=` is a landing-page
+ * OVERRIDE, and the brand decides whether deep linking is on and which paths
+ * are allowed. If a brand disallows it, the click still tracks and still pays
+ * — the user just lands on the brand's default page instead of the product.
+ * So a broken-looking deeplink here is a brand setting, not a bug in this
+ * function. Verify one live link per merchant when you add it (the Awin
+ * merchants were each checked end-to-end this way).
+ *
+ * Targets: Quince (8 catalogue rows already) and Lulus, both applied for
+ * 2026-09-04. Inert until IMPACT_PARTNER_ID is filled in.
+ */
+const IMPACT_PARTNER_ID = '';
+const IMPACT_MERCHANTS: Record<string, { host: string; adId: string; campaignId: string }> = {
+  // Quince: { host: 'quince.pxf.io', adId: '<adId>', campaignId: '<campaignId>' },
+  // Lulus:  { host: '<brand>.pxf.io', adId: '<adId>', campaignId: '<campaignId>' },
+};
+
+function impactDeeplink(product: Product): string | null {
+  if (!IMPACT_PARTNER_ID) return null;
+  const merchant = IMPACT_MERCHANTS[product.retailer];
+  if (!merchant) return null;
+  const { host, adId, campaignId } = merchant;
+  if (!host || !adId || !campaignId) return null;
+  return `https://${host}/c/${encodeURIComponent(IMPACT_PARTNER_ID)}/${encodeURIComponent(adId)}/${encodeURIComponent(campaignId)}?u=${encodeURIComponent(product.sourceUrl)}`;
+}
+
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -217,13 +259,15 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
     // Best monetization first: a merchant deeplink lands the user on the
-    // actual retailer at the retailer's commission rate. Awin and Rakuten
-    // merchant maps are disjoint (a retailer lives on one network), so
-    // order between them is moot; both beat the Amazon fallback.
+    // actual retailer at the retailer's commission rate. The three network
+    // merchant maps are disjoint (a retailer lives on one network), so order
+    // between them is moot; all three beat the Amazon fallback.
     const awin = awinDeeplink(product);
     if (awin) return awin;
     const rakuten = rakutenDeeplink(product);
     if (rakuten) return rakuten;
+    const impact = impactDeeplink(product);
+    if (impact) return impact;
 
     // The department qualifier keeps Amazon's results in the right aisle - a
     // search for a men's oxford shirt without it comes back mixed.
