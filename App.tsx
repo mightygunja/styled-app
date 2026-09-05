@@ -48,7 +48,14 @@ export default function App() {
     };
   }, []);
 
-  if (!fontsLoaded && !fontError) {
+  // Native keeps the gate: the splash screen covers the wait, so holding here
+  // costs nothing visible and avoids a flash of system text.
+  //
+  // Web deliberately does not. Blocking on useFonts meant six .ttf faces
+  // (~370KB over 11 requests) had to finish before ANYTHING painted, so the
+  // first seconds were an empty bone rectangle. Rendering immediately shows
+  // real content straight away; the faces swap in when they arrive.
+  if (!fontsLoaded && !fontError && Platform.OS !== 'web') {
     return <View style={{ flex: 1, backgroundColor: colors.bone }} />;
   }
 
