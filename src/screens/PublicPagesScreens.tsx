@@ -137,6 +137,10 @@ export function PrivacyScreen() {
         This policy describes what 33 Trends collects, why, and what happens to it. It is written
         to be read, not skimmed past.
       </P>
+      <P>
+        33 Trends is operated by Gunja Consulting, Inc., of Chicago, Illinois, which is the
+        entity responsible for the data described here. Reach us at {CONTACT_EMAIL}.
+      </P>
       <Section heading="What we collect">
         <P>
           Account details: your email address and the name you give us, or the profile shared by
@@ -222,6 +226,10 @@ export function TermsScreen() {
         <P>
           33 Trends provides digital wardrobe management and AI styling recommendations, free of
           charge, for your personal use. You must be at least 16 to use it.
+        </P>
+        <P>
+          These terms are an agreement between you and Gunja Consulting, Inc., of Chicago,
+          Illinois, which owns and operates 33 Trends. "We" and "us" mean that company.
         </P>
       </Section>
       <Section heading="Your content">
