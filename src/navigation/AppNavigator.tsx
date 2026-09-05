@@ -6,78 +6,100 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from './types';
 
+/**
+ * Lazy screen loader. React Navigation takes `component={X}`, so wrapping the
+ * Suspense boundary INSIDE a stable component keeps every existing
+ * <Stack.Screen> registration untouched - only the import line changes.
+ *
+ * Must stay module-scope: a component identity created during render would
+ * remount the screen on every parent render.
+ */
+function lazyScreen(loader: () => Promise<{ default: React.ComponentType<any> }>) {
+  const Lazy = React.lazy(loader);
+  return function LazyScreen(props: any) {
+    return (
+      <React.Suspense
+        fallback={<View style={{ flex: 1, backgroundColor: colors.bone }} />}
+      >
+        <Lazy {...props} />
+      </React.Suspense>
+    );
+  };
+}
+
 import HomeScreen from '../screens/HomeScreen';
 import ClosetScreen from '../screens/ClosetScreen';
-import LookDetailScreen from '../screens/LookDetailScreen';
-import PaletteDetailScreen from '../screens/PaletteDetailScreen';
-import AddClosetItemScreen from '../screens/AddClosetItemScreen';
-import ClosetItemDetailScreen from '../screens/ClosetItemDetailScreen';
-import SimilarItemsScreen from '../screens/SimilarItemsScreen';
-import FavoritesScreen from '../screens/FavoritesScreen';
-import OutfitBuilderScreen from '../screens/OutfitBuilderScreen';
-import SavedOutfitsScreen from '../screens/SavedOutfitsScreen';
-import OutfitPlannerScreen from '../screens/OutfitPlannerScreen';
-import PackingListScreen from '../screens/PackingListScreen';
-import ResaleScreen from '../screens/ResaleScreen';
-import TryOnScreen from '../screens/TryOnScreen';
-import ReceiptImportScreen from '../screens/ReceiptImportScreen';
-import ClosetSharingScreen from '../screens/ClosetSharingScreen';
-import EditsScreen from '../screens/EditsScreen';
-import EditDetailScreen from '../screens/EditDetailScreen';
-import EditReviewScreen from '../screens/EditReviewScreen';
-import StylistAvailabilityScreen from '../screens/StylistAvailabilityScreen';
-import StylistApplicationScreen from '../screens/StylistApplicationScreen';
-import StylistApplicationsAdminScreen from '../screens/StylistApplicationsAdminScreen';
-import AdminScreen from '../screens/AdminScreen';
-import AffiliateAnalyticsScreen from '../screens/AffiliateAnalyticsScreen';
-import TrendDeskAdminScreen from '../screens/TrendDeskAdminScreen';
-import SmartOutfitBuilderScreen from '../screens/SmartOutfitBuilderScreen';
-import ClosetAnalyticsScreen from '../screens/ClosetAnalyticsScreen';
-import StylistMarketplaceScreen from '../screens/StylistMarketplaceScreen';
-import StylistDetailScreen from '../screens/StylistDetailScreen';
-import VideoCallScreen from '../screens/VideoCallScreen';
-import SessionNotesScreen from '../screens/SessionNotesScreen';
-import MySessionsScreen from '../screens/MySessionsScreen';
-import BeforeAfterPhotosScreen from '../screens/BeforeAfterPhotosScreen';
-import SubmitReviewScreen from '../screens/SubmitReviewScreen';
-import StylistDashboardScreen from '../screens/StylistDashboardScreen';
-import UserProfileScreen from '../screens/UserProfileScreen';
-import EditProfileScreen from '../screens/EditProfileScreen';
-import FollowersScreen from '../screens/FollowersScreen';
-import FollowingScreen from '../screens/FollowingScreen';
-import SocialFeedScreen from '../screens/SocialFeedScreen';
-import CreatePostScreen from '../screens/CreatePostScreen';
-import PostDetailScreen from '../screens/PostDetailScreen';
-import MessagesScreen from '../screens/MessagesScreen';
-import ChatScreen from '../screens/ChatScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
-import ExploreScreen from '../screens/ExploreScreen';
-import ChallengesScreen from '../screens/ChallengesScreen';
-import ChallengeDetailScreen from '../screens/ChallengeDetailScreen';
-import GroupsScreen from '../screens/GroupsScreen';
-import GroupDetailScreen from '../screens/GroupDetailScreen';
-import EventDetailScreen from '../screens/EventDetailScreen';
-import StyleAnalysisScreen from '../screens/StyleAnalysisScreen';
-import SmartRecommendationsScreen from '../screens/SmartRecommendationsScreen';
+const LookDetailScreen = lazyScreen(() => import('../screens/LookDetailScreen'));
+const PaletteDetailScreen = lazyScreen(() => import('../screens/PaletteDetailScreen'));
+const AddClosetItemScreen = lazyScreen(() => import('../screens/AddClosetItemScreen'));
+const ClosetItemDetailScreen = lazyScreen(() => import('../screens/ClosetItemDetailScreen'));
+const SimilarItemsScreen = lazyScreen(() => import('../screens/SimilarItemsScreen'));
+const FavoritesScreen = lazyScreen(() => import('../screens/FavoritesScreen'));
+const OutfitBuilderScreen = lazyScreen(() => import('../screens/OutfitBuilderScreen'));
+const SavedOutfitsScreen = lazyScreen(() => import('../screens/SavedOutfitsScreen'));
+const OutfitPlannerScreen = lazyScreen(() => import('../screens/OutfitPlannerScreen'));
+const PackingListScreen = lazyScreen(() => import('../screens/PackingListScreen'));
+const ResaleScreen = lazyScreen(() => import('../screens/ResaleScreen'));
+const TryOnScreen = lazyScreen(() => import('../screens/TryOnScreen'));
+const ReceiptImportScreen = lazyScreen(() => import('../screens/ReceiptImportScreen'));
+const ClosetSharingScreen = lazyScreen(() => import('../screens/ClosetSharingScreen'));
+const EditsScreen = lazyScreen(() => import('../screens/EditsScreen'));
+const EditDetailScreen = lazyScreen(() => import('../screens/EditDetailScreen'));
+const EditReviewScreen = lazyScreen(() => import('../screens/EditReviewScreen'));
+const StylistAvailabilityScreen = lazyScreen(() => import('../screens/StylistAvailabilityScreen'));
+const StylistApplicationScreen = lazyScreen(() => import('../screens/StylistApplicationScreen'));
+const StylistApplicationsAdminScreen = lazyScreen(() => import('../screens/StylistApplicationsAdminScreen'));
+const AdminScreen = lazyScreen(() => import('../screens/AdminScreen'));
+const AffiliateAnalyticsScreen = lazyScreen(() => import('../screens/AffiliateAnalyticsScreen'));
+const TrendDeskAdminScreen = lazyScreen(() => import('../screens/TrendDeskAdminScreen'));
+const SmartOutfitBuilderScreen = lazyScreen(() => import('../screens/SmartOutfitBuilderScreen'));
+const ClosetAnalyticsScreen = lazyScreen(() => import('../screens/ClosetAnalyticsScreen'));
+const StylistMarketplaceScreen = lazyScreen(() => import('../screens/StylistMarketplaceScreen'));
+const StylistDetailScreen = lazyScreen(() => import('../screens/StylistDetailScreen'));
+const VideoCallScreen = lazyScreen(() => import('../screens/VideoCallScreen'));
+const SessionNotesScreen = lazyScreen(() => import('../screens/SessionNotesScreen'));
+const MySessionsScreen = lazyScreen(() => import('../screens/MySessionsScreen'));
+const BeforeAfterPhotosScreen = lazyScreen(() => import('../screens/BeforeAfterPhotosScreen'));
+const SubmitReviewScreen = lazyScreen(() => import('../screens/SubmitReviewScreen'));
+const StylistDashboardScreen = lazyScreen(() => import('../screens/StylistDashboardScreen'));
+const UserProfileScreen = lazyScreen(() => import('../screens/UserProfileScreen'));
+const EditProfileScreen = lazyScreen(() => import('../screens/EditProfileScreen'));
+const FollowersScreen = lazyScreen(() => import('../screens/FollowersScreen'));
+const FollowingScreen = lazyScreen(() => import('../screens/FollowingScreen'));
+const SocialFeedScreen = lazyScreen(() => import('../screens/SocialFeedScreen'));
+const CreatePostScreen = lazyScreen(() => import('../screens/CreatePostScreen'));
+const PostDetailScreen = lazyScreen(() => import('../screens/PostDetailScreen'));
+const MessagesScreen = lazyScreen(() => import('../screens/MessagesScreen'));
+const ChatScreen = lazyScreen(() => import('../screens/ChatScreen'));
+const NotificationsScreen = lazyScreen(() => import('../screens/NotificationsScreen'));
+const ExploreScreen = lazyScreen(() => import('../screens/ExploreScreen'));
+const ChallengesScreen = lazyScreen(() => import('../screens/ChallengesScreen'));
+const ChallengeDetailScreen = lazyScreen(() => import('../screens/ChallengeDetailScreen'));
+const GroupsScreen = lazyScreen(() => import('../screens/GroupsScreen'));
+const GroupDetailScreen = lazyScreen(() => import('../screens/GroupDetailScreen'));
+const EventDetailScreen = lazyScreen(() => import('../screens/EventDetailScreen'));
+const StyleAnalysisScreen = lazyScreen(() => import('../screens/StyleAnalysisScreen'));
+const SmartRecommendationsScreen = lazyScreen(() => import('../screens/SmartRecommendationsScreen'));
 import StylingAssistantScreen from '../screens/StylingAssistantScreen';
-import SmartSearchScreen from '../screens/SmartSearchScreen';
-import TrendInsightsScreen from '../screens/TrendInsightsScreen';
-import ClosetOrganizationScreen from '../screens/ClosetOrganizationScreen';
-import SustainabilityScreen from '../screens/SustainabilityScreen';
-import CarbonCalculatorScreen from '../screens/CarbonCalculatorScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+const SmartSearchScreen = lazyScreen(() => import('../screens/SmartSearchScreen'));
+const TrendInsightsScreen = lazyScreen(() => import('../screens/TrendInsightsScreen'));
+const ClosetOrganizationScreen = lazyScreen(() => import('../screens/ClosetOrganizationScreen'));
+const SustainabilityScreen = lazyScreen(() => import('../screens/SustainabilityScreen'));
+
+const CarbonCalculatorScreen = lazyScreen(() => import('../screens/CarbonCalculatorScreen'));
+const SettingsScreen = lazyScreen(() => import('../screens/SettingsScreen'));
 import MoreScreen from '../screens/MoreScreen';
-import RecommendationsScreen from '../screens/RecommendationsScreen';
-import StyleProfileBuilderScreen from '../screens/StyleProfileBuilderScreen';
-import ColorAnalysisScreen from '../screens/ColorAnalysisScreen';
-import BodyAnalysisScreen from '../screens/BodyAnalysisScreen';
-import InStoreCheckScreen from '../screens/InStoreCheckScreen';
-import ShopScreen from '../screens/ShopScreen';
-import ProductDetailScreen from '../screens/ProductDetailScreen';
-import WishlistScreen from '../screens/WishlistScreen';
+const RecommendationsScreen = lazyScreen(() => import('../screens/RecommendationsScreen'));
+const StyleProfileBuilderScreen = lazyScreen(() => import('../screens/StyleProfileBuilderScreen'));
+const ColorAnalysisScreen = lazyScreen(() => import('../screens/ColorAnalysisScreen'));
+const BodyAnalysisScreen = lazyScreen(() => import('../screens/BodyAnalysisScreen'));
+const InStoreCheckScreen = lazyScreen(() => import('../screens/InStoreCheckScreen'));
+const ShopScreen = lazyScreen(() => import('../screens/ShopScreen'));
+const ProductDetailScreen = lazyScreen(() => import('../screens/ProductDetailScreen'));
+const WishlistScreen = lazyScreen(() => import('../screens/WishlistScreen'));
 import StyleProfileScreen from '../screens/StyleProfileScreen';
-import AccountScreen from '../screens/AccountScreen';
-import OnboardingScreen from '../screens/OnboardingScreen';
+const AccountScreen = lazyScreen(() => import('../screens/AccountScreen'));
+const OnboardingScreen = lazyScreen(() => import('../screens/OnboardingScreen'));
 import IntroScreen, { INTRO_SEEN_KEY } from '../screens/IntroScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
