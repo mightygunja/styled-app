@@ -182,6 +182,39 @@ function impactDeeplink(product: Product): string | null {
   return `https://${host}/c/${encodeURIComponent(IMPACT_PARTNER_ID)}/${encodeURIComponent(adId)}/${encodeURIComponent(campaignId)}?u=${encodeURIComponent(product.sourceUrl)}`;
 }
 
+/**
+ * Ascend by Partnerize (formerly Pepperjam): fourth network, and the odd one
+ * out. Awin, Rakuten and Impact all build a link from ids we can store
+ * separately; Ascend's tracking link is an OPAQUE token that already encodes
+ * the publisher, offer and creative:
+ *
+ *   https://www.pjtra.com/t/<opaque token>?u=<encoded landing page>
+ *
+ * There is no account-wide id to hold, so there is nothing to gate on beyond
+ * the merchant map itself - copy the whole base link out of the brand's link
+ * generator in the Ascend dashboard and paste it here verbatim. The tracking
+ * host varies by programme (pjtra.com, pjatr.com, gopjn.com, pntra.com,
+ * pntrs.com, pntrac.com are all theirs), which is another reason to store the
+ * base link rather than try to reconstruct it.
+ *
+ * `u=` is the destination override, same idea as Impact's: the brand has to
+ * permit deep linking, and if it does not the click still tracks and still
+ * pays, it just lands on their default page.
+ *
+ * Target: Everlane (applied 2026-09-04, 7 catalogue rows already waiting).
+ * Inert until a base link is pasted in.
+ */
+const ASCEND_MERCHANTS: Record<string, string> = {
+  // Everlane: 'https://www.pjtra.com/t/<token>',  <- paste the whole base link
+};
+
+function ascendDeeplink(product: Product): string | null {
+  const base = ASCEND_MERCHANTS[product.retailer];
+  if (!base) return null;
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}u=${encodeURIComponent(product.sourceUrl)}`;
+}
+
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -268,6 +301,8 @@ class AmazonAssociatesAdapter extends MockCatalogAdapter {
     if (rakuten) return rakuten;
     const impact = impactDeeplink(product);
     if (impact) return impact;
+    const ascend = ascendDeeplink(product);
+    if (ascend) return ascend;
 
     // The department qualifier keeps Amazon's results in the right aisle - a
     // search for a men's oxford shirt without it comes back mixed.
