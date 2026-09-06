@@ -67,3 +67,9 @@ functions/.runtimeconfig.json
 
 # Firebase Hosting deploy cache
 .firebase/
+
+# Home-screen capture used to build the splash hero. Deliberately NOT
+# committed: this repository is public and the raw capture still greets the
+# real account holder by first name. scripts/generateSplashHero.py replaces
+# the name on the way into assets/splash-hero.png, which is what ships.
+assets/Splash image.jpeg
