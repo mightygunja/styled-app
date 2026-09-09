@@ -117,6 +117,13 @@ export default function HomeScreen() {
   const isDesktop = useIsDesktopWeb();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  // Curation is the slow half: three Cloud Function round trips
+  // (personalizeTrendReport, curateStyleEdit, curateDailyOutfits), each an
+  // LLM call, run in sequence. They used to sit behind the same `loading`
+  // flag as everything else, so the entire Home screen was a spinner until
+  // the last one returned. Tracked apart now: `loading` clears as soon as
+  // the closet and weather land, `curating` keeps only the look card busy.
+  const [curating, setCurating] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [occasion, setOccasion] = useState<OccasionType>('work');
   // Null until a real reading lands - the hero says nothing about weather
@@ -240,6 +247,7 @@ export default function HomeScreen() {
   };
 
   const loadDressMeToday = async (occasionValue: OccasionType) => {
+    setCurating(true);
     try {
       const [weatherResult, itemsResponse, matchContext] = await Promise.all([
         getCurrentWeather(),
@@ -275,6 +283,12 @@ export default function HomeScreen() {
         fabricTexture: item.fabricTexture,
         fitType: item.fitType,
       }));
+
+      // Everything the shell needs is now in hand - greeting, weather line,
+      // occasion chips, closet count. Release the screen here instead of at
+      // the end of the function; the curation calls below fill in the look
+      // card behind an already-usable page.
+      setLoading(false);
       // No saved profile at all means this account predates the survey -
       // offer it once, unless the user has already said not now.
       AsyncStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY)
@@ -443,6 +457,7 @@ export default function HomeScreen() {
       console.error('Error loading Dress Me Today:', error);
     } finally {
       setLoading(false);
+      setCurating(false);
       setRefreshing(false);
     }
   };
@@ -988,7 +1003,17 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {!look ? (
+          {curating && !look ? (
+            // Still composing. The shell is already on screen, so this stands
+            // in for the look card alone. Kept distinct from the !look branch
+            // below on purpose: that branch's copy talks about an empty closet
+            // and no matching pieces, which would be a lie while the curation
+            // calls are still in flight.
+            <View style={styles.composingCard}>
+              <ActivityIndicator size="small" color={colors.ink} />
+              <Text style={styles.composingLine}>Composing today's looks...</Text>
+            </View>
+          ) : !look ? (
             // No composed look at all. Even here the screen must not be an
             // empty room: trends, taste-matched pieces and the closet CTA
             // carry it, with the plain empty card only as a last resort.
@@ -1176,6 +1201,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  composingCard: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingVertical: 34,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  composingLine: { ...textType.body, color: colors.inkMuted },
   hero: {
     paddingHorizontal: 20,
     paddingTop: 24,
