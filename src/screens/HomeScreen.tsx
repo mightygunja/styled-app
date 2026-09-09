@@ -117,12 +117,16 @@ export default function HomeScreen() {
   const isDesktop = useIsDesktopWeb();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  // Curation is the slow half: three Cloud Function round trips
-  // (personalizeTrendReport, curateStyleEdit, curateDailyOutfits), each an
-  // LLM call, run in sequence. They used to sit behind the same `loading`
-  // flag as everything else, so the entire Home screen was a spinner until
-  // the last one returned. Tracked apart now: `loading` clears as soon as
-  // the closet and weather land, `curating` keeps only the look card busy.
+  // Curation is the slower half, and it used to sit behind the same `loading`
+  // flag as everything else, so the whole screen was a spinner until it
+  // finished. Tracked apart now: `loading` clears once the closet and weather
+  // land, `curating` keeps only the look card busy.
+  //
+  // What is left under `curating` is local: the pools are composed on device
+  // by buildAllOccasions, against an AsyncStorage cache keyed by time slot and
+  // closet fingerprint. The LLM calls that remain - personalizeTrendReport for
+  // the trend rail, curateDailyOutfits for per-tab copy - are started but not
+  // awaited here, so neither one holds up a look appearing.
   const [curating, setCurating] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [occasion, setOccasion] = useState<OccasionType>('work');
@@ -315,10 +319,15 @@ export default function HomeScreen() {
       // trend, in which case trend seeps through and the look can invite a
       // rethink. The ranking prompt is told about the preference either way.
       const avoidRules = matchContext?.avoidRules ?? [];
+      // Only consulted to decide whether a garment the user asked to avoid
+      // nonetheless anchors a live trend. With no avoid rules nothing reads it,
+      // so the round trip stays off the critical path entirely.
       let activeTrends: FashionTrend[] = [];
-      try {
-        activeTrends = await getPublishedTrends();
-      } catch {}
+      if (avoidRules.length > 0) {
+        try {
+          activeTrends = await getPublishedTrends();
+        } catch {}
+      }
       const anchorsCurrentTrend = (item: Item) =>
         activeTrends.some(t => {
           if (t.stage === 'fading') return false;
@@ -339,12 +348,17 @@ export default function HomeScreen() {
 
       // The trend layer: which current trends this closet can already carry,
       // ranked for where this user actually is - their city's weather and
-      // style scene reorder the same published pool. Awaited because the
-      // outfit-ranking prompts below want the wearable trend lines - the
-      // registry read is session-cached, so this is cheap.
-      let trendLines: string[] = [];
-      try {
-        const remixes = await trendRemixService.loadTrendRemixes(
+      // style scene reorder the same published pool.
+      //
+      // Deliberately NOT awaited. personalizeTrendReport is an LLM call on a
+      // function that cold-starts, and awaiting it here made it the only
+      // blocking network round trip between opening Home and seeing looks -
+      // for a value the critical path never uses. The pools below are composed
+      // locally, and the trend lines are wanted only by the per-tab copy fetch,
+      // which already runs in the background. So the work starts here and is
+      // joined there; the trend rail fills in when it lands.
+      const trendLinesPromise: Promise<string[]> = trendRemixService
+        .loadTrendRemixes(
           wearable,
           matchContext,
           weatherResult
@@ -356,12 +370,15 @@ export default function HomeScreen() {
                 condition: weatherResult.condition,
               }
             : undefined
-        );
-        setTrendRemixes(remixes.slice(0, 3));
-        trendLines = trendRemixService.wearableTrendLines(remixes);
-      } catch {
-        setTrendRemixes([]);
-      }
+        )
+        .then(remixes => {
+          setTrendRemixes(remixes.slice(0, 3));
+          return trendRemixService.wearableTrendLines(remixes);
+        })
+        .catch(() => {
+          setTrendRemixes([]);
+          return [] as string[];
+        });
 
       const styleProfile = await aiStyleService.analyzeStyle(items);
       styleProfileRef.current = styleProfile;
@@ -434,14 +451,16 @@ export default function HomeScreen() {
       // arrives.
       const missing = HOME_OCCASIONS.filter(key => !loaded.copy[key]?.length);
       missing.forEach(key => {
-        dailyOutfitService
-          .rankOccasion(loaded.pools[key], key, {
-            slot: loaded.slot,
-            weather: weatherContext,
-            archetypes: matchContext?.styleArchetypes,
-            avoidRules,
-            trendLines,
-          })
+        trendLinesPromise
+          .then(trendLines =>
+            dailyOutfitService.rankOccasion(loaded.pools[key], key, {
+              slot: loaded.slot,
+              weather: weatherContext,
+              archetypes: matchContext?.styleArchetypes,
+              avoidRules,
+              trendLines,
+            })
+          )
           .then(copy => {
             if (!copy || poolsRef.current !== loaded) return;
             loaded.copy[key] = copy;
