@@ -40,6 +40,9 @@
   },
   "submit": {
     "production": {
+      "ios": {
+        "appleId": "adilfaiyazgunja@gmail.com"
+      },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
