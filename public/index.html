@@ -16,6 +16,18 @@
     <link rel="canonical" href="https://www.thirtythreetrends.com/" />
     <meta name="theme-color" content="#FDFBFA" />
 
+    <!-- Icons, owned here instead of injected by Expo (app.json web.favicon was
+         removed on purpose). Expo appended its own unversioned icon link for
+         favicon.ico AFTER this template, and Chrome uses the last icon link it
+         sees - so anyone who had visited before the
+         rebrand kept their cached copy of the old favicon indefinitely. Browsers
+         key that cache by URL, so the ?v= suffix is what forces a fresh fetch.
+         Bump it whenever the mark changes. Files come from
+         scripts/generateBrandIcons.py. -->
+    <link rel="icon" href="/favicon.ico?v=33" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=33" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=33" />
+
     <!-- impact.com property verification (publisher account "Thirty Three
          Trends", added 2026-09-04 for the Lulus/Quince applications). Impact's
          checker looks for the non-standard `value` attribute, not `content` -
@@ -31,7 +43,7 @@
       content="Photograph your closet and get daily outfit recommendations from clothes you already own — matched to your style profile, the occasion and the weather. Free, every feature."
     />
     <meta property="og:url" content="https://www.thirtythreetrends.com/" />
-    <meta property="og:image" content="https://www.thirtythreetrends.com/og-image.png" />
+    <meta property="og:image" content="https://www.thirtythreetrends.com/og-image.png?v=33" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="33 Trends — personal styling from the clothes you own" />
@@ -44,7 +56,7 @@
       name="twitter:description"
       content="Photograph your closet and get daily outfit recommendations from clothes you already own. Free, every feature."
     />
-    <meta name="twitter:image" content="https://www.thirtythreetrends.com/og-image.png" />
+    <meta name="twitter:image" content="https://www.thirtythreetrends.com/og-image.png?v=33" />
 
     <!-- Structured data: who this is and what the application does. -->
     <script type="application/ld+json">
@@ -56,7 +68,7 @@
             "@id": "https://www.thirtythreetrends.com/#org",
             "name": "33 Trends",
             "url": "https://www.thirtythreetrends.com/",
-            "logo": "https://www.thirtythreetrends.com/og-image.png",
+            "logo": "https://www.thirtythreetrends.com/og-image.png?v=33",
             "email": "support@thirtythreetrends.com"
           },
           {
