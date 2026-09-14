@@ -30,6 +30,7 @@
  * own credentials - see the matching sections in functions/src/index.ts.
  */
 
+import { Platform } from 'react-native';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import {
@@ -74,6 +75,24 @@ type MarketplaceProvider =
   | 'skimlinks'
   | 'both';
 const MARKETPLACE_PROVIDER: MarketplaceProvider = 'amazon';
+
+/**
+ * eBay Partner Network classes mobile apps as a "Special Business Model" that
+ * must be approved by ePN BEFORE any ePN link appears in one (per ePN's
+ * onboarding notice, 2026-09-14). The account was approved as a website
+ * content publisher, so until that separate approval lands, eBay is web-only:
+ * on native, the eBay-bearing providers fall back to the Amazon catalogue.
+ * Flip this once ePN confirms the app, and iOS picks eBay up from the same
+ * MARKETPLACE_PROVIDER setting the web uses.
+ */
+const EBAY_APPROVED_FOR_MOBILE_APPS = false;
+
+/** The provider actually in force on this platform - see the ePN note above. */
+function effectiveProvider(): MarketplaceProvider {
+  const usesEbay = MARKETPLACE_PROVIDER === 'starter' || MARKETPLACE_PROVIDER === 'ebay';
+  if (usesEbay && Platform.OS !== 'web' && !EBAY_APPROVED_FOR_MOBILE_APPS) return 'amazon';
+  return MARKETPLACE_PROVIDER;
+}
 
 /**
  * The Amazon Associates tracking tag, e.g. 'thirtythree-20'.
@@ -737,7 +756,7 @@ const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
 };
 
 export function getActiveAdapter(): AffiliateNetworkAdapter {
-  return adapters[MARKETPLACE_PROVIDER];
+  return adapters[effectiveProvider()];
 }
 
 export function isMockProvider(): boolean {
@@ -762,23 +781,35 @@ export function amazonSearchUrl(query: string): string {
  * agreement requires wherever its links appear.
  */
 export function curatedCatalogNotice(): string | null {
-  if (MARKETPLACE_PROVIDER === 'mock') {
+  const provider = effectiveProvider();
+  if (provider === 'mock') {
     return (
       'Showing a sample catalogue with representative photos, not exact product shots. Connect ' +
       'a retail partner and these become live, purchasable products — the scoring is already real.'
     );
   }
-  if (MARKETPLACE_PROVIDER === 'amazon') {
+  if (provider === 'amazon') {
     return (
       'Picks curated by us; photos are representative, not exact product shots, and each piece ' +
       'links to a matching search on Amazon rather than a specific in-stock item. As an Amazon ' +
       'Associate we earn from qualifying purchases.'
     );
   }
-  if (MARKETPLACE_PROVIDER === 'starter') {
+  // eBay's notice asks for FTC-style disclosure wherever its links appear, so
+  // both eBay-bearing modes say plainly that eBay pays a commission too. The
+  // Amazon sentence stays verbatim - its operating agreement requires it.
+  if (provider === 'starter') {
     return (
       'A mix of picks curated by us (representative photos, linking to matching Amazon ' +
-      'searches) and live eBay listings. As an Amazon Associate we earn from qualifying purchases.'
+      'searches) and live eBay listings, which you buy on eBay. We earn a commission from eBay ' +
+      'on purchases made through those listings. As an Amazon Associate we earn from ' +
+      'qualifying purchases.'
+    );
+  }
+  if (provider === 'ebay') {
+    return (
+      'Live eBay listings - you buy on eBay, and we earn a commission from eBay on purchases ' +
+      'made through these links.'
     );
   }
   return null;
@@ -786,7 +817,7 @@ export function curatedCatalogNotice(): string | null {
 
 /** Recorded on outbound clicks so mock traffic is never mistaken for real. */
 export function activeProviderName(): MarketplaceProvider {
-  return MARKETPLACE_PROVIDER;
+  return effectiveProvider();
 }
 
 export const DEFAULT_PRODUCT_PAGE_SIZE = DEFAULT_PAGE_SIZE;
