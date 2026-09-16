@@ -4,8 +4,9 @@ Source:
   assets/brand/logo-final.png    the master "33. TRENDS" lockup, transparent
 
 Writes:
-  assets/icon.png                iOS app icon, 1024x1024, opaque
-  assets/adaptive-icon.png       Android foreground, mark inside the safe zone
+  assets/icon.png                iOS app icon, 1024x1024, opaque, full lockup
+  assets/adaptive-icon.png       Android foreground, full lockup inside the
+                                 safe zone
   assets/splash-icon.png         full lockup on bone (app.json does not use it
                                  today - the splash is splash-hero.png - but a
                                  stale mark sitting in assets is how this went
@@ -37,14 +38,18 @@ INK = (28, 28, 28)       # #1C1C1C
 
 # The "33" alone. The lockup's two numerals end at x=1113 with the period
 # starting at 1186, and the numerals end at y=712 with TRENDS starting at 857,
-# so this box holds both 3s and nothing else. Square marks drop the period,
-# the TM and TRENDS on purpose: the full lockup is roughly 1.5:1 and shrinks
-# to an unreadable smudge in a square at home-screen and tab sizes.
+# so this box holds both 3s and nothing else. Only the favicon uses it now:
+# at 16/32px the full lockup is an unreadable smudge.
 NUMERALS_BOX = (0, 0, 1150, 730)
 
+# The app icons (iOS, Android, Apple touch) carry the FULL lockup - "33." with
+# the letterspaced rust TRENDS - so the TestFlight / home-screen icon shows the
+# same mark as thirtythreetrends.com and the in-app BrandWordmark (2026-09-15).
+
 # Inset of the mark from each edge, as a fraction of the canvas.
-PAD_ICON = 0.14          # iOS masks the corners itself; this is the margin the
-                         # home screen grid reads as intentional, not cramped
+PAD_ICON = 0.10          # iOS masks the corners itself. The lockup is ~1.5:1,
+                         # so a tighter inset than a square mark would take
+                         # keeps TRENDS legible at home-screen sizes
 PAD_TAB = 0.08           # favicons are tiny - fill the frame so it stays legible
 
 # Android masks the foreground to a circle, squircle or square depending on the
@@ -120,11 +125,11 @@ def main() -> None:
     lockup = tight(src)
 
     outputs = {
-        'assets/icon.png': square(numerals, 1024, PAD_ICON),
-        'assets/adaptive-icon.png': adaptive(numerals, 1024),
+        'assets/icon.png': square(lockup, 1024, PAD_ICON),
+        'assets/adaptive-icon.png': adaptive(lockup, 1024),
         'assets/splash-icon.png': on_bone(fit(lockup, 1024 * 0.72, 1024 * 0.72), 1024, 1024),
         'public/favicon-32.png': square(numerals, 32, PAD_TAB),
-        'public/apple-touch-icon.png': square(numerals, 180, PAD_ICON),
+        'public/apple-touch-icon.png': square(lockup, 180, PAD_ICON),
         'public/og-image.png': share_card(lockup),
     }
     for path, img in outputs.items():
