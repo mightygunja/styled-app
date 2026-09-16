@@ -77,7 +77,7 @@ export default function TrendDeskAdminScreen() {
   const handlePublish = async (trend: FashionTrend) => {
     setBusyId(trend.id);
     try {
-      await trendService.publishTrend(trend.id);
+      await trendService.publishTrend(trend.id, trend.name);
       showToast(`"${trend.name}" is live`, 'success');
       await load();
     } catch (error) {
@@ -91,7 +91,7 @@ export default function TrendDeskAdminScreen() {
   const handleArchive = async (trend: FashionTrend) => {
     setBusyId(trend.id);
     try {
-      await trendService.archiveTrend(trend.id);
+      await trendService.archiveTrend(trend.id, trend.name);
       showToast(`"${trend.name}" archived`, 'success');
       await load();
     } catch (error) {
@@ -114,7 +114,10 @@ export default function TrendDeskAdminScreen() {
         <Text style={styles.subtitle}>
           The AI drafts, you publish. Only published trends reach users — and delivery is
           personal: each user's surfaces rank this pool by their closet, taste, city, weather and
-          local style scene, so publish broadly and let the ranking localize.
+          local style scene, so publish broadly and let the ranking localize. The EDITORIAL rows
+          are the curated seed set shipped inside the app (global, accessory-complete, with
+          hand-checked pieces); they merge with what you publish here, and you can retire or
+          restore any of them.
         </Text>
 
         <TouchableOpacity
@@ -151,6 +154,9 @@ export default function TrendDeskAdminScreen() {
                 >
                   {trend.status.toUpperCase()}
                 </Text>
+                {trend.source === 'editorial' && (
+                  <Text style={[styles.statusPill, styles.statusEditorial]}>EDITORIAL</Text>
+                )}
                 <Text style={styles.rowMeta}>
                   {trend.stage.toUpperCase()} · {trend.region.toUpperCase()}
                 </Text>
@@ -166,6 +172,19 @@ export default function TrendDeskAdminScreen() {
               </Text>
               <Text style={styles.rowDetail}>How to wear: {trend.stylingNote}</Text>
 
+              {trend.status === 'archived' && trend.source === 'editorial' && (
+                <View style={styles.rowActions}>
+                  <TouchableOpacity
+                    style={styles.archiveAction}
+                    disabled={busyId === trend.id}
+                    onPress={() => handlePublish(trend)}
+                  >
+                    <Text style={styles.restoreActionText}>
+                      {busyId === trend.id ? 'Working…' : 'Restore'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               {trend.status !== 'archived' && (
                 <View style={styles.rowActions}>
                   {trend.status === 'draft' && (
@@ -244,6 +263,7 @@ const styles = StyleSheet.create({
   },
   statusPublished: { color: colors.white, backgroundColor: colors.ink, borderColor: colors.ink },
   statusArchived: { color: colors.inkFaint },
+  statusEditorial: { color: colors.rust, borderColor: colors.rust },
   rowMeta: { ...textType.eyebrow, fontSize: 9 },
   rowName: { fontFamily: fonts.serif, fontSize: 21, color: colors.ink, marginTop: 8 },
   rowSummary: { ...textType.body, fontSize: 13, lineHeight: 19, color: colors.inkMuted, marginTop: 4 },
@@ -254,4 +274,5 @@ const styles = StyleSheet.create({
   publishActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   archiveAction: { paddingVertical: 10 },
   archiveActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint },
+  restoreActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.rust },
 });

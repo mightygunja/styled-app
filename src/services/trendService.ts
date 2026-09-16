@@ -70,24 +70,43 @@ function normalize(id: string, data: any): FashionTrend {
  * editorial seeds. A failed read degrades to seeds only - never to a blank
  * surface.
  */
+/** Seed ids the editor has retired from the Trend Desk. Empty on any failure. */
+async function retiredSeedIds(): Promise<Set<string>> {
+  try {
+    const snapshot = await getDocs(collection(db, 'trendSeedOverrides'));
+    return new Set(snapshot.docs.filter(d => d.data().status === 'archived').map(d => d.id));
+  } catch {
+    return new Set();
+  }
+}
+
 export async function getPublishedTrends(): Promise<FashionTrend[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.trends;
 
   let trends: FashionTrend[] = [];
-  try {
-    const snapshot = await getDocs(
-      query(collection(db, 'trends'), where('status', '==', 'published'))
-    );
-    trends = snapshot.docs
-      .map(d => normalize(d.id, d.data()))
-      .filter(t => t.name)
-      .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
-      .slice(0, MAX_TRENDS);
-  } catch (error) {
-    console.log('Trend registry unreachable, using seed trends', error);
-  }
+  const [retired] = await Promise.all([
+    retiredSeedIds(),
+    (async () => {
+      try {
+        const snapshot = await getDocs(
+          query(collection(db, 'trends'), where('status', '==', 'published'))
+        );
+        trends = snapshot.docs
+          .map(d => normalize(d.id, d.data()))
+          .filter(t => t.name)
+          .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
+          .slice(0, MAX_TRENDS);
+      } catch (error) {
+        console.log('Trend registry unreachable, using seed trends', error);
+      }
+    })(),
+  ]);
 
-  trends = mergeTrends(trends, SEED_TRENDS);
+  // The editor can retire a shipped seed from the Trend Desk; honour that here.
+  trends = mergeTrends(
+    trends,
+    SEED_TRENDS.filter(seed => !retired.has(seed.id))
+  );
 
   cache = { at: Date.now(), trends };
   return trends;
@@ -100,11 +119,25 @@ export function invalidateTrendCache(): void {
 
 // ==================== TREND DESK (admin) ====================
 
-/** Everything on the desk - drafts, published, archived - for the admin screen. */
+/**
+ * Everything on the desk - drafts, published, archived - for the admin
+ * screen, followed by the editorial seeds shipped in the app with the
+ * status the editor has given them (published unless retired). Seeds are
+ * listed because users see them: a trend the app shows must be a trend the
+ * editor can see and retire.
+ */
 export async function listTrendDesk(): Promise<FashionTrend[]> {
   const result = await listTrendDeskFn({});
-  const rows = ((result.data as any)?.data?.trends || []) as any[];
-  return rows.map(r => normalize(r.id, r));
+  const payload = (result.data as any)?.data || {};
+  const rows = (payload.trends || []) as any[];
+  const overrides = new Map<string, string>(
+    ((payload.seedOverrides || []) as any[]).map(o => [String(o.id), String(o.status || 'published')])
+  );
+  const seeds = SEED_TRENDS.map(seed => ({
+    ...seed,
+    status: overrides.get(seed.id) === 'archived' ? ('archived' as const) : ('published' as const),
+  }));
+  return [...rows.map(r => normalize(r.id, r)), ...seeds];
 }
 
 /** Asks the AI to draft a fresh trend report. Drafts only - nothing reaches users. */
@@ -114,14 +147,14 @@ export async function draftTrendReport(): Promise<number> {
 }
 
 /** Human sign-off: a draft goes live for every user. */
-export async function publishTrend(trendId: string): Promise<void> {
-  await publishTrendFn({ trendId });
+export async function publishTrend(trendId: string, name?: string): Promise<void> {
+  await publishTrendFn({ trendId, name });
   invalidateTrendCache();
 }
 
 /** Retires a trend - drafts that missed, or published trends past their moment. */
-export async function archiveTrend(trendId: string): Promise<void> {
-  await archiveTrendFn({ trendId });
+export async function archiveTrend(trendId: string, name?: string): Promise<void> {
+  await archiveTrendFn({ trendId, name });
   invalidateTrendCache();
 }
 

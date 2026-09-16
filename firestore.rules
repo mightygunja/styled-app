@@ -114,6 +114,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Editor decisions about the editorial seed trends that ship in the app
+    // bundle (retired / restored). Every signed-in user reads them so the
+    // client can drop a retired seed; only the admin functions write.
+    match /trendSeedOverrides/{seedId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // Stylist bookings - owned by userId field
     match /stylistBookings/{bookingId} {
       allow read: if isResourceOwner();
