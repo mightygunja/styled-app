@@ -127,7 +127,6 @@ export type RootStackParamList = {
   // Route types kept only so the corresponding screen files (restored from
   // git history, intentionally not wired into navigation) still type-check.
   // None of these are reachable in the running app.
-  ShoppingAssistant: undefined;
   ARTryOn: undefined;
   SecondhandMarketplace: undefined;
   AIShoppingChatbot: undefined;
@@ -135,7 +134,6 @@ export type RootStackParamList = {
   SmartMirror: undefined;
   MLTrendPrediction: undefined;
   PremiumStylist: undefined;
-  ExclusiveContent: undefined;
   AdvancedAnalytics: undefined;
   PriorityBooking: undefined;
   AdFreeExperience: undefined;

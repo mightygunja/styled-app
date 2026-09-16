@@ -263,11 +263,6 @@ interface StyleDNA {
 - Occasion-based filtering
 - Weather-aware suggestions
 
-#### Shopping Assistant
-**Location:** `src/screens/ShoppingAssistantScreen.tsx`
-- AI chatbot for shopping help
-- Product discovery
-
 #### Secondhand Marketplace
 **Location:** `src/screens/SecondhandMarketplaceScreen.tsx`
 - Sustainable shopping options

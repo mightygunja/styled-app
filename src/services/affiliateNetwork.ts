@@ -234,6 +234,22 @@ function ascendDeeplink(product: Product): string | null {
   return `${base}${separator}u=${encodeURIComponent(product.sourceUrl)}`;
 }
 
+/** A merchant deeplink from whichever network carries the product's retailer, or null. */
+function merchantDeeplink(product: Product): string | null {
+  // No landing page means nothing to deeplink to - an empty `ued=`/`u=` would
+  // drop the user on the merchant's front page. The Amazon search fallback
+  // still gets them to the garment.
+  if (!product.sourceUrl) return null;
+  // The four merchant maps are disjoint (a retailer lives on one network), so
+  // order between them is moot; all of them beat the Amazon fallback.
+  return (
+    awinDeeplink(product) ||
+    rakutenDeeplink(product) ||
+    impactDeeplink(product) ||
+    ascendDeeplink(product)
+  );
+}
+
 const DEFAULT_PAGE_SIZE = 24;
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -311,17 +327,9 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
     // Best monetization first: a merchant deeplink lands the user on the
-    // actual retailer at the retailer's commission rate. The three network
-    // merchant maps are disjoint (a retailer lives on one network), so order
-    // between them is moot; all three beat the Amazon fallback.
-    const awin = awinDeeplink(product);
-    if (awin) return awin;
-    const rakuten = rakutenDeeplink(product);
-    if (rakuten) return rakuten;
-    const impact = impactDeeplink(product);
-    if (impact) return impact;
-    const ascend = ascendDeeplink(product);
-    if (ascend) return ascend;
+    // actual retailer at the retailer's commission rate.
+    const deeplink = merchantDeeplink(product);
+    if (deeplink) return deeplink;
 
     // The department qualifier keeps Amazon's results in the right aisle - a
     // search for a men's oxford shirt without it comes back mixed.
@@ -813,6 +821,76 @@ export function curatedCatalogNotice(): string | null {
     );
   }
   return null;
+}
+
+const PLACEHOLDER_HOSTS = /(^|\.)(example\.(com|org|net)|placeholder\.com|test\.com|localhost)$/i;
+
+/**
+ * True only for a link that could plausibly be the item itself: http(s), not
+ * a placeholder host, and not a bare retailer homepage. Seeded look data
+ * carries both kinds of fake (example.com paths in the old seed script,
+ * homepages like https://www.jcrew.com in Firestore today), and neither may
+ * be passed off as "the product".
+ */
+export function isRealShopUrl(url?: string | null): url is string {
+  if (!url) return false;
+  const match = /^https?:\/\/([^/?#]+)([^?#]*)(\?[^#]*)?/i.exec(url.trim());
+  if (!match) return false;
+  const host = match[1].toLowerCase().replace(/:\d+$/, '');
+  if (PLACEHOLDER_HOSTS.test(host)) return false;
+  return match[2].length > 1 || !!match[3];
+}
+
+/**
+ * Adapts an item that isn't from the catalogue (e.g. a seeded look piece)
+ * into a Product so it goes through wrapLink like
+ * everything else. Its stored link survives only if it is a real product
+ * page - placeholders and homepages are dropped, never invented around.
+ */
+export function productFromListing(
+  listing: {
+    id: string;
+    name: string;
+    brand?: string;
+    retailer?: string;
+    category?: string;
+    price?: number;
+    imageUrl?: string;
+    link?: string;
+    inStock?: boolean;
+  },
+  idPrefix: string
+): Product {
+  return {
+    id: `${idPrefix}-${listing.id}`,
+    name: listing.name,
+    brand: listing.brand || '',
+    retailer: listing.retailer || '',
+    category: (listing.category || 'tops') as Product['category'],
+    price: listing.price ?? 0,
+    currency: 'USD',
+    imageUrl: listing.imageUrl || '',
+    sourceUrl: isRealShopUrl(listing.link) ? listing.link : '',
+    inStock: listing.inStock ?? true,
+  };
+}
+
+/**
+ * The retailer a tap on this product's shop button actually lands on, for
+ * "Shop at X" labels - or null when the active provider has nowhere real to
+ * send it (hide the button). Mirrors wrapLink's routing: under Amazon a
+ * product reaches its own retailer only through a merchant deeplink, and
+ * everything else becomes an Amazon search, so labelling it with the
+ * catalogue retailer would name a store the user never sees.
+ */
+export function shopDestination(product: Product): string | null {
+  if (product.id.startsWith('ebay-')) return 'eBay';
+  const provider = effectiveProvider();
+  if (provider === 'amazon' || provider === 'starter') {
+    return merchantDeeplink(product) ? product.retailer : 'Amazon';
+  }
+  // Every other provider opens (a wrap of) the product's own URL.
+  return isRealShopUrl(product.sourceUrl) && product.retailer ? product.retailer : null;
 }
 
 /** Recorded on outbound clicks so mock traffic is never mistaken for real. */

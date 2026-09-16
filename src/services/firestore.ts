@@ -664,7 +664,15 @@ export const wishlistService = {
 };
 
 /** Where in the app the outbound click originated. */
-export type AffiliateSurface = 'shop' | 'explore' | 'similar' | 'chat' | 'wishlist' | 'unknown';
+export type AffiliateSurface =
+  | 'shop'
+  | 'explore'
+  | 'similar'
+  | 'chat'
+  | 'wishlist'
+  | 'look-detail'
+  | 'shopping-assistant'
+  | 'unknown';
 
 export interface AffiliateClickDoc {
   id: string;

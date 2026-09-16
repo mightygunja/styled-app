@@ -17,7 +17,12 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
-import { getActiveAdapter, activeProviderName, curatedCatalogNotice } from '../services/affiliateNetwork';
+import {
+  getActiveAdapter,
+  activeProviderName,
+  curatedCatalogNotice,
+  shopDestination,
+} from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import {
   spendProfile,
@@ -314,7 +319,9 @@ export default function ProductDetailScreen() {
           </TouchableOpacity>
 
           <Button
-            title={opening ? 'Opening…' : `Shop at ${product.retailer}`}
+            // Named for where the tap lands, which under Amazon is usually
+            // Amazon rather than the catalogue retailer.
+            title={opening ? 'Opening…' : `Shop at ${shopDestination(product) ?? product.retailer}`}
             onPress={() => handleShop(product)}
             disabled={opening}
             fullWidth

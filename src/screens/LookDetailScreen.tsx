@@ -12,8 +12,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Look, Item } from '../types';
+import { Product } from '../models/product';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
+import { affiliateClicksService } from '../services/firestore';
+import {
+  getActiveAdapter,
+  activeProviderName,
+  curatedCatalogNotice,
+  productFromListing,
+  shopDestination,
+} from '../services/affiliateNetwork';
 import { colors, fonts, radius } from '../theme/designSystem';
+
+/** A look piece plus where its shop button goes; null destination = no button. */
+type LookPiece = Item & { type?: string; product: Product; destination: string | null };
 
 interface LookDetailScreenProps {
   route: {
@@ -105,19 +117,28 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     }
   };
 
-  const handleShopCompleteLook = async (items: Item[]) => {
-    const shoppableItems = items.filter(item =>item.affiliateLink);
+  // Pieces go out through the affiliate layer exactly like Shop products. The
+  // stored affiliateLink is only a landing hint for merchant deeplinks - the
+  // seeded looks carry retailer homepages, never product pages - so it is
+  // never opened as-is.
+  const openPiece = async (piece: LookPiece) => {
+    const [url] = await Promise.all([
+      getActiveAdapter().wrapLink(piece.product),
+      affiliateClicksService
+        .record(getCurrentUserId(), piece.product, {
+          surface: 'look-detail',
+          provider: activeProviderName(),
+        })
+        .catch(error => console.error('Error recording look click:', error)),
+    ]);
+    await Linking.openURL(url);
+  };
 
-    if (shoppableItems.length === 0) {
-      Alert.alert('Not shoppable yet', 'No shop links are available for this look yet.');
-      return;
-    }
+  const handleShopCompleteLook = async (shoppableItems: LookPiece[]) => {
+    if (shoppableItems.length === 0) return;
 
     try {
-      const canOpen = await Linking.canOpenURL(shoppableItems[0].affiliateLink!);
-      if (canOpen) {
-        await Linking.openURL(shoppableItems[0].affiliateLink!);
-      }
+      await openPiece(shoppableItems[0]);
 
       if (shoppableItems.length >1) {
         Alert.alert(
@@ -133,23 +154,9 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     }
   };
 
-  const handleShopItem = async (item: Item) => {
+  const handleShopItem = async (piece: LookPiece) => {
     try {
-      // Track click event (analytics would go here)
-      console.log('Shopping item:', item.name, 'Link:', item.affiliateLink);
-      
-      // Open affiliate link
-      if (item.affiliateLink) {
-        const canOpen = await Linking.canOpenURL(item.affiliateLink);
-        console.log('Can open URL:', canOpen);
-        if (canOpen) {
-          await Linking.openURL(item.affiliateLink);
-        } else {
-          Alert.alert('Link unavailable', "That shop link can't be opened on this device.");
-        }
-      } else {
-        Alert.alert('Not shoppable yet', 'No shop link is available for this item yet.');
-      }
+      await openPiece(piece);
     } catch (error) {
       console.error('Error opening link:', error);
       Alert.alert('Something went wrong', "Couldn't open that shop link. Please try again.");
@@ -181,10 +188,22 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
   }
 
   // Transform backend response - Firebase returns items directly with itemType
-  const allItems = (look as any).items?.map((item: any) => ({
-    ...item,
-    type: item.itemType, // 'hero', 'alternate', or 'budget'
-  })) || [];
+  const allItems: LookPiece[] = (look as any).items?.map((item: any) => {
+    const product = productFromListing({ ...item, link: item.affiliateLink }, 'look');
+    return {
+      ...item,
+      type: item.itemType, // 'hero', 'alternate', or 'budget'
+      product,
+      destination: shopDestination(product),
+    };
+  }) || [];
+  const shoppableItems = allItems.filter(item => item.destination);
+  // The complete-look button opens the first piece, so it can only name one
+  // store honestly when every shoppable piece goes to the same one.
+  const lookDestination =
+    shoppableItems.length > 0 && shoppableItems.every(i => i.destination === shoppableItems[0].destination)
+      ? shoppableItems[0].destination
+      : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -306,8 +325,14 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           <View style={styles.itemsSection}>
             <Text style={styles.sectionTitle}>Shop This Look</Text>
             <Text style={styles.itemCount}>{allItems.length} items</Text>
+            {/* Amazon requires its disclosure wherever its links appear, and
+                the notice also owns up that these are searches for the piece,
+                not the piece itself. */}
+            {shoppableItems.length > 0 && !!curatedCatalogNotice() && (
+              <Text style={styles.catalogNotice}>{curatedCatalogNotice()}</Text>
+            )}
 
-            {allItems.map((item: any, index: number) => (
+            {allItems.map((item, index) => (
               <View key={index} style={styles.itemCard}>
                 <Image
                   source={{ uri: item.imageUrl }}
@@ -323,49 +348,40 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
                         <Text style={styles.heroBadgeText}>HERO</Text>
                       </View>
                     )}
-                    {item.type === 'budget' && (
-                      <View style={styles.budgetBadge}>
-                        <Text style={styles.budgetBadgeText}>BUDGET</Text>
-                      </View>
-                    )}
                   </View>
-                  
+
+                  {/* No retailer, price, sale price or BUDGET badge: the seeded
+                      look items carry invented values for all of them, and the
+                      shop button opens a search rather than that listing, so
+                      none could be backed. The button names the real store. */}
                   {item.brand && <Text style={styles.itemBrand}>{item.brand}</Text>}
-                  {item.retailer && <Text style={styles.itemRetailer}>{item.retailer}</Text>}
-                  
-                  {item.price !== undefined && item.price !== null && (
-                    <View style={styles.priceRow}>
-                      <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-                      {item.originalPrice && item.originalPrice >item.price && (
-                        <Text style={styles.originalPrice}>
-                          ${item.originalPrice.toFixed(2)}
-                        </Text>
-                      )}
-                    </View>
-                  )}
 
                   {item.color && (
                     <Text style={styles.itemDetail}>Color: {item.color}</Text>
                   )}
 
-                  <TouchableOpacity
-                    style={styles.shopButton}
-                    onPress={() =>handleShopItem(item)}
-                  >
-                    <Text style={styles.shopButtonText}>Shop Now →</Text>
-                  </TouchableOpacity>
+                  {item.destination && (
+                    <TouchableOpacity
+                      style={styles.shopButton}
+                      onPress={() =>handleShopItem(item)}
+                    >
+                      <Text style={styles.shopButtonText}>Shop at {item.destination} →</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             ))}
           </View>
 
           {/* Shop All Button */}
-          <TouchableOpacity
-            style={styles.shopAllButton}
-            onPress={() =>handleShopCompleteLook(allItems)}
-          >
-            <Text style={styles.shopAllButtonText}>Shop Complete Look</Text>
-          </TouchableOpacity>
+          {lookDestination && (
+            <TouchableOpacity
+              style={styles.shopAllButton}
+              onPress={() =>handleShopCompleteLook(shoppableItems)}
+            >
+              <Text style={styles.shopAllButtonText}>Shop Complete Look at {lookDestination}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -530,6 +546,13 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginBottom: 16,
   },
+  catalogNotice: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.tobacco,
+    marginTop: -8,
+    marginBottom: 16,
+  },
   itemCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
@@ -569,42 +592,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     color: colors.white,
   },
-  budgetBadge: {
-    borderRadius: radius.full,
-    backgroundColor: colors.camel,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  budgetBadgeText: {
-    fontSize: 10,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.white,
-  },
   itemBrand: {
     fontSize: 14,
     color: colors.inkMuted,
-    marginBottom: 2,
-  },
-  itemRetailer: {
-    fontSize: 12,
-    color: colors.inkFaint,
     marginBottom: 8,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  itemPrice: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
-    marginRight: 8,
-  },
-  originalPrice: {
-    fontSize: 14,
-    color: colors.inkFaint,
-    textDecorationLine: 'line-through',
   },
   itemDetail: {
     fontSize: 12,
