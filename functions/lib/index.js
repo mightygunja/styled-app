@@ -621,7 +621,7 @@ exports.chatWithStylist = functions
     .https.onCall(async (data, context) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     try {
-        const { message, history = [], closetItems = [], weather, occasion, mood, styleProfile, timeOfDay, dayType, trends = [], } = data;
+        const { message, history = [], closetItems = [], weather, occasion, mood, styleProfile, timeOfDay, dayType, trends = [], locale, } = data;
         if (!message) {
             throw new functions.https.HttpsError('invalid-argument', 'message is required');
         }
@@ -664,6 +664,19 @@ exports.chatWithStylist = functions
             contextLines.push(`User's mood/vibe today: ${mood}`);
         if (weather)
             contextLines.push(`Current weather: ${weather.condition}, ${weather.temperature}°F`);
+        if (locale === null || locale === void 0 ? void 0 : locale.place) {
+            contextLines.push(`Where they are: ${locale.place}${locale.season ? ` (local season: ${locale.season})` : ''}`);
+            if (locale.scene)
+                contextLines.push(`How people there actually dress: ${locale.scene}`);
+            if (locale.wear)
+                contextLines.push(`${locale.wear}`);
+            if (locale.coverage === 'covered') {
+                contextLines.push('Local dress code runs covered: keep shoulders, chest and legs covered in outfit advice for outside; re-style sheer, mini or cropped pieces over a full base or for indoors. Say so plainly.');
+            }
+            else if (locale.coverage === 'moderate') {
+                contextLines.push('Local dress code runs fairly covered: prefer longer hems and sleeves, layer sheer or short pieces.');
+            }
+        }
         if (timeOfDay)
             contextLines.push(`Time of day: ${timeOfDay}`);
         if (dayType)
@@ -773,7 +786,8 @@ The user's actual closet inventory (id | category | color | brand | style | seas
 ${closetSummary}
 
 Guidelines:
-- When the user asks for an outfit, a recommendation, or what to wear, build a COMPLETE outfit: at minimum a top + bottom (or a dress) + shoes, and add outerwear if the weather is cold or rainy. Pick real items from the inventory above.
+- When the user asks for an outfit, a recommendation, or what to wear, build a COMPLETE outfit: a top + bottom (or a dress) + shoes + a bag, plus one accessory (belt, jewellery, scarf, hat or sunglasses) when they own one that fits, and add outerwear if the weather is cold or rainy. Pick real items from the inventory above. If they own no shoes, bag or accessories that finish the look, say what is missing and name the one piece to add - never pretend the look is finished at the garment.
+- Dress for WHERE they are as much as for the weather: the local fabric, the local shoe, the local dress code, and the trends that are actually moving there (the trend list is already ranked for their place).
 - Weigh weather: avoid short sleeves/sandals if cold or rainy; avoid heavy layers if hot.
 - Weigh occasion formality: casual outings get relaxed pieces, work/formal gets polished pieces.
 - Weigh mood if given: let it flavor the vibe (e.g. "confident" -> bolder pieces, "relaxed" -> comfort-first).
@@ -1957,7 +1971,7 @@ ${described}
 Pick the best 3 for this occasion, in order, and say why each one works.
 
 What makes a good answer:
-- Judge the outfit as an outfit. Does it hold together, and is it right for ${occasion} specifically?
+- Judge the outfit as an outfit. Does it hold together, and is it right for ${occasion} specifically? Read the finishing pieces too - the bag, the belt, the jewellery, the scarf, the sunglasses are part of the candidate, and a wrong bag (a clutch for training, a belt bag for an evening) counts against it.
 - Be concrete about what makes it work: the cut, the colour relationship, the level it is pitched at.
 - When a candidate genuinely channels one of the trends listed, prefer it over an equal candidate that does not, and name the trend in the note. Never force a trend onto an outfit that does not carry it, and never let one override the occasion.
 - If a candidate is wrong for the occasion, do not pick it, even if it appears high in the list.
@@ -2058,11 +2072,16 @@ exports.draftTrendReport = functions
 
 ${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
 Draft 6 trends. For each:
-- Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage.
+- Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage. Never invent a garment that does not exist at retail ("3D-printed jacket", "laser-cut shirt") - every key piece must be something a person can buy this week.
+- The app is global. At least 2 of the 6 must be strongest OUTSIDE Europe/North America/East Asia (Marrakesh, Dubai, Lagos, Mumbai, São Paulo, Mexico City, Sydney, Istanbul) and describe how people there actually dress now - not a Western trend relocated. For every trend, say where else it reads naturally (regions) and how far it has travelled (reach).
+- A trend is never only clothes. keyAccessories must name the shoe, bag, belt, jewellery, scarf, hat or eyewear that carries it - the accessory is usually the cheapest way in.
 - The app dresses men and women. Prefer directions that read across departments, write stylingNote so it works for any wardrobe (or gives both readings in one sentence), and choose keyGarments that are department-neutral retail words wherever the trend allows. A genuinely single-department trend is allowed, but the set of 6 must serve both menswear and womenswear readers.
-- region: the city or scene where it is strongest ("Copenhagen", "Seoul", "Milan", "Paris", "London", "New York", "Tokyo", or "Global"). Spread across regions - the point of the report is bringing readers what is moving in Europe, Asia and the US, not one city's feed.
+- region: the city where it is strongest, one of: ${TREND_CAPITALS.join(', ')}. Spread across the world - the point of the report is bringing every reader what is moving where THEY are as well as in the classic capitals.
+- regions: 1-4 further cities from the same list where it is also genuinely strong.
+- reach: "local" (one city's street signal), "regional" (a continent or climate), or "global" (reads everywhere).
 - stage: one of ${TREND_STAGES.join(' | ')}. Be honest - a fading trend marked fading is more useful than flattery.
-- keyGarments: 3-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only.
+- keyGarments: 2-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only. May be empty for a shoe- or bag-led trend.
+- keyAccessories: 2-6 lowercase shoe / bag / belt / jewellery / scarf / hat / eyewear words in the same plain retail language (e.g. "penny loafer", "suede belt", "east-west shoulder bag", "silk scarf").
 - keyColors: 0-4 lowercase colour words.
 - silhouettes: 0-4 lowercase cut/fit words (e.g. "wide-leg", "oversized", "cropped").
 - archetypes: 1-3 from ${TREND_ARCHETYPES.join(', ')} - the tastes this trend sits nearest.
@@ -2072,7 +2091,7 @@ Draft 6 trends. For each:
 - name: 2-4 words, editorial, no emoji.
 
 Return ONLY valid JSON:
-{ "trends": [{ "name": "", "summary": "", "region": "", "stage": "", "keyGarments": [], "keyColors": [], "silhouettes": [], "archetypes": [], "stylingNote": "", "entryPiece": "" }] }`,
+{ "trends": [{ "name": "", "summary": "", "region": "", "regions": [], "reach": "", "stage": "", "keyGarments": [], "keyAccessories": [], "keyColors": [], "silhouettes": [], "archetypes": [], "stylingNote": "", "entryPiece": "" }] }`,
                 },
             ],
             max_tokens: 2500,
@@ -2091,10 +2110,15 @@ Return ONLY valid JSON:
             name: String(t.name).trim(),
             summary: String(t.summary).trim(),
             region: String(t.region || 'Global').trim(),
+            regions: Array.isArray(t.regions)
+                ? t.regions.filter((r) => typeof r === 'string' && TREND_CAPITALS.includes(r.trim())).map((r) => r.trim()).slice(0, 4)
+                : [],
+            reach: ['local', 'regional', 'global'].includes(t.reach) ? t.reach : 'regional',
             stage: t.stage,
             season: TREND_SEASONS.includes(season) ? season : 'fall',
             year,
             keyGarments: asStrings(t.keyGarments, 6),
+            keyAccessories: asStrings(t.keyAccessories, 6),
             keyColors: asStrings(t.keyColors, 4),
             silhouettes: asStrings(t.silhouettes, 4),
             archetypes: asStrings(t.archetypes, 3).filter((a) => TREND_ARCHETYPES.includes(a)),
@@ -2105,7 +2129,7 @@ Return ONLY valid JSON:
             createdAt: new Date().toISOString(),
         }))
             // A trend the matchers cannot see is not a trend the app can use.
-            .filter((t) => t.keyGarments.length > 0 || t.silhouettes.length > 0);
+            .filter((t) => t.keyGarments.length > 0 || t.keyAccessories.length > 0 || t.silhouettes.length > 0);
         if (drafts.length === 0) {
             throw new functions.https.HttpsError('internal', 'The draft produced no usable trends.');
         }
@@ -2308,7 +2332,7 @@ exports.searchEbayProducts = functions
 exports.personalizeTrendReport = functions
     .runWith({ memory: '512MB', timeoutSeconds: 90, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const { trends = [], closetItems = [], profile, locale, } = data;
         if (!Array.isArray(trends) || trends.length === 0) {
@@ -2325,11 +2349,12 @@ exports.personalizeTrendReport = functions
         const trendLines = trends
             .slice(0, 8)
             .map(t => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             return `- id:${t.id} | ${t.name} (${t.stage}, strongest in ${t.region})` +
                 `${((_a = t.keyGarments) === null || _a === void 0 ? void 0 : _a.length) ? ` | key pieces: ${t.keyGarments.join(', ')}` : ''}` +
-                `${((_b = t.keyColors) === null || _b === void 0 ? void 0 : _b.length) ? ` | colours: ${t.keyColors.join(', ')}` : ''}` +
-                `${((_c = t.silhouettes) === null || _c === void 0 ? void 0 : _c.length) ? ` | cuts: ${t.silhouettes.join(', ')}` : ''}` +
+                `${((_b = t.keyAccessories) === null || _b === void 0 ? void 0 : _b.length) ? ` | key accessories: ${t.keyAccessories.join(', ')}` : ''}` +
+                `${((_c = t.keyColors) === null || _c === void 0 ? void 0 : _c.length) ? ` | colours: ${t.keyColors.join(', ')}` : ''}` +
+                `${((_d = t.silhouettes) === null || _d === void 0 ? void 0 : _d.length) ? ` | cuts: ${t.silhouettes.join(', ')}` : ''}` +
                 `${t.entryPiece ? ` | stock entry piece: ${t.entryPiece}` : ''}` +
                 `${t.stylingNote ? ` | how it's worn: ${t.stylingNote}` : ''}`;
         })
@@ -2348,8 +2373,19 @@ exports.personalizeTrendReport = functions
         if ((_c = profile === null || profile === void 0 ? void 0 : profile.avoidRules) === null || _c === void 0 ? void 0 : _c.length) {
             profileLines.push(`They usually avoid: ${profile.avoidRules.join(', ')} - a strong preference, not a ban; cross it only openly.`);
         }
-        if ((locale === null || locale === void 0 ? void 0 : locale.city) || typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number') {
-            profileLines.push(`Where they are: ${(locale === null || locale === void 0 ? void 0 : locale.city) || 'unknown'}${typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number' ? `, ${Math.round(locale.temperatureF)}°F right now` : ''}.`);
+        if ((locale === null || locale === void 0 ? void 0 : locale.city) || (locale === null || locale === void 0 ? void 0 : locale.country) || typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number') {
+            const where = [locale === null || locale === void 0 ? void 0 : locale.city, locale === null || locale === void 0 ? void 0 : locale.country].filter(Boolean).join(', ') || 'unknown';
+            profileLines.push(`Where they are: ${where}${typeof (locale === null || locale === void 0 ? void 0 : locale.temperatureF) === 'number' ? `, ${Math.round(locale.temperatureF)}°F right now` : ''}${(locale === null || locale === void 0 ? void 0 : locale.season) ? `, local season ${locale.season}` : ''}.`);
+            if (locale === null || locale === void 0 ? void 0 : locale.scene)
+                profileLines.push(`How people there actually dress: ${locale.scene}`);
+            if ((_d = locale === null || locale === void 0 ? void 0 : locale.staples) === null || _d === void 0 ? void 0 : _d.length)
+                profileLines.push(`Local staples worth naming when they fit: ${locale.staples.slice(0, 8).join(', ')}.`);
+            if ((locale === null || locale === void 0 ? void 0 : locale.coverage) === 'covered') {
+                profileLines.push('The street there dresses covered: keep shoulders, chest and legs covered in every suggestion, and re-style any sheer, mini or cropped piece over a full-length base or for indoors/evenings. Say so plainly rather than skipping the trend.');
+            }
+            else if ((locale === null || locale === void 0 ? void 0 : locale.coverage) === 'moderate') {
+                profileLines.push('The street there dresses fairly covered: prefer longer hems and sleeves, and suggest a sheer or short piece layered rather than bare.');
+            }
         }
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -2369,8 +2405,8 @@ For EACH trend, return:
 - trendId: the trend's id, exactly as given.
 - participation: "in" when their closet already carries the trend properly, "partial" when they own a genuine start, "not-yet" when nothing they own carries it. Judge by what each garment actually IS (category, colour, fabric, cut), not by keyword overlap.
 - ownedItemIds: the closet ids that genuinely carry this trend. Only ids from the list. Empty for "not-yet".
-- wearNote: 1-2 sentences of specific styling advice for THIS person, built from their named pieces ("your olive utility jacket over..."). For "not-yet", say how they'd start from whatever they own that comes nearest.
-- gapNote: the SINGLE purchase that would most advance them in this trend, as a short phrase - or null.
+- wearNote: 1-2 sentences of specific styling advice for THIS person, built from their named pieces ("your olive utility jacket over..."), finished to the shoe and the bag or accessory - a look is not done at the garment. Where they live shapes it: the local fabric, the local shoe, the local dress code. For "not-yet", say how they'd start from whatever they own that comes nearest.
+- gapNote: the SINGLE purchase that would most advance them in this trend, as a short phrase - or null. Consider the accessory first (the shoe, the bag, the belt, the scarf) when it is the cheaper, truer way in.
 
 The one unbreakable rule: NEVER suggest buying anything they already own or a near-duplicate of it. Same category in a similar colour or material counts as already owned - someone with a burgundy sweater does not need "a burgundy knit" suggested, whatever the trend's stock entry piece says. When they are "in", prefer gapNote null unless a genuinely different, additive piece would deepen the look.
 
@@ -2386,7 +2422,7 @@ Return ONLY valid JSON:
             max_tokens: 1600,
             response_format: { type: 'json_object' },
         });
-        let content = ((_e = (_d = response.choices[0]) === null || _d === void 0 ? void 0 : _d.message) === null || _e === void 0 ? void 0 : _e.content) || '{}';
+        let content = ((_f = (_e = response.choices[0]) === null || _e === void 0 ? void 0 : _e.message) === null || _f === void 0 ? void 0 : _f.content) || '{}';
         content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         const result = JSON.parse(content);
         const validTrendIds = new Set(trends.map(t => t.id));
@@ -2424,7 +2460,11 @@ Return ONLY valid JSON:
     }
 });
 // ==================== LOCALE STYLE ====================
-const TREND_CAPITALS = ['Copenhagen', 'Milan', 'Paris', 'London', 'New York', 'Seoul', 'Tokyo', 'Global'];
+const TREND_CAPITALS = [
+    'Copenhagen', 'Milan', 'Paris', 'London', 'New York', 'Seoul', 'Tokyo',
+    'Marrakesh', 'Dubai', 'Lagos', 'Mumbai', 'São Paulo', 'Mexico City', 'Sydney',
+    'Istanbul', 'Shanghai', 'Los Angeles', 'Global',
+];
 /** Firestore doc key for a place. */
 function localeKey(city, region, country) {
     return [city, region, country]
@@ -2824,12 +2864,15 @@ exports.reviewStylistApplication = functions
     // Told in-app rather than by email: there is no transactional email
     // provider wired up, and a notification is something this app can actually
     // deliver today.
+    // Field names match the client's Notification interface (`message`,
+    // `isRead`) - the first version wrote `body`/`read` and the one real
+    // notification an approved stylist ever received never rendered.
     await db.collection('notifications').add({
         userId: applicationId,
         type: 'system',
         title: "You're approved as a 33 Trends stylist",
-        body: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
-        read: false,
+        message: 'Your stylist tools are now available from your account. Set your availability to start taking bookings.',
+        isRead: false,
         createdAt: admin.firestore.Timestamp.now(),
     });
     console.log(`Approved stylist application ${applicationId}`);
@@ -3428,7 +3471,7 @@ Rules:
 Return ONLY valid JSON:
 {
   "looks": [{ "title": "string", "itemIds": ["ids"], "occasion": "short label", "rationale": "1-2 sentences" }],
-  "gaps": [{ "category": "category", "description": "what's missing", "whyNeeded": "1 sentence" }],
+  "gaps": [{ "category": "tops|bottoms|dresses|outerwear|shoes|accessories|bags", "description": "what's missing", "whyNeeded": "1 sentence" }],
   "stylistNote": "one paragraph"
 }`,
                 },
