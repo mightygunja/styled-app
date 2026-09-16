@@ -11,8 +11,13 @@
  * speed, and half the app (Home, Shop, Explore, Chat, the Trend Report)
  * asks for the same list.
  *
- * When the collection is empty or unreachable, the shipped editorial seed
- * set answers instead - the trend layer never comes up blank.
+ * The shipped editorial seed set is MERGED with what the desk publishes
+ * (since 2026-09-16): the seeds are the curated, global, accessory-complete
+ * backbone with hand-checked pieces; the desk adds this cycle's sharper
+ * material on top. Where a desk trend covers the same ground as a seed the
+ * desk's entry wins - it is the editor's call - but it inherits the seed's
+ * accessories and pieces so its rail stays aligned. The layer never comes
+ * up blank: an empty or unreachable collection simply means seeds only.
  */
 
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -20,6 +25,9 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../config/firebase';
 import { FashionTrend } from '../models/fashionTrend';
 import { SEED_TRENDS } from '../data/seedTrends';
+import { mergeTrends } from './trendMerge';
+
+export { mergeTrends };
 
 const draftTrendReportFn = httpsCallable(functions, 'draftTrendReport');
 const listTrendDeskFn = httpsCallable(functions, 'listTrendDesk');
@@ -44,8 +52,12 @@ function normalize(id: string, data: any): FashionTrend {
     keyColors: Array.isArray(data.keyColors) ? data.keyColors.map(String) : [],
     silhouettes: Array.isArray(data.silhouettes) ? data.silhouettes.map(String) : [],
     archetypes: Array.isArray(data.archetypes) ? data.archetypes.map(String) : [],
+    keyAccessories: Array.isArray(data.keyAccessories) ? data.keyAccessories.map(String) : [],
     stylingNote: String(data.stylingNote || ''),
     entryPiece: String(data.entryPiece || ''),
+    regions: Array.isArray(data.regions) ? data.regions.map(String).filter(Boolean) : undefined,
+    reach: ['local', 'regional', 'global'].includes(data.reach) ? data.reach : undefined,
+    pieces: Array.isArray(data.pieces) ? data.pieces.map(String).filter(Boolean) : undefined,
     status: data.status || 'published',
     source: data.source || 'editorial',
     createdAt: String(data.createdAt || ''),
@@ -54,9 +66,9 @@ function normalize(id: string, data: any): FashionTrend {
 }
 
 /**
- * Published trends, freshest first. Falls back to the editorial seed set on
- * an empty collection or a failed read - a missing trend feed should degrade
- * to last season's report, never to a blank surface.
+ * The trend pool: desk-published trends (freshest first) merged with the
+ * editorial seeds. A failed read degrades to seeds only - never to a blank
+ * surface.
  */
 export async function getPublishedTrends(): Promise<FashionTrend[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.trends;
@@ -75,7 +87,7 @@ export async function getPublishedTrends(): Promise<FashionTrend[]> {
     console.log('Trend registry unreachable, using seed trends', error);
   }
 
-  if (trends.length === 0) trends = SEED_TRENDS;
+  trends = mergeTrends(trends, SEED_TRENDS);
 
   cache = { at: Date.now(), trends };
   return trends;
@@ -115,6 +127,7 @@ export async function archiveTrend(trendId: string): Promise<void> {
 
 export const trendService = {
   getPublishedTrends,
+  mergeTrends,
   invalidateTrendCache,
   listTrendDesk,
   draftTrendReport,

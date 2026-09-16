@@ -58,6 +58,123 @@ interface WorkingCandidate extends OutfitCandidate {
   shoeOptions: Item[];
   layerOptions: Item[];
   layerReason: string | null;
+  /** The bag and the one accessory (belt, jewellery, scarf, hat, sunglasses)
+   *  that complete the look - a look is not finished at the shoe. */
+  bagOptions: Item[];
+  accessoryOptions: Item[];
+}
+
+/* ------------------------------------------------------------------ *
+ * Finishing pieces - bags, belts, jewellery, scarves, hats, eyewear
+ * ------------------------------------------------------------------ */
+
+export type FinishKind = 'bag' | 'belt' | 'jewellery' | 'scarf' | 'hat' | 'eyewear' | 'watch' | 'hosiery' | 'other';
+
+const BAG_WORDS = /bag|tote|clutch|backpack|crossbody|satchel|briefcase|messenger|purse|handbag|weekender|duffle|pouch|sling/;
+
+function itemText(item: Item): string {
+  return [item.name, item.subcategory, item.style, ...(item.tags || [])].filter(Boolean).join(' ').toLowerCase();
+}
+
+/** What kind of finishing piece this is, or null when it is a garment or shoe. */
+export function finishKind(item: Item): FinishKind | null {
+  const category = (item.category || '').toLowerCase();
+  if (category === 'bags') return 'bag';
+  if (category !== 'accessories') return null;
+  const text = itemText(item);
+  if (BAG_WORDS.test(text)) return 'bag';
+  if (/belt/.test(text)) return 'belt';
+  if (/necklace|earring|\bring\b|bracelet|bangle|cuff|chain|pendant|jewel|brooch|charm/.test(text)) return 'jewellery';
+  if (/scarf|bandana|headscarf|headwrap/.test(text)) return 'scarf';
+  if (/\bhat\b|\bcap\b|beanie|headband|beret/.test(text)) return 'hat';
+  if (/sunglasses|glasses|shades|eyewear/.test(text)) return 'eyewear';
+  if (/watch/.test(text)) return 'watch';
+  if (/tights|socks|stockings|hosiery/.test(text)) return 'hosiery';
+  return 'other';
+}
+
+export function isBagItem(item: Item): boolean {
+  return finishKind(item) === 'bag';
+}
+
+/**
+ * How well a finishing piece suits the occasion, 0..1. Occasions do not
+ * merely tolerate accessories - a clutch is wrong for training and a belt
+ * bag is wrong for a formal event - so each kind is scored per occasion
+ * rather than passed through on formality alone.
+ */
+function finishOccasionFit(item: Item, kind: FinishKind, occasion: OccasionKey): number {
+  const text = itemText(item);
+  if (kind === 'bag') {
+    const clutch = /clutch|evening|chain bag|quilted/.test(text);
+    const structured = /tote|structured|top-handle|briefcase|satchel|messenger|shoulder bag|crossbody|leather/.test(text);
+    const sporty = /belt bag|backpack|nylon|canvas|sling/.test(text);
+    const travel = /crossbody|backpack|belt bag|weekender|duffle|sling/.test(text);
+    switch (occasion) {
+      case 'work':
+        return structured && !clutch ? 1 : sporty ? 0.35 : 0.6;
+      case 'formal':
+        return clutch ? 1 : structured ? 0.7 : 0.1;
+      case 'date':
+      case 'party':
+        return clutch ? 1 : sporty ? 0.2 : structured ? 0.75 : 0.6;
+      case 'travel':
+        return travel ? 1 : clutch ? 0.1 : 0.6;
+      case 'workout':
+        return /belt bag|backpack|gym/.test(text) ? 0.6 : 0;
+      case 'outdoor':
+        return sporty ? 1 : clutch ? 0.05 : 0.5;
+      default:
+        return clutch ? 0.35 : 0.8;
+    }
+  }
+  const evening = occasion === 'date' || occasion === 'party' || occasion === 'formal';
+  switch (kind) {
+    case 'jewellery':
+      return occasion === 'workout' || occasion === 'outdoor' ? 0.05 : evening ? 1 : 0.7;
+    case 'belt':
+      return occasion === 'workout' ? 0 : occasion === 'party' ? 0.5 : 0.85;
+    case 'scarf': {
+      const silk = /silk|satin|hair|head/.test(text);
+      return occasion === 'workout' ? 0 : silk ? (evening ? 0.8 : 0.7) : occasion === 'formal' ? 0.3 : 0.6;
+    }
+    case 'hat': {
+      const cap = /\bcap\b|baseball|bucket/.test(text);
+      if (cap) return occasion === 'casual' || occasion === 'workout' || occasion === 'outdoor' || occasion === 'travel' ? 0.8 : 0.05;
+      return evening ? 0.15 : occasion === 'work' ? 0.3 : 0.6;
+    }
+    case 'eyewear':
+      return occasion === 'formal' || occasion === 'party' ? 0.15 : 0.7;
+    case 'watch':
+      return occasion === 'workout' ? 0.3 : 0.75;
+    case 'hosiery':
+      return occasion === 'work' || evening ? 0.4 : 0.1;
+    default:
+      return 0.3;
+  }
+}
+
+/** Weather push for accessories: sunglasses in sun, beanies in the cold, nothing woolly in the heat. */
+function finishWeatherFit(
+  item: Item,
+  kind: FinishKind,
+  weather?: { condition: WeatherCondition; temperature: number }
+): number {
+  if (!weather) return 1;
+  const text = itemText(item);
+  const band = tempBand(weather.temperature);
+  const woolly = /wool|knit|cashmere|beanie|glove|shearling|fleece|tights/.test(text);
+  const summery = /straw|raffia|panama|sun hat|linen/.test(text);
+  if (kind === 'eyewear') {
+    return weather.condition === 'sunny' || weather.condition === 'hot'
+      ? 1.4
+      : weather.condition === 'rainy' || weather.condition === 'snowy'
+        ? 0.3
+        : 0.8;
+  }
+  if (woolly) return band === 'freezing' || band === 'cold' ? 1.4 : band === 'mild' ? 0.8 : 0.1;
+  if (summery) return band === 'hot' || band === 'warm' ? 1.3 : band === 'mild' ? 0.7 : 0.15;
+  return 1;
 }
 
 /* ------------------------------------------------------------------ *
@@ -377,12 +494,34 @@ export function buildOutfits(items: Item[], options: BuildOptions): OutfitCandid
   const dresses = inCategory(items, 'dresses');
   const shoes = inCategory(items, 'shoes');
   const outerwear = inCategory(items, 'outerwear');
+  const finishers = items.filter(i => finishKind(i) !== null);
+  const bags = finishers.filter(i => finishKind(i) === 'bag');
+  const accessories = finishers.filter(i => finishKind(i) !== 'bag');
 
   const scoredShoes = shoes
     .map(s => ({ item: s, score: itemScore(s, profile, band, seed) }))
     .sort((a, b) => b.score - a.score);
   const scoredOuterwear = outerwear
     .map(o => ({ item: o, score: itemScore(o, profile, band, seed) }))
+    .sort((a, b) => b.score - a.score);
+
+  // Finishing pieces are scored on occasion fit, weather and rotation - not
+  // garment formality, which reads every belt and necklace as a flat "2".
+  const finishScore = (item: Item): number => {
+    const kind = finishKind(item) || 'other';
+    const fit = finishOccasionFit(item, kind, options.occasion) * finishWeatherFit(item, kind, options.weather);
+    if (fit <= 0) return -Infinity;
+    const since = daysSinceWorn(item);
+    const rotation = (since !== null ? Math.min(4, since / 14) : 1) - Math.min(3, (item.wornCount || 0) * 0.2);
+    return fit * 10 + rotation + hash(item.id, seed) * 2;
+  };
+  const scoredBags = bags
+    .map(b => ({ item: b, score: finishScore(b) }))
+    .filter(b => b.score > -Infinity)
+    .sort((a, b) => b.score - a.score);
+  const scoredAccessories = accessories
+    .map(a => ({ item: a, score: finishScore(a) }))
+    .filter(a => a.score > -Infinity)
     .sort((a, b) => b.score - a.score);
 
   const candidates: WorkingCandidate[] = [];
@@ -407,6 +546,18 @@ export function buildOutfits(items: Item[], options: BuildOptions): OutfitCandid
         : `A layer for ${Math.round(options.weather!.temperature)}°`
       : null;
 
+    // Bags and belts have to work with the outfit's colours; jewellery,
+    // scarves, hats and eyewear are free to contrast.
+    const colourBound = (kind: FinishKind | null) => kind === 'bag' || kind === 'belt';
+    const bagOptions = scoredBags
+      .filter(b => base.every(g => colorsWork(b.item.color || '', g.color || '')))
+      .map(b => b.item);
+    const accessoryOptions = scoredAccessories
+      .filter(
+        a => !colourBound(finishKind(a.item)) || base.every(g => colorsWork(a.item.color || '', g.color || ''))
+      )
+      .map(a => a.item);
+
     const formality = base.reduce((sum, i) => sum + formalityOf(i), 0) / Math.max(1, base.length);
 
     candidates.push({
@@ -418,6 +569,8 @@ export function buildOutfits(items: Item[], options: BuildOptions): OutfitCandid
       shoeOptions,
       layerOptions,
       layerReason,
+      bagOptions,
+      accessoryOptions,
     });
   };
 
@@ -480,6 +633,21 @@ export function buildOutfits(items: Item[], options: BuildOptions): OutfitCandid
     if (layer) {
       items.push(layer);
       if (picked.layerReason) reasons.push(picked.layerReason);
+    }
+
+    // Finish the look: one bag, one accessory, rotated across the set the
+    // same way shoes are. Training gets neither unless something sporty
+    // qualifies (finishOccasionFit already filtered).
+    const bag = leastUsed(picked.bagOptions);
+    if (bag) items.push(bag);
+    const accessory = leastUsed(picked.accessoryOptions);
+    if (accessory) {
+      items.push(accessory);
+      const kind = finishKind(accessory);
+      if (kind === 'belt') reasons.push('A belt to finish the waist');
+      else if (kind === 'jewellery') reasons.push('One piece of jewellery, not three');
+      else if (kind === 'eyewear' && options.weather?.condition === 'sunny') reasons.push('Sunglasses for the sun');
+      else if (kind === 'scarf') reasons.push('A scarf as the accent');
     }
 
     items.forEach(i => used.set(i.id, (used.get(i.id) || 0) + 1));
@@ -785,11 +953,16 @@ export function rankAlternates(
   const core = new Set(['tops', 'bottoms', 'dresses']);
 
   const seen = new Set<string>();
+  const currentKind = finishKind(current);
   const candidates = source.filter(item => {
     const key = item.id;
     if (seen.has(key) || inLook.has(key)) return false;
     seen.add(key);
-    return (item.category || '').toLowerCase() === category;
+    if ((item.category || '').toLowerCase() !== category) return false;
+    // A bag swaps for a bag; a belt or necklace swaps for another
+    // non-bag accessory - never a bag for a pair of earrings.
+    if (currentKind !== null) return (finishKind(item) === 'bag') === (currentKind === 'bag');
+    return true;
   });
 
   return candidates
@@ -913,6 +1086,8 @@ export async function rankOccasion(
 
 export const dailyOutfitService = {
   buildOutfits,
+  finishKind,
+  isBagItem,
   buildAllOccasions,
   loadOutfitPools,
   composeOutfits,

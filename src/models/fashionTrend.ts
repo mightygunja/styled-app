@@ -20,6 +20,14 @@ import { Item, Season } from '../types';
 /** Where a trend is in its life. Drives how boldly it is recommended. */
 export type TrendStage = 'emerging' | 'rising' | 'peak' | 'fading';
 
+/**
+ * How far a trend has travelled. 'local' is one city's street signal,
+ * 'regional' is a continent or climate, 'global' reads everywhere. The
+ * locale ranking uses this to decide how quickly a trend from one capital
+ * should be introduced somewhere else.
+ */
+export type TrendReach = 'local' | 'regional' | 'global';
+
 export type TrendStatus = 'draft' | 'published' | 'archived';
 
 export interface FashionTrend {
@@ -45,10 +53,32 @@ export interface FashionTrend {
   silhouettes: string[];
   /** STYLE_ARCHETYPES keys this trend sits nearest, for adjacency scoring. */
   archetypes: string[];
+  /**
+   * Lowercase shoe / bag / belt / jewellery / hat words that carry the trend
+   * as strongly as a garment does. A trend is never only clothes - the
+   * loafer IS New Prep, the burgundy bag IS Burgundy Everything - so these
+   * anchor matching exactly like keyGarments and let every surface
+   * (outfits, the look rail, Shop) finish a look with the right pieces.
+   */
+  keyAccessories: string[];
   /** How to actually wear it with a normal wardrobe - the fashion-savvy part. */
   stylingNote: string;
   /** The single lowest-commitment way in, e.g. "wide-leg trousers in a neutral". */
   entryPiece: string;
+  /**
+   * Further places where the trend is genuinely strong, beyond `region`.
+   * Optional: most desk-drafted trends name one city.
+   */
+  regions?: string[];
+  /** How far it has travelled. Absent reads as 'regional'. */
+  reach?: TrendReach;
+  /**
+   * Catalogue row ids (without the "p-" prefix) hand-checked to illustrate
+   * this trend - the editorial answer to "what does this actually look
+   * like". When present, surfaces show these before falling back to
+   * keyword scoring. Ordered garment first, then shoes, then bag/accessory.
+   */
+  pieces?: string[];
   status: TrendStatus;
   source: 'editorial' | 'ai-draft';
   createdAt: string;
@@ -69,6 +99,7 @@ export function trendTextMatch(
 ): TrendMatchKind | null {
   const text = haystack.toLowerCase();
   if (trend.keyGarments.some(g => text.includes(g))) return 'garment';
+  if ((trend.keyAccessories || []).some(a => text.includes(a))) return 'garment';
   if (trend.silhouettes.some(s => text.includes(s))) return 'silhouette';
   const c = (color || '').toLowerCase();
   if (c && trend.keyColors.some(k => c.includes(k) || k.includes(c))) return 'color';
@@ -126,7 +157,7 @@ export function trendCoverage(trend: FashionTrend, closetItems: Item[]): TrendCo
  */
 export function trendAvoidRuleConflict(trend: FashionTrend, avoidRules?: string[]): string | null {
   if (!avoidRules?.length) return null;
-  const text = [trend.name, ...trend.keyGarments, ...trend.silhouettes, trend.entryPiece]
+  const text = [trend.name, ...trend.keyGarments, ...(trend.keyAccessories || []), ...trend.silhouettes, trend.entryPiece]
     .join(' ')
     .toLowerCase();
   return avoidRules.find(rule => text.includes(rule.toLowerCase())) || null;
@@ -162,12 +193,39 @@ export function trendPromptLine(trend: FashionTrend): string {
  */
 const WARM_WEATHER_HINTS = [
   'linen', 'sheer', 'mesh', 'shorts', 'sandal', 'tank', 'camisole', 'mini',
-  'organza', 'chiffon', 'swim', 'sundress',
+  'organza', 'chiffon', 'swim', 'sundress', 'espadrille', 'straw hat', 'raffia',
+  'kaftan', 'slide', 'mule', 'babouche',
 ];
 const COLD_WEATHER_HINTS = [
   'coat', 'jacket', 'knit', 'sweater', 'wool', 'suede', 'boot', 'cardigan',
   'turtleneck', 'fleece', 'parka', 'layering', 'shearling', 'corduroy',
+  'beanie', 'glove', 'wool scarf', 'tights',
 ];
+
+/**
+ * Words that mean the trend shows skin or shape in a way that reads
+ * differently on the street in a place with a more covered dress code.
+ * Deliberately narrow: "cropped" alone is a jacket length, "mini" alone
+ * matches "minimal", so only the unambiguous forms count.
+ */
+const BARE_HINTS = [
+  'sheer', 'mesh', 'organza', 'mini skirt', 'micro', 'crop top', 'cropped top',
+  'cropped tee', 'strapless', 'cutout', 'cut-out', 'backless', 'low-rise',
+  'bralette', 'hot pants', 'short shorts', 'bikini', 'bodycon',
+];
+
+/** Whether the trend's key pieces show skin - the input to coverage fit. */
+export function trendShowsSkin(trend: FashionTrend): boolean {
+  const text = [trend.name, ...trend.keyGarments, ...trend.silhouettes, trend.entryPiece]
+    .join(' ')
+    .toLowerCase();
+  return BARE_HINTS.some(h => text.includes(h));
+}
+
+/** Every anchor word of the trend - garments and accessories together. */
+export function trendAnchorWords(trend: FashionTrend): string[] {
+  return [...trend.keyGarments, ...(trend.keyAccessories || [])];
+}
 
 /**
  * How well a trend suits the weather where this user actually is, as a
@@ -177,7 +235,7 @@ const COLD_WEATHER_HINTS = [
 export function trendWeatherFit(trend: FashionTrend, temperatureF?: number): number {
   if (typeof temperatureF !== 'number') return 1;
 
-  const text = [trend.name, ...trend.keyGarments, ...trend.silhouettes, trend.entryPiece]
+  const text = [trend.name, ...trend.keyGarments, ...(trend.keyAccessories || []), ...trend.silhouettes, trend.entryPiece]
     .join(' ')
     .toLowerCase();
   const leansWarm = WARM_WEATHER_HINTS.some(w => text.includes(w));

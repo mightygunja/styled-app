@@ -25,12 +25,23 @@ import {
   trendCoverage,
   trendAvoidRuleConflict,
   trendWeatherFit,
+  trendShowsSkin,
+  trendAnchorWords,
   stageWeight,
 } from '../models/fashionTrend';
 import { ProfileMatchContext } from './profileMatchContext';
 import { getPublishedTrends } from './trendService';
 import { getLocaleStyle, LocaleStyle } from './localeStyleService';
+import {
+  LocaleProfile,
+  resolveLocaleProfile,
+  regionAffinity,
+  coverageFit,
+  localWearLine,
+  typicalTemperatureF,
+} from './localeProfile';
 import { shopperSignals, trendAdventurousness } from './shopperSignals';
+import { piecesForTrend } from './trendLooks';
 
 const personalizeTrendReportFn = httpsCallable(functions, 'personalizeTrendReport');
 
@@ -44,10 +55,17 @@ export interface LocaleContext {
   city?: string;
   region?: string;
   country?: string;
+  latitude?: number;
   temperature?: number;
   condition?: string;
-  /** Resolved style scene for the place; loadTrendRemixes fills this in. */
+  /** Resolved style scene for the place (GPT, cached); loadTrendRemixes fills this in. */
   localeStyle?: LocaleStyle;
+  /**
+   * The deterministic locale profile (localeProfile.ts): style capitals the
+   * place takes cues from, climate, coverage norm, local staples.
+   * loadTrendRemixes resolves it from city/country when absent.
+   */
+  profile?: LocaleProfile;
 }
 
 /**
@@ -82,11 +100,26 @@ export interface TrendRemix {
    */
   challengesAvoidRule: string | null;
   /**
-   * Why this trend ranks for *this user's place*, when it does - "Right for
-   * 34° in Oslo", "New York style reads naturally in Chicago". Null when the
-   * ranking is purely taste/closet-driven.
+   * Why this trend ranks for *this user's place*, when it does - "Strong in
+   * Marrakesh right now", "Paris style reads naturally in Casablanca",
+   * "Right for 34° in Oslo". Null when the ranking is purely taste/closet-driven.
    */
   localeNote: string | null;
+  /**
+   * How to make the trend wearable under the local dress code, when it
+   * shows skin somewhere that dresses more covered - "worn over a full base
+   * layer, or kept for evenings". Null when nothing needs adapting.
+   */
+  localAdaptation: string | null;
+  /**
+   * How the place actually finishes the trend once it lands - fabric, shoe,
+   * bag, jewellery ("How Marrakesh wears it: in linen, with a babouche...").
+   * Set for trends arriving from elsewhere; a place's own trend needs no
+   * translation.
+   */
+  localWear: string | null;
+  /** True when the trend is foreign to this place and being introduced gently. */
+  introduced: boolean;
   /**
    * The AI stylist's read of this trend against THIS closet, when the
    * personalization pass has run. The deterministic fields above are the
@@ -135,49 +168,83 @@ function adjacencyScore(trend: FashionTrend, profile?: ProfileMatchContext): num
 }
 
 /**
- * How well a trend fits the *place*, and the honest line explaining it.
+ * How well a trend fits the *place*, and the honest lines explaining it.
  *
- * Two local signals, multiplied into the ranking:
+ * Four local signals, multiplied into the ranking:
+ *   - affinity: where the trend is strong versus which capitals this place
+ *     takes its cues from (localeProfile.regionAffinity). A place's own
+ *     trend ranks first; an affine capital's reads naturally; a foreign
+ *     one is introduced at a pace set by how cosmopolitan the place is and
+ *     how far along the trend is - the "fine balance".
  *   - weather: a suede-and-layers trend sinks in a 90° city, a sheer-summer
- *     trend sinks in the cold (trendWeatherFit).
- *   - scene: the place's style profile says which capitals' trends read
- *     naturally there and which archetypes the streets actually wear.
+ *     trend sinks in the cold (trendWeatherFit). With no live reading the
+ *     climate band's typical temperature for the LOCAL season stands in,
+ *     so Sydney in September is scored as spring, not fall.
+ *   - coverage: a skin-showing trend is demoted where the street dresses
+ *     more covered, and re-styled rather than hidden.
+ *   - scene: the GPT locale style, when available, adds city-level nuance
+ *     on top (regionAffinities, archetypes).
  */
 function localeFit(
   trend: FashionTrend,
   locale?: LocaleContext
-): { multiplier: number; note: string | null } {
-  if (!locale) return { multiplier: 1, note: null };
+): {
+  multiplier: number;
+  note: string | null;
+  adaptation: string | null;
+  wear: string | null;
+  introduced: boolean;
+} {
+  if (!locale) return { multiplier: 1, note: null, adaptation: null, wear: null, introduced: false };
 
-  const weather = trendWeatherFit(trend, locale.temperature);
+  const profile = locale.profile;
+  const temperature =
+    typeof locale.temperature === 'number'
+      ? locale.temperature
+      : profile
+        ? typicalTemperatureF(profile.climate, profile.localSeason)
+        : undefined;
+  const weather = trendWeatherFit(trend, temperature);
+
   let scene = 1;
   let note: string | null = null;
+  let introduced = false;
+  let native = false;
+
+  if (profile) {
+    const affinity = regionAffinity(trend.region, trend.regions, trend.stage, trend.reach, profile);
+    scene *= affinity.multiplier;
+    note = affinity.note;
+    introduced = affinity.introduced;
+    native = affinity.multiplier > 1.05;
+  }
 
   const style = locale.localeStyle;
   if (style) {
-    const affinity = style.regionAffinities.some(
-      r => r !== 'Global' && r.toLowerCase() === trend.region.toLowerCase()
-    );
+    const places = [trend.region, ...(trend.regions || [])].map(r => r.toLowerCase());
+    const affinity = style.regionAffinities.some(r => r !== 'Global' && places.includes(r.toLowerCase()));
     if (affinity) {
-      scene += 0.2;
-      if (locale.city) note = `${trend.region} style reads naturally in ${locale.city}`;
+      scene *= 1.1;
+      if (!note && locale.city) note = `${trend.region} style reads naturally in ${locale.city}`;
     }
     if (style.archetypes.some(a => trend.archetypes.includes(a))) {
-      scene += 0.15;
+      scene *= 1.08;
       if (!note && locale.city) note = `Fits how ${locale.city} actually dresses`;
     }
   }
 
-  // Weather earns the note when it is the stronger signal, either way.
-  if (typeof locale.temperature === 'number') {
-    if (weather >= 1.1) {
-      note = `Right for ${locale.temperature}°${locale.city ? ` in ${locale.city}` : ' where you are'}`;
-    } else if (weather <= 0.5) {
-      note = null; // demoted, not advertised - it will simply rank low
-    }
+  const cover = profile ? coverageFit(trendShowsSkin(trend), profile) : { multiplier: 1, adaptation: null };
+
+  // Weather earns the note when it is the stronger signal and nothing local
+  // has claimed it. A strongly demoted trend is not advertised - it simply
+  // ranks low.
+  if (typeof locale.temperature === 'number' && weather >= 1.1 && !native) {
+    note = `Right for ${locale.temperature}°${locale.city ? ` in ${locale.city}` : ' where you are'}`;
   }
 
-  return { multiplier: weather * scene, note };
+  const wear = profile && !native ? localWearLine(profile, trendAnchorWords(trend)) : null;
+
+  return { multiplier: weather * scene * cover.multiplier, note, adaptation: cover.adaptation, wear, introduced };
 }
 
 /**
@@ -213,6 +280,11 @@ export function buildRemixes(
       const { anchors, supporting } = trendCoverage(trend, closetItems);
       const wearableToday = anchors.length > 0;
       const local = localeFit(trend, locale);
+      // A trend the catalogue cannot illustrate with two real pieces is
+      // usually a desk draft written in words no product uses ("laser-cut
+      // shirt"). It stays in the report - the editor published it - but it
+      // does not outrank trends the app can actually show and shop.
+      const illustrated = piecesForTrend(trend, 'all', { limit: 3 }).length >= 2;
       return {
         remix: {
           trend,
@@ -223,8 +295,11 @@ export function buildRemixes(
           gapLine: wearableToday ? null : `One piece away: ${trend.entryPiece}.`,
           challengesAvoidRule: trendAvoidRuleConflict(trend, profile?.avoidRules),
           localeNote: local.note,
+          localAdaptation: local.adaptation,
+          localWear: local.wear,
+          introduced: local.introduced,
         } as TrendRemix,
-        localeMultiplier: local.multiplier,
+        localeMultiplier: local.multiplier * (illustrated ? 1 : 0.8),
       };
     })
     .sort((a, b) => {
@@ -243,8 +318,8 @@ export function buildRemixes(
 }
 
 /**
- * Loads trends, resolves the place's style scene, and builds the remix list
- * in one call - what screens use. Locale resolution is best-effort: no city
+ * Loads trends, resolves the place (deterministic profile + GPT style
+ * scene), and builds the remix list in one call - what screens use. Locale resolution is best-effort: no city
  * or an unreachable locale function simply means weather-only or fully
  * taste-driven ranking.
  */
@@ -262,11 +337,21 @@ export async function loadTrendRemixes(
     // read from storage, not an empty default, whichever screen calls first.
     shopperSignals.load().catch(() => undefined),
   ]);
+  const localeProfile =
+    locale?.profile ??
+    (locale && (locale.city || locale.country)
+      ? resolveLocaleProfile({
+          city: locale.city,
+          region: locale.region,
+          country: locale.country,
+          latitude: locale.latitude,
+        })
+      : undefined);
   return buildRemixes(
     trends,
     closetItems,
     profile,
-    locale ? { ...locale, localeStyle } : undefined
+    locale ? { ...locale, localeStyle, profile: localeProfile } : undefined
   );
 }
 
@@ -337,7 +422,9 @@ export async function personalizeRemixes(
   // wardrobeFocus is part of the signature: switching department must
   // invalidate cached gap suggestions, or a menswear user could see
   // yesterday's womenswear "worth adding" lines for a day.
-  const sig = `${reportSignature(top.map(r => r.trend.id), closetItems)}:${profile?.wardrobeFocus ?? 'all'}`;
+  // The place is part of the signature too: a Marrakesh report and a Paris
+  // report must not share a day's cached notes.
+  const sig = `${reportSignature(top.map(r => r.trend.id), closetItems)}:${profile?.wardrobeFocus ?? 'all'}:${(locale?.city || locale?.country || '').toLowerCase()}`;
 
   try {
     const raw = await AsyncStorage.getItem(REPORT_CACHE_KEY);
@@ -357,6 +444,7 @@ export async function personalizeRemixes(
         region: r.trend.region,
         stage: r.trend.stage,
         keyGarments: r.trend.keyGarments,
+        keyAccessories: r.trend.keyAccessories,
         keyColors: r.trend.keyColors,
         silhouettes: r.trend.silhouettes,
         stylingNote: r.trend.stylingNote,
@@ -380,7 +468,16 @@ export async function personalizeRemixes(
           }
         : undefined,
       locale: locale
-        ? { city: locale.city, temperatureF: locale.temperature }
+        ? {
+            city: locale.city,
+            country: locale.country,
+            temperatureF: locale.temperature,
+            region: locale.profile?.regionLabel,
+            coverage: locale.profile?.coverage,
+            season: locale.profile?.localSeason,
+            staples: locale.profile?.staples,
+            scene: locale.localeStyle?.summary ?? locale.profile?.scene,
+          }
         : undefined,
     });
 

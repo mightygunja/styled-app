@@ -366,6 +366,7 @@ export default function HomeScreen() {
                 city: weatherResult.city,
                 region: weatherResult.region,
                 country: weatherResult.country,
+                latitude: weatherResult.latitude,
                 temperature: weatherResult.temperature,
                 condition: weatherResult.condition,
               }
@@ -582,8 +583,11 @@ export default function HomeScreen() {
       {look.items[0]?.imageUrl && (
         <Image source={{ uri: look.items[0].imageUrl }} style={styles.heroImage} resizeMode="cover" />
       )}
+      {/* Every piece of the look, finishing pieces included: a look now
+          arrives with its bag and its belt or jewellery, so the row wraps
+          rather than truncating at four. */}
       <View style={styles.thumbRow}>
-        {look.items.slice(0, 4).map(item => {
+        {look.items.slice(0, 6).map(item => {
           const costPerWear = item.price && item.wornCount
             ? (item.price / (item.wornCount + 1)).toFixed(2)
             : item.price?.toFixed(2);
@@ -1426,11 +1430,15 @@ const styles = StyleSheet.create({
   },
   thumbRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     padding: 12,
+    gap: 8,
   },
   thumbCard: {
-    flex: 1,
-    marginRight: 8,
+    // Three across: a top, bottom, shoe row and a layer, bag, accessory row.
+    width: '31%',
+    flexGrow: 1,
+    maxWidth: '32%',
   },
   thumbImage: {
     width: '100%',

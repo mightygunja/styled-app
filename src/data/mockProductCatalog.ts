@@ -156,6 +156,98 @@ const UNISEX_IMAGE_POOLS: Partial<Record<ItemCategory, string[]>> = {
   accessories: ['1531938716357-224c16b5ace3', '1555529669-e69e7aa0ba9a'],
 };
 
+const poolCounters: Record<string, number> = {};
+
+/**
+ * Subtype photography - a loafer shows a loafer, a belt shows a belt.
+ *
+ * The category pools above cycle one list per category, which meant a
+ * "Suede Bucket Bag" could wear a necklace photo and a "Penny Loafer" a
+ * running shoe. For the pieces that finish a look (shoes, bags, belts,
+ * hats, jewellery, scarves, sunglasses) and for the locale-specific
+ * garments (linen shirts, kaftans, kurtas, print shirts) the subtype pools
+ * below are checked first, matched against subcategory + name. Every id was
+ * downloaded and VIEWED on 2026-09-16 (contact sheets, one per query);
+ * lists are split by department so a womenswear card never gets a male
+ * model and vice versa - `any` lists are product or flat-lay shots with no
+ * model. Do not add an id here without looking at the photo.
+ */
+interface SubtypePool {
+  match: RegExp;
+  any?: string[];
+  women?: string[];
+  men?: string[];
+}
+
+const SUBTYPE_IMAGE_POOLS: SubtypePool[] = [
+  // ---- shoes ----
+  { match: /babouche|jutti|embroidered slipper|slipper/, any: ['1603204706569-b807e6abb4ea', '1775127730412-e9059cb8cc9e', '1761416182630-9a5a974e3fca', '1603204706646-6d358a00768d', '1593268210647-a6e1318535ff', '1706794440774-2c2b0099ce81'] },
+  { match: /espadrille/, any: ['1565953198075-db265882ee68', '1664819056581-13be5d816564', '1625909111853-5b975dc7f895'], women: ['1565953198075-db265882ee68', '1559504344-33abd17324d5', '1664819056581-13be5d816564'], men: ['1625786246611-749e46ffc528', '1664819056581-13be5d816564'] },
+  { match: /sandal|slide|huarache|thong|flip/, any: ['1613662632164-7f2b081a5b46', '1613912804931-c3512f360cd3', '1625318880107-49baad6765fd', '1625563206627-7e713d1ac0a8'], women: ['1613662632164-7f2b081a5b46', '1613912804931-c3512f360cd3', '1562273138-f46be4ebdf33', '1625563206627-7e713d1ac0a8', '1625318880107-49baad6765fd'], men: ['1628375385879-1af64230c2e1', '1625318880107-49baad6765fd', '1613912804931-c3512f360cd3'] },
+  { match: /mule|clog/, any: ['1718365837137-13cbd931068a', '1596891898730-21e41bfb39f3', '1755151606192-1c4b4bb88390', '1785357692390-c7feca5548e4'] },
+  { match: /ballet|mary jane|mesh flats|woven flats|\bflats\b/, women: ['1775297832774-9eb647970c68', '1633418946770-6938893cff02', '1596891898730-21e41bfb39f3'] },
+  { match: /loafer|moccasin|driving shoe|boat shoe/, any: ['1616406432452-07bc5938759d', '1676121270762-47c8d3a7b9d5', '1777987601447-266e128de448', '1662541089338-c7d53b88be70', '1533867617858-e7b97e060509'], women: ['1631978278971-9afda1670882', '1616406432452-07bc5938759d', '1676121270762-47c8d3a7b9d5', '1777987601447-266e128de448'] },
+  { match: /chelsea|ankle boot|chukka|desert boot|suede boot/, any: ['1608629601270-a0007becead3', '1710338514013-42de2bbc36d6', '1534233812932-59b8fa1b780c', '1777987601423-f350ac29b3e9', '1777987601677-3059be0e1388', '1788478963145-4b90e3010698'] },
+  { match: /boot/, any: ['1608256246200-53e635b5b65f', '1520639888713-7851133b1ed0', '1534233812932-59b8fa1b780c'] },
+  { match: /heel|pump|slingback|stiletto/, women: ['1543163521-1bf539c55dd2', '1519415943484-9fa1873496d4'] },
+  { match: /oxford|derby|dress shoe|monk/, any: ['1449505278894-297fdb3edbc1', '1533867617858-e7b97e060509', '1560343090-f0409e92791a'] },
+  { match: /sneaker|trainer|running|tennis|court|high top|slip-on|trail|barefoot/, any: ['1549298916-b41d501d3772', '1542291026-7eec264c27ff', '1595950653106-6c9ebd614d3a', '1600185365483-26d7a4cc7519', '1560769629-975ec94e6a86', '1620138546344-7b2c38516edf'] },
+  // ---- bags (before belt, so "belt bag" is a bag) ----
+  { match: /raffia|basket|woven bag|beaded bag|woven tote/, any: ['1722081346616-7f47909b8309', '1694766942127-3c26783c4888'] },
+  { match: /backpack/, any: ['1622560480654-d96214fdc887', '1680039211156-66c721b87625', '1622560257067-108402fcedc0', '1577733975197-3b950ca5cabe'] },
+  { match: /weekender|duffle/, any: ['1531938716357-224c16b5ace3', '1774389080971-01bf5d938a92'] },
+  { match: /tote/, any: ['1624687943971-e86af76d57de', '1654707636750-ab67a11b21b7', '1760624294582-5341f33f9fa4', '1732963947955-858ad7d5e540', '1774389489708-dd5df89c9f94'] },
+  { match: /clutch|card case|pouch|laptop sleeve|evening bag/, any: ['1630484179057-75e24310e2ff', '1654773215728-4387196bc2a8', '1749294435694-ce3c586591e6', '1783700549620-a6699881dc45', '1598552105309-9243044d2002'] },
+  { match: /crossbody|shoulder bag|messenger|briefcase|satchel|sling|top-handle|belt bag|crescent|bucket bag|quilted|chain bag|suede bag|burgundy bag|\bbag\b|handbag|purse/, any: ['1691480250099-a63081ecfcb8', '1603219527847-24c87f552a77', '1711548244653-72219aa9ac27', '1657603738389-951c374b740c', '1620786514684-ff35b5aae55e', '1758542988969-39a10168b2ce', '1584917865442-de89df76afd3', '1548036328-c9fa89d128fa', '1524498250077-390f9e378fc0'] },
+  // ---- belts, jewellery, scarves, hats, eyewear, watches ----
+  { match: /belt/, any: ['1664286074176-5206ee5dc878', '1666723043169-22e29545675c', '1664286074240-d7059e004dff', '1752386223406-b3d94092d790', '1711443982852-b3df5c563448'] },
+  { match: /earring/, women: ['1617038220319-276d3cfab638', '1615655114865-4cc1bda5901e', '1708220040824-b273dd0a17cc', '1632525230528-ec17c49bc168', '1535632066927-ab7c9ab60908', '1655255114527-d0a834d9a774'] },
+  { match: /necklace|chain|pendant|bangle|bracelet|cuff|\bring\b|signet|charm|jewel/, any: ['1599643478518-a784e5dc4c8f', '1655255114527-d0a834d9a774'] },
+  { match: /headscarf|hair scarf|silk scarf|tie scarf|silk headscarf/, any: ['1551028442-ee84b4d3a50a', '1517472292914-9570a594783b', '1776127839720-c0ab710d9d37'], women: ['1662624915084-061d80eec5fc', '1763906803192-0842ce94e448', '1689193502879-362660fad4a8', '1551028442-ee84b4d3a50a'] },
+  { match: /scarf/, any: ['1601924994987-69e26d50dc26'], men: ['1610384104075-e05c8cf200c3', '1601924994987-69e26d50dc26'] },
+  { match: /beanie|headband/, any: ['1648483092137-6e63796c8b06', '1618354691792-d1d42acfd860', '1612887726773-e64e20cf08fe', '1576529598261-96e376f6aabb'] },
+  { match: /\bcap\b|baseball/, any: ['1691256676359-20e5c6d4bc92', '1521369909029-2afed882baee', '1645266729222-17cd32e06fd0', '1720534490358-bc2ad29d51d5'] },
+  { match: /straw|panama|boater|sun hat/, any: ['1583238619747-27950824e04d', '1718909603336-62fb533e6027', '1568645367936-afb92b45e3bf'] },
+  { match: /sunglasses|shield/, any: ['1572635196237-14b3f281503f', '1584036553516-bf83210aa16c', '1587310311582-aa7610e90826', '1559070081-648fb00b2ed1', '1577803645773-f96470509666', '1508296695146-257a814070b4', '1618677366787-9727aacca7ea'] },
+  { match: /watch/, any: ['1612817159623-0399784fd0ce', '1451859757691-f318d641ab4d', '1604727199378-bf5dd08726ad', '1651735060244-781017915251', '1612817159450-08a180df028b'] },
+  // ---- locale garments ----
+  { match: /linen shirt|linen tee|linen tunic|linen co-ord|linen top|camp shirt|linen blazer/, any: ['1740711152088-88a009e877bb', '1713881587420-113c1c43e28a', '1713881842156-3d9ef36418cc', '1713881676551-b16f22ce4719', '1713881649391-a1c8ddaf83cd', '1693443688057-85f57b872a3c'], men: ['1627686011747-74adda3d2343', '1776633733518-d81137214dc9', '1591357037205-166318b51afd', '1740711152088-88a009e877bb'] },
+  { match: /kaftan|caftan/, women: ['1629200468327-78bdb7e47c85', '1629200468328-87bf3adfb78b', '1753192103616-53e7e0ef83e6', '1753192105348-3b263840b73b', '1753192105151-afa3e56d8b12', '1753192108606-b4a2bc9e5661'], men: ['1780601247169-687a1c24b84d', '1780601247035-e34a7b06d35b'] },
+  { match: /ankara|african print|wax print/, any: ['1552710307-537199cd41c0', '1642872597460-278924cb13dd', '1593803926640-0c663fabfaf5'], women: ['1760907949889-eb62b7fd9f75', '1773398972684-2ba88aa89499', '1784123476756-a8fc424d1d2c'] },
+  { match: /kurta/, women: ['1708534246055-d7b149acb731'], men: ['1727835523545-70ee992b5763', '1628250521470-28c1fc54616c', '1785613590730-380d74c8cbf9', '1768807478287-9e7953cfdca3', '1785613590746-f57d638c7d38'] },
+  { match: /maxi shirt dress|longline duster|abaya|duster/, women: ['1615222443417-6d76586644a9', '1614028609503-590a6a47146a', '1549401334-b71409ed03ae'] },
+];
+
+/**
+ * The photo for a row: subtype pool first (department-safe), then the
+ * category pool the row's department has always used.
+ */
+function imageFor(
+  category: ItemCategory,
+  subcategory: string,
+  name: string,
+  department: 'women' | 'men' | 'unisex'
+): string {
+  const text = `${subcategory} ${name}`.toLowerCase();
+  for (const pool of SUBTYPE_IMAGE_POOLS) {
+    if (!pool.match.test(text)) continue;
+    const ids = department === 'women' ? pool.women ?? pool.any : department === 'men' ? pool.men ?? pool.any : pool.any;
+    if (!ids?.length) continue;
+    const key = `subtype:${pool.match.source}:${department}`;
+    const index = (poolCounters[key] = (poolCounters[key] ?? -1) + 1);
+    return ids[index % ids.length];
+  }
+  const pool =
+    department === 'men'
+      ? MENS_IMAGE_POOLS[category] || IMAGE_POOLS[category]
+      : department === 'unisex'
+        ? UNISEX_IMAGE_POOLS[category] || IMAGE_POOLS[category]
+        : IMAGE_POOLS[category];
+  const counterKey = `${category}:${department}`;
+  const index = (poolCounters[counterKey] = (poolCounters[counterKey] ?? -1) + 1);
+  return pool[index % pool.length];
+}
+
 const SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
   tops: ['XS', 'S', 'M', 'L', 'XL'],
   bottoms: ['24', '25', '26', '27', '28', '29', '30', '31', '32'],
@@ -186,6 +278,8 @@ const UNISEX_IDS = new Set([
   // a056 Onyx deliberately NOT unisex: its product photo is a female model
   // wearing a cat-eye wrap (viewed 2026-09-01).
   'a051', 'a055',
+  // 2026-09-16: product-shot belts, the crossbody and the babouche are cross-department.
+  'a057', 'a067', 'a061', 's051',
 ]);
 
 /**
@@ -533,6 +627,42 @@ const ROWS: Row[] = [
   ['a055', 'Kent - Gold/ Brown', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'gold brown', 75, 0, 'classic refined everyday'],
   ['a056', 'Onyx - Black/ Smoke', 'OTRA', 'Otra', 'accessories', 'sunglasses', 'black', 80, 0, 'sleek minimal modern'],
 
+  // ---- 2026-09-16: FINISHING PIECES & LOCALE STAPLES ----
+  // Added so every trend can be shown as a whole look (garment + shoes +
+  // bag/belt/jewellery) and so the locale layer has real pieces for the
+  // places it dresses: linen and kaftan cuts for North Africa and the Gulf,
+  // kurtas and juttis for South Asia, print for West Africa, huaraches for
+  // Latin America, modest longline layers for covered dress codes.
+  ['t080', 'Block Print Cotton Kurta', 'Fabindia', 'Fabindia', 'tops', 'block print kurta', 'indigo', 45, 0, 'handloom relaxed heat-dressing'],
+  ['t081', 'Ankara Print Shirt', 'Ankara Republic', 'Etsy', 'tops', 'ankara print shirt', 'bold print', 58, 0, 'print statement tailored'],
+  ['t082', 'Long-Sleeve Linen Tunic', 'Uniqlo', 'Uniqlo', 'tops', 'linen tunic', 'white', 39.9, 0, 'linen modest relaxed'],
+  ['t083', 'Linen Co-ord Shirt', 'Mango', 'Mango', 'tops', 'linen co-ord shirt', 'sand', 49.99, 0, 'linen co-ord heat-dressing'],
+  ['b059', 'Linen Wide-Leg Trousers', 'Zara', 'Zara', 'bottoms', 'linen wide-leg trousers', 'ecru', 49.9, 0, 'linen wide-leg heat-dressing'],
+  ['b060', 'Flowing Linen Maxi Skirt', 'Arket', 'Arket', 'bottoms', 'linen maxi skirt', 'sand', 99, 0, 'linen flowing modest'],
+  ['d031', 'Linen Kaftan Dress', 'Mango', 'Mango', 'dresses', 'kaftan dress', 'ecru', 79.99, 0, 'kaftan linen flowing heat-dressing'],
+  ['d032', 'Embroidered Kaftan', 'Anthropologie', 'Anthropologie', 'dresses', 'embroidered kaftan', 'sand', 168, 0, 'kaftan embroidered artisan'],
+  ['d033', 'Long-Sleeve Maxi Shirt Dress', 'COS', 'COS', 'dresses', 'maxi shirt dress', 'black', 135, 0, 'modest longline minimal'],
+  ['d034', 'Ankara Print Midi Dress', 'Ankara Republic', 'Etsy', 'dresses', 'ankara print dress', 'bold print', 95, 0, 'print statement tailored'],
+  ['o043', 'Linen Blazer', 'Mango', 'Mango', 'outerwear', 'linen blazer', 'sand', 99.99, 0, 'linen tailored heat-dressing'],
+  ['o044', 'Longline Open Duster', 'Zara', 'Zara', 'outerwear', 'longline duster', 'black', 89.9, 0, 'modest longline flowing'],
+  ['s051', 'Leather Babouche Slippers', 'Bohemia Design', 'Etsy', 'shoes', 'babouche slippers', 'tan', 65, 0, 'babouche artisan flat'],
+  ['s052', 'Flat Leather Slides', 'Madewell', 'Madewell', 'shoes', 'leather slides', 'tan', 98, 0, 'slide minimal summer'],
+  ['s053', 'Woven Leather Huaraches', 'Nisolo', 'Nisolo', 'shoes', 'huarache sandals', 'brandy', 130, 0, 'huarache artisan woven'],
+  ['s054', 'Embroidered Juttis', 'Fizzy Goblet', 'Etsy', 'shoes', 'jutti flats', 'gold', 48, 0, 'jutti embroidered artisan'],
+  ['s055', 'Sheer Mesh Mary Janes', 'Zara', 'Zara', 'shoes', 'mesh mary janes', 'black', 59.9, 0, 'mary jane sheer fashion-forward'],
+  ['a057', 'Suede Belt', 'Everlane', 'Everlane', 'accessories', 'suede belt', 'olive', 68, 0, 'belt suede minimal'],
+  ['a058', 'Wide Leather Waist Belt', 'Zara', 'Zara', 'accessories', 'wide leather belt', 'brown', 35.9, 0, 'belt statement tailored'],
+  ['a059', 'Woven Raffia Basket Bag', 'Bohemia Design', 'Etsy', 'accessories', 'raffia basket bag', 'natural', 75, 0, 'raffia woven artisan'],
+  ['a060', 'Slouchy East-West Shoulder Bag', 'Mango', 'Mango', 'accessories', 'east-west shoulder bag', 'chocolate', 69.99, 0, 'slouchy shoulder bag everyday'],
+  ['a061', 'Leather Crossbody Bag', 'Madewell', 'Madewell', 'accessories', 'crossbody bag', 'tan', 128, 0, 'crossbody everyday travel'],
+  ['a062', 'Silver Cuff Bracelet', 'Unbranded Artisan', 'Etsy', 'accessories', 'silver cuff', 'silver', 45, 0, 'silver jewellery artisan'],
+  ['a063', 'Silk Headscarf', 'Unbranded Artisan', 'Etsy', 'accessories', 'silk headscarf', 'printed', 38, 0, 'headscarf modest print'],
+  ['a064', 'Straw Boater Hat', 'Lack of Color', 'Lack of Color', 'accessories', 'straw hat', 'natural', 99, 0, 'straw hat summer vacation'],
+  ['a065', 'Gold Statement Earrings', 'Anthropologie', 'Anthropologie', 'accessories', 'statement earrings', 'gold', 48, 0, 'gold statement jewelry'],
+  ['a066', 'Structured Top-Handle Bag', 'Polène', 'Polène', 'accessories', 'top-handle bag', 'black', 420, 0, 'structured polished bag'],
+  ['a067', 'Slim Leather Belt', 'Madewell', 'Madewell', 'accessories', 'leather belt', 'tan', 45, 0, 'belt classic staple'],
+  ['a068', 'Chunky Gold Chain Necklace', 'Mejuri', 'Mejuri', 'accessories', 'gold chain necklace', 'gold', 150, 0, 'gold jewellery statement'],
+
   // ---- MENSWEAR: TOPS (24) ----
   ['mt001', 'Oxford Button-Down Shirt', 'J.Crew', 'J.Crew', 'tops', 'oxford shirt', 'white', 69.5, 0, 'classic preppy business'],
   ['mt002', 'Poplin Dress Shirt', 'Charles Tyrwhitt', 'Charles Tyrwhitt', 'tops', 'dress shirt', 'light blue', 79, 99, 'formal business crisp'],
@@ -622,6 +752,21 @@ const ROWS: Row[] = [
   ['ma008', 'Wool Scarf', 'Johnstons of Elgin', 'Johnstons of Elgin', 'accessories', 'wool scarf', 'camel', 95, 0, 'classic cozy winter'],
   ['ma009', 'Vintage Silk Tie', 'Hermès', 'The RealReal', 'accessories', 'silk tie', 'navy print', 85, 240, 'luxe polished vintage', 1],
   ['ma010', 'Pre-Owned Leather Duffle', 'Coach', 'ThredUp', 'accessories', 'leather duffle', 'saddle', 145, 495, 'travel heritage vintage', 1],
+  // ---- 2026-09-16: MENSWEAR FINISHING PIECES & LOCALE STAPLES ----
+  ['mt025', 'Cotton Kurta', 'Fabindia', 'Fabindia', 'tops', 'cotton kurta', 'white', 39, 0, 'handloom relaxed heat-dressing'],
+  ['mt026', 'Ankara Print Shirt', 'Ankara Republic', 'Etsy', 'tops', 'ankara print shirt', 'bold print', 62, 0, 'print statement casual'],
+  ['mt027', 'Linen Shirt', 'Quince', 'Quince', 'tops', 'linen shirt', 'white', 39.9, 0, 'linen relaxed heat-dressing'],
+  ['mb017', 'Linen Wide-Leg Trousers', 'COS', 'COS', 'bottoms', 'linen wide-leg trousers', 'sand', 99, 0, 'linen wide-leg heat-dressing'],
+  ['mo015', 'Linen Blazer', 'Todd Snyder', 'Todd Snyder', 'outerwear', 'linen blazer', 'sand', 348, 0, 'linen tailored unstructured'],
+  ['ms017', 'Leather Babouche Slippers', 'Bohemia Design', 'Etsy', 'shoes', 'babouche slippers', 'tan', 65, 0, 'babouche artisan flat'],
+  ['ms018', 'Suede Espadrilles', 'Castañer', 'Nordstrom', 'shoes', 'espadrilles', 'tan', 130, 0, 'espadrille summer resort'],
+  ['ma011', 'Suede Belt', 'J.Crew', 'J.Crew', 'accessories', 'suede belt', 'tan', 59.5, 0, 'belt suede casual'],
+  ['ma012', 'Leather Crossbody Sling', 'Bellroy', 'Bellroy', 'accessories', 'crossbody sling bag', 'black', 89, 0, 'crossbody everyday travel'],
+  ['ma013', 'Round Tortoise Sunglasses', 'Ray-Ban', 'Ray-Ban', 'accessories', 'round sunglasses', 'tortoise', 171, 0, 'classic retro everyday'],
+  ['ma014', 'Straw Panama Hat', 'Stetson', 'Stetson', 'accessories', 'panama hat', 'natural', 95, 0, 'straw hat summer classic'],
+  ['ma015', 'Silver Chain Bracelet', 'Miansai', 'Miansai', 'accessories', 'silver chain bracelet', 'silver', 125, 0, 'silver jewellery minimal'],
+  ['ma016', 'Canvas Tote Bag', 'Baggu', 'Baggu', 'accessories', 'canvas tote', 'natural', 42, 0, 'tote everyday casual'],
+  ['ma017', 'Cashmere Beanie', 'Quince', 'Quince', 'accessories', 'cashmere beanie', 'charcoal', 34.9, 0, 'beanie winter minimal'],
 ];
 
 /**
@@ -696,8 +841,6 @@ const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
   },
 };
 
-const poolCounters: Record<string, number> = {};
-
 /** Department by id convention: 'm'-prefixed rows are menswear, UNISEX_IDS pass every focus, everything else is womenswear. */
 function departmentOf(id: string): 'women' | 'men' | 'unisex' {
   if (id.startsWith('m')) return 'men';
@@ -707,14 +850,7 @@ function departmentOf(id: string): 'women' | 'men' | 'unisex' {
 function build(row: Row): Product {
   const [id, name, brand, retailer, category, subcategory, color, price, originalPrice, styleTags, secondhand] = row;
   const department = departmentOf(id);
-  const pool =
-    department === 'men'
-      ? MENS_IMAGE_POOLS[category] || IMAGE_POOLS[category]
-      : department === 'unisex'
-        ? UNISEX_IMAGE_POOLS[category] || IMAGE_POOLS[category]
-        : IMAGE_POOLS[category];
-  const counterKey = `${category}:${department}`;
-  const index = (poolCounters[counterKey] = (poolCounters[counterKey] ?? -1) + 1);
+  const photo = imageFor(category, subcategory, name, department);
   return {
     id: `p-${id}`,
     name,
@@ -725,7 +861,7 @@ function build(row: Row): Product {
     price,
     originalPrice: originalPrice || undefined,
     currency: 'USD',
-    imageUrl: EXACT_ITEMS[id]?.imageUrl ?? `https://images.unsplash.com/photo-${pool[index % pool.length]}?w=600`,
+    imageUrl: EXACT_ITEMS[id]?.imageUrl ?? `https://images.unsplash.com/photo-${photo}?w=600`,
     color,
     sizeRange: department === 'men' ? MENS_SIZE_RANGES[category] : SIZE_RANGES[category],
     styleTags: styleTags.split(' '),

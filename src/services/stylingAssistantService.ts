@@ -17,6 +17,7 @@ import { buildProfileMatchContext } from './profileMatchContext';
 import { discoveryService } from './discoveryService';
 import { OccasionKey } from './dailyOutfitService';
 import { trendRemixService } from './trendRemixService';
+import { resolveLocaleProfile, localWearLine } from './localeProfile';
 
 const chatWithStylistFn = httpsCallable(functions, 'chatWithStylist');
 
@@ -38,7 +39,16 @@ function stripItemIdsFromReply(text: string, itemIds: string[]): string {
 }
 
 export interface StylingContext {
-  weather?: { condition: string; temperature: number };
+  /** The weather fix, with the place it was taken for when known - the
+   *  stylist dresses for where the user is, not only how warm it is. */
+  weather?: {
+    condition: string;
+    temperature: number;
+    city?: string;
+    region?: string;
+    country?: string;
+    latitude?: number;
+  };
   occasion?: string;
   mood?: string;
   styleProfile?: PersonalStyleProfile | null;
@@ -293,7 +303,14 @@ class StylingAssistantService {
             }
           : undefined,
         context?.weather
-          ? { temperature: context.weather.temperature, condition: context.weather.condition }
+          ? {
+              temperature: context.weather.temperature,
+              condition: context.weather.condition,
+              city: context.weather.city,
+              region: context.weather.region,
+              country: context.weather.country,
+              latitude: context.weather.latitude,
+            }
           : undefined
       )
       .then(remixes =>
@@ -309,13 +326,37 @@ class StylingAssistantService {
       )
       .catch(() => undefined);
 
+    // Where they are, as the stylist should understand it: the place, how
+    // its streets dress, how it finishes a look, and its dress code.
+    const localeProfile =
+      context?.weather?.city || context?.weather?.country
+        ? resolveLocaleProfile({
+            city: context.weather.city,
+            region: context.weather.region,
+            country: context.weather.country,
+            latitude: context.weather.latitude,
+          })
+        : undefined;
+    const localePayload = localeProfile
+      ? {
+          place: localeProfile.label,
+          scene: localeProfile.scene,
+          wear: localWearLine(localeProfile, []),
+          coverage: localeProfile.coverage,
+          season: localeProfile.localSeason,
+        }
+      : undefined;
+
     // Fire the AI call and the user-message persistence at the same time - independent work
     const [aiResult] = await Promise.all([
       chatWithStylistFn({
         message,
         history: historyForModel,
         closetItems: closetSummary,
-        weather: context?.weather,
+        weather: context?.weather
+          ? { condition: context.weather.condition, temperature: context.weather.temperature }
+          : undefined,
+        locale: localePayload,
         occasion: context?.occasion,
         mood: context?.mood,
         styleProfile: styleProfilePayload,

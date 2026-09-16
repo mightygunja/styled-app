@@ -12,6 +12,7 @@
 
 import * as Location from 'expo-location';
 import { WeatherCondition } from './recommendationEngine';
+import { getStyleLocation } from './styleLocationService';
 
 export interface CurrentWeather {
   condition: WeatherCondition;
@@ -20,6 +21,11 @@ export interface CurrentWeather {
   /** State/province, when the geocoder reports one. */
   region?: string;
   country?: string;
+  /** Where the reading was taken - the locale layer reads hemisphere from it. */
+  latitude?: number;
+  longitude?: number;
+  /** True when the place came from the user's own "style location" setting, not the device. */
+  overridden?: boolean;
 }
 
 function mapWeatherCode(code: number, temperatureF: number): WeatherCondition {
@@ -107,7 +113,19 @@ async function getIpCoords(): Promise<Coords | null> {
  */
 export async function getCurrentWeather(): Promise<CurrentWeather | null> {
   try {
-    const coords = (await getDeviceCoords()) || (await getIpCoords());
+    // A user-chosen style location (travelling, or the device guessed
+    // wrong) wins over the device: every surface then dresses for that
+    // place's weather, season and street style.
+    const override = await getStyleLocation().catch(() => null);
+    const coords: Coords | null = override
+      ? {
+          latitude: override.latitude,
+          longitude: override.longitude,
+          city: override.city,
+          region: override.region,
+          country: override.country,
+        }
+      : (await getDeviceCoords()) || (await getIpCoords());
     if (!coords) return null;
 
     const weatherController = new AbortController();
@@ -132,6 +150,9 @@ export async function getCurrentWeather(): Promise<CurrentWeather | null> {
       city: coords.city,
       region: coords.region,
       country: coords.country,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      overridden: !!override,
     };
   } catch (error) {
     console.log('Could not fetch real weather', error);

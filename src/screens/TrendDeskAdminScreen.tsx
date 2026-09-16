@@ -159,7 +159,9 @@ export default function TrendDeskAdminScreen() {
               <Text style={styles.rowSummary}>{trend.summary}</Text>
               <Text style={styles.rowDetail}>
                 Anchors: {trend.keyGarments.join(', ') || '—'}
+                {trend.keyAccessories?.length ? ` · Accessories: ${trend.keyAccessories.join(', ')}` : ''}
                 {trend.silhouettes.length ? ` · Cuts: ${trend.silhouettes.join(', ')}` : ''}
+                {trend.regions?.length ? ` · Also: ${trend.regions.join(', ')}` : ''}
                 {trend.keyColors.length ? ` · Colours: ${trend.keyColors.join(', ')}` : ''}
               </Text>
               <Text style={styles.rowDetail}>How to wear: {trend.stylingNote}</Text>

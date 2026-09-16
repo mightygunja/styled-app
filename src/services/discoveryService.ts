@@ -25,6 +25,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import { Item, Season } from '../types';
 import { Product, MatchedProduct } from '../models/product';
+import { isBagProduct } from './trendLooks';
 import { getActiveAdapter } from './affiliateNetwork';
 import { buildProfileMatchContext, ProfileMatchContext } from './profileMatchContext';
 import { scoreAndRankProducts } from './marketplaceMatchingService';
@@ -454,7 +455,24 @@ export async function buildStarterPools(
       ? ranked
       : ranked.filter(({ product }) => !product.department || product.department === 'unisex');
 
-  const pool: Item[] = safeRanked.slice(0, 40).map(({ product }) => ({
+  // The top of the ranking is garments (the profile scorers reward tops and
+  // trousers most), so the finishing categories are topped up explicitly:
+  // a starter look should arrive with shoes, a bag and one accessory, the
+  // same as a look built from a real closet.
+  const core = safeRanked.slice(0, 40);
+  const topUp = (predicate: (p: Product) => boolean, minimum: number) => {
+    const have = core.filter(({ product }) => predicate(product)).length;
+    if (have >= minimum) return;
+    safeRanked
+      .filter(entry => !core.includes(entry) && predicate(entry.product))
+      .slice(0, minimum - have)
+      .forEach(entry => core.push(entry));
+  };
+  topUp(p => p.category === 'shoes', 4);
+  topUp(p => (p.category === 'accessories' || p.category === 'bags') && isBagProduct(p), 3);
+  topUp(p => (p.category === 'accessories' || p.category === 'bags') && !isBagProduct(p), 3);
+
+  const pool: Item[] = core.map(({ product }) => ({
     id: product.id,
     name: product.name,
     imageUrl: product.imageUrl,

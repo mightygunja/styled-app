@@ -2,29 +2,44 @@
  * The Trend Report.
  *
  * The trend layer's home surface: what is genuinely moving in fashion's
- * capitals right now - editor-curated, never invented - and, for every
- * trend, the bridge from this user's actual closet: what they can wear
- * today, and the one piece that gets them in when they can't.
+ * capitals right now - editor-curated, never invented - ranked for WHERE
+ * this user is, and, for every trend, the bridge from their actual closet:
+ * what they can wear today, and the one piece that gets them in when they
+ * can't.
+ *
+ * Location is the organising idea. The same pool reads differently in
+ * Marrakesh, Copenhagen and Dubai: a place's own trends lead, trends from
+ * the capitals it takes its cues from read naturally, and foreign trends
+ * are introduced at a pace set by how cosmopolitan the place is. Each card
+ * says which of those it is, how the place wears the trend (fabric, shoe,
+ * bag, jewellery), and - where the street dresses more covered - how to
+ * make a skin-showing trend wearable there. The user can change the place
+ * (travelling, or the device guessed wrong); that setting then drives every
+ * surface's weather and styling, not just this one.
  *
  * Two-phase render: the deterministic keyword-matched report paints
  * instantly, then the AI personalization pass (personalizeTrendReport)
- * upgrades each trend in place with a garment-level read of the closet -
- * how far in the user already is, styling advice from their named pieces,
- * and a shop suggestion vetted to never be something they already own.
+ * upgrades each trend in place with a garment-level read of the closet.
  * If the pass can't run, the deterministic report simply stands.
  *
  * Avoid rules are a preference, not a veto: a trend that crosses one still
- * appears, demoted and with the crossing said plainly, because the point of
- * the report is reaching past someone's defaults. "Not my thing" is a real
- * signal - it narrows how far the app stretches this person, without ever
- * silencing the trend layer.
- *
- * The community's own hashtag activity keeps a small section at the bottom:
- * it is a real signal about this app's users, but it is not the world.
+ * appears, demoted and with the crossing said plainly. "Not my thing" is a
+ * real signal - it narrows how far the app stretches this person, without
+ * ever silencing the trend layer.
  */
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+  Linking,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,79 +47,29 @@ import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
 import BackButton from '../components/BackButton';
 import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
-import { BALANCED_CATALOG } from '../data/mockProductCatalog';
 import { Product } from '../models/product';
-import { FashionTrend } from '../models/fashionTrend';
 import { trendInsightsService, TrendingTag } from '../services/trendInsightsService';
 import { trendRemixService, TrendRemix, anchorDisplayLabel } from '../services/trendRemixService';
+import { piecesForTrend } from '../services/trendLooks';
+import { LocaleProfile, resolveLocaleProfile } from '../services/localeProfile';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { shopperSignals } from '../services/shopperSignals';
-import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
+import {
+  getCurrentWeather,
+  CurrentWeather,
+  searchDestinations,
+  DestinationMatch,
+  formatDestination,
+} from '../services/weatherService';
+import { getStyleLocation, setStyleLocation } from '../services/styleLocationService';
 import { amazonSearchUrl } from '../services/affiliateNetwork';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-/**
- * Catalogue pieces that illustrate a trend, kept in the user's department —
- * the visual "here is what this style actually looks like" beneath each
- * trend's description.
- *
- * Scored, not first-match: a keyGarments hit is the anchor (3), and the
- * trend's silhouettes, keyColors and archetypes each add 1. Only pieces
- * scoring >= 3 qualify — so either a named garment of the trend, or a
- * silhouette hit corroborated by both its palette and its archetype. A
- * bare silhouette word is NOT enough: "layered" once put a gold necklace
- * and a zip hoodie under Sheer Layering, and "fitted" put a work sheath
- * under Heritage Sport. Distinct categories are preferred so four
- * thumbnails read as a look, not four pairs of the same trouser, but a
- * category slot is never filled by a weaker match than the rule allows.
- * Fewer than two qualifying pieces renders nothing — one lonely thumbnail
- * under a trend reads worse than no rail at all.
- */
-function looksForTrend(
-  trend: FashionTrend,
-  focus: 'womens' | 'mens' | 'all' | undefined,
-  limit: number = 4
-): Product[] {
-  const inDepartment = (product: Product) => {
-    if (!focus || focus === 'all') return true;
-    const department = product.department;
-    if (!department || department === 'unisex') return true;
-    return focus === 'womens' ? department === 'women' : department === 'men';
-  };
-
-  const scored: Array<{ score: number; product: Product }> = [];
-  for (const product of BALANCED_CATALOG) {
-    if (!inDepartment(product)) continue;
-    const text = [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])]
-      .join(' ')
-      .toLowerCase();
-    const color = (product.color ?? '').toLowerCase();
-    const garmentHit = trend.keyGarments.some(g => text.includes(g));
-    const silhouetteHit = trend.silhouettes.some(s => text.includes(s));
-    const colorHit = !!color && trend.keyColors.some(k => color.includes(k) || k.includes(color));
-    const archetypeHit = (product.styleTags ?? []).some(tag => trend.archetypes.includes(tag));
-    const score =
-      (garmentHit ? 3 : 0) + (silhouetteHit ? 1 : 0) + (colorHit ? 1 : 0) + (archetypeHit ? 1 : 0);
-    if (score >= 3) scored.push({ score, product });
-  }
-  scored.sort((a, b) => b.score - a.score);
-
-  const picks: Product[] = [];
-  const usedCategories = new Set<string>();
-  // Two passes: distinct categories first, then fill remaining slots.
-  for (const requireNewCategory of [true, false]) {
-    for (const { product } of scored) {
-      if (picks.length >= limit) break;
-      if (picks.includes(product)) continue;
-      if (requireNewCategory && usedCategories.has(product.category)) continue;
-      picks.push(product);
-      usedCategories.add(product.category);
-    }
-  }
-  return picks.length >= 2 ? picks : [];
-}
+/** How many trends the report shows. The pool is larger; the rest ranks below the fold of attention. */
+const MAX_REPORT = 14;
+const RAIL_LIMIT = 5;
 
 export default function TrendInsightsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -112,24 +77,43 @@ export default function TrendInsightsScreen() {
   const [tags, setTags] = useState<TrendingTag[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [place, setPlace] = useState<string | null>(null);
+  const [placeLabel, setPlaceLabel] = useState<string | null>(null);
+  const [overridden, setOverridden] = useState(false);
+  const [localeProfile, setLocaleProfile] = useState<LocaleProfile | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   // Whose wardrobe this is - keeps outbound searches in the right department.
   const [focus, setFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
   // Guards the async AI upgrade against landing over a newer load.
   const loadIdRef = useRef(0);
 
+  // "Dressing for" control: change the place the whole app dresses for.
+  const [editingPlace, setEditingPlace] = useState(false);
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [placeResults, setPlaceResults] = useState<DestinationMatch[]>([]);
+  const [searchingPlace, setSearchingPlace] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      const [closetResponse, profile, trending, weather] = await Promise.all([
+      const [closetResponse, profile, trending, weather, override] = await Promise.all([
         closetAPI.getItems(userId).catch(() => ({ data: [] })),
         buildProfileMatchContext(userId).catch(() => undefined),
         trendInsightsService.getTrendingHashtags(8).catch(() => [] as TrendingTag[]),
         getCurrentWeather().catch(() => undefined as CurrentWeather | undefined),
+        getStyleLocation().catch(() => null),
       ]);
       await shopperSignals.load();
-      setPlace(weather?.city ?? null);
+
+      // The place: the weather fix carries the resolved city; the override,
+      // when set, is the same place without needing a weather round trip.
+      const city = weather?.city ?? override?.city;
+      const country = weather?.country ?? override?.country;
+      const region = weather?.region ?? override?.region;
+      const latitude = weather?.latitude ?? override?.latitude;
+      setPlace(city ?? null);
+      setPlaceLabel(city ? [city, country].filter(Boolean).join(', ') : null);
+      setOverridden(!!override);
       setFocus(profile?.wardrobeFocus);
 
       const closetItems: Item[] = ((closetResponse as any).data || []).map((item: any) => ({
@@ -145,12 +129,17 @@ export default function TrendInsightsScreen() {
         tags: item.tags,
       }));
 
+      const resolvedProfile = city || country ? resolveLocaleProfile({ city, region, country, latitude }) : undefined;
+      setLocaleProfile(resolvedProfile);
+
       const locale = {
-        city: weather?.city,
-        region: weather?.region,
-        country: weather?.country,
+        city,
+        region,
+        country,
+        latitude,
         temperature: weather?.temperature,
         condition: weather?.condition,
+        profile: resolvedProfile,
       };
       const deterministic = await trendRemixService.loadTrendRemixes(closetItems, profile, locale);
       const loadId = ++loadIdRef.current;
@@ -177,6 +166,54 @@ export default function TrendInsightsScreen() {
       load();
     }, [load])
   );
+
+  // Place search, debounced. Open-Meteo geocoding, no key, returns city +
+  // country + coordinates - exactly what the override needs.
+  useEffect(() => {
+    if (!editingPlace) return;
+    const query = placeQuery.trim();
+    if (query.length < 2) {
+      setPlaceResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearchingPlace(true);
+    const handle = setTimeout(() => {
+      searchDestinations(query)
+        .then(results => {
+          if (!cancelled) setPlaceResults(results);
+        })
+        .finally(() => {
+          if (!cancelled) setSearchingPlace(false);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [placeQuery, editingPlace]);
+
+  const choosePlace = async (match: DestinationMatch) => {
+    await setStyleLocation({
+      city: match.name,
+      region: match.region,
+      country: match.country,
+      latitude: match.latitude,
+      longitude: match.longitude,
+    });
+    setEditingPlace(false);
+    setPlaceQuery('');
+    setPlaceResults([]);
+    load();
+  };
+
+  const useDeviceLocation = async () => {
+    await setStyleLocation(null);
+    setEditingPlace(false);
+    setPlaceQuery('');
+    setPlaceResults([]);
+    load();
+  };
 
   /**
    * The vetted piece this user is missing for the trend, when there is one -
@@ -223,32 +260,105 @@ export default function TrendInsightsScreen() {
     setDismissed(current => new Set(current).add(remix.trend.id));
   };
 
-  const visible = remixes.filter(r => !dismissed.has(r.trend.id));
+  const visible = remixes.filter(r => !dismissed.has(r.trend.id)).slice(0, MAX_REPORT);
 
-  // The catalogue pass is pure text matching over ~300 rows; memoised so it
-  // runs once per report, not on every render.
+  // The rail pass is pure matching over ~440 rows; memoised so it runs once
+  // per report, not on every render. Local staples rank first within a slot.
   const trendLooks = useMemo(() => {
     const byTrend = new Map<string, Product[]>();
-    remixes.forEach(remix => byTrend.set(remix.trend.id, looksForTrend(remix.trend, focus)));
+    remixes.forEach(remix =>
+      byTrend.set(remix.trend.id, piecesForTrend(remix.trend, focus, { limit: RAIL_LIMIT, locale: localeProfile }))
+    );
     return byTrend;
-  }, [remixes, focus]);
+  }, [remixes, focus, localeProfile]);
 
   const anchorLine = (remix: TrendRemix): string =>
     `Wear it today: your ${remix.anchors.slice(0, 3).map(anchorDisplayLabel).join(', ')}.`;
+
+  const subtitle = place
+    ? `Ranked for ${place} — its weather and season, how its streets actually dress, and your own closet. Curated from what's genuinely happening in fashion's capitals.`
+    : "Curated from what's genuinely happening in fashion's capitals — with the way in from the closet you already own.";
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <BackButton />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>THE TREND REPORT</Text>
         <Text style={styles.title}>What's moving right now</Text>
-        <Text style={styles.subtitle}>
-          {place
-            ? `Ranked for ${place} — your weather, your closet, your taste. Curated from what's genuinely happening in fashion's capitals.`
-            : "Curated from what's genuinely happening in fashion's capitals — with the way in from the closet you already own."}
-        </Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+
+        {/* Where the app is dressing this person for. Changing it here changes
+            it everywhere - Home's looks, the Shop's ranking, the stylist. */}
+        <View style={styles.placeBox}>
+          {!editingPlace ? (
+            <View style={styles.placeRow}>
+              <View style={styles.placeText}>
+                <Text style={styles.placeLabel}>DRESSING FOR</Text>
+                <Text style={styles.placeName}>
+                  {placeLabel ?? 'Location unknown'}
+                  {overridden ? '  ·  set by you' : ''}
+                </Text>
+                {!!localeProfile && (
+                  <Text style={styles.placeScene} numberOfLines={2}>
+                    {localeProfile.scene}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Change the place the app dresses you for"
+                onPress={() => setEditingPlace(true)}
+              >
+                <Text style={styles.placeChange}>{placeLabel ? 'Change' : 'Set a city'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.placeLabel}>DRESS ME FOR</Text>
+              <TextInput
+                style={styles.placeInput}
+                value={placeQuery}
+                onChangeText={setPlaceQuery}
+                placeholder="Marrakesh, Dubai, Sydney…"
+                placeholderTextColor={colors.inkFaint}
+                autoFocus
+                autoCorrect={false}
+                accessibilityLabel="City to dress for"
+              />
+              {searchingPlace && <ActivityIndicator size="small" color={colors.ink} style={{ marginTop: 8 }} />}
+              {placeResults.map(match => (
+                <TouchableOpacity
+                  key={match.id}
+                  style={styles.placeResult}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Dress me for ${formatDestination(match)}`}
+                  onPress={() => choosePlace(match)}
+                >
+                  <Text style={styles.placeResultText}>{formatDestination(match)}</Text>
+                </TouchableOpacity>
+              ))}
+              <View style={styles.placeActions}>
+                {overridden && (
+                  <TouchableOpacity accessibilityRole="button" onPress={useDeviceLocation}>
+                    <Text style={styles.placeChange}>Use my location</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setEditingPlace(false);
+                    setPlaceQuery('');
+                    setPlaceResults([]);
+                  }}
+                >
+                  <Text style={styles.placeCancel}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
 
         {loading ? (
           <ActivityIndicator size="large" color={colors.ink} style={{ marginTop: 40 }} />
@@ -279,12 +389,15 @@ export default function TrendInsightsScreen() {
                 : remix.gapLine;
             const gap = gapFor(remix);
             const shopLabel = gap ? 'Find it on Amazon' : 'Go deeper in Shop';
+            const rail = trendLooks.get(trend.id) ?? [];
+            const otherPlaces = (trend.regions ?? []).filter(r => r !== trend.region).slice(0, 3);
             return (
               <View key={trend.id} style={styles.trendCard}>
                 <View style={styles.trendTopRow}>
                   <Text style={styles.rank}>{String(index + 1).padStart(2, '0')}</Text>
                   <Text style={styles.trendMeta}>
                     {trend.stage.toUpperCase()} · {trend.region.toUpperCase()}
+                    {otherPlaces.length ? ` · ALSO ${otherPlaces.join(', ').toUpperCase()}` : ''}
                   </Text>
                 </View>
                 {!!remix.localeNote && <Text style={styles.localeNote}>{remix.localeNote}</Text>}
@@ -312,7 +425,15 @@ export default function TrendInsightsScreen() {
 
                 <Text style={styles.stylingNote}>{trend.stylingNote}</Text>
 
-                {(trendLooks.get(trend.id) ?? []).length > 0 && (
+                {/* The local translation: how the street here actually
+                    finishes this trend, and - where the dress code runs more
+                    covered - how a skin-showing trend is worn at all. */}
+                {!!remix.localAdaptation && (
+                  <Text style={styles.localAdaptation}>{remix.localAdaptation}</Text>
+                )}
+                {!!remix.localWear && <Text style={styles.localWear}>{remix.localWear}</Text>}
+
+                {rail.length > 0 && (
                   <View style={styles.lookRail}>
                     <Text style={styles.lookRailLabel}>THE LOOK, IN PIECES</Text>
                     <ScrollView
@@ -320,7 +441,7 @@ export default function TrendInsightsScreen() {
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.lookRailContent}
                     >
-                      {(trendLooks.get(trend.id) ?? []).map(product => (
+                      {rail.map(product => (
                         <TouchableOpacity
                           key={product.id}
                           style={styles.lookCard}
@@ -339,6 +460,9 @@ export default function TrendInsightsScreen() {
                             style={styles.lookImage}
                             resizeMode="cover"
                           />
+                          <Text style={styles.lookKind}>
+                            {(product.subcategory || product.category).toUpperCase()}
+                          </Text>
                           <Text style={styles.lookName} numberOfLines={1}>
                             {product.name}
                           </Text>
@@ -420,6 +544,37 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 40, textAlign: 'center' },
 
+  placeBox: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.hair,
+  },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  placeText: { flex: 1 },
+  placeLabel: { ...textType.eyebrow, fontSize: 9 },
+  placeName: { fontFamily: fonts.serif, fontSize: 18, color: colors.ink, marginTop: 4 },
+  placeScene: { ...textType.meta, fontSize: 12, lineHeight: 17, marginTop: 4 },
+  placeChange: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.rust, paddingVertical: 6 },
+  placeCancel: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint, paddingVertical: 6 },
+  placeInput: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.bone,
+  },
+  placeResult: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.hair },
+  placeResultText: { fontFamily: fonts.sans, fontSize: 14, color: colors.ink },
+  placeActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 8 },
+
   trendCard: {
     marginTop: spacing.section,
     paddingBottom: spacing.lg,
@@ -428,7 +583,7 @@ const styles = StyleSheet.create({
   },
   trendTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   rank: { fontFamily: fonts.serifItalic, fontSize: 16, color: colors.camel },
-  trendMeta: { ...textType.eyebrow, fontSize: 9 },
+  trendMeta: { ...textType.eyebrow, fontSize: 9, flex: 1 },
   localeNote: {
     fontFamily: fonts.sansMedium,
     fontSize: 11,
@@ -465,6 +620,14 @@ const styles = StyleSheet.create({
   },
 
   stylingNote: { ...textType.body, fontSize: 13, lineHeight: 20, color: colors.ink, marginTop: spacing.md },
+  localAdaptation: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.tobacco,
+    marginTop: 8,
+  },
+  localWear: { ...textType.meta, fontSize: 12, lineHeight: 18, color: colors.inkMuted, marginTop: 8 },
 
   lookRail: { marginTop: spacing.md },
   lookRailLabel: { ...textType.eyebrow, fontSize: 9, marginBottom: 8 },
@@ -476,7 +639,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: colors.paper,
   },
-  lookName: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.inkMuted, marginTop: 4 },
+  lookKind: { ...textType.eyebrow, fontSize: 8, color: colors.camel, marginTop: 5 },
+  lookName: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.inkMuted, marginTop: 2 },
 
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: spacing.md },
   shopAction: {

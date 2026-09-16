@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function TrendRemixCard({ remix, onOpenReport }: Props) {
-  const { trend, anchors, wearableToday, gapLine } = remix;
+  const { trend, anchors, wearableToday, gapLine, localeNote, localAdaptation, localWear } = remix;
 
   const wearLine = wearableToday
     ? `You can already wear it: your ${anchors
@@ -38,6 +38,9 @@ export default function TrendRemixCard({ remix, onOpenReport }: Props) {
       <Text style={styles.eyebrow}>
         TREND REMIX · {trend.stage.toUpperCase()} IN {trend.region.toUpperCase()}
       </Text>
+      {/* Why this trend leads for where they are - its own place, a capital
+          the place follows, or the weather. */}
+      {!!localeNote && <Text style={styles.localeNote}>{localeNote}</Text>}
       <Text style={styles.name}>{trend.name}</Text>
       {/* When a trend crosses one of their "nevers", the card owns it -
           that's the deal that lets trend seep past the preference at all. */}
@@ -49,6 +52,14 @@ export default function TrendRemixCard({ remix, onOpenReport }: Props) {
       )}
       {!!wearLine && <Text style={styles.wearLine}>{wearLine}</Text>}
       <Text style={styles.stylingNote}>{trend.stylingNote}</Text>
+      {/* The local translation, one line: how this place finishes the trend,
+          or how a skin-showing trend is worn where the street dresses more
+          covered. The full report carries the rest. */}
+      {!!(localAdaptation || localWear) && (
+        <Text style={styles.localLine} numberOfLines={2}>
+          {localAdaptation || localWear}
+        </Text>
+      )}
       <Text style={styles.cta}>The full Trend Report →</Text>
     </TouchableOpacity>
   );
@@ -65,6 +76,14 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.camel,
   },
   eyebrow: { ...textType.eyebrow, fontSize: 9, color: colors.camel },
+  localeNote: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: colors.camel,
+    marginTop: 6,
+  },
+  localLine: { ...textType.meta, fontSize: 12, lineHeight: 17, color: colors.inkMuted, marginTop: 6 },
   name: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 27, color: colors.ink, marginTop: 8 },
   challengeLine: {
     fontFamily: fonts.serifItalic,
