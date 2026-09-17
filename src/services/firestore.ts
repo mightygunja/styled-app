@@ -167,21 +167,29 @@ export const looksService = {
   },
 
   // Toggle favorite
+  // Looked up by the same userId + lookId query isFavorited() uses. The old
+  // code read favoriteLooks/{userId}_{lookId}, an id nothing ever wrote
+  // (favourites are created with auto ids), so the read was permission-denied
+  // for every user and a heart could never be set or cleared.
   toggleFavorite: async (lookId: string, userId: string) => {
-    const favRef = doc(db, 'favoriteLooks', `${userId}_${lookId}`);
-    const favSnap = await getDoc(favRef);
-    
-    if (favSnap.exists()) {
-      await deleteDoc(favRef);
+    const existing = await getDocs(
+      query(
+        collection(db, 'favoriteLooks'),
+        where('userId', '==', userId),
+        where('lookId', '==', lookId)
+      )
+    );
+
+    if (!existing.empty) {
+      await Promise.all(existing.docs.map(d => deleteDoc(d.ref)));
       return { isFavorited: false };
-    } else {
-      await addDoc(collection(db, 'favoriteLooks'), {
-        userId,
-        lookId,
-        createdAt: Timestamp.now(),
-      });
-      return { isFavorited: true };
     }
+    await addDoc(collection(db, 'favoriteLooks'), {
+      userId,
+      lookId,
+      createdAt: Timestamp.now(),
+    });
+    return { isFavorited: true };
   },
 
   // Check if favorited
@@ -439,7 +447,12 @@ export const chatService = {
 // Catalog content, seeded server-side (see seedStylists Cloud Function) - read-only for clients, same pattern as looksService/palettesService.
 export const stylistsService = {
   getAll: async (): Promise<Stylist[]> => {
-    const snapshot = await getDocs(collection(db, 'stylists'));
+    // Approved applicants are stored under their uid. The seeded personas
+    // ("stylist-1".."stylist-4": stock portraits, invented ratings, a
+    // verified badge) are fabricated social proof and can never fulfil a
+    // booking or an Edit, so they are never listed.
+    const all = await getDocs(collection(db, 'stylists'));
+    const snapshot = { docs: all.docs.filter(d => !/^stylist-\d+$/.test(d.id)) };
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Stylist));
   },
 
@@ -451,6 +464,23 @@ export const stylistsService = {
 };
 
 export const stylistBookingsService = {
+  /**
+   * Moves a booking to a new status. The rules allow exactly this: the
+   * client may change their own booking, and the stylist it is with may
+   * change status (and updatedAt) only. Until this existed nothing ever
+   * moved a booking out of "pending", so notes, photos and the review were
+   * unreachable for every session.
+   */
+  setStatus: async (
+    bookingId: string,
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  ): Promise<void> => {
+    await updateDoc(doc(db, 'stylistBookings', bookingId), {
+      status,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+
   // Create a booking for the given user, resolving price from the stylist's real hourly rate
   create: async (
     userId: string,

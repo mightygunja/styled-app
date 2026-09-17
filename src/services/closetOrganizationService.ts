@@ -315,13 +315,24 @@ class ClosetOrganizationService {
       const lastWornMs = item.lastWornDate ? new Date(item.lastWornDate).getTime() : null;
       const staleWear = lastWornMs !== null && now - lastWornMs > SIX_MONTHS_MS;
 
+      // A piece added recently has simply not had its turn yet. Without this
+      // a new user who had just photographed their closet was told to
+      // declutter every item in it.
+      const addedMs = item.createdAt ? new Date(item.createdAt).getTime() : NaN;
+      const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+      const tooNewToJudge = isNaN(addedMs) || now - addedMs < SIXTY_DAYS_MS;
+
+      if (wornCount === 0 && tooNewToJudge) {
+        return;
+      }
+
       if (wornCount === 0) {
         suggestions.push({
           id: `declutter-unused-${item.id}`,
           item,
           reason: 'unused',
           confidence: 90,
-          explanation: "You haven't worn this item yet",
+          explanation: "In your closet for over two months and not worn yet",
         });
       } else if (staleWear) {
         suggestions.push({

@@ -13,7 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
@@ -72,9 +72,7 @@ export default function AddClosetItemScreen() {
     try {
       // Convert image to base64 with very small size
       console.log('Converting image to base64...');
-      const base64 = await readAsStringAsync(imageUri, {
-        encoding: 'base64',
-      });
+      const base64 = await readImageAsBase64(imageUri);
       const base64Image = `data:image/jpeg;base64,${base64}`;
       
       console.log('Sending to API...');

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/types';
 import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useAuth } from '../contexts/AuthContext';
+import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -69,6 +71,13 @@ const SECTIONS: MoreSection[] = [
 export default function MoreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
+  const [menswearOnly, setMenswearOnly] = useState(false);
+
+  useEffect(() => {
+    buildProfileMatchContext(getCurrentUserId())
+      .then(profile => setMenswearOnly(profile?.wardrobeFocus === 'mens'))
+      .catch(() => undefined);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -95,7 +104,15 @@ export default function MoreScreen() {
           <Text style={styles.rowArrow}>›</Text>
         </TouchableOpacity>
 
-        {SECTIONS.map(section => (
+        {SECTIONS.map(section => ({
+          ...section,
+          // The Lookbook (and the Favorites drawn from it) is womenswear
+          // only. Until looks carry a department, a menswear wardrobe is not
+          // shown a rack of slip dresses and pumps.
+          items: section.items.filter(
+            item => !(menswearOnly && (item.route === 'Recommendations' || item.route === 'Favorites'))
+          ),
+        })).map(section => (
           <View key={section.label}>
             <Text style={styles.sectionLabel}>{section.label}</Text>
             <View style={styles.card}>

@@ -255,13 +255,8 @@ export default function ClosetOrganizationScreen() {
           </Text>
         </View>
         <Text style={styles.declutterExplanation}>{suggestion.explanation}</Text>
-        <View style={styles.declutterConfidence}>
-          <Text style={styles.declutterConfidenceLabel}>Confidence:</Text>
-          <View style={styles.declutterConfidenceBar}>
-            <View style={[styles.declutterConfidenceFill, { width: `${suggestion.confidence}%` }]} />
-          </View>
-          <Text style={styles.declutterConfidenceValue}>{suggestion.confidence}%</Text>
-        </View>
+        {/* No "Confidence: 90%" bar: the figure was a constant per rule, not a
+            measurement. The explanation line above states the real reason. */}
         <View style={styles.declutterActions}>
           <TouchableOpacity style={styles.declutterActionButton} onPress={() => handleKeep(suggestion)}>
             <Text style={styles.declutterActionText}>Keep</Text>

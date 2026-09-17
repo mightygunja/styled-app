@@ -15,9 +15,17 @@ export default function BackButton({ style, textStyle, onPress }: BackButtonProp
   const handlePress = () => {
     if (onPress) {
       onPress();
-    } else {
-      navigation.goBack();
+      return;
     }
+    // A screen opened by URL or refreshed on web is the only route in the
+    // stack: goBack() has nothing to pop and used to do nothing at all,
+    // stranding the user on ~70 screens with no tab bar. Home is the way out.
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    const routeNames: string[] = (navigation.getState() as any)?.routeNames || [];
+    (navigation as any).navigate(routeNames.includes('MainTabs') ? 'MainTabs' : 'Intro');
   };
 
   return (

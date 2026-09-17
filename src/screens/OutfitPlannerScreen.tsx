@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -444,6 +445,17 @@ export default function OutfitPlannerScreen() {
           }}
         />
 
+        {/* expo-calendar has no browser implementation: on web the permission
+            request can never be granted, so the most prominent button on the
+            screen could only flash and do nothing. De-scoped in words there. */}
+        {Platform.OS === 'web' ? (
+          <View style={styles.planWeekWebNote}>
+            <Text style={styles.planWeekSub}>
+              Planning a whole week from your calendar is available in the iOS app, where 33 Trends
+              can read your events. Here you can still plan any day by tapping it.
+            </Text>
+          </View>
+        ) : (
         <TouchableOpacity
           style={[styles.planWeekButton, planningWeek && styles.planWeekButtonBusy]}
           onPress={handlePlanWeek}
@@ -456,6 +468,7 @@ export default function OutfitPlannerScreen() {
           <Text style={styles.planWeekSub}>Dresses every event in the next 7 days from your closet, against the forecast
           </Text>
         </TouchableOpacity>
+        )}
 
         {selectedDate && (
           <View style={styles.selectedDateSection}>
@@ -543,6 +556,13 @@ export default function OutfitPlannerScreen() {
 }
 
 const styles = StyleSheet.create({
+  planWeekWebNote: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: radius.md,
+    backgroundColor: colors.paper,
+  },
   content: { paddingBottom: 60 },
   eyebrow: {
     fontFamily: fonts.sansSemiBold,

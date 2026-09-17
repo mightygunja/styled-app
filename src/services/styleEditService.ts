@@ -140,6 +140,23 @@ export const styleEditService = {
       requestedAt: new Date().toISOString(),
     };
     await setDoc(doc(db, 'styleEdits', id), edit);
+
+    // An Edit is built from the client's closet, and closet items are only
+    // readable by their owner or someone they have shared with. Without this
+    // share every draft ended in permission-denied and no Edit could ever be
+    // delivered. Photos and attributes only - prices stay private. The
+    // request sheet says this in words before the user submits, and the
+    // share is listed (and revocable) under Closet sharing.
+    await setDoc(doc(db, 'closetShares', `${userId}_${stylistId}`), {
+      id: `${userId}_${stylistId}`,
+      ownerId: userId,
+      ownerName: '',
+      viewerId: stylistId,
+      viewerName: stylistName,
+      includePrices: false,
+      createdAt: new Date().toISOString(),
+    }).catch(error => console.log('Could not share closet with stylist', error));
+
     return edit;
   },
 

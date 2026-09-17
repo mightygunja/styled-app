@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
+import { stylistBookingsService } from '../services/firestore';
 import { StylingSession } from '../types';
 import { colors, fonts, radius } from '../theme/designSystem';
 
@@ -28,6 +29,15 @@ export default function MySessionsScreen() {
   useEffect(() => {
     loadSessions();
   }, []);
+
+  const handleCancel = async (sessionId: string) => {
+    try {
+      await stylistBookingsService.setStatus(sessionId, 'cancelled');
+      await loadSessions();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+    }
+  };
 
   const loadSessions = async () => {
     try {
@@ -151,6 +161,23 @@ export default function MySessionsScreen() {
                       in-app call that opens a placeholder reads as broken
                       functionality, which is a review rejection. Restore this
                       once WebRTC/Twilio is wired into VideoCallScreen. */}
+                  {session.status === 'pending' && (
+                    <>
+                      <View style={styles.confirmedNote}>
+                        <Text style={styles.confirmedNoteText}>
+                          Sent to your stylist. It moves to confirmed as soon as they accept.
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.notesButton}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancel this booking request"
+                        onPress={() => handleCancel(session.id)}
+                      >
+                        <Text style={styles.notesButtonText}>Cancel request</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                   {session.status === 'confirmed' && (
                     <View style={styles.confirmedNote}>
                       <Text style={styles.confirmedNoteText}>Your stylist will be in touch to confirm how you'll meet.

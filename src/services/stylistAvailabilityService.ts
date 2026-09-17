@@ -15,7 +15,10 @@
  */
 
 import { collection, doc, getDoc, getDocs, setDoc, query, where } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, auth, functions } from '../config/firebase';
+
+const getStylistBusyRangesFn = httpsCallable(functions, 'getStylistBusyRanges');
 import { TimeSlot } from '../types';
 
 export interface DayWindow {
@@ -97,11 +100,28 @@ export const stylistAvailabilityService = {
     stylistId: string,
     date: string
   ): Promise<Array<{ start: number; end: number }>> => {
-    // Filtered by stylistId only, then narrowed on date in memory - a
-    // stylistId+date composite index would otherwise be needed for what is a
-    // very small per-stylist result set.
+    // Asked of the server, not queried here: a booking is readable only by
+    // its client and its stylist, so a customer's query across all of a
+    // stylist's bookings was permission-denied and every date looked closed.
+    // The function returns bare minute ranges, nothing about who booked.
+    try {
+      const result = await getStylistBusyRangesFn({ stylistId, date });
+      const ranges = ((result.data as any)?.data?.ranges || []) as Array<{ start: number; end: number }>;
+      return ranges.filter(r => typeof r?.start === 'number' && typeof r?.end === 'number');
+    } catch (error) {
+      console.log('Busy-range lookup unavailable, falling back to own bookings', error);
+    }
+
+    // Fallback: the caller's own bookings with this stylist (always readable),
+    // so a client at least never double-books themselves.
+    const uid = auth.currentUser?.uid;
+    if (!uid) return [];
     const snapshot = await getDocs(
-      query(collection(db, 'stylistBookings'), where('stylistId', '==', stylistId))
+      query(
+        collection(db, 'stylistBookings'),
+        where('stylistId', '==', stylistId),
+        where('userId', '==', uid)
+      )
     );
 
     return snapshot.docs

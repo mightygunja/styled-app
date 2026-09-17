@@ -20,7 +20,7 @@ import {
 } from '../services/stylistDashboardService';
 import { StylingSession } from '../types';
 import { getCurrentUserId } from '../services/api';
-import { stylistsService } from '../services/firestore';
+import { stylistsService, stylistBookingsService } from '../services/firestore';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,6 +38,23 @@ export default function StylistDashboardScreen() {
   // A stylist's app account uid doubles as their stylists/{id} doc id -
   // if there's no matching stylist doc, the dashboard is real but empty.
   const stylistId = getCurrentUserId();
+  // A failed load used to fall through to a dashboard of zeros - $0 earned,
+  // no clients, no sessions - which is wrong data presented as real.
+  const [loadError, setLoadError] = useState(false);
+  const [busySessionId, setBusySessionId] = useState<string | null>(null);
+
+  const moveSession = async (sessionId: string, status: 'confirmed' | 'completed' | 'cancelled') => {
+    setBusySessionId(sessionId);
+    try {
+      await stylistBookingsService.setStatus(sessionId, status);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error updating session:', error);
+      setLoadError(true);
+    } finally {
+      setBusySessionId(null);
+    }
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -46,6 +63,7 @@ export default function StylistDashboardScreen() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
 
       // Role check. Without it this screen renders a full earnings dashboard of
       // zeros to anyone who reaches it, which reads as a broken feature rather
@@ -70,6 +88,7 @@ export default function StylistDashboardScreen() {
       setClients(clientsData);
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -143,6 +162,18 @@ export default function StylistDashboardScreen() {
   const renderSessions = () => (
     <View style={styles.sessionsContainer}>
       <Text style={styles.sectionTitle}>Upcoming Sessions ({upcomingSessions.length})</Text>
+      {loadError && (
+        <TouchableOpacity
+          style={styles.errorBanner}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading the dashboard"
+          onPress={loadDashboardData}
+        >
+          <Text style={styles.errorBannerText}>
+            Couldn't load your bookings, so the numbers here may be incomplete. Tap to retry.
+          </Text>
+        </TouchableOpacity>
+      )}
       {upcomingSessions.length === 0 ? (
         <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>No upcoming sessions</Text>
@@ -168,13 +199,56 @@ export default function StylistDashboardScreen() {
               </View>
             </View>
             <View style={styles.sessionFooter}>
-              <Text style={styles.sessionDuration}>{session.duration} minutes</Text>
+              <Text style={styles.sessionDuration}>
+                {session.duration} minutes · {session.status === 'pending' ? 'awaiting your reply' : 'confirmed'}
+              </Text>
               <TouchableOpacity
                 style={styles.viewButton}
                 onPress={() =>navigation.navigate('SessionNotes', { sessionId: session.id })}
               >
                 <Text style={styles.viewButtonText}>View Notes</Text>
               </TouchableOpacity>
+            </View>
+            {/* The stylist's half of the booking: accept or decline a request,
+                and close out a session so the client can see notes, add
+                photos and leave a review. */}
+            <View style={styles.sessionDecisionRow}>
+              {session.status === 'pending' ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.acceptButton}
+                    disabled={busySessionId === session.id}
+                    accessibilityRole="button"
+                    accessibilityLabel="Accept this booking"
+                    onPress={() => moveSession(session.id, 'confirmed')}
+                  >
+                    <Text style={styles.acceptButtonText}>
+                      {busySessionId === session.id ? 'Working…' : 'Accept'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.declineButton}
+                    disabled={busySessionId === session.id}
+                    accessibilityRole="button"
+                    accessibilityLabel="Decline this booking"
+                    onPress={() => moveSession(session.id, 'cancelled')}
+                  >
+                    <Text style={styles.declineButtonText}>Decline</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.acceptButton}
+                  disabled={busySessionId === session.id}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mark this session complete"
+                  onPress={() => moveSession(session.id, 'completed')}
+                >
+                  <Text style={styles.acceptButtonText}>
+                    {busySessionId === session.id ? 'Working…' : 'Mark complete'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ))
@@ -539,6 +613,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.inkMuted,
   },
+  errorBanner: {
+    borderRadius: radius.md,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.rust,
+    padding: 14,
+    marginBottom: 12,
+  },
+  errorBannerText: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.ink },
+  sessionDecisionRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 12 },
+  acceptButton: {
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  acceptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
+  declineButton: { paddingVertical: 10 },
+  declineButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
   viewButton: {
     borderRadius: radius.full,
     backgroundColor: colors.ink,

@@ -180,6 +180,7 @@ export default function HomeScreen() {
   const poolsRef = useRef<OutfitPools | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const dismissProfilePrompt = () => {
     setShowProfilePrompt(false);
@@ -252,6 +253,7 @@ export default function HomeScreen() {
 
   const loadDressMeToday = async (occasionValue: OccasionType) => {
     setCurating(true);
+    setLoadFailed(false);
     try {
       const [weatherResult, itemsResponse, matchContext] = await Promise.all([
         getCurrentWeather(),
@@ -475,6 +477,11 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error('Error loading Dress Me Today:', error);
+      // Everything below the header lives inside an Animated.View that starts
+      // at opacity 0 and is only faded in once the looks exist. A failed load
+      // never reached that fade, leaving a permanently blank page.
+      setLoadFailed(true);
+      fadeIn(fadeAnim, 200).start();
     } finally {
       setLoading(false);
       setCurating(false);
@@ -1041,12 +1048,25 @@ export default function HomeScreen() {
             // empty room: trends, taste-matched pieces and the closet CTA
             // carry it, with the plain empty card only as a last resort.
             <>
-              {!starterTrendsBlock && !starterRailBlock && (
-                <View style={styles.emptyCard}>
+              {loadFailed ? (
+                <TouchableOpacity
+                  style={styles.emptyCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading today's looks"
+                  onPress={() => loadDressMeToday(occasion)}
+                >
                   <Text style={styles.emptyText}>
-                    I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
+                    I couldn't load today's looks — check your connection and tap here to try again.
                   </Text>
-                </View>
+                </TouchableOpacity>
+              ) : (
+                !starterTrendsBlock && !starterRailBlock && (
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyText}>
+                      I only have a few items to work with — add pieces to your closet and I can do a lot more for you.
+                    </Text>
+                  </View>
+                )
               )}
               {starterTrendsBlock}
               {starterRailBlock}

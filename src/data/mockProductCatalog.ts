@@ -859,7 +859,11 @@ function build(row: Row): Product {
     category,
     subcategory: subcategory || undefined,
     price,
-    originalPrice: originalPrice || undefined,
+    // "Was" prices are kept only for partnered merchants whose own pages
+    // supplied them. The hand-authored originals elsewhere rendered as real
+    // strike-throughs and -29% badges, then sent the shopper to an Amazon
+    // search where no such discount exists.
+    originalPrice: EXACT_ITEMS[id] ? originalPrice || undefined : undefined,
     currency: 'USD',
     imageUrl: EXACT_ITEMS[id]?.imageUrl ?? `https://images.unsplash.com/photo-${photo}?w=600`,
     color,
@@ -872,7 +876,14 @@ function build(row: Row): Product {
   };
 }
 
-export const MOCK_CATALOG: Product[] = ROWS.map(build);
+/**
+ * Rows flagged secondhand are hand-written resale "listings" ($85, was $320 at
+ * The RealReal) that correspond to no real item, and under the Amazon
+ * provider their Shop button opened a search for NEW goods. They are left in
+ * ROWS for the day a live resale feed replaces them, but never reach the app;
+ * real secondhand inventory comes from the eBay adapter when it is live.
+ */
+export const MOCK_CATALOG: Product[] = ROWS.filter(row => !row[10]).map(build);
 
 /**
  * The catalogue in a category- and department-interleaved order.

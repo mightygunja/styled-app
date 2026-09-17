@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -37,7 +37,7 @@ export default function ColorAnalysisScreen() {
   const handlePhotoSelected = async (uri: string) => {
     setScreenState('analyzing');
     try {
-      const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+      const base64 = await readImageAsBase64(uri);
       const base64Image = `data:image/jpeg;base64,${base64}`;
       const analysis = await colorAnalysisAPI.analyze(base64Image, getCurrentUserId());
       setResult(analysis);

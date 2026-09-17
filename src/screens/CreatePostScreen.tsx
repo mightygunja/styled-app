@@ -15,7 +15,7 @@ import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, PostType } from '../services/socialFeedService';
 import { challengeService } from '../services/challengeService';
@@ -100,7 +100,7 @@ export default function CreatePostScreen() {
       // Upload each local image to Firebase Storage so it's durably viewable
       const uploadedUrls = await Promise.all(
         images.map(async uri => {
-          const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+          const base64 = await readImageAsBase64(uri);
           return uploadImageToFirebase(`data:image/jpeg;base64,${base64}`, getCurrentUserId());
         })
       );

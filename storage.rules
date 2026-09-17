@@ -1,42 +1,72 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Closet item images - TEMPORARY: Open for testing without auth
+    // Every upload in the app goes to {folder}/{uid}/{file}
+    // (services/firebaseStorage.ts), so one owner check covers them all.
+    //
+    // Until 2026-09-17 every path here was `allow read, write: if true`
+    // ("TEMPORARY: open for testing without auth"): anyone on the internet
+    // could list, download, overwrite or delete users' selfies, full-length
+    // body photos and closet images. Sign-in has been mandatory for months,
+    // so the temporary rules are retired.
+    //
+    // Images are displayed, and handed to the Cloud Functions and the vision
+    // model, through getDownloadURL() links. Those carry their own access
+    // token and do not pass through these rules, so tightening reads here
+    // does not stop an image the app has a link to from rendering (shared
+    // closets and community posts included).
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Closet garments. Also holds post photos and profile pictures, which
+    // other signed-in users see, so reads are open to any signed-in user.
     match /closet/{userId}/{allPaths=**} {
-      allow read, write: if true; // TEMPORARY: Allow all access for testing
-      // TODO: Restrict after adding Firebase Authentication:
-      // allow read: if request.auth != null;
-      // allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if signedIn();
+      allow write: if isOwner(userId);
     }
 
-    // Personal color analysis selfies - TEMPORARY: Open for testing without auth
+    // Personal photos: the owner only, both ways.
     match /colorAnalysis/{userId}/{allPaths=**} {
-      allow read, write: if true; // TEMPORARY: Allow all access for testing
-      // TODO: Restrict after adding Firebase Authentication:
-      // allow read: if request.auth != null;
-      // allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
-
-    // Body & fit analysis photos - TEMPORARY: Open for testing without auth
     match /bodyAnalysis/{userId}/{allPaths=**} {
-      allow read, write: if true; // TEMPORARY: Allow all access for testing
-      // TODO: Restrict after adding Firebase Authentication:
-      // allow read: if request.auth != null;
-      // allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
-
-    // In-store snap-to-check photos - TEMPORARY: Open for testing without auth
     match /storeCheck/{userId}/{allPaths=**} {
-      allow read, write: if true; // TEMPORARY: Allow all access for testing
-      // TODO: Restrict after adding Firebase Authentication:
-      // allow read: if request.auth != null;
-      // allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
+    }
+    match /tryOnPerson/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+    match /tryOn/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+    match /receipts/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
     }
 
-    // Public images (looks, palettes, etc)
+    // Background-removed garment cutouts replace a closet image, so they
+    // follow the closet rule.
+    match /cutouts/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isOwner(userId);
+    }
+
+    // Before/after photos from a stylist session, filed under the uploader.
+    match /sessionPhotos/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isOwner(userId);
+    }
+
+    // Shared assets (looks, palettes). Read-only from clients; written from
+    // the console or admin tooling.
     match /public/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // TEMPORARY: Allow for testing
+      allow write: if false;
     }
   }
 }

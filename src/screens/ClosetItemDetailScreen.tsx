@@ -6,7 +6,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
 import { uploadImageToFirebase } from '../services/firebaseStorage';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
@@ -36,7 +36,7 @@ export default function ClosetItemDetailScreen() {
   const handlePhotoSelected = async (uri: string) => {
     setAddingPhoto(true);
     try {
-      const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+      const base64 = await readImageAsBase64(uri);
       const imageUrl = await uploadImageToFirebase(
         `data:image/jpeg;base64,${base64}`,
         getCurrentUserId()

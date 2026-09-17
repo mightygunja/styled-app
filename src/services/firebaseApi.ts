@@ -265,10 +265,12 @@ export const bodyAnalysisAPI = {
   analyzePhoto: async (
     imageBase64: string,
     userId: string,
-    quizBodyType?: BodyType
+    quizBodyType?: BodyType,
+    /** Whose wardrobe - keeps the photo read inside the right department's body types. */
+    wardrobeFocus?: 'womens' | 'mens' | 'all'
   ): Promise<PhotoBodyEstimate> => {
     const imageUrl = await uploadImageToFirebase(imageBase64, userId, 'bodyAnalysis');
-    const result = await analyzeBodyTypeFn({ imageUrl, quizBodyType });
+    const result = await analyzeBodyTypeFn({ imageUrl, quizBodyType, wardrobeFocus });
     return (result.data as any).data as PhotoBodyEstimate;
   },
 };

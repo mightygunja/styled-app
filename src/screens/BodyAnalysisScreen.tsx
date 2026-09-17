@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -205,9 +205,9 @@ export default function BodyAnalysisScreen() {
     if (!bodyType) return;
     setScreenState('refining');
     try {
-      const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+      const base64 = await readImageAsBase64(uri);
       const base64Image = `data:image/jpeg;base64,${base64}`;
-      const estimate = await bodyAnalysisAPI.analyzePhoto(base64Image, getCurrentUserId(), bodyType);
+      const estimate = await bodyAnalysisAPI.analyzePhoto(base64Image, getCurrentUserId(), bodyType, wardrobeFocus);
       setPhotoEstimate(estimate);
       setScreenState('results');
     } catch (error: any) {

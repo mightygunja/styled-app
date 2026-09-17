@@ -244,7 +244,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'The bag is the volume, so the outfit stays lean: a slouchy shoulder bag over a fitted knit and straight trousers. Chocolate or tan over black reads newer. In menswear the same shift is the soft leather messenger or tote over the backpack.',
     entryPiece: 'a soft leather or suede shoulder bag in chocolate or tan',
-    pieces: ['a060', 'a001', 'ma006', 'a005', 'ma016', 'a045', 'ma010'],
+    pieces: ['a060', 'a001', 'ma006', 'a005', 'ma016', 'a033', 'a008'],
   }),
   seed({
     id: 'seed-belted-waist',
@@ -286,7 +286,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'One scarf, one place: knotted small at the neck over a plain knit, tied over the hair with sunglasses, or looped on a bag strap. A printed scarf against a solid outfit is the whole idea; a printed scarf on a printed dress is a fight. In menswear it is the silk knit tie or the neckerchief under a jacket.',
     entryPiece: 'a printed silk scarf worn at the neck or over the hair',
-    pieces: ['a003', 'a063', 'ma003', 'a018', 'a040', 'ma009', 'a044'],
+    pieces: ['a003', 'a063', 'ma003', 'a018', 'a040', 'ma008'],
   }),
 
   // ---- Where the world outside the northern capitals is right now ----

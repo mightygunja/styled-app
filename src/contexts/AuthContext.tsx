@@ -17,6 +17,7 @@ import {
   deleteUser,
   reauthenticateWithCredential,
   verifyBeforeUpdateEmail,
+  sendPasswordResetEmail,
   EmailAuthProvider,
 } from 'firebase/auth';
 import * as Crypto from 'expo-crypto';
@@ -34,6 +35,8 @@ interface AuthContextType {
   signInWithApple: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Emails a reset link. Resolves even when no account has that address - never reveal which emails are registered. */
+  resetPassword: (email: string) => Promise<void>;
   /** Required by App Store Guideline 5.1.1(v) for any app offering Sign in with Apple. */
   deleteAccount: () => Promise<void>;
   isFacebookConfigured: boolean;
@@ -400,6 +403,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * change when this resolves. It changes when the user clicks the link sent to
    * the NEW address. Until then auth.currentUser.email is still the old one.
    */
+  // There was no recovery path anywhere: a forgotten password was a
+  // permanent lockout. Firebase sends the mail; an unknown address is
+  // swallowed so the form cannot be used to probe who has an account.
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (error: any) {
+      if (error?.code === 'auth/user-not-found') return;
+      if (error?.code === 'auth/invalid-email') {
+        throw new Error('That does not look like an email address.');
+      }
+      throw new Error(authErrorMessage(error));
+    }
+  };
+
   const requestEmailChange = async (newEmail: string, currentPassword: string) => {
     const current = auth.currentUser;
     if (!current?.email) {
@@ -484,6 +502,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isFacebookConfigured,
     requestEmailChange,
     canChangeEmail,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

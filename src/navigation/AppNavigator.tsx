@@ -435,6 +435,16 @@ export default function AppNavigator() {
       linking={linking}
       onReady={syncSeoMeta}
       onStateChange={syncSeoMeta}
+      // Any goBack() with nothing beneath it - a hand-rolled header Cancel,
+      // a "done, go back" after saving, a screen cold-loaded by URL - lands
+      // on Home instead of silently doing nothing. BackButton handles its
+      // own case; this catches the ~100 direct navigation.goBack() calls.
+      onUnhandledAction={action => {
+        if (action.type !== 'GO_BACK' || !navigationRef.isReady()) return;
+        const names: string[] = (navigationRef.getRootState() as any)?.routeNames || [];
+        const home = names.includes('MainTabs') ? 'MainTabs' : names.includes('Intro') ? 'Intro' : null;
+        if (home) (navigationRef as any).navigate(home);
+      }}
       documentTitle={{
         formatter: (options, route) => {
           const label = (options?.title as string) || route?.name || '';

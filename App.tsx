@@ -1,3 +1,5 @@
+// Must load before anything renders: gives Alert.alert a working web implementation.
+import './src/utils/webAlert';
 import React, { useEffect } from 'react';
 import { View, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

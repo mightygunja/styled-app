@@ -5,9 +5,9 @@
  */
 
 import { collection, doc, getDoc, getDocs, addDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { uploadImageToFirebase } from './firebaseStorage';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 
 export interface BeforeAfterPhoto {
   id: string;
@@ -59,8 +59,12 @@ class BeforeAfterService {
     isPublic: boolean = true,
     userId: string = 'user'
   ): Promise<BeforeAfterPhoto> {
-    const base64 = await readAsStringAsync(imageUri, { encoding: 'base64' });
-    const imageUrl = await uploadImageToFirebase(`data:image/jpeg;base64,${base64}`, sessionId, 'sessionPhotos');
+    const base64 = await readImageAsBase64(imageUri);
+    // Filed under the uploader's uid, like every other upload, so the
+    // owner-scoped Storage rule applies. The session link lives on the
+    // Firestore document below, not in the path.
+    const uploaderId = auth.currentUser?.uid || userId;
+    const imageUrl = await uploadImageToFirebase(`data:image/jpeg;base64,${base64}`, uploaderId, 'sessionPhotos');
 
     const data = {
       sessionId, type, imageUrl, category,

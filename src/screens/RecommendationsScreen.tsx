@@ -191,7 +191,9 @@ export default function RecommendationsScreen() {
 
   const handleFavorite = async (lookId: string) => {
     try {
-      await lookAPI.toggleFavorite(getCurrentUserId(), lookId);
+      // (lookId, userId) - these were passed the wrong way round, so the
+      // write was rejected and the heart silently did nothing.
+      await lookAPI.toggleFavorite(lookId, getCurrentUserId());
       setFavorites(prev => {
         const newSet = new Set(prev);
         if (newSet.has(lookId)) {

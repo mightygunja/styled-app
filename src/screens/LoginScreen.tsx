@@ -52,7 +52,27 @@ const HOW_STEPS = [
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { signIn } = useAuth();
+  const { signIn, resetPassword } = useAuth();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+
+  const handleForgotPassword = async () => {
+    setError(null);
+    setNotice(null);
+    if (!email.trim()) {
+      setError('Enter your email above and tap "Forgot password?" again - the reset link goes there.');
+      return;
+    }
+    setResetting(true);
+    try {
+      await resetPassword(email);
+      setNotice(`If ${email.trim()} has an account, a reset link is on its way. Check your inbox and spam folder.`);
+    } catch (err: any) {
+      setError(err?.message || 'Could not send the reset email. Try again in a moment.');
+    } finally {
+      setResetting(false);
+    }
+  };
   const { toast, showToast, hideToast } = useToast();
   const isDesktop = useIsDesktopWeb();
   const { height: windowHeight } = useWindowDimensions();
@@ -180,9 +200,24 @@ export default function LoginScreen() {
 
             {/* A boxed block, not a single line. Sign-in failures now carry
                 actual instructions, and 12pt tobacco on bone loses them. */}
+            <TouchableOpacity
+              style={styles.forgotButton}
+              onPress={handleForgotPassword}
+              disabled={loading || resetting}
+              accessibilityRole="button"
+              accessibilityLabel="Forgot password - email me a reset link"
+            >
+              <Text style={styles.forgotText}>{resetting ? 'Sending…' : 'Forgot password?'}</Text>
+            </TouchableOpacity>
+
             {!!error && (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+            {!!notice && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{notice}</Text>
               </View>
             )}
 
@@ -532,6 +567,8 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 
+  forgotButton: { alignSelf: 'flex-end', paddingVertical: 6 },
+  forgotText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.rust },
   linkButton: { paddingVertical: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
   linkTextBold: { fontFamily: fonts.sansMedium, color: colors.ink },

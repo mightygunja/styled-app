@@ -73,7 +73,17 @@ service cloud.firestore {
     match /closetShares/{shareId} {
       allow read: if isAuthenticated() &&
         (request.auth.uid == resource.data.ownerId || request.auth.uid == resource.data.viewerId);
-      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
+      // The document ID is what closetSharedWithCaller() trusts, so it must be
+      // tied to the fields. Without this, user C could create closetShares/A_C
+      // carrying ownerId: C - which passed the old field-only check - and then
+      // read all of A's closet.
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.ownerId
+        && shareId == request.resource.data.ownerId + '_' + request.resource.data.viewerId;
+      allow update: if isAuthenticated()
+        && request.auth.uid == resource.data.ownerId
+        && request.auth.uid == request.resource.data.ownerId
+        && shareId == request.resource.data.ownerId + '_' + request.resource.data.viewerId;
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.ownerId;
     }
 
@@ -123,10 +133,18 @@ service cloud.firestore {
     }
 
     // Stylist bookings - owned by userId field
+    // The client owns the booking; the stylist it was made with (stylist doc
+    // id == their uid) can read it and move its status, nothing else. Without
+    // the stylist branch the dashboard query was denied and rendered zeros,
+    // and no booking could ever leave "pending".
     match /stylistBookings/{bookingId} {
-      allow read: if isResourceOwner();
+      allow read: if isResourceOwner() ||
+        (isAuthenticated() && request.auth.uid == resource.data.stylistId);
       allow create: if isCreatingOwnResource();
-      allow update, delete: if isResourceOwner();
+      allow update: if isResourceOwner() ||
+        (isAuthenticated() && request.auth.uid == resource.data.stylistId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']));
+      allow delete: if isResourceOwner();
     }
 
     // Stylist reviews - visible to all signed-in users, only the author can create/edit/remove their own
@@ -147,10 +165,16 @@ service cloud.firestore {
     // ==================== SOCIAL FEED ====================
 
     // Posts - authored by userId, publicly readable to signed-in users
+    // Anyone signed in may move a post's counters (a like, comment, save or
+    // share by someone other than the author has to land somewhere); only the
+    // author may change anything else.
     match /posts/{postId} {
       allow read: if isAuthenticated();
       allow create: if isCreatingOwnResource();
-      allow update, delete: if isResourceOwner();
+      allow update: if isResourceOwner() ||
+        (isAuthenticated() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'saves', 'shares']));
+      allow delete: if isResourceOwner();
     }
 
     // Likes - visible to all signed-in users, only the liker can create/remove their like

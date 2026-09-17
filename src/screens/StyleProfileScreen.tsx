@@ -111,13 +111,37 @@ export default function StyleProfileScreen() {
   }
 
   const palette = profile.colorPalette.dominantColors.slice(0, 5);
+  // With nothing scanned the analysis has no evidence, yet it used to fall
+  // back to "Considered Casual" with a description and trait lists - an
+  // invented read of a closet that does not exist.
+  const hasCloset = (profile.wardrobeStats?.totalItems ?? 0) > 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>STYLE PROFILE · {currentSeason().toUpperCase()} EDITION</Text>
-        <Text style={styles.archetype}>{voice.archetype}</Text>
-        <Text style={styles.description}>{voice.description}</Text>
+        {hasCloset ? (
+          <>
+            <Text style={styles.archetype}>{voice.archetype}</Text>
+            <Text style={styles.description}>{voice.description}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.archetype}>Not read yet</Text>
+            <Text style={styles.description}>
+              Your style read comes from the clothes you actually own. Add a few pieces and this page
+              tells you what your closet says about you — not before.
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyCta}
+              accessibilityRole="button"
+              accessibilityLabel="Add closet items"
+              onPress={() => navigation.navigate('AddClosetItem')}
+            >
+              <Text style={styles.emptyCtaText}>Add my first pieces</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <Text style={styles.sectionLabel}>YOUR PALETTE</Text>
         <View style={styles.paletteRow}>
@@ -229,6 +253,7 @@ export default function StyleProfileScreen() {
           <Text style={styles.colorAnalysisLink}>Check an item →</Text>
         </TouchableOpacity>
 
+        {hasCloset && (
         <View style={styles.voiceColumns}>
           <View style={styles.voiceColumn}>
             <Text style={styles.sectionLabel}>IN YOUR STYLE</Text>
@@ -249,6 +274,7 @@ export default function StyleProfileScreen() {
             ))}
           </View>
         </View>
+        )}
 
         <View style={styles.divider} />
 
@@ -277,6 +303,15 @@ function safeColor(color: string): string {
 }
 
 const styles = StyleSheet.create({
+  emptyCta: {
+    alignSelf: 'flex-start',
+    marginTop: 16,
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  emptyCtaText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
   container: {
     flex: 1,
     backgroundColor: colors.bone,

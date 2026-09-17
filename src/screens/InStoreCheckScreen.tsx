@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -49,7 +49,7 @@ export default function InStoreCheckScreen() {
     try {
       const userId = getCurrentUserId();
       const [base64, profile, closetResponse] = await Promise.all([
-        readAsStringAsync(uri, { encoding: 'base64' }),
+        readImageAsBase64(uri),
         styleProfileService.getStyleProfile(userId),
         closetAPI.getItems(userId),
       ]);

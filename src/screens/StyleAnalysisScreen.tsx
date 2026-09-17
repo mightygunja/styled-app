@@ -18,6 +18,7 @@ import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
+import BackButton from '../components/BackButton';
 
 const { width } = Dimensions.get('window');
 
@@ -122,11 +123,26 @@ export default function StyleAnalysisScreen() {
     );
   }
 
-  if (!profile) {
+  // An empty closet used to render a full page of zeros plus invented values
+  // ("Most Worn Category: tops", "Winter Palette"). There is nothing to
+  // analyse yet, so the screen says so and offers the way forward.
+  if (!profile || (profile.wardrobeStats?.totalItems ?? 0) === 0) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>No analysis available</Text>
+          <Text style={styles.errorText}>
+            Nothing to analyse yet. Add pieces to your closet and this page fills in with your real
+            styles, colours and brands.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyCta}
+            accessibilityRole="button"
+            accessibilityLabel="Add closet items"
+            onPress={() => navigation.navigate('AddClosetItem' as never)}
+          >
+            <Text style={styles.emptyCtaText}>Add my first pieces</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -208,12 +224,11 @@ export default function StyleAnalysisScreen() {
           <Text style={styles.sectionTitle}>Color Palette</Text>
           <View style={styles.colorCard}>
             <View style={styles.colorHeader}>
-              <Text style={styles.colorSeasonTitle}>
-                {profile.colorPalette.seasonalPalette.charAt(0).toUpperCase() + 
-                 profile.colorPalette.seasonalPalette.slice(1)} Palette
-              </Text>
-              <Text style={styles.colorSeasonSubtitle}>Based on your color choices
-              </Text>
+              {/* No "Winter Palette" label: that was a fallback guess, and it
+                  contradicted the real 12-season result from Personal Color
+                  Analysis. These are simply the colours in the closet. */}
+              <Text style={styles.colorSeasonTitle}>The colours you own</Text>
+              <Text style={styles.colorSeasonSubtitle}>Counted from the pieces in your closet</Text>
             </View>
             
             <View style={styles.colorGrid}>
@@ -347,7 +362,8 @@ export default function StyleAnalysisScreen() {
               </Text>
             </View>
             <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Most Worn Category</Text>
+              {/* Counted from items owned, not from wear - so it is labelled that way. */}
+              <Text style={styles.statLabel}>Largest Category</Text>
               <Text style={styles.statValue}>
                 {profile.wardrobeStats.mostWornCategory}
               </Text>
@@ -377,6 +393,14 @@ export default function StyleAnalysisScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyCta: {
+    marginTop: 20,
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  emptyCtaText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
   container: {
     flex: 1,
     backgroundColor: colors.card,

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import { userProfileService, UserProfile } from '../services/userProfileService';
 import { uploadImageToFirebase } from '../services/firebaseStorage';
@@ -114,7 +114,7 @@ export default function EditProfileScreen() {
     if (!result.canceled && result.assets[0]) {
       try {
         setSaving(true);
-        const base64 = await readAsStringAsync(result.assets[0].uri, { encoding: 'base64' });
+        const base64 = await readImageAsBase64(result.assets[0].uri);
         const url = await uploadImageToFirebase(`data:image/jpeg;base64,${base64}`, getCurrentUserId());
         setProfileImageUrl(url);
       } catch (error) {

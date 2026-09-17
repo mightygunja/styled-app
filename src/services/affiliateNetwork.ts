@@ -798,9 +798,9 @@ export function curatedCatalogNotice(): string | null {
   }
   if (provider === 'amazon') {
     return (
-      'Picks curated by us; photos are representative, not exact product shots, and each piece ' +
-      'links to a matching search on Amazon rather than a specific in-stock item. As an Amazon ' +
-      'Associate we earn from qualifying purchases.'
+      'Picks curated by us; photos are representative, not exact product shots, prices are a ' +
+      'guide to what the piece typically costs, and each one links to a matching search on Amazon ' +
+      'rather than a specific in-stock item. As an Amazon Associate we earn from qualifying purchases.'
     );
   }
   // eBay's notice asks for FTC-style disclosure wherever its links appear, so
@@ -896,6 +896,26 @@ export function shopDestination(product: Product): string | null {
 /** Recorded on outbound clicks so mock traffic is never mistaken for real. */
 export function activeProviderName(): MarketplaceProvider {
   return effectiveProvider();
+}
+
+/**
+ * Whether Shop can honestly offer a Secondhand filter: only when live eBay
+ * listings are part of the feed. The curated catalogue carries no resale
+ * inventory.
+ */
+export function offersLiveSecondhand(): boolean {
+  const provider = effectiveProvider();
+  return provider === 'ebay' || provider === 'starter';
+}
+
+/**
+ * Whether the feed reports genuine sale prices. The curated catalogue and
+ * eBay listings do not, so "On sale" and "Biggest discount" are hidden for
+ * them rather than shown over an empty or invented result.
+ */
+export function reportsSalePrices(): boolean {
+  const provider = effectiveProvider();
+  return provider !== 'mock' && provider !== 'amazon' && provider !== 'ebay' && provider !== 'starter';
 }
 
 export const DEFAULT_PRODUCT_PAGE_SIZE = DEFAULT_PAGE_SIZE;

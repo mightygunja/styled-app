@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readImageAsBase64 } from '../utils/imageData';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import PhotoUploadModal from '../components/PhotoUploadModal';
@@ -55,7 +55,7 @@ export default function TryOnScreen() {
 
   const handlePersonPhoto = async (uri: string) => {
     try {
-      const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+      const base64 = await readImageAsBase64(uri);
       const url = await uploadImageToFirebase(
         `data:image/jpeg;base64,${base64}`,
         getCurrentUserId(),

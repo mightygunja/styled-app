@@ -80,7 +80,10 @@ class ChallengeService {
     const already = await this.hasJoinedChallenge(challengeId, userId);
     if (already) return true;
     await addDoc(collection(db, 'challengeParticipants'), { challengeId, userId, joinedAt: Timestamp.now() });
-    await updateDoc(doc(db, 'challenges', challengeId), { participants: increment(1) });
+    // The challenge document is server-managed (rules: write false), so this
+    // counter bump is best-effort. Un-caught, it made every successful join
+    // report "Could not join".
+    await updateDoc(doc(db, 'challenges', challengeId), { participants: increment(1) }).catch(() => {});
     return true;
   }
 
@@ -99,7 +102,9 @@ class ChallengeService {
   async submitEntry(challengeId: string, userId: string, postId: string, imageUrl: string, caption: string): Promise<ChallengeEntry> {
     const data = { challengeId, userId, postId, imageUrl, caption, votes: 0, createdAt: Timestamp.now() };
     const docRef = await addDoc(collection(db, 'challengeEntries'), data);
-    await updateDoc(doc(db, 'challenges', challengeId), { entries: increment(1) });
+    // Best-effort for the same reason as joinChallenge: the entry above is
+    // the real write, and failing here told users to post a duplicate.
+    await updateDoc(doc(db, 'challenges', challengeId), { entries: increment(1) }).catch(() => {});
     return { id: docRef.id, ...data, createdAt: data.createdAt.toDate().toISOString() };
   }
 

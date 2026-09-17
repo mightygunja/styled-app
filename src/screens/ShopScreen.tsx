@@ -18,7 +18,13 @@ import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { colors, radius, fonts, type as textType, spacing } from '../theme/designSystem';
-import { getActiveAdapter, curatedCatalogNotice, amazonSearchUrl } from '../services/affiliateNetwork';
+import {
+  getActiveAdapter,
+  curatedCatalogNotice,
+  amazonSearchUrl,
+  offersLiveSecondhand,
+  reportsSalePrices,
+} from '../services/affiliateNetwork';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
@@ -349,20 +355,26 @@ export default function ShopScreen() {
           onPress={toggleMatchedOnly}
           style={styles.chipSpacing}
         />
-        <Chip
-          label="Secondhand"
-          active={secondhandOnly}
-          onPress={() => setSecondhandOnly(!secondhandOnly)}
-          style={styles.chipSpacing}
-        />
-        <Chip
-          label="On sale"
-          active={onSaleOnly}
-          onPress={() => setOnSaleOnly(!onSaleOnly)}
-          style={styles.chipSpacing}
-        />
+        {/* Offered only when the feed can honour them: live resale
+            listings for Secondhand, real reported sale prices for On sale. */}
+        {offersLiveSecondhand() && (
+          <Chip
+            label="Secondhand"
+            active={secondhandOnly}
+            onPress={() => setSecondhandOnly(!secondhandOnly)}
+            style={styles.chipSpacing}
+          />
+        )}
+        {reportsSalePrices() && (
+          <Chip
+            label="On sale"
+            active={onSaleOnly}
+            onPress={() => setOnSaleOnly(!onSaleOnly)}
+            style={styles.chipSpacing}
+          />
+        )}
         <View style={styles.refineDivider} />
-        {SORT_OPTIONS.map(option => (
+        {SORT_OPTIONS.filter(option => option.value !== 'discount' || reportsSalePrices()).map(option => (
           <Chip
             key={option.value}
             label={option.label}

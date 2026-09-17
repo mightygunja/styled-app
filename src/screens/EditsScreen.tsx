@@ -233,6 +233,13 @@ export default function EditsScreen() {
                 multiline
               />
 
+              {/* Consent in words: requesting writes a closet share so the
+                  stylist can read the pieces they are styling. */}
+              <Text style={styles.shareConsent}>
+                Requesting shares your closet with this stylist — photos and details, never prices —
+                so they can build looks from what you own. You can end it any time under Closet sharing.
+              </Text>
+
               <Button
                 title={submitting ? 'Requesting…' : 'Request Edit'}
                 onPress={handleSubmit}
@@ -290,6 +297,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   modalTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  shareConsent: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 18, color: colors.inkMuted, marginTop: spacing.md },
   closeButton: { fontSize: 20, color: colors.inkMuted },
   modalScroll: { paddingHorizontal: spacing.page },
   modalLabel: { ...textType.eyebrow, marginTop: spacing.lg, marginBottom: 10 },

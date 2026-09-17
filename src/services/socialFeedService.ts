@@ -271,7 +271,10 @@ class SocialFeedService {
     if (await this.isPostLiked(postId, userId)) return false;
 
     await addDoc(collection(db, 'postLikes'), { postId, userId, createdAt: Timestamp.now() });
-    await updateDoc(postRef, { likes: increment(1) });
+    // The like document is the like; the counter must never fail it. This
+    // was the one un-caught counter, so liking anyone else's post threw,
+    // showed "Action failed" and never sent the notification below.
+    await updateDoc(postRef, { likes: increment(1) }).catch(() => {});
 
     notifyActivity(
       postSnap.data().userId,
@@ -417,7 +420,7 @@ class SocialFeedService {
     const ref = doc(db, 'posts', postId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return false;
-    await updateDoc(ref, { shares: increment(1) });
+    await updateDoc(ref, { shares: increment(1) }).catch(() => {});
     return true;
   }
 
