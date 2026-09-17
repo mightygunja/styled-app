@@ -13,6 +13,8 @@ export type RootStackParamList = {
     sourceItemId: string;
     /** `reasons` names the facets that matched, strongest first. */
     similarItems: Array<{ item: any; similarity: number; reasons?: string[] }>;
+    /** Where the list came from - decides which explanation the screen may honestly give. */
+    source?: 'item' | 'look';
   };
   FilterModal: { occasion?: Occasion };
   StylistList: undefined;
@@ -85,6 +87,8 @@ export type RootStackParamList = {
     | {
         category?: ItemCategory;
         matchedOnly?: boolean;
+        /** Pre-fills the Shop search box (an Edit's "bag" gap opens Accessories searched for bag). */
+        query?: string;
         secondhandOnly?: boolean;
         /** Arriving from a trend surface: results filter/rank to this trend. */
         trendId?: string;

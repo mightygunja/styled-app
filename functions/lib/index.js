@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.getLocaleStyle = exports.personalizeTrendReport = exports.searchEbayProducts = exports.archiveTrend = exports.publishTrend = exports.listTrendDesk = exports.draftTrendReport = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.searchSkimlinksProducts = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
+exports.estimateResaleValue = exports.planOutfitsForSchedule = exports.generatePackingList = exports.parseReceipt = exports.draftStyleEdit = exports.receiptInbox = exports.onUserDeleted = exports.seedChallenges = exports.rotateChallenges = exports.aggregateStylistReviews = exports.reviewStylistApplication = exports.listStylistApplications = exports.recordAffiliateRevenue = exports.getAffiliateAnalytics = exports.getAdminStatus = exports.getLocaleStyle = exports.personalizeTrendReport = exports.searchEbayProducts = exports.archiveTrend = exports.publishTrend = exports.listTrendDesk = exports.draftTrendReport = exports.curateDailyOutfits = exports.curateStyleEdit = exports.curateExploreCollections = exports.renderTryOn = exports.removeGarmentBackground = exports.searchSkimlinksProducts = exports.wrapAffiliateLink = exports.searchRakutenProducts = exports.searchMarketplaceProducts = exports.getStylistBusyRanges = exports.seedStylists = exports.shopMyCloset = exports.chatWithStylist = exports.findSimilarItems = exports.generateImageEmbedding = exports.analyzeStoreItem = exports.analyzeBodyType = exports.analyzeColorSeason = exports.classifyGarmentImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
@@ -189,15 +189,27 @@ const BODY_TYPES = [
     'hourglass', 'topHourglass', 'bottomHourglass',
     'pear', 'invertedTriangle', 'rectangle', 'apple', 'diamond',
 ];
+// Menswear builds (models/personalStyleProfile.ts MENS_BODY_TYPES). The photo
+// read used to know only the womenswear list, so a menswear user who refined
+// with a photo was always told the photo "read differently" and offered a
+// women's guide - bust, dresses, wrap tops - that Apply then saved.
+const MENS_BODY_TYPES = ['mTrapezoid', 'mRectangle', 'mTriangle', 'mOval', 'mInvertedTriangle'];
+const MENS_BODY_TYPE_GLOSS = 'mTrapezoid = shoulders and chest broader than waist and hips; mRectangle = shoulders, waist and hips about the same width; ' +
+    'mTriangle = waist/hips wider than shoulders; mOval = fuller through the middle than shoulders or hips; ' +
+    'mInvertedTriangle = very broad shoulders and chest tapering sharply to narrow hips';
 exports.analyzeBodyType = functions
     .runWith({ memory: '1GB', timeoutSeconds: 120, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
     var _a, _b;
     try {
-        const { imageUrl, quizBodyType } = data;
+        const { imageUrl, quizBodyType, wardrobeFocus } = data;
         if (!imageUrl) {
             throw new functions.https.HttpsError('invalid-argument', 'imageUrl is required');
         }
+        // Department: said outright by the client, or implied by a menswear
+        // quiz result. Everything below is constrained to that list.
+        const mens = wardrobeFocus === 'mens' || /^m[A-Z]/.test(String(quizBodyType || ''));
+        const allowedTypes = mens ? MENS_BODY_TYPES : BODY_TYPES;
         console.log('Analyzing body type for:', imageUrl, quizBodyType ? `(quiz said: ${quizBodyType})` : '');
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -209,7 +221,8 @@ exports.analyzeBodyType = functions
                             type: 'text',
                             text: `You are a professional image consultant estimating body/silhouette type from a single full-length photo. Assess shoulder width, waist definition, and hip width relative to each other. Return ONLY valid JSON with this exact shape:
 {
-  "bodyType": "one of: ${BODY_TYPES.join(' | ')}",
+  "bodyType": "one of: ${allowedTypes.join(' | ')}",${mens ? `
+  // These are menswear builds: ${MENS_BODY_TYPE_GLOSS}.` : ''}
   "confidence": "high" | "medium" | "low",
   "reasoning": "1-2 sentence factual explanation of the proportions you observed (shoulders vs hips, waist definition) - never comment on weight, size, or attractiveness"
 }
@@ -232,7 +245,7 @@ If the photo doesn't clearly show a full standing figure (cropped, seated, too d
         if (result.error === 'no_figure_detected') {
             throw new functions.https.HttpsError('invalid-argument', 'We couldn\'t clearly see a full standing figure in that photo. Please try again with a full-length, front-facing photo.');
         }
-        if (!result.bodyType || !BODY_TYPES.includes(result.bodyType)) {
+        if (!result.bodyType || !allowedTypes.includes(result.bodyType)) {
             throw new functions.https.HttpsError('internal', 'Body analysis did not return a valid body type.');
         }
         const agreesWithQuiz = quizBodyType ? result.bodyType === quizBodyType : null;
@@ -552,8 +565,18 @@ exports.findSimilarItems = functions
     .runWith({ memory: '1GB', timeoutSeconds: 60, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
     try {
-        const { itemId, userId, limit = 10, minSimilarity = 0.3 } = data;
-        if (!itemId || !userId) {
+        const { itemId, limit = 10, minSimilarity = 0.3 } = data;
+        // The closet searched is always the caller's own. This runs with admin
+        // credentials, so trusting a userId from the payload let any caller
+        // read any other user's closet past the Firestore rules.
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'Sign in to find similar items.');
+        }
+        const userId = context.auth.uid;
+        if (data.userId && data.userId !== userId) {
+            throw new functions.https.HttpsError('permission-denied', 'userId does not match the signed-in user.');
+        }
+        if (!itemId) {
             throw new functions.https.HttpsError('invalid-argument', 'itemId and userId are required');
         }
         const targetDoc = await db.collection('closetItems').doc(itemId).get();
@@ -561,6 +584,14 @@ exports.findSimilarItems = functions
             throw new functions.https.HttpsError('not-found', 'Item not found');
         }
         const target = targetDoc.data();
+        // Same access the rules grant on closetItems: the owner, or someone the
+        // owner has explicitly shared their closet with.
+        if ((target === null || target === void 0 ? void 0 : target.userId) !== userId) {
+            const share = await db.collection('closetShares').doc(`${target === null || target === void 0 ? void 0 : target.userId}_${userId}`).get();
+            if (!share.exists) {
+                throw new functions.https.HttpsError('permission-denied', 'That item is not in a closet you can see.');
+            }
+        }
         const targetEmbedding = target === null || target === void 0 ? void 0 : target.embedding;
         const itemsSnapshot = await db
             .collection('closetItems')
@@ -843,8 +874,17 @@ exports.shopMyCloset = functions
     .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
     try {
-        const { lookId, userId, limit = 10, minSimilarity = 0.6 } = data;
-        if (!lookId || !userId) {
+        const { lookId, limit = 10, minSimilarity = 0.6 } = data;
+        // Always the caller's own closet - a userId from the payload let anyone
+        // enumerate another user's closet with admin credentials.
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'Sign in to shop your closet.');
+        }
+        const userId = context.auth.uid;
+        if (data.userId && data.userId !== userId) {
+            throw new functions.https.HttpsError('permission-denied', 'userId does not match the signed-in user.');
+        }
+        if (!lookId) {
             throw new functions.https.HttpsError('invalid-argument', 'lookId and userId are required');
         }
         // Get look
@@ -901,6 +941,8 @@ exports.shopMyCloset = functions
         };
     }
     catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
         console.error('Error in shop my closet:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
@@ -998,15 +1040,74 @@ const SEED_STYLISTS = {
         responseTime: '< 3 hours',
     },
 };
+/**
+ * Retires the seeded stylist personas.
+ *
+ * This endpoint used to WRITE the SEED_STYLISTS personas - invented people
+ * with stock portraits, a 4.9 rating from 127 reviews and a verified badge -
+ * into the live `stylists` collection, and it was callable by anyone with no
+ * auth check. Fabricated social proof has no place in the marketplace, and a
+ * persona can never accept a booking or deliver an Edit. The name is kept so
+ * nothing that references it breaks, but it is now admin-only and does the
+ * opposite: it deletes those documents. The client also filters the persona
+ * ids out, so they are hidden whether or not this has been run.
+ */
 exports.seedStylists = functions
     .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
+    requireAdmin(context);
     const batch = db.batch();
-    for (const [id, stylist] of Object.entries(SEED_STYLISTS)) {
-        batch.set(db.collection('stylists').doc(id), stylist, { merge: true });
+    for (const id of Object.keys(SEED_STYLISTS)) {
+        batch.delete(db.collection('stylists').doc(id));
     }
     await batch.commit();
-    return { success: true, count: Object.keys(SEED_STYLISTS).length };
+    return { success: true, removed: Object.keys(SEED_STYLISTS).length };
+});
+/**
+ * The times a stylist is already booked on one date, as minute ranges.
+ *
+ * A booking is readable only by the client who made it and the stylist it is
+ * with - rightly. But working out which slots are free needs every booking
+ * for that stylist, so the client-side query was denied for every customer
+ * and every date read "not taking bookings". This returns only start/end
+ * minutes: no names, no session types, nothing about who booked.
+ */
+exports.getStylistBusyRanges = functions
+    .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+    .https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in to see availability.');
+    }
+    const stylistId = String((data === null || data === void 0 ? void 0 : data.stylistId) || '');
+    const date = String((data === null || data === void 0 ? void 0 : data.date) || '');
+    if (!stylistId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        throw new functions.https.HttpsError('invalid-argument', 'stylistId and date (YYYY-MM-DD) are required');
+    }
+    const toMinutes = (display) => {
+        const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(display.trim());
+        if (!m)
+            return null;
+        let hours = Number(m[1]) % 12;
+        if (m[3].toUpperCase() === 'PM')
+            hours += 12;
+        return hours * 60 + Number(m[2]);
+    };
+    const snapshot = await db.collection('stylistBookings').where('stylistId', '==', stylistId).get();
+    const ranges = snapshot.docs
+        .map(d => d.data())
+        .filter(b => b.status !== 'cancelled')
+        .map(b => {
+        const scheduled = String(b.scheduledDate || '');
+        const space = scheduled.indexOf(' ');
+        if (space === -1 || scheduled.slice(0, space) !== date)
+            return null;
+        const start = toMinutes(scheduled.slice(space + 1));
+        if (start === null)
+            return null;
+        return { start, end: start + (typeof b.duration === 'number' ? b.duration : 60) };
+    })
+        .filter((r) => r !== null);
+    return { success: true, data: { ranges } };
 });
 // ==================== SHOPPING MARKETPLACE (SOVRN COMMERCE) ====================
 //
@@ -2859,6 +2960,8 @@ exports.reviewStylistApplication = functions
     // Approval. The stylist doc id is the applicant's uid, which is what makes
     // the whole role check work - AccountScreen and StylistDashboard both look
     // up stylists/{their own uid}.
+    const PORTFOLIO_IMAGE_URL = /^https?:\/\/\S+\.(jpe?g|png|webp|gif)(\?\S*)?$/i;
+    const portfolioUrls = (Array.isArray(application.portfolioUrls) ? application.portfolioUrls : []).filter((url) => typeof url === 'string' && url.trim().length > 0);
     const stylistDoc = {
         id: applicationId,
         name: application.fullName || 'Stylist',
@@ -2873,11 +2976,19 @@ exports.reviewStylistApplication = functions
         availability: [],
         yearsExperience: typeof application.yearsExperience === 'number' ? application.yearsExperience : 0,
         certifications: Array.isArray(application.certifications) ? application.certifications : [],
-        portfolio: (Array.isArray(application.portfolioUrls) ? application.portfolioUrls : []).map((url, i) => ({
+        // The application asks for "links to work" - Instagram, a portfolio
+        // site. Those are pages, not images, and rendering them as image tiles
+        // gave every real stylist a row of blank rectangles. Only a URL that
+        // points straight at an image file becomes a portfolio tile; the rest
+        // are kept as outbound links.
+        portfolio: portfolioUrls
+            .filter(url => PORTFOLIO_IMAGE_URL.test(url))
+            .map((url, i) => ({
             id: `portfolio-${i + 1}`,
             imageUrl: url,
             title: `Work sample ${i + 1}`,
         })),
+        links: portfolioUrls.filter(url => !PORTFOLIO_IMAGE_URL.test(url)),
         sessionTypes: Array.isArray(application.sessionTypes) ? application.sessionTypes : [],
         languages: Array.isArray(application.languages) ? application.languages : [],
         location: application.location || '',
@@ -2912,6 +3023,45 @@ exports.reviewStylistApplication = functions
     console.log(`Approved stylist application ${applicationId}`);
     return { success: true, decision: 'approved' };
 });
+// ==================== STYLIST RATING AGGREGATION ====================
+/**
+ * Keeps stylists/{id}.rating and .reviewCount equal to the real reviews.
+ *
+ * Clients cannot write stylist docs (rules: write false), and nothing else
+ * maintained these fields, so an approved stylist showed "New - 0 reviews"
+ * forever, directly above a populated review list. Recomputed from the
+ * reviews collection on every write rather than incremented, so an edited or
+ * deleted review can never leave the numbers drifting.
+ */
+exports.aggregateStylistReviews = functions.firestore
+    .document('reviews/{reviewId}')
+    .onWrite(async (change) => {
+    const stylistIds = new Set();
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.exists ? change.after.data() : null;
+    if (before === null || before === void 0 ? void 0 : before.stylistId)
+        stylistIds.add(before.stylistId);
+    if (after === null || after === void 0 ? void 0 : after.stylistId)
+        stylistIds.add(after.stylistId);
+    for (const stylistId of stylistIds) {
+        const stylistRef = db.collection('stylists').doc(stylistId);
+        const stylistSnap = await stylistRef.get();
+        if (!stylistSnap.exists)
+            continue;
+        const reviewsSnap = await db.collection('reviews').where('stylistId', '==', stylistId).get();
+        const ratings = reviewsSnap.docs
+            .map(d => d.data().rating)
+            .filter((r) => typeof r === 'number' && r > 0);
+        const average = ratings.length
+            ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+            : 0;
+        await stylistRef.update({
+            rating: Math.round(average * 10) / 10,
+            reviewCount: ratings.length,
+        });
+    }
+    return null;
+});
 // ==================== CHALLENGE SEEDING ====================
 /**
  * The pool challenges rotate through.
@@ -2925,7 +3075,6 @@ const CHALLENGE_POOL = [
         slug: 'one-piece-five-ways',
         title: 'One piece, five ways',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['onepiecefiveways', 'versatility'],
         description: 'Pick the hardest-working item in your closet and show five genuinely different outfits built around it. Bonus points if two of them are for completely different occasions.',
         rules: [
@@ -2938,7 +3087,6 @@ const CHALLENGE_POOL = [
         slug: 'shop-your-closet',
         title: 'Shop your own closet',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['shopyourcloset', 'rediscovery'],
         description: 'Build an outfit entirely from pieces you have not worn in the last three months. The ones you forgot you owned are usually the most interesting.',
         rules: [
@@ -2951,7 +3099,6 @@ const CHALLENGE_POOL = [
         slug: 'nothing-but-neutrals',
         title: 'Nothing but neutrals',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['nothingbutneutrals', 'colour'],
         description: 'Cream, camel, charcoal, bone. Prove a restricted palette is a discipline rather than a limitation - texture and silhouette have to do all the work.',
         rules: ['Neutrals only', 'No accent colours', 'Texture is your friend'],
@@ -2960,7 +3107,6 @@ const CHALLENGE_POOL = [
         slug: 'lowest-cost-per-wear',
         title: 'Your lowest cost-per-wear',
         type: 'monthly',
-        prize: 'Featured on the community feed',
         hashtags: ['costperwear', 'value'],
         description: 'An outfit made only from the pieces you wear most. Share the cost-per-wear if you have it - the best answers here are usually the oldest things you own.',
         rules: ['Only your most-worn pieces', 'Share the cost-per-wear if you track it'],
@@ -2969,7 +3115,6 @@ const CHALLENGE_POOL = [
         slug: 'one-colour-head-to-toe',
         title: 'One colour, head to toe',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['monochrome', 'colour'],
         description: 'Commit to one colour for the whole outfit. The trick is varying the shade and texture so it reads considered rather than uniform.',
         rules: ['A single colour family', 'Vary the shade and texture', 'Neutrals count as a colour'],
@@ -2978,7 +3123,6 @@ const CHALLENGE_POOL = [
         slug: 'secondhand-only',
         title: 'Secondhand only',
         type: 'monthly',
-        prize: 'Featured on the community feed',
         hashtags: ['secondhand', 'sustainability'],
         description: 'An outfit where nothing was bought new. Tell us where you found the best piece - half the pleasure is in the hunt.',
         rules: ['Nothing bought new', 'Name where you found it'],
@@ -2987,7 +3131,6 @@ const CHALLENGE_POOL = [
         slug: 'dress-for-the-weather',
         title: 'Dress for the actual weather',
         type: 'daily',
-        prize: 'Featured on the community feed',
         hashtags: ['dressfortheweather', 'practical'],
         description: 'No styling for an imaginary climate. Whatever it is doing outside your window right now - dress for that, and make it look good anyway.',
         rules: ['Must suit the real weather where you are today', 'Say what it is doing outside'],
@@ -2996,7 +3139,6 @@ const CHALLENGE_POOL = [
         slug: 'carry-on-only',
         title: 'Carry-on only',
         type: 'monthly',
-        prize: 'Featured on the community feed',
         hashtags: ['carryononly', 'travel'],
         description: 'Nine pieces, seven days, one bag. Show the pieces and how they recombine - this is the closest thing styling has to a puzzle.',
         rules: ['Nine pieces maximum', 'Show at least five outfits from them'],
@@ -3005,7 +3147,6 @@ const CHALLENGE_POOL = [
         slug: 'oldest-thing-you-own',
         title: 'The oldest thing you own',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['oldestthingyouown', 'longevity'],
         description: 'Build a look around the piece you have had longest. Anything that survived that many wardrobe clear-outs has earned its place.',
         rules: ['Feature your longest-owned piece', 'Tell us how long you have had it'],
@@ -3014,7 +3155,6 @@ const CHALLENGE_POOL = [
         slug: 'texture-over-pattern',
         title: 'Texture over pattern',
         type: 'weekly',
-        prize: 'Featured on the community feed',
         hashtags: ['textureoverpattern', 'craft'],
         description: 'Knit, suede, denim, silk, corduroy. Make an outfit interesting without a single print in it.',
         rules: ['No prints of any kind', 'At least three different textures'],
@@ -3053,6 +3193,11 @@ async function rotateChallengesNow() {
         if (!data.startDate || !data.type) {
             await doc.ref.delete();
             repaired++;
+        }
+        else if (data.prize) {
+            // Earlier seeds promised "Featured on the community feed". Nothing picks
+            // or features a winner, so the promise comes off existing challenges too.
+            await doc.ref.update({ prize: admin.firestore.FieldValue.delete() });
         }
     }
     const live = await collection.where('status', 'in', ['active', 'upcoming']).get();
@@ -3104,7 +3249,6 @@ async function rotateChallengesNow() {
             description: template.description,
             type: template.type,
             status: startOffset === 0 ? 'active' : 'upcoming',
-            prize: template.prize,
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             participants: 0,

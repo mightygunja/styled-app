@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation/types';
 import { affiliateClicksService, stylistsService } from '../services/firestore';
 import { stylistApplicationService, ApplicationStatus } from '../services/stylistApplicationService';
 import { adminService } from '../services/adminService';
+import { userProfileService } from '../services/userProfileService';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -14,6 +15,10 @@ import BackButton from '../components/BackButton';
 import { colors, fonts, type as textType, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const SUPPORT_EMAIL = 'support@thirtythreetrends.com';
+/** What the profile service returns when no profile doc exists yet. Never shown over the real Auth name. */
+const PLACEHOLDER_PROFILE_NAME = '33 Trends member';
 
 export default function AccountScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -61,6 +66,21 @@ export default function AccountScreen() {
   const [isStylist, setIsStylist] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  // Edit profile saves to the userProfiles doc, not to Firebase Auth. Reading
+  // only user.displayName here meant an edited name or photo never appeared
+  // and the edit looked like it had not taken.
+  const [savedProfile, setSavedProfile] = useState<{ displayName?: string; profileImageUrl?: string } | null>(null);
+
+  /**
+   * Opens the mail client. On a device with no mail account (or a browser with
+   * no handler) openURL rejects, so the address is shown to copy instead of
+   * the row silently doing nothing.
+   */
+  const handleContactSupport = () => {
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => {
+      Alert.alert('Contact support', `Email us at ${SUPPORT_EMAIL}`);
+    });
+  };
 
   const load = useCallback(async () => {
     try {
@@ -85,6 +105,14 @@ export default function AccountScreen() {
         .isAdmin()
         .then(setShowAdmin)
         .catch(() => setShowAdmin(false));
+
+      userProfileService
+        .getUserProfile(userId)
+        .then(profile => {
+          if (!profile || profile.displayName === PLACEHOLDER_PROFILE_NAME) return;
+          setSavedProfile({ displayName: profile.displayName, profileImageUrl: profile.profileImageUrl });
+        })
+        .catch(() => undefined);
 
       const clicks = await affiliateClicksService.getForUser(userId);
       setMarketplaceStats({
@@ -120,6 +148,8 @@ export default function AccountScreen() {
   const memberSince = user?.metadata?.creationTime
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : undefined;
+  const shownName = savedProfile?.displayName || user?.displayName;
+  const shownPhoto = savedProfile?.profileImageUrl || user?.photoURL || undefined;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -130,12 +160,16 @@ export default function AccountScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{(user?.displayName || user?.email || '?').charAt(0).toUpperCase()}</Text>
-          </View>
+          {shownPhoto ? (
+            <Image source={{ uri: shownPhoto }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>{(shownName || user?.email || '?').charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
           <View style={{ flex: 1, marginLeft: 14 }}>
             {memberSince && <Text style={styles.memberSince}>MEMBER SINCE {memberSince.toUpperCase()}</Text>}
-            <Text style={styles.name}>{user?.displayName || 'Your account'}</Text>
+            <Text style={styles.name}>{shownName || 'Your account'}</Text>
             <Text style={styles.email} numberOfLines={1}>{user?.email}</Text>
           </View>
         </View>
@@ -324,6 +358,42 @@ export default function AccountScreen() {
             </View>
           </>
         )}
+
+        {/* The legal pages are registered for signed-in users but nothing linked
+            to them once past Login - on iOS that is every session after the
+            first. The plan card above mentions commission; the disclosure it
+            implies has to be reachable from here. */}
+        <Text style={styles.sectionLabel}>ABOUT & LEGAL</Text>
+        <View style={styles.prefsCard}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('About')}>
+            <View>
+              <Text style={styles.prefTitle}>About 33 Trends</Text>
+              <Text style={styles.prefSubtitle}>WHO WE ARE · HOW WE EARN</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Privacy')}>
+            <View>
+              <Text style={styles.prefTitle}>Privacy policy</Text>
+              <Text style={styles.prefSubtitle}>WHAT WE COLLECT AND WHY</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Terms')}>
+            <View>
+              <Text style={styles.prefTitle}>Terms of use</Text>
+              <Text style={styles.prefSubtitle}>THE AGREEMENT · AFFILIATE DISCLOSURE</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={handleContactSupport}>
+            <View>
+              <Text style={styles.prefTitle}>Contact support</Text>
+              <Text style={styles.prefSubtitle}>{SUPPORT_EMAIL.toUpperCase()}</Text>
+            </View>
+            <Text style={styles.prefArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.signOutButton}

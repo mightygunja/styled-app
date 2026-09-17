@@ -31,6 +31,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrentUserId } from '../services/api';
@@ -50,6 +51,15 @@ import { colors, fonts, radius, type as textType, spacing } from '../theme/desig
 
 type Step = 'welcome' | 'focus' | 'body' | 'words' | 'occasion' | 'never' | 'reveal';
 const SURVEY_STEPS: Step[] = ['focus', 'body', 'words', 'occasion', 'never'];
+/** Where Back goes from each step. Answers are kept in state, so going back loses nothing. */
+const PREVIOUS_STEP: Partial<Record<Step, Step>> = {
+  focus: 'welcome',
+  body: 'focus',
+  words: 'body',
+  occasion: 'words',
+  never: 'occasion',
+  reveal: 'never',
+};
 
 /**
  * The first question, because every later question depends on it: which
@@ -234,6 +244,44 @@ export default function OnboardingScreen() {
 
   /* ---------------- shared chrome ---------------- */
 
+  // The survey only ever moved forward: a mis-tap on the department question
+  // was locked in, and an existing user who opened the modal had no way out
+  // past the welcome step. Back returns to the previous step with every
+  // answer intact; Close is offered only when there is a route to return to.
+  // Nothing is written until the reveal, so closing earlier saves nothing.
+  const stepHeader = (current: Step) => {
+    const previous = PREVIOUS_STEP[current];
+    return (
+      <View style={styles.stepHeader}>
+        {previous ? (
+          <TouchableOpacity
+            style={styles.stepHeaderBack}
+            onPress={() => setStep(previous)}
+            disabled={finishing}
+            accessibilityRole="button"
+            accessibilityLabel="Back to the previous question"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="chevron-back" size={16} color={colors.inkMuted} />
+            <Text style={styles.stepHeaderBackText}>Back</Text>
+          </TouchableOpacity>
+        ) : (
+          <View />
+        )}
+        {presentedAsRoute && current !== 'reveal' && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Close the survey"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={22} color={colors.inkMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
   const progress = (current: Step) => {
     const index = SURVEY_STEPS.indexOf(current);
     return (
@@ -299,6 +347,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('focus')}
           {progress('focus')}
           <Text style={styles.eyebrow}>YOUR WARDROBE</Text>
           <Text style={styles.question}>Whose wardrobe are we dressing?</Text>
@@ -314,6 +363,11 @@ export default function OnboardingScreen() {
                 setFocus(option.key);
                 // A change of department invalidates a previously chosen build.
                 setBodyType(null);
+                // Reachable now that Back exists: hard lines picked under the
+                // other department must not be saved invisibly.
+                setNevers(current =>
+                  current.filter(rule => neverOptionsFor(option.key).some(o => o.rule === rule))
+                );
               }}
               activeOpacity={0.85}
             >
@@ -341,6 +395,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('body')}
           {progress('body')}
           <Text style={styles.eyebrow}>FIT</Text>
           <Text style={styles.question}>How are you built?</Text>
@@ -382,6 +437,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('words')}
           {progress('words')}
           <Text style={styles.eyebrow}>TASTE</Text>
           <Text style={styles.question}>Which words sound like your style?</Text>
@@ -429,6 +485,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('occasion')}
           {progress('occasion')}
           <Text style={styles.eyebrow}>YOUR WEEK</Text>
           <Text style={styles.question}>Where does your closet work hardest?</Text>
@@ -466,6 +523,7 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('never')}
           {progress('never')}
           <Text style={styles.eyebrow}>HARD LINES</Text>
           <Text style={styles.question}>Anything you simply don't wear?</Text>
@@ -512,6 +570,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.surveyContent}>
+        {stepHeader('reveal')}
         <Text style={styles.eyebrow}>YOUR STYLIST NOW KNOWS</Text>
         <Text style={styles.revealTitle}>
           {wordNames.length > 0 ? wordNames.join(' · ') : 'Your starting point'}
@@ -607,6 +666,15 @@ const styles = StyleSheet.create({
   notNowText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
 
   surveyContent: { padding: spacing.page, paddingBottom: 48, flexGrow: 1 },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 24,
+    marginBottom: spacing.md,
+  },
+  stepHeaderBack: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  stepHeaderBackText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
   progressWrap: {
     flexDirection: 'row',
     alignItems: 'center',

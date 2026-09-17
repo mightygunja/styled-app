@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Share,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +30,12 @@ import {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenState = 'intro' | 'parsing' | 'review' | 'importing';
 
+// react-native-web's Share rejects outright where the Web Share API is
+// missing (most desktop browsers), so those browsers copy instead.
+const WEB_WITHOUT_SHARE =
+  Platform.OS === 'web' &&
+  !(typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function');
+
 const CONFIDENCE_COPY: Record<ParsedReceiptItem['confidence'], string> = {
   high: 'Clear',
   medium: 'Check this',
@@ -43,6 +50,7 @@ export default function ReceiptImportScreen() {
   const [selected, setSelected] = useState<Record<number, boolean>>({});
   const [forwardingAddress, setForwardingAddress] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingReceiptImport[]>([]);
+  const [addressCopied, setAddressCopied] = useState(false);
 
   useEffect(() => {
     loadForwarding();
@@ -95,12 +103,36 @@ export default function ReceiptImportScreen() {
     }
   };
 
+  const copyAddress = async (address: string) => {
+    try {
+      const clipboard = typeof navigator !== 'undefined' ? (navigator as any).clipboard : undefined;
+      if (!clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await clipboard.writeText(address);
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2500);
+    } catch (error) {
+      console.error('Error copying address:', error);
+      Alert.alert('Copy it by hand', 'Your browser blocked copying. Select the address and copy it.');
+    }
+  };
+
   const handleShareAddress = async () => {
     if (!forwardingAddress) return;
+    if (WEB_WITHOUT_SHARE) {
+      await copyAddress(forwardingAddress);
+      return;
+    }
     try {
       await Share.share({ message: forwardingAddress });
-    } catch (error) {
+    } catch (error: any) {
+      // Closing the share sheet is not a failure.
+      if (error?.name === 'AbortError') return;
       console.error('Error sharing address:', error);
+      if (Platform.OS === 'web') {
+        await copyAddress(forwardingAddress);
+      } else {
+        Alert.alert('Could not share', 'Press and hold the address to copy it instead.');
+      }
     }
   };
 
@@ -232,7 +264,9 @@ export default function ReceiptImportScreen() {
                 <Text style={styles.addressText} selectable>
                   {forwardingAddress}
                 </Text>
-                <Text style={styles.addressHint}>Tap to share</Text>
+                <Text style={styles.addressHint}>
+                  {addressCopied ? 'Copied' : WEB_WITHOUT_SHARE ? 'Tap to copy' : 'Tap to share'}
+                </Text>
               </TouchableOpacity>
             ) : (
               <Text style={styles.forwardHelper}>Setting up your address…</Text>

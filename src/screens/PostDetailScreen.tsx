@@ -12,6 +12,8 @@ import {
   Platform,
   Dimensions,
   Share,
+  Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -43,15 +45,52 @@ export default function PostDetailScreen() {
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const { toast, showToast, hideToast } = useToast();
   const commentInputRef = useRef<TextInput>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // Images are sized to the measured content column, not the browser window:
+  // on desktop web this screen sits in a 720px frame, so window-width images
+  // overflowed it and broke paging. On a phone the two widths are the same.
+  const [columnWidth, setColumnWidth] = useState(
+    Platform.OS === 'web' ? Math.min(width, 720) : width
+  );
 
+  // Shares the post's own link. Where the share sheet is unavailable (most
+  // desktop browsers) the link is copied instead, and the share is counted
+  // only when one of the two actually happened.
   const handleShare = async () => {
     if (!post) return;
+    const url = `https://www.thirtythreetrends.com/post/${post.id}`;
+    const message = post.caption ? `${post.caption}\n${url}` : url;
+    const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
+    let shared = false;
     try {
-      await Share.share({ message: `${post.caption}\n${post.images[0]}` });
+      if (Platform.OS === 'web' && typeof nav?.share !== 'function') {
+        throw new Error('share-unsupported');
+      }
+      const result = await Share.share({ message });
+      shared = !result || result.action !== Share.dismissedAction;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return; // the user closed the share sheet
+      if (Platform.OS === 'web' && nav?.clipboard?.writeText) {
+        try {
+          await nav.clipboard.writeText(url);
+          shared = true;
+          showToast('Link copied', 'success');
+        } catch {
+          shared = false;
+        }
+      }
+      if (!shared) {
+        showToast("Couldn't share this post", 'error');
+        return;
+      }
+    }
+    if (!shared) return;
+    try {
       await socialFeedService.sharePost(post.id);
       setPost(prev => (prev ? { ...prev, shares: prev.shares + 1 } : prev));
     } catch (error) {
-      console.error('Error sharing post:', error);
+      console.error('Error recording share:', error);
     }
   };
 
@@ -59,46 +98,65 @@ export default function PostDetailScreen() {
     loadPost();
   }, [postId]);
 
+  // Comments with their authors attached - replies included, which used to
+  // render as "User" with no avatar because only top-level rows were enriched.
+  const fetchComments = async (): Promise<Comment[]> => {
+    const postComments = await socialFeedService.getPostComments(postId);
+    const withUser = async (comment: Comment): Promise<Comment> => {
+      const user = await userProfileService.getUserProfile(comment.userId);
+      return { ...comment, user: user || undefined };
+    };
+    return Promise.all(
+      postComments.map(async comment => ({
+        ...(await withUser(comment)),
+        replies: await Promise.all((comment.replies || []).map(withUser)),
+      }))
+    );
+  };
+
   const loadPost = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
+      const currentUserId = getCurrentUserId();
       // Fetch the post by id directly - searching the newest feed page for
       // it made every older post's detail view a "Post not found" dead end.
-      const [foundPost, postComments] = await Promise.all([
+      // getPostById carries no liked/saved state, so it is loaded alongside:
+      // without it an already-liked post opened as "Like" and the first tap
+      // added a like that didn't exist.
+      const [foundPost, commentsWithUsers, isLiked, isSaved] = await Promise.all([
         socialFeedService.getPostById(postId),
-        socialFeedService.getPostComments(postId),
+        fetchComments(),
+        socialFeedService.isPostLiked(postId, currentUserId),
+        socialFeedService.isPostSaved(postId, currentUserId),
       ]);
 
       if (foundPost) {
         const user = await userProfileService.getUserProfile(foundPost.userId);
-        setPost({ ...foundPost, user: user || undefined });
+        setPost({ ...foundPost, isLiked, isSaved, user: user || undefined });
       }
-
-      const commentsWithUsers = await Promise.all(
-        postComments.map(async comment => {
-          const user = await userProfileService.getUserProfile(comment.userId);
-          return { ...comment, user: user || undefined };
-        })
-      );
 
       setComments(commentsWithUsers);
     } catch (error) {
       console.error('Error loading post:', error);
+      setLoadError(true);
       showToast('Failed to load post', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  // The count only moves when the service says something changed; a false
+  // return means the like/save was already in that state.
   const handleLike = async () => {
     if (!post) return;
     try {
       if (post.isLiked) {
-        await socialFeedService.unlikePost(postId, getCurrentUserId());
-        setPost({ ...post, isLiked: false, likes: post.likes - 1 });
+        const changed = await socialFeedService.unlikePost(postId, getCurrentUserId());
+        setPost({ ...post, isLiked: false, likes: changed ? Math.max(0, post.likes - 1) : post.likes });
       } else {
-        await socialFeedService.likePost(postId, getCurrentUserId());
-        setPost({ ...post, isLiked: true, likes: post.likes + 1 });
+        const changed = await socialFeedService.likePost(postId, getCurrentUserId());
+        setPost({ ...post, isLiked: true, likes: changed ? post.likes + 1 : post.likes });
       }
     } catch (error) {
       showToast('Action failed', 'error');
@@ -109,12 +167,12 @@ export default function PostDetailScreen() {
     if (!post) return;
     try {
       if (post.isSaved) {
-        await socialFeedService.unsavePost(postId, getCurrentUserId());
-        setPost({ ...post, isSaved: false, saves: post.saves - 1 });
+        const changed = await socialFeedService.unsavePost(postId, getCurrentUserId());
+        setPost({ ...post, isSaved: false, saves: changed ? Math.max(0, post.saves - 1) : post.saves });
         showToast('Removed from saved', 'success');
       } else {
-        await socialFeedService.savePost(postId, getCurrentUserId());
-        setPost({ ...post, isSaved: true, saves: post.saves + 1 });
+        const changed = await socialFeedService.savePost(postId, getCurrentUserId());
+        setPost({ ...post, isSaved: true, saves: changed ? post.saves + 1 : post.saves });
         showToast('Saved', 'success');
       }
     } catch (error) {
@@ -122,15 +180,70 @@ export default function PostDetailScreen() {
     }
   };
 
+  const leaveScreen = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('SocialFeed');
+  };
+
+  const deletePost = async () => {
+    if (!post) return;
+    try {
+      setDeleting(true);
+      const removed = await socialFeedService.deletePost(post.id, getCurrentUserId());
+      if (!removed) {
+        showToast("Couldn't delete this post", 'error');
+        return;
+      }
+      leaveScreen();
+    } catch (error) {
+      // The service removes the post first and then tidies up its likes and
+      // comments; that tidy-up can be refused for rows other people own. If
+      // the post itself is gone, the delete worked.
+      const stillThere = await socialFeedService.getPostById(post.id).catch(() => post);
+      if (!stillThere) {
+        leaveScreen();
+      } else {
+        console.error('Error deleting post:', error);
+        showToast("Couldn't delete this post", 'error');
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeletePost = () => {
+    Alert.alert('Delete this post?', 'It will be removed from the feed and your profile.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete post', style: 'destructive', onPress: deletePost },
+    ]);
+  };
+
+  // There is no in-app reports queue yet, so a report is an email to support
+  // with the post id filled in - a real route to a person, not a fake form.
+  const handleReportPost = () => {
+    if (!post) return;
+    const subject = encodeURIComponent(`Report post ${post.id}`);
+    const body = encodeURIComponent(
+      `Post id: ${post.id}\nLink: https://www.thirtythreetrends.com/post/${post.id}\n\nWhat is wrong with this post?\n`
+    );
+    Linking.openURL(`mailto:support@thirtythreetrends.com?subject=${subject}&body=${body}`).catch(() => {
+      showToast('Email support@thirtythreetrends.com to report this post', 'error');
+    });
+  };
+
   const handleAddComment = async () => {
     if (!commentText.trim()) return;
     try {
       setPosting(true);
+      // Threads are one level deep: a reply to a reply attaches to the same
+      // top-level comment. Using the reply's own id as the parent wrote a
+      // comment that no screen could ever render.
+      const parentId = replyingTo ? replyingTo.parentCommentId || replyingTo.id : undefined;
       const newComment = await socialFeedService.addComment(
         postId,
         getCurrentUserId(),
         commentText,
-        replyingTo?.id
+        parentId
       );
 
       const user = await userProfileService.getUserProfile(getCurrentUserId());
@@ -139,7 +252,7 @@ export default function PostDetailScreen() {
       if (replyingTo) {
         setComments(
           comments.map(c =>
-            c.id === replyingTo.id ? { ...c, replies: [...(c.replies || []), commentWithUser] } : c
+            c.id === parentId ? { ...c, replies: [...(c.replies || []), commentWithUser] } : c
           )
         );
       } else {
@@ -157,14 +270,50 @@ export default function PostDetailScreen() {
     }
   };
 
+  // Replies live inside their parent's `replies`, so both levels are pruned.
+  const removeCommentLocally = (commentId: string) => {
+    setComments(prev =>
+      prev
+        .filter(c => c.id !== commentId)
+        .map(c =>
+          c.replies && c.replies.some(r => r.id === commentId)
+            ? { ...c, replies: c.replies.filter(r => r.id !== commentId) }
+            : c
+        )
+    );
+    setPost(prev => (prev ? { ...prev, comments: Math.max(0, prev.comments - 1) } : prev));
+    setReplyingTo(prev =>
+      prev && (prev.id === commentId || prev.parentCommentId === commentId) ? null : prev
+    );
+  };
+
   const handleDeleteComment = async (commentId: string) => {
     try {
-      await socialFeedService.deleteComment(commentId, getCurrentUserId());
-      setComments(comments.filter(c => c.id !== commentId));
-      if (post) setPost({ ...post, comments: post.comments - 1 });
+      const removed = await socialFeedService.deleteComment(commentId, getCurrentUserId());
+      if (!removed) {
+        showToast('Failed to delete comment', 'error');
+        return;
+      }
+      removeCommentLocally(commentId);
       showToast('Comment deleted', 'success');
     } catch (error) {
-      showToast('Failed to delete comment', 'error');
+      // The service deletes the comment before tidying up its replies, and
+      // that tidy-up can be refused for replies other people wrote. Check
+      // what is really left rather than reporting a failure that didn't happen.
+      try {
+        const fresh = await fetchComments();
+        const stillThere = fresh.some(
+          c => c.id === commentId || (c.replies || []).some(r => r.id === commentId)
+        );
+        if (stillThere) {
+          showToast('Failed to delete comment', 'error');
+        } else {
+          removeCommentLocally(commentId);
+          showToast('Comment deleted', 'success');
+        }
+      } catch {
+        showToast('Failed to delete comment', 'error');
+      }
     }
   };
 
@@ -229,10 +378,17 @@ export default function PostDetailScreen() {
         <View style={styles.headerBar}>
           <BackButton />
         </View>
-        <View style={styles.centred}>
-          <Text style={styles.emptyTitle}>Post not found</Text>
-          <Text style={styles.emptyText}>It may have been removed or made private.</Text>
-        </View>
+        {loadError ? (
+          <TouchableOpacity style={styles.centred} activeOpacity={0.85} onPress={loadPost}>
+            <Text style={styles.emptyTitle}>Couldn't load this post</Text>
+            <Text style={styles.emptyText}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.centred}>
+            <Text style={styles.emptyTitle}>Post not found</Text>
+            <Text style={styles.emptyText}>It may have been removed or made private.</Text>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -247,7 +403,13 @@ export default function PostDetailScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          onLayout={event => {
+            const measured = event.nativeEvent.layout.width;
+            if (measured > 0 && Math.abs(measured - columnWidth) > 1) setColumnWidth(measured);
+          }}
+        >
           <View style={styles.intro}>
             <Text style={styles.eyebrow}>POST</Text>
             <TouchableOpacity
@@ -282,10 +444,14 @@ export default function PostDetailScreen() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            style={styles.imagesContainer}
+            style={[styles.imagesContainer, { width: columnWidth }]}
           >
             {post.images.map((image, index) => (
-              <Image key={index} source={{ uri: image }} style={styles.postImage} />
+              <Image
+                key={index}
+                source={{ uri: image }}
+                style={[styles.postImage, { width: columnWidth, height: columnWidth }]}
+              />
             ))}
           </ScrollView>
 
@@ -337,6 +503,21 @@ export default function PostDetailScreen() {
                   {post.isSaved ? 'Saved' : 'Save'}
                 </Text>
               </TouchableOpacity>
+            </View>
+
+            {/* The author can take their post down; everyone else can report it. */}
+            <View style={styles.postManageRow}>
+              {post.userId === getCurrentUserId() ? (
+                <TouchableOpacity onPress={handleDeletePost} disabled={deleting}>
+                  <Text style={styles.postManageText}>
+                    {deleting ? 'Deleting…' : 'Delete post'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={handleReportPost}>
+                  <Text style={styles.postManageText}>Report post</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -451,6 +632,8 @@ const styles = StyleSheet.create({
   actionLabel: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
   actionLabelActive: { color: colors.ink, fontFamily: fonts.sansSemiBold },
   actionCount: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkFaint },
+  postManageRow: { flexDirection: 'row', marginTop: spacing.md },
+  postManageText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
 
   commentsSection: { padding: spacing.page, paddingBottom: 40 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: spacing.md },
@@ -524,12 +707,12 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
     minWidth: 72,
     alignItems: 'center',
   },
-  sendButtonDisabled: { backgroundColor: colors.hair },
+  sendButtonDisabled: { opacity: 0.4 },
   sendButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
 });

@@ -62,7 +62,7 @@ import {
   formatDestination,
 } from '../services/weatherService';
 import { getStyleLocation, setStyleLocation } from '../services/styleLocationService';
-import { amazonSearchUrl } from '../services/affiliateNetwork';
+import { amazonSearchUrl, curatedCatalogNotice } from '../services/affiliateNetwork';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -92,8 +92,13 @@ export default function TrendInsightsScreen() {
   const [placeResults, setPlaceResults] = useState<DestinationMatch[]>([]);
   const [searchingPlace, setSearchingPlace] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // Set once a report has painted: coming back from a product or the Shop
+  // refreshes in place instead of swapping the whole report for a spinner and
+  // dropping the reader back at the top.
+  const loadedOnceRef = useRef(false);
+
+  const load = useCallback(async (showSpinner: boolean = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const userId = getCurrentUserId();
       const [closetResponse, profile, trending, weather, override] = await Promise.all([
@@ -145,6 +150,7 @@ export default function TrendInsightsScreen() {
       const loadId = ++loadIdRef.current;
       setRemixes(deterministic);
       setTags(trending);
+      loadedOnceRef.current = true;
 
       // Second phase: the AI stylist's per-user read, upgraded in place once
       // it lands (day-cached, so revisits don't re-spend the model call).
@@ -163,7 +169,7 @@ export default function TrendInsightsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      load(!loadedOnceRef.current);
     }, [load])
   );
 
@@ -505,6 +511,20 @@ export default function TrendInsightsScreen() {
           })
         )}
 
+        {/* "Find it on Amazon" is a tagged affiliate link and the piece rail
+            is the curated catalogue, so the report carries the same
+            disclosure as Shop, Explore and the product page. */}
+        {!loading && visible.length > 0 && (
+          <Text style={styles.disclosure}>
+            {(() => {
+              const notice = curatedCatalogNotice();
+              return notice && notice.includes('Amazon Associate')
+                ? notice
+                : 'As an Amazon Associate we earn from qualifying purchases.';
+            })()}
+          </Text>
+        )}
+
         {tags.length > 0 && (
           <>
             <Text style={styles.sectionLabel}>WHAT THE COMMUNITY IS WEARING</Text>
@@ -512,22 +532,29 @@ export default function TrendInsightsScreen() {
               From hashtags across recent posts in the 33 Trends community.
             </Text>
             <View style={styles.tagWrap}>
+              {/* Plain tags, not buttons: the community feed cannot filter by
+                  hashtag yet, so a tappable #tag would promise a filter that
+                  does not exist. One honest link to the feed sits below. */}
               {tags.map(tag => (
-                <TouchableOpacity
+                <View
                   key={tag.hashtag}
                   style={styles.tagChip}
-                  accessibilityRole="button"
-                  accessibilityLabel={`See community posts — #${tag.hashtag}`}
-                  // These chips promise community posts, so they go to the
-                  // community feed - not Explore, which is product discovery
-                  // and has no concept of a hashtag.
-                  onPress={() => navigation.navigate('SocialFeed')}
+                  accessible
+                  accessibilityLabel={`#${tag.hashtag}, ${tag.postCount} ${tag.postCount === 1 ? 'post' : 'posts'}`}
                 >
                   <Text style={styles.tagText}>#{tag.hashtag}</Text>
                   <Text style={styles.tagCount}>{tag.postCount}</Text>
-                </TouchableOpacity>
+                </View>
               ))}
             </View>
+            <TouchableOpacity
+              style={styles.feedLink}
+              accessibilityRole="button"
+              accessibilityLabel="Open the community feed"
+              onPress={() => navigation.navigate('SocialFeed')}
+            >
+              <Text style={styles.feedLinkText}>Open the community feed →</Text>
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -543,6 +570,9 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 40, textAlign: 'center' },
+  disclosure: { ...textType.meta, fontSize: 11, lineHeight: 16, color: colors.tobacco, marginTop: spacing.lg },
+  feedLink: { alignSelf: 'flex-start', marginTop: spacing.md, paddingVertical: 6 },
+  feedLinkText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
 
   placeBox: {
     marginTop: spacing.md,

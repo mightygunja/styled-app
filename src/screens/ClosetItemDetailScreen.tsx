@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
@@ -15,6 +17,17 @@ import { colors, fonts, radius } from '../theme/designSystem';
 
 type ClosetItemDetailRouteProp = RouteProp<RootStackParamList, 'ClosetItemDetail'>;
 
+// The same ids the closet filters and the outfit engine use.
+const EDIT_CATEGORIES = [
+  { id: 'tops', label: 'Tops' },
+  { id: 'bottoms', label: 'Bottoms' },
+  { id: 'dresses', label: 'Dresses' },
+  { id: 'outerwear', label: 'Outerwear' },
+  { id: 'shoes', label: 'Shoes' },
+  { id: 'accessories', label: 'Accessories' },
+  { id: 'bags', label: 'Bags' },
+];
+
 export default function ClosetItemDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<ClosetItemDetailRouteProp>();
@@ -22,11 +35,88 @@ export default function ClosetItemDetailScreen() {
   
   const [item, setItem] = useState<ClosetItem | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed fetch is not "Item not found".
+  const [loadError, setLoadError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [removingBackground, setRemovingBackground] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+
+  // In-place edit. The AI tags category and colour, and receipt imports land
+  // with colour "unknown" - before this the only correction was deleting the
+  // item and adding it again.
+  const scrollRef = useRef<ScrollView>(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draftCategory, setDraftCategory] = useState('');
+  const [draftColor, setDraftColor] = useState('');
+  const [draftBrand, setDraftBrand] = useState('');
+  const [draftPrice, setDraftPrice] = useState('');
+  const [draftNotes, setDraftNotes] = useState('');
+
+  const startEditing = () => {
+    if (!item) return;
+    setDraftCategory(item.category || '');
+    setDraftColor(item.color || '');
+    setDraftBrand(item.brand || '');
+    setDraftPrice(typeof item.price === 'number' ? String(item.price) : '');
+    setDraftNotes(item.notes || '');
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!item || saving) return;
+
+    const priceText = draftPrice.trim().replace(',', '.');
+    const parsedPrice = priceText === '' ? null : Number(priceText);
+    if (parsedPrice !== null && (!isFinite(parsedPrice) || parsedPrice < 0)) {
+      Alert.alert('Check the price', 'Enter a number such as 45.00, or leave it blank.');
+      return;
+    }
+
+    const updates = {
+      category: draftCategory || item.category,
+      color: draftColor.trim().toLowerCase() || item.color,
+      brand: draftBrand.trim() || null,
+      price: parsedPrice,
+      notes: draftNotes.trim() || null,
+    };
+
+    setSaving(true);
+    try {
+      await closetAPI.update(closetItemId, updates);
+      setItem(prev =>
+        prev
+          ? ({
+              ...prev,
+              category: updates.category,
+              color: updates.color,
+              brand: updates.brand || undefined,
+              price: updates.price === null ? undefined : updates.price,
+              notes: updates.notes || undefined,
+            } as ClosetItem)
+          : prev
+      );
+      setEditing(false);
+      showToast('Changes saved', 'success');
+    } catch (error: any) {
+      console.error('Error saving item edits:', error);
+      Alert.alert('Could not save your changes', error?.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // A screen opened by URL or refreshed on web has nothing to pop.
+  const goBackOrHome = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    const routeNames: string[] = (navigation.getState() as any)?.routeNames || [];
+    (navigation as any).navigate(routeNames.includes('MainTabs') ? 'MainTabs' : 'Intro');
+  };
 
   /**
    * Attaches a photo to an item that was created without one (receipt imports
@@ -100,9 +190,10 @@ export default function ClosetItemDetailScreen() {
       const response = await closetAPI.getItemById(closetItemId);
       console.log('Closet item detail:', response.data);
       setItem(response.data);
+      setLoadError(false);
     } catch (error) {
       console.error('Error fetching item detail:', error);
-      Alert.alert('Error', 'Failed to load item details');
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -121,7 +212,7 @@ export default function ClosetItemDetailScreen() {
             try {
               await closetAPI.deleteItem(closetItemId);
               Alert.alert('Deleted', 'Item removed from your closet');
-              navigation.goBack();
+              goBackOrHome();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete item');
             }
@@ -142,6 +233,8 @@ export default function ClosetItemDetailScreen() {
       navigation.navigate('SimilarItems' as any, {
         sourceItemId: closetItemId,
         similarItems: response.data,
+        // Lets the screen use item-specific copy; the look path omits it.
+        source: 'item',
       });
     } catch (error) {
       setLoading(false);
@@ -176,9 +269,23 @@ export default function ClosetItemDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <BackButton />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Item not found</Text>
-        </View>
+        {loadError ? (
+          <TouchableOpacity
+            style={styles.loadingContainer}
+            onPress={() => {
+              setLoading(true);
+              fetchItemDetail();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading this item"
+          >
+            <Text style={styles.errorText}>Couldn't load this item. Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.errorText}>Item not found</Text>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -187,15 +294,40 @@ export default function ClosetItemDetailScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity
+          onPress={goBackOrHome}
+          style={styles.backRow}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.inkMuted} />
+          <Text style={styles.backButton}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleDelete}>
-          <Text style={styles.deleteButton}>Delete</Text>
-        </TouchableOpacity>
+        {!editing && (
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={startEditing}
+              accessibilityRole="button"
+              accessibilityLabel="Edit this item"
+            >
+              <Text style={styles.editButton}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              accessibilityRole="button"
+              accessibilityLabel="Delete this item"
+            >
+              <Text style={styles.deleteButton}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
-      <ScrollView style={styles.content}>
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      <ScrollView ref={scrollRef} style={styles.content} keyboardShouldPersistTaps="handled">
         {/* Image - items imported from receipts arrive without one, so the
             blank slot doubles as the add-photo control. */}
         {item.imageUrl ? (
@@ -218,6 +350,94 @@ export default function ClosetItemDetailScreen() {
           </TouchableOpacity>
         )}
 
+        {editing ? (
+          <View
+            style={styles.section}
+            onLayout={e => scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true })}
+          >
+            <Text style={styles.sectionTitle}>Edit details</Text>
+
+            <Text style={styles.editLabel}>Category</Text>
+            <View style={styles.tagsContainer}>
+              {EDIT_CATEGORIES.map(cat => {
+                const selected = draftCategory === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.editChip, selected && styles.editChipSelected]}
+                    onPress={() => setDraftCategory(cat.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.editChipText, selected && styles.editChipTextSelected]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.editLabel}>Colour</Text>
+            <TextInput
+              style={styles.editInput}
+              value={draftColor}
+              onChangeText={setDraftColor}
+              placeholder="e.g. navy, cream, olive"
+              placeholderTextColor={colors.inkFaint}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text style={styles.editLabel}>Brand</Text>
+            <TextInput
+              style={styles.editInput}
+              value={draftBrand}
+              onChangeText={setDraftBrand}
+              placeholder="Optional"
+              placeholderTextColor={colors.inkFaint}
+            />
+
+            <Text style={styles.editLabel}>Purchase price</Text>
+            <TextInput
+              style={styles.editInput}
+              value={draftPrice}
+              onChangeText={setDraftPrice}
+              placeholder="e.g. 45.00"
+              placeholderTextColor={colors.inkFaint}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.editLabel}>Notes</Text>
+            <TextInput
+              style={[styles.editInput, styles.editNotes]}
+              value={draftNotes}
+              onChangeText={setDraftNotes}
+              placeholder="Optional"
+              placeholderTextColor={colors.inkFaint}
+              multiline
+            />
+
+            <View style={styles.editActions}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                size="large"
+                disabled={saving}
+                onPress={() => setEditing(false)}
+                style={styles.editActionButton}
+              />
+              <Button
+                title="Save"
+                variant="primary"
+                size="large"
+                loading={saving}
+                onPress={handleSaveEdit}
+                style={styles.editActionButton}
+              />
+            </View>
+          </View>
+        ) : (
+        <>
         {/* Basic Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
@@ -235,6 +455,12 @@ export default function ClosetItemDetailScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Brand:</Text>
               <Text style={styles.infoValue}>{item.brand}</Text>
+            </View>
+          )}
+          {typeof item.price === 'number' && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Price:</Text>
+              <Text style={styles.infoValue}>${item.price.toFixed(2)}</Text>
             </View>
           )}
         </View>
@@ -357,34 +583,48 @@ export default function ClosetItemDetailScreen() {
           </View>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons - one rust primary; everything else is quiet. */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.outfitButton} 
-            onPress={() =>navigation.navigate('SmartOutfitBuilder' as any, { sourceItemId: closetItemId })}
-          >
-            <Text style={styles.outfitButtonText}>Create Outfit</Text>
-          </TouchableOpacity>
+          <Button
+            title="Create Outfit"
+            variant="primary"
+            size="large"
+            fullWidth
+            onPress={() => navigation.navigate('SmartOutfitBuilder' as any, { sourceItemId: closetItemId })}
+          />
 
-          <TouchableOpacity style={styles.similarButton} onPress={handleFindSimilar}>
-            <Text style={styles.similarButtonText}>Find Similar Items</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.wornButton} onPress={handleMarkWorn}>
-            <Text style={styles.wornButtonText}>Mark as Worn Today</Text>
-          </TouchableOpacity>
+          <Button
+            title="Find Similar Items"
+            variant="outline"
+            size="large"
+            fullWidth
+            onPress={handleFindSimilar}
+          />
 
-          <TouchableOpacity
-            style={[styles.cutoutButton, removingBackground && styles.cutoutButtonBusy]}
-            onPress={handleRemoveBackground}
-            disabled={removingBackground}
-          >
-            <Text style={styles.cutoutButtonText}>
-              {removingBackground ? 'Cutting it out…' : 'Remove background'}
-            </Text>
-          </TouchableOpacity>
+          <Button
+            title="Mark as Worn Today"
+            variant="outline"
+            size="large"
+            fullWidth
+            onPress={handleMarkWorn}
+          />
+
+          {/* Nothing to cut out until the item has a photo. */}
+          {!!item.imageUrl && (
+            <Button
+              title={removingBackground ? 'Cutting it out…' : 'Remove background'}
+              variant="ghost"
+              size="large"
+              fullWidth
+              disabled={removingBackground}
+              onPress={handleRemoveBackground}
+            />
+          )}
         </View>
+        </>
+        )}
       </ScrollView>
+      </KeyboardAvoidingView>
       
       <PhotoUploadModal
         visible={showPhotoModal}
@@ -425,9 +665,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   backButton: {
     fontSize: 16,
     color: colors.inkMuted,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  editButton: {
+    fontSize: 16,
+    color: colors.rust,
+    fontFamily: fonts.sansSemiBold,
   },
   deleteButton: {
     fontSize: 16,
@@ -555,51 +810,54 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
-  outfitButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.ink,
-    padding: 16,
-    alignItems: 'center',
+  editLabel: {
+    fontSize: 13,
+    color: colors.inkMuted,
+    fontFamily: fonts.sansMedium,
+    marginTop: 14,
+    marginBottom: 8,
   },
-  outfitButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-  },
-  cutoutButton: {
+  editChip: {
     borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.hair,
     backgroundColor: colors.paper,
-    padding: 16,
-    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  cutoutButtonBusy: {
-    opacity: 0.6,
-  },
-  cutoutButtonText: {
-    color: colors.ink,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-  },
-  similarButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.tobacco,
-    padding: 16,
-    alignItems: 'center',
-  },
-  similarButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
-  },
-  wornButton: {
-    borderRadius: radius.full,
+  editChipSelected: {
     backgroundColor: colors.ink,
-    padding: 16,
-    alignItems: 'center',
+    borderColor: colors.ink,
   },
-  wornButtonText: {
+  editChipText: {
+    fontSize: 13,
+    color: colors.inkMuted,
+    fontFamily: fonts.sansMedium,
+  },
+  editChipTextSelected: {
     color: colors.white,
+  },
+  editInput: {
+    borderRadius: radius.md,
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.sans,
+    color: colors.ink,
+  },
+  editNotes: {
+    height: 88,
+    textAlignVertical: 'top',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  editActionButton: {
+    flex: 1,
   },
 });

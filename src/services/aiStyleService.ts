@@ -105,13 +105,18 @@ class AIStyleService {
   /**
    * Analyze user's closet and generate style profile
    */
-  async analyzeStyle(items: Item[]): Promise<StyleProfile> {
+  async analyzeStyle(
+    items: Item[],
+    // Optional so existing callers keep working. When it is 'mens', dresses
+    // are not an expected category - a menswear closet is not "missing" them.
+    wardrobeFocus?: 'womens' | 'mens' | 'all'
+  ): Promise<StyleProfile> {
     const dominantStyles = this.analyzeStyleCategories(items);
     const colorPalette = this.analyzeColors(items);
     const brandPreferences = this.analyzeBrands(items);
     const categoryDistribution = this.analyzeCategoryDistribution(items);
-    const wardrobeStats = this.calculateWardrobeStats(items);
-    const insights = this.generateInsights(items, dominantStyles, categoryDistribution);
+    const wardrobeStats = this.calculateWardrobeStats(items, wardrobeFocus);
+    const insights = this.generateInsights(items, dominantStyles, categoryDistribution, wardrobeFocus);
 
     return {
       userId: 'current-user',
@@ -400,7 +405,10 @@ class AIStyleService {
   /**
    * Calculate wardrobe statistics
    */
-  private calculateWardrobeStats(items: Item[]): WardrobeStats {
+  private calculateWardrobeStats(
+    items: Item[],
+    wardrobeFocus?: 'womens' | 'mens' | 'all'
+  ): WardrobeStats {
     const totalItems = items.length;
     const totalValue = items.reduce((sum, item) => sum + (item.price || 0), 0);
     const averageItemPrice = totalValue / totalItems;
@@ -410,9 +418,9 @@ class AIStyleService {
     const leastWornCategory = categoryDist[categoryDist.length - 1]?.category || 'accessories';
 
     // Identify wardrobe gaps against the categories the app actually supports
-    const allCategories: ItemCategory[] = [
+    const allCategories = ([
       'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories',
-    ];
+    ] as ItemCategory[]).filter(c => !(wardrobeFocus === 'mens' && c === 'dresses'));
     const existingCategories = new Set(items.map(i => i.category));
     const wardrobeGaps = allCategories.filter(c => !existingCategories.has(c));
 
@@ -464,7 +472,8 @@ class AIStyleService {
   private generateInsights(
     items: Item[],
     styles: StyleCategoryScore[],
-    categories: CategoryDistribution[]
+    categories: CategoryDistribution[],
+    wardrobeFocus?: 'womens' | 'mens' | 'all'
   ): StyleInsight[] {
     const insights: StyleInsight[] = [];
 
@@ -481,7 +490,8 @@ class AIStyleService {
     }
 
     // Wardrobe gap insight
-    const allCategories: ItemCategory[] = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes'];
+    const allCategories = (['tops', 'bottoms', 'dresses', 'outerwear', 'shoes'] as ItemCategory[])
+      .filter(c => !(wardrobeFocus === 'mens' && c === 'dresses'));
     const existingCategories = new Set(items.map(i => i.category));
     const gaps = allCategories.filter(c => !existingCategories.has(c));
     

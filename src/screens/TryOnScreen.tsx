@@ -10,6 +10,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import { readImageAsBase64 } from '../utils/imageData';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -21,12 +24,15 @@ import { uploadImageToFirebase } from '../services/firebaseStorage';
 import { styleProfileService } from '../services/firestore';
 
 export default function TryOnScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [closetItems, setClosetItems] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [personImageUrl, setPersonImageUrl] = useState<string | null>(null);
   const [renderUrl, setRenderUrl] = useState<string | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  // A failed read is not an empty closet - it gets its own message and a retry.
+  const [loadError, setLoadError] = useState(false);
   const [rendering, setRendering] = useState(false);
 
   useEffect(() => {
@@ -34,6 +40,8 @@ export default function TryOnScreen() {
   }, []);
 
   const load = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const userId = getCurrentUserId();
       const [closetResponse, profile] = await Promise.all([
@@ -48,6 +56,7 @@ export default function TryOnScreen() {
       }
     } catch (error) {
       console.error('Error loading try-on data:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -144,10 +153,22 @@ export default function TryOnScreen() {
             )}
 
             <Text style={styles.sectionLabel}>PICK THE PIECES</Text>
-            {closetItems.length === 0 ? (
-              <Text style={styles.helper}>
-                Add some items to your closet with photos first.
-              </Text>
+            {closetItems.length === 0 && loadError ? (
+              <TouchableOpacity onPress={load} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.helper}>Couldn't load your closet. Tap to retry.</Text>
+              </TouchableOpacity>
+            ) : closetItems.length === 0 ? (
+              <>
+                <Text style={styles.helper}>
+                  Add some items to your closet with photos first.
+                </Text>
+                <Button
+                  title="Add an item"
+                  variant="outline"
+                  onPress={() => navigation.navigate('AddClosetItem')}
+                  fullWidth
+                />
+              </>
             ) : (
               <View style={styles.grid}>
                 {closetItems.map(item => {

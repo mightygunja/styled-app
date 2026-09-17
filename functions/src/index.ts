@@ -659,9 +659,20 @@ export const findSimilarItems = functions
   .runWith({ memory: '1GB', timeoutSeconds: 60, enforceAppCheck: false })
   .https.onCall(async (data, context) => {
     try {
-      const { itemId, userId, limit = 10, minSimilarity = 0.3 } = data;
+      const { itemId, limit = 10, minSimilarity = 0.3 } = data;
 
-      if (!itemId || !userId) {
+      // The closet searched is always the caller's own. This runs with admin
+      // credentials, so trusting a userId from the payload let any caller
+      // read any other user's closet past the Firestore rules.
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in to find similar items.');
+      }
+      const userId = context.auth.uid;
+      if (data.userId && data.userId !== userId) {
+        throw new functions.https.HttpsError('permission-denied', 'userId does not match the signed-in user.');
+      }
+
+      if (!itemId) {
         throw new functions.https.HttpsError('invalid-argument', 'itemId and userId are required');
       }
 
@@ -671,6 +682,14 @@ export const findSimilarItems = functions
       }
 
       const target = targetDoc.data() as any;
+      // Same access the rules grant on closetItems: the owner, or someone the
+      // owner has explicitly shared their closet with.
+      if (target?.userId !== userId) {
+        const share = await db.collection('closetShares').doc(`${target?.userId}_${userId}`).get();
+        if (!share.exists) {
+          throw new functions.https.HttpsError('permission-denied', 'That item is not in a closet you can see.');
+        }
+      }
       const targetEmbedding: number[] | undefined = target?.embedding;
 
       const itemsSnapshot = await db
@@ -1042,9 +1061,19 @@ export const shopMyCloset = functions
   .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
   .https.onCall(async (data, context) => {
     try {
-      const { lookId, userId, limit = 10, minSimilarity = 0.6 } = data;
+      const { lookId, limit = 10, minSimilarity = 0.6 } = data;
 
-      if (!lookId || !userId) {
+      // Always the caller's own closet - a userId from the payload let anyone
+      // enumerate another user's closet with admin credentials.
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in to shop your closet.');
+      }
+      const userId = context.auth.uid;
+      if (data.userId && data.userId !== userId) {
+        throw new functions.https.HttpsError('permission-denied', 'userId does not match the signed-in user.');
+      }
+
+      if (!lookId) {
         throw new functions.https.HttpsError('invalid-argument', 'lookId and userId are required');
       }
 
@@ -1112,6 +1141,7 @@ export const shopMyCloset = functions
         },
       };
     } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
       console.error('Error in shop my closet:', error);
       throw new functions.https.HttpsError('internal', error.message);
     }
@@ -3505,6 +3535,10 @@ export const reviewStylistApplication = functions
     // Approval. The stylist doc id is the applicant's uid, which is what makes
     // the whole role check work - AccountScreen and StylistDashboard both look
     // up stylists/{their own uid}.
+    const PORTFOLIO_IMAGE_URL = /^https?:\/\/\S+\.(jpe?g|png|webp|gif)(\?\S*)?$/i;
+    const portfolioUrls: string[] = (
+      Array.isArray(application.portfolioUrls) ? application.portfolioUrls : []
+    ).filter((url: any) => typeof url === 'string' && url.trim().length > 0);
     const stylistDoc = {
       id: applicationId,
       name: application.fullName || 'Stylist',
@@ -3520,13 +3554,19 @@ export const reviewStylistApplication = functions
       yearsExperience:
         typeof application.yearsExperience === 'number' ? application.yearsExperience : 0,
       certifications: Array.isArray(application.certifications) ? application.certifications : [],
-      portfolio: (Array.isArray(application.portfolioUrls) ? application.portfolioUrls : []).map(
-        (url: string, i: number) => ({
+      // The application asks for "links to work" - Instagram, a portfolio
+      // site. Those are pages, not images, and rendering them as image tiles
+      // gave every real stylist a row of blank rectangles. Only a URL that
+      // points straight at an image file becomes a portfolio tile; the rest
+      // are kept as outbound links.
+      portfolio: portfolioUrls
+        .filter(url => PORTFOLIO_IMAGE_URL.test(url))
+        .map((url: string, i: number) => ({
           id: `portfolio-${i + 1}`,
           imageUrl: url,
           title: `Work sample ${i + 1}`,
-        })
-      ),
+        })),
+      links: portfolioUrls.filter(url => !PORTFOLIO_IMAGE_URL.test(url)),
       sessionTypes: Array.isArray(application.sessionTypes) ? application.sessionTypes : [],
       languages: Array.isArray(application.languages) ? application.languages : [],
       location: application.location || '',
@@ -3565,6 +3605,47 @@ export const reviewStylistApplication = functions
     return { success: true, decision: 'approved' };
   });
 
+// ==================== STYLIST RATING AGGREGATION ====================
+
+/**
+ * Keeps stylists/{id}.rating and .reviewCount equal to the real reviews.
+ *
+ * Clients cannot write stylist docs (rules: write false), and nothing else
+ * maintained these fields, so an approved stylist showed "New - 0 reviews"
+ * forever, directly above a populated review list. Recomputed from the
+ * reviews collection on every write rather than incremented, so an edited or
+ * deleted review can never leave the numbers drifting.
+ */
+export const aggregateStylistReviews = functions.firestore
+  .document('reviews/{reviewId}')
+  .onWrite(async change => {
+    const stylistIds = new Set<string>();
+    const before = change.before.exists ? (change.before.data() as any) : null;
+    const after = change.after.exists ? (change.after.data() as any) : null;
+    if (before?.stylistId) stylistIds.add(before.stylistId);
+    if (after?.stylistId) stylistIds.add(after.stylistId);
+
+    for (const stylistId of stylistIds) {
+      const stylistRef = db.collection('stylists').doc(stylistId);
+      const stylistSnap = await stylistRef.get();
+      if (!stylistSnap.exists) continue;
+
+      const reviewsSnap = await db.collection('reviews').where('stylistId', '==', stylistId).get();
+      const ratings = reviewsSnap.docs
+        .map(d => (d.data() as any).rating)
+        .filter((r: any) => typeof r === 'number' && r > 0);
+      const average = ratings.length
+        ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length
+        : 0;
+
+      await stylistRef.update({
+        rating: Math.round(average * 10) / 10,
+        reviewCount: ratings.length,
+      });
+    }
+    return null;
+  });
+
 // ==================== CHALLENGE SEEDING ====================
 
 /**
@@ -3579,7 +3660,6 @@ const CHALLENGE_POOL = [
     slug: 'one-piece-five-ways',
     title: 'One piece, five ways',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['onepiecefiveways', 'versatility'],
     description:
       'Pick the hardest-working item in your closet and show five genuinely different outfits built around it. Bonus points if two of them are for completely different occasions.',
@@ -3593,7 +3673,6 @@ const CHALLENGE_POOL = [
     slug: 'shop-your-closet',
     title: 'Shop your own closet',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['shopyourcloset', 'rediscovery'],
     description:
       'Build an outfit entirely from pieces you have not worn in the last three months. The ones you forgot you owned are usually the most interesting.',
@@ -3607,7 +3686,6 @@ const CHALLENGE_POOL = [
     slug: 'nothing-but-neutrals',
     title: 'Nothing but neutrals',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['nothingbutneutrals', 'colour'],
     description:
       'Cream, camel, charcoal, bone. Prove a restricted palette is a discipline rather than a limitation - texture and silhouette have to do all the work.',
@@ -3617,7 +3695,6 @@ const CHALLENGE_POOL = [
     slug: 'lowest-cost-per-wear',
     title: 'Your lowest cost-per-wear',
     type: 'monthly',
-    prize: 'Featured on the community feed',
     hashtags: ['costperwear', 'value'],
     description:
       'An outfit made only from the pieces you wear most. Share the cost-per-wear if you have it - the best answers here are usually the oldest things you own.',
@@ -3627,7 +3704,6 @@ const CHALLENGE_POOL = [
     slug: 'one-colour-head-to-toe',
     title: 'One colour, head to toe',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['monochrome', 'colour'],
     description:
       'Commit to one colour for the whole outfit. The trick is varying the shade and texture so it reads considered rather than uniform.',
@@ -3637,7 +3713,6 @@ const CHALLENGE_POOL = [
     slug: 'secondhand-only',
     title: 'Secondhand only',
     type: 'monthly',
-    prize: 'Featured on the community feed',
     hashtags: ['secondhand', 'sustainability'],
     description:
       'An outfit where nothing was bought new. Tell us where you found the best piece - half the pleasure is in the hunt.',
@@ -3647,7 +3722,6 @@ const CHALLENGE_POOL = [
     slug: 'dress-for-the-weather',
     title: 'Dress for the actual weather',
     type: 'daily',
-    prize: 'Featured on the community feed',
     hashtags: ['dressfortheweather', 'practical'],
     description:
       'No styling for an imaginary climate. Whatever it is doing outside your window right now - dress for that, and make it look good anyway.',
@@ -3657,7 +3731,6 @@ const CHALLENGE_POOL = [
     slug: 'carry-on-only',
     title: 'Carry-on only',
     type: 'monthly',
-    prize: 'Featured on the community feed',
     hashtags: ['carryononly', 'travel'],
     description:
       'Nine pieces, seven days, one bag. Show the pieces and how they recombine - this is the closest thing styling has to a puzzle.',
@@ -3667,7 +3740,6 @@ const CHALLENGE_POOL = [
     slug: 'oldest-thing-you-own',
     title: 'The oldest thing you own',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['oldestthingyouown', 'longevity'],
     description:
       'Build a look around the piece you have had longest. Anything that survived that many wardrobe clear-outs has earned its place.',
@@ -3677,7 +3749,6 @@ const CHALLENGE_POOL = [
     slug: 'texture-over-pattern',
     title: 'Texture over pattern',
     type: 'weekly',
-    prize: 'Featured on the community feed',
     hashtags: ['textureoverpattern', 'craft'],
     description:
       'Knit, suede, denim, silk, corduroy. Make an outfit interesting without a single print in it.',
@@ -3725,6 +3796,10 @@ async function rotateChallengesNow(): Promise<{
     if (!data.startDate || !data.type) {
       await doc.ref.delete();
       repaired++;
+    } else if (data.prize) {
+      // Earlier seeds promised "Featured on the community feed". Nothing picks
+      // or features a winner, so the promise comes off existing challenges too.
+      await doc.ref.update({ prize: admin.firestore.FieldValue.delete() });
     }
   }
 
@@ -3784,7 +3859,6 @@ async function rotateChallengesNow(): Promise<{
       description: template.description,
       type: template.type,
       status: startOffset === 0 ? 'active' : 'upcoming',
-      prize: template.prize,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       participants: 0,

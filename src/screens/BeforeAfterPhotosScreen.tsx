@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -35,7 +35,22 @@ export default function BeforeAfterPhotosScreen() {
 
   const [beforePhotos, setBeforePhotos] = useState<BeforeAfterPhoto[]>([]);
   const [afterPhotos, setAfterPhotos] = useState<BeforeAfterPhoto[]>([]);
-  const [photoPairs, setPhotoPairs] = useState<PhotoPair[]>([]);
+  // Derived from the two lists (same in-order pairing the service uses) so the
+  // Comparisons tab updates the moment an upload completes, not on re-entry.
+  const photoPairs = useMemo<PhotoPair[]>(() => {
+    const count = Math.min(beforePhotos.length, afterPhotos.length);
+    const pairs: PhotoPair[] = [];
+    for (let i = 0; i < count; i++) {
+      pairs.push({
+        id: `${beforePhotos[i].id}_${afterPhotos[i].id}`,
+        sessionId,
+        beforePhoto: beforePhotos[i],
+        afterPhoto: afterPhotos[i],
+        createdAt: afterPhotos[i].takenAt,
+      });
+    }
+    return pairs;
+  }, [beforePhotos, afterPhotos, sessionId]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -53,15 +68,13 @@ export default function BeforeAfterPhotosScreen() {
       // Create mock data
       await beforeAfterService.createMockTransformation(sessionId);
       
-      const [before, after, pairs] = await Promise.all([
+      const [before, after] = await Promise.all([
         beforeAfterService.getBeforePhotos(sessionId),
         beforeAfterService.getAfterPhotos(sessionId),
-        beforeAfterService.getPhotoPairs(sessionId),
       ]);
 
       setBeforePhotos(before);
       setAfterPhotos(after);
-      setPhotoPairs(pairs);
     } catch (error) {
       console.error('Error loading photos:', error);
       showToast('Failed to load photos', 'error');
@@ -105,13 +118,15 @@ export default function BeforeAfterPhotosScreen() {
         uri,
         'full-outfit',
         undefined,
-        true
+        // Photos of the client's body are private to the two people in the
+        // session; nothing in the app offers a "make public" choice.
+        false
       );
 
       if (type === 'before') {
-        setBeforePhotos([...beforePhotos, photo]);
+        setBeforePhotos(prev => [...prev, photo]);
       } else {
-        setAfterPhotos([...afterPhotos, photo]);
+        setAfterPhotos(prev => [...prev, photo]);
       }
 
       setShowSuccess(true);

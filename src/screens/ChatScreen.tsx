@@ -406,15 +406,16 @@ const styles = StyleSheet.create({
   // not fit inside it.
   sendButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 20,
     paddingVertical: 12,
     minWidth: 72,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Disabled stays rust at reduced opacity - never a grey fill.
   sendButtonDisabled: {
-    backgroundColor: colors.hair,
+    opacity: 0.4,
   },
   sendIcon: {
     fontFamily: fonts.sansMedium,

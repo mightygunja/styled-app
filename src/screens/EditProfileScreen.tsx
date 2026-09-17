@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import { updateProfile as updateAuthProfile } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import { readImageAsBase64 } from '../utils/imageData';
 import { RootStackParamList } from '../navigation/types';
 import { userProfileService, UserProfile } from '../services/userProfileService';
@@ -148,6 +150,21 @@ export default function EditProfileScreen() {
           .map(t =>t.trim())
           .filter(Boolean),
       });
+      // Keep Firebase Auth in step. Home's greeting, Account and More read the
+      // Auth user, so a name or photo saved only to the profile doc looked
+      // like the edit had not taken. Best-effort: the profile doc is the
+      // record, and a failure here must not report the save as failed.
+      const current = auth.currentUser;
+      if (current && current.uid === getCurrentUserId()) {
+        try {
+          await updateAuthProfile(current, {
+            displayName: displayName.trim(),
+            ...(profileImageUrl ? { photoURL: profileImageUrl } : {}),
+          });
+        } catch (error) {
+          console.warn('Could not mirror the profile to the auth user:', error);
+        }
+      }
       showToast('Profile updated!', 'success');
       setTimeout(() =>navigation.goBack(), 1000);
     } catch (error) {

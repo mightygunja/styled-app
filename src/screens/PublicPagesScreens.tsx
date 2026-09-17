@@ -23,6 +23,9 @@ import { colors, fonts, type as textType, spacing } from '../theme/designSystem'
 
 const CONTACT_EMAIL = 'support@thirtythreetrends.com';
 const EFFECTIVE_DATE = 'August 14, 2026';
+// The privacy policy is dated on its own: it was corrected (per-tap click
+// records, the affiliate networks actually in use) without the terms changing.
+const PRIVACY_EFFECTIVE_DATE = 'September 17, 2026';
 
 function PublicPage({
   eyebrow,
@@ -132,7 +135,7 @@ export function AboutScreen() {
 
 export function PrivacyScreen() {
   return (
-    <PublicPage eyebrow={`PRIVACY POLICY · EFFECTIVE ${EFFECTIVE_DATE.toUpperCase()}`} title="Your data, plainly">
+    <PublicPage eyebrow={`PRIVACY POLICY · EFFECTIVE ${PRIVACY_EFFECTIVE_DATE.toUpperCase()}`} title="Your data, plainly">
       <P>
         This policy describes what 33 Trends collects, why, and what happens to it. It is written
         to be read, not skimmed past.
@@ -160,10 +163,13 @@ export function PrivacyScreen() {
           suggestions. We do not track or store precise GPS movements.
         </P>
         <P>
-          Shopping activity in the app: which recommended products are shown and which are
-          tapped, recorded as aggregate counts attributed to the screen they appeared on. This
-          measures whether recommendations are useful. It is not a browsing profile and it is not
-          sold or shared.
+          Shopping activity in the app, recorded two different ways. Products shown to you are
+          counted only in aggregate - a daily total per screen, with nothing identifying who saw
+          what. Products you tap through to a retailer are recorded individually against your
+          account: the product, its retailer and price, the screen it appeared on, why it was
+          recommended, and when you tapped. We use that to account for affiliate revenue and to
+          measure whether recommendations are useful; you can see your own tap count under
+          Account. It is not sold or shared, and it is deleted with your account.
         </P>
       </Section>
       <Section heading="How it's used">
@@ -190,10 +196,12 @@ export function PrivacyScreen() {
       <Section heading="Affiliate links">
         <P>
           When you tap through to a retailer, you leave 33 Trends and the retailer's own privacy
-          policy applies. Affiliate networks (such as Sovrn or Rakuten Advertising) may set
-          cookies on the retailer's site to attribute the purchase - that attribution is how the
-          app is funded. We share no personal information with them; they see only that a click
-          arrived from 33 Trends.
+          policy applies. Our links currently run through Amazon Associates and Awin; on the web
+          we may also add the eBay Partner Network. As an Amazon Associate we earn from
+          qualifying purchases. These programmes may set cookies on the retailer's site to
+          attribute the purchase - that attribution is how the app is funded. We share no
+          personal information with them; the link carries only 33 Trends' own publisher
+          identifier, so they see that a click arrived from 33 Trends and not who made it.
         </P>
       </Section>
       <Section heading="What we don't do">

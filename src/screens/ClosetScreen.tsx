@@ -33,6 +33,7 @@ const CATEGORIES = [
   { id: 'outerwear', label: 'Outerwear' },
   { id: 'shoes', label: 'Shoes' },
   { id: 'accessories', label: 'Accessories' },
+  { id: 'bags', label: 'Bags' },
 ];
 
 export default function ClosetScreen() {
@@ -40,6 +41,8 @@ export default function ClosetScreen() {
   const gridColumns = useGridColumns();
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed fetch is not an empty closet - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showStats, setShowStats] = useState(false);
@@ -65,9 +68,14 @@ export default function ClosetScreen() {
       // filter over `items`, so tapping a tab never needs another round trip.
       const response = await closetAPI.getItems(getCurrentUserId());
       setItems(response.data as any);
+      setLoadError(false);
       if (!refreshing) fadeIn(fadeAnim, 300).start();
     } catch (error) {
       console.error('Error fetching closet items:', error);
+      setLoadError(true);
+      // The list fades in on success only; without this the retry block
+      // would sit at opacity 0.
+      fadeAnim.setValue(1);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -76,6 +84,11 @@ export default function ClosetScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    fetchClosetItems();
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
     fetchClosetItems();
   };
 
@@ -97,26 +110,28 @@ export default function ClosetScreen() {
       case 'worn':
         return (b.wornCount || 0) - (a.wornCount || 0);
       case 'category':
-        return a.category.localeCompare(b.category);
+        return (a.category || '').localeCompare(b.category || '');
       default:
         return 0;
     }
   });
 
   const itemsByCategory = items.reduce((acc, item) => {
-    acc[item.category] = (acc[item.category] || 0) + 1;
+    // One item saved without a category must not take the whole tab down.
+    const key = item.category || 'uncategorised';
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const mostWornItems = [...items]
     .sort((a, b) => (b.wornCount || 0) - (a.wornCount || 0))
     .slice(0, 3)
-    .map(item => ({ name: item.brand || item.category, wornCount: item.wornCount || 0 }));
+    .map(item => ({ name: item.brand || item.category || 'Uncategorised', wornCount: item.wornCount || 0 }));
 
   const leastWornItems = [...items]
     .sort((a, b) => (a.wornCount || 0) - (b.wornCount || 0))
     .slice(0, 3)
-    .map(item => ({ name: item.brand || item.category, wornCount: item.wornCount || 0 }));
+    .map(item => ({ name: item.brand || item.category || 'Uncategorised', wornCount: item.wornCount || 0 }));
 
   const totalWears = items.reduce((sum, item) =>sum + (item.wornCount || 0), 0);
   const avgWearsPerPiece = items.length >0 ? (totalWears / items.length).toFixed(1) : '0';
@@ -128,7 +143,7 @@ export default function ClosetScreen() {
           <View>
             <Text style={styles.sectionLabel}>YOUR CLOSET</Text>
             <Text style={styles.title}>
-              <Text style={styles.titleAccent}>{items.length}</Text>pieces
+              <Text style={styles.titleAccent}>{loadError && items.length === 0 ? '–' : items.length}</Text> pieces
             </Text>
           </View>
           <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.8}>
@@ -251,12 +266,28 @@ export default function ClosetScreen() {
             ) : null
           }
           ListEmptyComponent={
+            loadError ? (
+              <TouchableOpacity
+                style={styles.placeholder}
+                onPress={handleRetry}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading your closet"
+              >
+                <Ionicons name="cloud-offline-outline" size={26} color={colors.inkFaint} />
+                <Text style={[styles.placeholderText, styles.placeholderErrorText]}>
+                  Couldn't load your closet
+                </Text>
+                <Text style={styles.placeholderSubtext}>Tap to retry.</Text>
+              </TouchableOpacity>
+            ) : (
             <View style={styles.placeholder}>
               <Text style={styles.placeholderText}>
                 {selectedCategory === 'all' ? 'Your closet is empty' : `No ${selectedCategory} yet`}
               </Text>
               <Text style={styles.placeholderSubtext}>Tap + Add to add your first item</Text>
             </View>
+            )
           }
           renderItem={({ item }: { item: ClosetItem }) => {
             if (isGridSpacer(item)) return <View style={{ width: gridItemWidth(gridColumns) }} />;
@@ -287,11 +318,11 @@ export default function ClosetScreen() {
                   )}
                 </View>
                 <Text style={styles.itemName} numberOfLines={1}>
-                  {item.brand || item.category}
+                  {item.brand || item.category || 'Uncategorised'}
                 </Text>
                 <View style={styles.itemMetaRow}>
                   <Text style={styles.itemMeta} numberOfLines={1}>
-                    {item.category.toUpperCase()}
+                    {(item.category || 'uncategorised').toUpperCase()}
                   </Text>
                   {costPerWear && <Text style={styles.itemCostPerWear}>${costPerWear}/wear</Text>}
                 </View>
@@ -301,8 +332,14 @@ export default function ClosetScreen() {
         />
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={handleAddItem} activeOpacity={0.85}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleAddItem}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Add an item to your closet"
+      >
+        <Ionicons name="add" size={28} color={colors.bone} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -485,6 +522,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
+  placeholderErrorText: {
+    marginTop: 10,
+  },
   placeholderSubtext: {
     ...textType.meta,
     textAlign: 'center',
@@ -569,7 +609,9 @@ const styles = StyleSheet.create({
     right: 24,
     width: 56,
     height: 56,
-    backgroundColor: colors.ink,
+    borderRadius: radius.full,
+    // The tab's primary action, so it carries the action colour.
+    backgroundColor: colors.rust,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.ink,

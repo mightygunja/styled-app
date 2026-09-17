@@ -96,7 +96,11 @@ export default function SmartSearchScreen() {
     }
   };
 
-  const handleSearch = async (query?: string, sortOverride?: SortBy) => {
+  const handleSearch = async (
+    query?: string,
+    sortOverride?: SortBy,
+    categoryOverride?: typeof selectedCategory
+  ) => {
     const searchText = query || searchQuery.trim();
     if (!searchText) return;
 
@@ -104,7 +108,9 @@ export default function SmartSearchScreen() {
       setSearching(true);
       const searchResults = await smartSearchService.search(getCurrentUserId(), {
         query: searchText,
-        category: selectedCategory,
+        // Same reason as sortOverride below: a chip tap re-runs the search
+        // before setSelectedCategory has landed.
+        category: categoryOverride ?? selectedCategory,
         // setSortBy hasn't landed yet when the sort button re-runs the
         // search, so the new value arrives as an explicit override.
         sortBy: sortOverride ?? sortBy,
@@ -271,7 +277,12 @@ export default function SmartSearchScreen() {
             key={cat.id}
             label={cat.label}
             active={selectedCategory === cat.id}
-            onPress={() => setSelectedCategory(cat.id)}
+            onPress={() => {
+              setSelectedCategory(cat.id);
+              // Re-run the search so the chip filters what is on screen,
+              // the way the Sort button already does.
+              if (searchQuery.trim()) handleSearch(undefined, undefined, cat.id);
+            }}
             style={styles.categoryChipSpacing}
           />
         ))}

@@ -92,10 +92,17 @@ export default function CreatePostScreen() {
     try {
       setPosting(true);
 
-      const hashtagArray = hashtags
-        .split(' ')
-        .filter(tag =>tag.startsWith('#'))
-        .map(tag =>tag.slice(1));
+      // Stored the way searchByHashtag queries them: no '#', lower case. Tags
+      // kept their typed case before, so #OOTD never matched its own search,
+      // and words typed without a '#' were silently dropped.
+      const hashtagArray = Array.from(
+        new Set(
+          hashtags
+            .split(/[\s,]+/)
+            .map(tag => tag.replace(/^#+/, '').trim().toLowerCase())
+            .filter(tag => tag.length > 0)
+        )
+      );
 
       // Upload each local image to Firebase Storage so it's durably viewable
       const uploadedUrls = await Promise.all(
@@ -218,8 +225,12 @@ export default function CreatePostScreen() {
             placeholder="#fashion #style #ootd"
             value={hashtags}
             onChangeText={setHashtags}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-          <Text style={styles.hashtagHint}>Separate hashtags with spaces</Text>
+          <Text style={styles.hashtagHint}>
+            Separate hashtags with spaces. The # is optional and tags are saved in lower case.
+          </Text>
         </View>
 
         {/* Tips */}
@@ -300,12 +311,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 12,
     marginBottom: 60,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 16,
     alignItems: 'center',
   },
   postButtonDisabled: {
-    backgroundColor: colors.hair,
+    opacity: 0.4,
   },
   postButtonText: {
     fontFamily: fonts.sansMedium,

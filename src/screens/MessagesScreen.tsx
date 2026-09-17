@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
-import { useNavigation } from '@react-navigation/native';
+import Button from '../components/Button';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { messagingService, Conversation } from '../services/messagingService';
@@ -27,14 +28,30 @@ export default function MessagesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadConversations();
   }, []);
 
-  const loadConversations = async () => {
+  // Coming back from a chat, the previews and unread badges were stale until
+  // a pull-to-refresh (which does nothing on web). Re-read quietly on focus;
+  // the mount effect above does the first load.
+  const hasFocusedOnce = useRef(false);
+  const loadConversationsRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true;
+        return;
+      }
+      loadConversationsRef.current(true);
+    }, [])
+  );
+
+  const loadConversations = async (silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [convs, unread] = await Promise.all([
         messagingService.getConversations(getCurrentUserId()),
         messagingService.getTotalUnreadCount(getCurrentUserId()),
@@ -54,12 +71,16 @@ export default function MessagesScreen() {
 
       setConversations(convsWithProfiles);
       setUnreadCount(unread);
+      setLoadError(false);
     } catch (error) {
       console.error('Error loading conversations:', error);
+      // A failed quiet refresh leaves what is already on screen alone.
+      if (!silent) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+  loadConversationsRef.current = loadConversations;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -164,12 +185,27 @@ export default function MessagesScreen() {
           </Text>
         </View>
 
-        {conversations.length === 0 ? (
+        {loadError && conversations.length === 0 ? (
+          <TouchableOpacity
+            style={styles.emptyState}
+            activeOpacity={0.85}
+            onPress={() => loadConversations()}
+          >
+            <Text style={styles.emptyText}>Couldn't load messages</Text>
+            <Text style={styles.emptySubtext}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : conversations.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No messages yet</Text>
             <Text style={styles.emptySubtext}>
-              Open someone's profile and choose Message to start a conversation.
+              Open someone's profile and choose Message to start a conversation. The community
+              feed is where people and their profiles are.
             </Text>
+            <Button
+              title="Find people"
+              onPress={() => navigation.navigate('SocialFeed')}
+              style={{ marginTop: 16, alignSelf: 'flex-start' }}
+            />
           </View>
         ) : (
           conversations.map(renderConversation)

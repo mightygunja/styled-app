@@ -40,6 +40,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ClosetOrganizationScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
+  // A failed load is not an empty closet - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [organizationPlan, setOrganizationPlan] = useState<OrganizationPlan | null>(null);
   const [declutterSuggestions, setDeclutterSuggestions] = useState<DeclutterSuggestion[]>([]);
@@ -70,6 +72,7 @@ export default function ClosetOrganizationScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
 
       // Get closet items
       const response = await closetAPI.getItems(getCurrentUserId());
@@ -142,6 +145,7 @@ export default function ClosetOrganizationScreen() {
       setTips(orgTips);
     } catch (error) {
       console.error('Error loading data:', error);
+      setLoadError(true);
       showToast('Failed to load organization data', 'error');
     } finally {
       setLoading(false);
@@ -300,6 +304,48 @@ export default function ClosetOrganizationScreen() {
     );
   }
 
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <BackButton />
+        <TouchableOpacity
+          style={styles.loadingContainer}
+          onPress={loadData}
+          accessibilityRole="button"
+        >
+          <Text style={styles.stateTitle}>Couldn't load your closet</Text>
+          <Text style={styles.stateText}>Tap to retry.</Text>
+        </TouchableOpacity>
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
+      </SafeAreaView>
+    );
+  }
+
+  // Organizing an empty closet would be a page of zeros and blank tabs, so
+  // send the user to the one action that changes that.
+  if (items.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <BackButton />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.stateTitle}>Nothing to organize yet</Text>
+          <Text style={styles.stateText}>
+            Add items to your closet and this page will group them, flag what to review, and build
+            a capsule from what you own.
+          </Text>
+          <TouchableOpacity
+            style={styles.stateButton}
+            onPress={() => navigation.navigate('AddClosetItem')}
+            accessibilityRole="button"
+          >
+            <Text style={styles.stateButtonText}>Add an item</Text>
+          </TouchableOpacity>
+        </View>
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -322,8 +368,10 @@ export default function ClosetOrganizationScreen() {
           <Text style={styles.statLabel}>To Review</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{organizationPlan?.estimatedTime || 0}m</Text>
-          <Text style={styles.statLabel}>Est. Time</Text>
+          {/* Was an "Est. Time" of items x 2 minutes - a constant with no
+              basis. The number of groups in the current plan is real. */}
+          <Text style={styles.statValue}>{organizationPlan?.sections.length || 0}</Text>
+          <Text style={styles.statLabel}>Groups</Text>
         </View>
       </View>
 
@@ -400,8 +448,16 @@ export default function ClosetOrganizationScreen() {
           <View style={styles.declutterContainer}>
             <Text style={styles.declutterTitle}>Declutter Suggestions</Text>
             <Text style={styles.declutterSubtitle}>
-              {declutterSuggestions.length} items to review
+              {declutterSuggestions.length === 0
+                ? 'Nothing to review'
+                : `${declutterSuggestions.length} ${declutterSuggestions.length === 1 ? 'item' : 'items'} to review`}
             </Text>
+            {declutterSuggestions.length === 0 && (
+              <Text style={styles.stateText}>
+                Nothing in your closet looks unused or duplicated right now. Suggestions appear
+                here as wear history builds up.
+              </Text>
+            )}
             {declutterSuggestions.map(renderDeclutterSuggestion)}
           </View>
         )}
@@ -482,6 +538,16 @@ export default function ClosetOrganizationScreen() {
           </View>
         )}
 
+        {selectedTab === 'capsule' && !capsuleWardrobe && (
+          <TouchableOpacity
+            style={styles.declutterContainer}
+            onPress={loadData}
+            accessibilityRole="button"
+          >
+            <Text style={styles.stateText}>Couldn't build your capsule. Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -509,6 +575,34 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: ds.inkMuted,
+  },
+  stateTitle: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 18,
+    color: ds.ink,
+    marginBottom: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  stateText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    lineHeight: 20,
+    color: ds.inkMuted,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  stateButton: {
+    marginTop: 20,
+    backgroundColor: ds.rust,
+    borderRadius: radius.full,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  stateButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: ds.white,
   },
   header: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,8 @@ import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
 import { stylistBookingsService } from '../services/firestore';
 import { StylingSession } from '../types';
+import BackButton from '../components/BackButton';
+import { formatSessionDay, formatSessionTime } from '../utils/sessionDate';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -25,6 +28,9 @@ export default function MySessionsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [sessions, setSessions] = useState<StylingSession[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed load must not read as "No sessions yet" - someone with bookings
+  // would be told they have none and pushed to book again.
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -36,16 +42,19 @@ export default function MySessionsScreen() {
       await loadSessions();
     } catch (error) {
       console.error('Error cancelling booking:', error);
+      Alert.alert("Couldn't cancel", 'The request was not cancelled. Check your connection and try again.');
     }
   };
 
   const loadSessions = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await stylistAPI.getUserSessions(getCurrentUserId());
       setSessions(data);
     } catch (error) {
       console.error('Error loading sessions:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -78,9 +87,18 @@ export default function MySessionsScreen() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  const header = (
+    <View style={styles.header}>
+      <BackButton style={styles.backButton} />
+      <Text style={styles.title}>Your sessions</Text>
+      <View style={{ width: 50 }} />
+    </View>
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        {header}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
@@ -90,16 +108,20 @@ export default function MySessionsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Your sessions</Text>
-        <View style={{ width: 50 }} />
-      </View>
+      {header}
 
       <ScrollView style={styles.content}>
-        {sessions.length === 0 ? (
+        {loadError && (
+          <TouchableOpacity
+            style={styles.errorBanner}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your sessions"
+            onPress={loadSessions}
+          >
+            <Text style={styles.errorBannerText}>Couldn't load your sessions. Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+        {loadError && sessions.length === 0 ? null : sessions.length === 0 ? (
           <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No sessions yet</Text>
             <Text style={styles.emptySubtext}>Book a stylist to get started</Text>
@@ -118,10 +140,18 @@ export default function MySessionsScreen() {
                 <View style={styles.sessionHeader}>
                   {session.stylist && (
                     <>
-                      <Image
-                        source={{ uri: session.stylist.profileImageUrl }}
-                        style={styles.stylistImage}
-                      />
+                      {session.stylist.profileImageUrl ? (
+                        <Image
+                          source={{ uri: session.stylist.profileImageUrl }}
+                          style={styles.stylistImage}
+                        />
+                      ) : (
+                        <View style={[styles.stylistImage, styles.stylistImagePlaceholder]}>
+                          <Text style={styles.stylistInitial}>
+                            {(session.stylist.name || '').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.sessionInfo}>
                         <Text style={styles.stylistName}>{session.stylist.name}</Text>
                         <Text style={styles.sessionType}>
@@ -140,7 +170,10 @@ export default function MySessionsScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="calendar-outline" size={16} color={colors.inkMuted} style={styles.detailIcon} />
                     <Text style={styles.detailText}>
-                      {new Date(session.scheduledDate).toLocaleDateString()}
+                      {formatSessionDay(session.scheduledDate)}
+                      {formatSessionTime(session.scheduledDate)
+                        ? ` at ${formatSessionTime(session.scheduledDate)}`
+                        : ''}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
@@ -226,7 +259,7 @@ export default function MySessionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -241,10 +274,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  // Shared BackButton inside the existing centred row: drop its own bottom
+  // margin / side padding so the row geometry is unchanged.
   backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
+  errorBanner: {
+    borderRadius: radius.md,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.rust,
+    padding: 14,
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  errorBannerText: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.ink },
+  stylistImagePlaceholder: {
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stylistInitial: { fontFamily: fonts.serif, fontSize: 20, color: colors.tobacco },
   title: {
     fontFamily: fonts.serif,
     fontSize: 26,
@@ -268,13 +319,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
     marginBottom: 24,
   },
   bookButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 32,
     paddingVertical: 14,
   },
@@ -316,11 +368,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sessionType: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textTransform: 'capitalize',
   },
   statusBadge: {
+    borderRadius: radius.full,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
@@ -346,6 +400,7 @@ const styles = StyleSheet.create({
     width: 24,
   },
   detailText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.ink,
   },
@@ -360,6 +415,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   confirmedNoteText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
     lineHeight: 18,

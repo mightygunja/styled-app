@@ -16,6 +16,7 @@ import { RootStackParamList } from '../navigation/types';
 import { lookAPI, getCurrentUserId } from '../services/api';
 import { Look } from '../types';
 import LookCard from '../components/LookCard';
+import BackButton from '../components/BackButton';
 import { fadeIn } from '../utils/animations';
 import { colors, fonts, radius } from '../theme/designSystem';
 
@@ -26,6 +27,8 @@ export default function FavoritesScreen() {
   const [looks, setLooks] = useState<Look[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // A failed fetch is not "No Favorites Yet" - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   
   // Animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -36,6 +39,7 @@ export default function FavoritesScreen() {
       const response = await lookAPI.getFavorites(getCurrentUserId());
       console.log('Favorites response:', response);
       setLooks(response.data || []);
+      setLoadError(false);
       
       // Animate in
       if (!refreshing) {
@@ -43,6 +47,7 @@ export default function FavoritesScreen() {
       }
     } catch (error) {
       console.error('Error fetching favorites:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,6 +76,7 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading favorites...</Text>
@@ -96,14 +102,29 @@ export default function FavoritesScreen() {
         </Text>
       </View>
 
-      {looks.length === 0 ? (
+      {loadError && looks.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Couldn't load your favorites</Text>
+          <Text style={styles.emptyText}>Check your connection and try again.</Text>
+          <TouchableOpacity
+            style={styles.browseButton}
+            accessibilityRole="button"
+            onPress={() => {
+              setLoading(true);
+              fetchFavorites();
+            }}
+          >
+            <Text style={styles.browseButtonText}>Tap to retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : looks.length === 0 ? (
         <View style={styles.emptyContainer}>
                     <Text style={styles.emptyTitle}>No Favorites Yet</Text>
           <Text style={styles.emptyText}>Tap the heart icon on any look to save it here
           </Text>
           <TouchableOpacity
             style={styles.browseButton}
-            onPress={() =>navigation.navigate('MainTabs', { screen: 'Home' })}
+            onPress={() =>navigation.navigate('Recommendations')}
           >
             <Text style={styles.browseButtonText}>Browse Looks</Text>
           </TouchableOpacity>
@@ -125,6 +146,7 @@ export default function FavoritesScreen() {
                 onPress={() =>navigation.navigate('LookDetail', { lookId: item.id })}
                 onFavorite={() =>handleUnfavorite(item.id)}
                 isFavorited={true}
+                compact
               />
             </View>
           )}
@@ -211,7 +233,7 @@ const styles = StyleSheet.create({
   },
   browseButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 32,
     paddingVertical: 16,
   },

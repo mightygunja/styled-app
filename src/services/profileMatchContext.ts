@@ -4,6 +4,7 @@
  * and marketplace products (marketplaceMatchingService) the same way.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styleProfileService } from './firestore';
 import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
 
@@ -25,12 +26,50 @@ export interface ProfileMatchContext {
   categoryGuidance?: Record<string, string[]>;
   /** Whose wardrobe: womenswear, menswear, or both. Absent reads as 'all'. */
   wardrobeFocus?: 'womens' | 'mens' | 'all';
+  /**
+   * True when the profile could NOT be read and this context carries only the
+   * last department we successfully loaded for this user. Every taste field
+   * is absent; `wardrobeFocus` is the remembered one.
+   */
+  profileReadFailed?: boolean;
+}
+
+/**
+ * The department gate must not fail open. Consumers read an absent focus as
+ * 'all', so a transient profile read failure used to hand a menswear user a
+ * mixed rack (and the reverse). The last successfully loaded focus is kept in
+ * memory and in AsyncStorage, per user, and used when the read throws.
+ */
+type Focus = 'womens' | 'mens' | 'all';
+const FOCUS_CACHE_PREFIX = '@styled_last_wardrobe_focus_';
+const focusMemory = new Map<string, Focus>();
+const isFocus = (value: unknown): value is Focus =>
+  value === 'womens' || value === 'mens' || value === 'all';
+
+/** Records the user's department after a successful profile read or save. Never throws. */
+export function rememberWardrobeFocus(userId: string, focus: Focus | undefined): void {
+  if (!userId || !isFocus(focus)) return;
+  if (focusMemory.get(userId) === focus) return;
+  focusMemory.set(userId, focus);
+  AsyncStorage.setItem(FOCUS_CACHE_PREFIX + userId, focus).catch(() => {});
+}
+
+async function recallWardrobeFocus(userId: string): Promise<Focus | undefined> {
+  const inMemory = focusMemory.get(userId);
+  if (inMemory) return inMemory;
+  try {
+    const stored = await AsyncStorage.getItem(FOCUS_CACHE_PREFIX + userId);
+    return isFocus(stored) ? stored : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function buildProfileMatchContext(userId: string): Promise<ProfileMatchContext | undefined> {
   try {
     const savedProfile = await styleProfileService.getStyleProfile(userId);
     if (!savedProfile) return undefined;
+    rememberWardrobeFocus(userId, savedProfile.wardrobeFocus);
     const bodyGuide = savedProfile.bodyAnalysis ? BODY_TYPE_GUIDES[savedProfile.bodyAnalysis.bodyType] : null;
     return {
       recommendedColors: savedProfile.colorAnalysis?.palette.map(s => s.name),
@@ -48,6 +87,10 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
     };
   } catch (error) {
     console.error('Error loading style profile context:', error);
-    return undefined;
+    // Read ERROR (not "no profile"): fall back to the last department we know
+    // for this user so the gate stays closed. With nothing remembered there is
+    // nothing safe to assert, so the old `undefined` stands.
+    const remembered = await recallWardrobeFocus(userId);
+    return remembered ? { wardrobeFocus: remembered, profileReadFailed: true } : undefined;
   }
 }

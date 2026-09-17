@@ -24,9 +24,12 @@ import { ItemCategory } from '../types';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditDetailRouteProp = RouteProp<RootStackParamList, 'EditDetail'>;
 
+// Only categories Shop has a chip for. Bags are not one of them: the
+// catalogue files bags under accessories, so a bag gap maps there (below).
 const SHOP_CATEGORIES: ItemCategory[] = [
-  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags',
+  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories',
 ];
+const BAG_CATEGORIES = ['bag', 'bags', 'handbag', 'handbags'];
 
 export default function EditDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -35,6 +38,8 @@ export default function EditDetailScreen() {
 
   const [edit, setEdit] = useState<StyleEdit | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed or denied read is not a missing Edit - it gets a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [revisionNote, setRevisionNote] = useState('');
   const [submittingRevision, setSubmittingRevision] = useState(false);
@@ -46,8 +51,10 @@ export default function EditDetailScreen() {
   const load = async () => {
     try {
       setEdit(await styleEditService.getById(editId));
+      setLoadFailed(false);
     } catch (error) {
       console.error('Error loading edit:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -81,6 +88,17 @@ export default function EditDetailScreen() {
   // rather than on an inexplicably empty grid.
   const openGapInShop = (rawCategory: string) => {
     const normalized = (rawCategory || '').toLowerCase().trim();
+    if (BAG_CATEGORIES.includes(normalized)) {
+      // Accessories chip highlighted, search box pre-filled with "bag" - both
+      // visible, so the user can see and undo exactly what narrowed the grid.
+      // `query` is read by Shop; cast until the route type declares it.
+      navigation.navigate('Shop', {
+        category: 'accessories',
+        matchedOnly: true,
+        query: 'bag',
+      } as RootStackParamList['Shop']);
+      return;
+    }
     const category = SHOP_CATEGORIES.find(c => c === normalized || c === `${normalized}s`);
     navigation.navigate('Shop', category ? { category, matchedOnly: true } : { matchedOnly: true });
   };
@@ -105,7 +123,30 @@ export default function EditDetailScreen() {
           <BackButton />
         </View>
         <View style={styles.content}>
-          <Text style={styles.title}>Edit not found</Text>
+          <Text style={styles.title}>{loadFailed ? "Couldn't load this Edit" : 'Edit not found'}</Text>
+          <Text style={styles.subtitle}>
+            {loadFailed
+              ? 'Something went wrong fetching it. Check your connection and try again.'
+              : 'It may have been removed. Your other Edits are still in your list.'}
+          </Text>
+          {loadFailed && (
+            <Button
+              title="Try again"
+              onPress={() => {
+                setLoading(true);
+                load();
+              }}
+              fullWidth
+              style={{ marginTop: spacing.lg }}
+            />
+          )}
+          <Button
+            title="Back to Edits"
+            variant={loadFailed ? 'outline' : 'primary'}
+            onPress={() => navigation.navigate('Edits')}
+            fullWidth
+            style={{ marginTop: loadFailed ? spacing.sm : spacing.lg }}
+          />
         </View>
       </SafeAreaView>
     );

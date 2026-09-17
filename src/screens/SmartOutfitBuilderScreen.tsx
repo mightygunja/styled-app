@@ -18,6 +18,7 @@ import { generateOutfitSuggestions, OutfitSuggestion } from '../services/outfitP
 import { outfitsService } from '../services/firestore';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Button from '../components/Button';
+import BackButton from '../components/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
@@ -33,6 +34,8 @@ export default function SmartOutfitBuilderScreen() {
   const [selectedItems, setSelectedItems] = useState<ClosetItem[]>([]);
   const [suggestions, setSuggestions] = useState<OutfitSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed closet read must not be presented as an empty closet.
+  const [loadError, setLoadError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [occasion, setOccasion] = useState<'casual' | 'work' | 'formal' | 'athletic'>('casual');
   const { toast, showToast, hideToast } = useToast();
@@ -50,6 +53,7 @@ export default function SmartOutfitBuilderScreen() {
   const loadClosetItems = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const response = await closetAPI.getItems(getCurrentUserId());
       setClosetItems(response.data);
       // Arriving from an item's "Create Outfit" button starts the outfit
@@ -60,6 +64,7 @@ export default function SmartOutfitBuilderScreen() {
       }
     } catch (error) {
       console.error('Error loading closet:', error);
+      setLoadError(true);
       showToast('Failed to load closet items', 'error');
     } finally {
       setLoading(false);
@@ -113,6 +118,11 @@ export default function SmartOutfitBuilderScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        {/* Back stays available while the closet loads: web has no swipe-back,
+            so a slow read used to leave no exit. */}
+        <View style={styles.header}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading your closet...</Text>
@@ -127,15 +137,13 @@ export default function SmartOutfitBuilderScreen() {
           away with the closet grid, so after picking pieces there was no
           Save on screen (same flaw testers reported on Add Item). */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Outfit Builder</Text>
-        <TouchableOpacity onPress={saveOutfit}>
-          <Text style={styles.saveButton}>Save</Text>
-        </TouchableOpacity>
+        <BackButton />
       </View>
       <ScrollView>
+        {/* Same header as Planner / Packing / Try-on: shared BackButton, tobacco
+            eyebrow, serif title. The header "Save" duplicated the footer CTA. */}
+        <Text style={styles.eyebrow}>WARDROBE</Text>
+        <Text style={styles.title}>Outfit builder</Text>
 
         {/* Selected Items Preview */}
         <View style={styles.previewSection}>
@@ -143,7 +151,11 @@ export default function SmartOutfitBuilderScreen() {
           {selectedItems.length === 0 ? (
             <View style={styles.emptyPreview}>
               {closetItems.length === 0 ? (
-                <Text style={styles.emptyText}>Add items to your closet to build outfits</Text>
+                <Text style={styles.emptyText}>
+                  {loadError
+                    ? "Couldn't load your closet"
+                    : 'Add items to your closet to build outfits'}
+                </Text>
               ) : (
                 <>
                   <Text style={styles.emptyText}>Tap items below to build your outfit</Text>
@@ -231,7 +243,19 @@ export default function SmartOutfitBuilderScreen() {
         {/* Closet Items Grid */}
         <View style={styles.closetSection}>
           <Text style={styles.sectionTitle}>Your Closet</Text>
-          {closetItems.length === 0 && (
+          {closetItems.length === 0 && loadError && (
+            <TouchableOpacity
+              style={styles.emptyCloset}
+              onPress={loadClosetItems}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.emptyClosetText, styles.loadErrorText]}>
+                Couldn't load your closet. Tap to retry.
+              </Text>
+            </TouchableOpacity>
+          )}
+          {closetItems.length === 0 && !loadError && (
             <View style={styles.emptyCloset}>
               <Text style={styles.emptyClosetText}>
                 Your closet is empty. Add your first item to start building outfits.
@@ -311,7 +335,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -323,26 +347,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.inkMuted,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+  eyebrow: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.tobacco,
+    marginHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 34,
     color: colors.ink,
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
-  saveButton: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
+  loadErrorText: {
+    marginBottom: 0,
     color: colors.ink,
   },
   previewSection: {
@@ -511,7 +535,8 @@ const styles = StyleSheet.create({
   },
   emptyClosetButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    // The only action in the empty state, so it is the rust primary.
+    backgroundColor: colors.rust,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },

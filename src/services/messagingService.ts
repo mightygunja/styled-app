@@ -163,17 +163,30 @@ class MessagingService {
    * Mark messages as read
    */
   async markAsRead(conversationId: string, userId: string): Promise<boolean> {
-    const messages = await this.getMessages(conversationId);
-    await Promise.all(
-      messages
-        .filter(m => !m.readBy.includes(userId))
-        .map(m => updateDoc(doc(db, 'messages', m.id), { readBy: [...m.readBy, userId] }))
-    );
+    // Never throws: ChatScreen calls this un-awaited on every messages change.
+    try {
+      // The unread count is what the Messages list and badge read, and any
+      // participant may update the conversation - so it is cleared first and
+      // never depends on the per-message writes below.
+      const convRef = doc(db, 'conversations', conversationId);
+      await updateDoc(convRef, { [`unreadCount.${userId}`]: 0 }).catch(() => {});
 
-    const convRef = doc(db, 'conversations', conversationId);
-    await updateDoc(convRef, { [`unreadCount.${userId}`]: 0 }).catch(() => {});
+      // These are the OTHER person's message docs. Best-effort: each write
+      // stands alone, so one denial cannot reject the rest.
+      const messages = await this.getMessages(conversationId);
+      await Promise.all(
+        messages
+          .filter(m => !(m.readBy || []).includes(userId))
+          .map(m =>
+            updateDoc(doc(db, 'messages', m.id), { readBy: [...(m.readBy || []), userId] }).catch(() => {})
+          )
+      );
 
-    return true;
+      return true;
+    } catch (error) {
+      console.log('Could not mark conversation as read', error);
+      return false;
+    }
   }
 
   /**

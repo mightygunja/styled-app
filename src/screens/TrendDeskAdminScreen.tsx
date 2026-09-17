@@ -19,6 +19,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -33,6 +34,12 @@ const STATUS_ORDER: Record<string, number> = { draft: 0, published: 1, archived:
 export default function TrendDeskAdminScreen() {
   const [trends, setTrends] = useState<FashionTrend[]>([]);
   const [loading, setLoading] = useState(true);
+  // listTrendDesk always appends the bundled seed set, so an empty list can
+  // only mean the call failed. That used to render as "the desk is empty -
+  // users are seeing the seed set", a statement about production that the
+  // screen had no way of knowing.
+  const [loadError, setLoadError] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
@@ -40,6 +47,8 @@ export default function TrendDeskAdminScreen() {
   const load = useCallback(async () => {
     try {
       const desk = await trendService.listTrendDesk();
+      setLoadError(false);
+      setDenied(false);
       setTrends(
         [...desk].sort(
           (a, b) =>
@@ -47,9 +56,14 @@ export default function TrendDeskAdminScreen() {
             b.createdAt.localeCompare(a.createdAt)
         )
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading the trend desk:', error);
-      showToast('Could not load the trend desk', 'error');
+      if (error?.code === 'functions/permission-denied' || error?.code === 'permission-denied') {
+        setDenied(true);
+      } else {
+        setLoadError(true);
+        showToast('Could not load the trend desk', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -86,6 +100,45 @@ export default function TrendDeskAdminScreen() {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const retry = () => {
+    setLoading(true);
+    load();
+  };
+
+  // Retiring a published trend pulls it from every user at once, and it sat
+  // one stray tap away with no confirmation.
+  const confirmArchive = (trend: FashionTrend) => {
+    const live = trend.status === 'published';
+    Alert.alert(
+      live ? `Retire "${trend.name}"?` : `Discard "${trend.name}"?`,
+      live
+        ? 'It stops reaching every user straight away. You can restore it from the archived rows below.'
+        : 'The draft moves to the archived rows below.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: live ? 'Retire' : 'Discard', style: 'destructive', onPress: () => handleArchive(trend) },
+      ]
+    );
+  };
+
+  // An archived AI-drafted row goes live to every user when brought back, and
+  // it may be a draft that was never published at all - so it asks first.
+  // Editorial seed rows restore directly, as they always have.
+  const confirmRestore = (trend: FashionTrend) => {
+    if (trend.source === 'editorial') {
+      handlePublish(trend);
+      return;
+    }
+    Alert.alert(
+      `Publish "${trend.name}"?`,
+      'It goes live for every user.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Publish', onPress: () => handlePublish(trend) },
+      ]
+    );
   };
 
   const handleArchive = async (trend: FashionTrend) => {
@@ -134,13 +187,14 @@ export default function TrendDeskAdminScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
-        ) : trends.length === 0 ? (
+        ) : denied ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>
-              The desk is empty — users are seeing the shipped editorial seed set. Draft a report to
-              get fresh trends in front of them.
-            </Text>
+            <Text style={styles.emptyText}>The trend desk is limited to 33 Trends admins.</Text>
           </View>
+        ) : loadError || trends.length === 0 ? (
+          <TouchableOpacity style={styles.emptyBox} onPress={retry} accessibilityRole="button">
+            <Text style={styles.emptyText}>Couldn't load the trend desk. Tap to retry.</Text>
+          </TouchableOpacity>
         ) : (
           trends.map(trend => (
             <View key={trend.id} style={styles.row}>
@@ -172,15 +226,22 @@ export default function TrendDeskAdminScreen() {
               </Text>
               <Text style={styles.rowDetail}>How to wear: {trend.stylingNote}</Text>
 
-              {trend.status === 'archived' && trend.source === 'editorial' && (
+              {/* Every archived row can come back. This used to be limited to
+                  editorial rows, so an AI-drafted trend retired by mistake had
+                  no way back from the app even though the server allows it. */}
+              {trend.status === 'archived' && (
                 <View style={styles.rowActions}>
                   <TouchableOpacity
                     style={styles.archiveAction}
                     disabled={busyId === trend.id}
-                    onPress={() => handlePublish(trend)}
+                    onPress={() => confirmRestore(trend)}
                   >
                     <Text style={styles.restoreActionText}>
-                      {busyId === trend.id ? 'Working…' : 'Restore'}
+                      {busyId === trend.id
+                        ? 'Working…'
+                        : trend.source === 'editorial' || trend.publishedAt
+                          ? 'Restore'
+                          : 'Publish'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -201,7 +262,7 @@ export default function TrendDeskAdminScreen() {
                   <TouchableOpacity
                     style={styles.archiveAction}
                     disabled={busyId === trend.id}
-                    onPress={() => handleArchive(trend)}
+                    onPress={() => confirmArchive(trend)}
                   >
                     <Text style={styles.archiveActionText}>
                       {trend.status === 'draft' ? 'Discard' : 'Retire'}

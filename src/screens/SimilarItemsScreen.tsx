@@ -24,11 +24,22 @@ export default function SimilarItemsScreen() {
     ? route.params.similarItems
     : [];
 
+  // Two callers share this screen. The closet-item path compares facets
+  // within one category and returns `reasons`; the look path ranks by one
+  // overall similarity number and returns no reasons at all. Copy below only
+  // ever claims what was actually computed.
+  const fromItem = (route.params as any)?.source === 'item';
+  const hasReasons = (similarItems as Match[]).some(m => m?.reasons?.length);
+
   const renderItem = ({ item }: { item: Match }) => {
     const closetItem = item.item;
+    // Never an invented reason: the returned facets, else the returned score,
+    // else nothing.
     const reason = item.reasons?.length
       ? item.reasons.join(' · ')
-      : 'Same category and general look';
+      : typeof item.similarity === 'number' && isFinite(item.similarity)
+        ? `Overall similarity ${Math.round(Math.max(0, Math.min(1, item.similarity)) * 100)}%`
+        : null;
 
     return (
       <TouchableOpacity
@@ -46,7 +57,7 @@ export default function SimilarItemsScreen() {
         <View style={styles.rowText}>
           {/* The reason leads. Ordering without a stated basis is the thing
               that made this feature feel arbitrary. */}
-          <Text style={styles.reason}>{reason}</Text>
+          {reason ? <Text style={styles.reason}>{reason}</Text> : null}
           <Text style={styles.itemName} numberOfLines={1}>
             {closetItem.subcategory || closetItem.category}
           </Text>
@@ -72,13 +83,17 @@ export default function SimilarItemsScreen() {
         ListHeaderComponent={
           <View style={styles.intro}>
             <Text style={styles.eyebrow}>FROM YOUR CLOSET</Text>
-            <Text style={styles.title}>Similar pieces</Text>
+            <Text style={styles.title}>{fromItem || hasReasons ? 'Similar pieces' : 'Closest in your closet'}</Text>
             <Text style={styles.subtitle}>
               {similarItems.length === 0
                 ? 'Nothing close enough to show.'
                 : `${similarItems.length} ${
                     similarItems.length === 1 ? 'piece' : 'pieces'
-                  } you already own, matched on cut, colour, fabric and pattern.`}
+                  } you already own, ${
+                    hasReasons
+                      ? 'matched on cut, colour, fabric and pattern.'
+                      : 'ranked by one overall similarity score. No piece-by-piece comparison was made.'
+                  }`}
             </Text>
           </View>
         }
@@ -86,8 +101,9 @@ export default function SimilarItemsScreen() {
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>No close matches</Text>
             <Text style={styles.emptyText}>
-              Nothing else in this category is similar enough to be worth showing. That is usually a
-              good sign — it means the piece is not a duplicate.
+              {fromItem
+                ? 'Nothing else in this category is similar enough to be worth showing. That is usually a good sign — it means the piece is not a duplicate.'
+                : 'Nothing in your closet scored as similar enough to be worth showing.'}
             </Text>
           </View>
         }

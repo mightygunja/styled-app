@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,20 +34,31 @@ export default function StylistMarketplaceScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<Filter>('all');
+  // A failed load/search/filter must not read as "No stylists match that".
+  const [loadError, setLoadError] = useState(false);
+  // Every load, search and filter takes a ticket; only the newest may write
+  // results, so a slow older search cannot overwrite a newer one.
+  const requestRef = useRef(0);
+  const lastRequestRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     loadStylists();
   }, []);
 
   const loadStylists = async () => {
+    const requestId = ++requestRef.current;
+    lastRequestRef.current = loadStylists;
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await stylistAPI.getStylists();
+      if (requestId !== requestRef.current) return;
       setStylists(data);
     } catch (error) {
       console.error('Error loading stylists:', error);
+      if (requestId === requestRef.current) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (requestId === requestRef.current) setLoading(false);
     }
   };
 
@@ -58,29 +69,45 @@ export default function StylistMarketplaceScreen() {
       return;
     }
 
+    const requestId = ++requestRef.current;
+    lastRequestRef.current = () => handleSearch(query);
     try {
+      setLoadError(false);
       const results = await stylistAPI.searchStylists(query);
+      if (requestId !== requestRef.current) return;
       setStylists(results);
+      setLoading(false);
     } catch (error) {
       console.error('Error searching:', error);
+      if (requestId !== requestRef.current) return;
+      setLoadError(true);
+      setLoading(false);
     }
   };
 
   const applyFilter = async (filter: Filter) => {
     setSelectedFilter(filter);
 
+    if (filter === 'all') {
+      loadStylists();
+      return;
+    }
+
+    const requestId = ++requestRef.current;
+    lastRequestRef.current = () => applyFilter(filter);
     try {
-      if (filter === 'all') {
-        loadStylists();
-      } else if (filter === 'top-rated') {
-        const filtered = await stylistAPI.filterStylists({ minRating: 4.8 });
-        setStylists(filtered);
-      } else if (filter === 'affordable') {
-        const filtered = await stylistAPI.filterStylists({ maxRate: 125 });
-        setStylists(filtered);
-      }
+      setLoadError(false);
+      const filtered = await stylistAPI.filterStylists(
+        filter === 'top-rated' ? { minRating: 4.8 } : { maxRate: 125 }
+      );
+      if (requestId !== requestRef.current) return;
+      setStylists(filtered);
+      setLoading(false);
     } catch (error) {
       console.error('Error filtering:', error);
+      if (requestId !== requestRef.current) return;
+      setLoadError(true);
+      setLoading(false);
     }
   };
 
@@ -184,11 +211,28 @@ export default function StylistMarketplaceScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : loadError ? (
+          <TouchableOpacity
+            style={styles.emptyBox}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading stylists"
+            onPress={() => lastRequestRef.current()}
+          >
+            <Text style={styles.emptyTitle}>Couldn't load stylists</Text>
+            <Text style={styles.emptyText}>Check your connection. Tap to retry.</Text>
+          </TouchableOpacity>
         ) : stylists.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>No stylists match that</Text>
+            {/* An empty catalogue is not a search miss - say which one it is. */}
+            <Text style={styles.emptyTitle}>
+              {searchQuery.trim() || selectedFilter !== 'all'
+                ? 'No stylists match that'
+                : 'No stylists yet'}
+            </Text>
             <Text style={styles.emptyText}>
-              Try a different search, or clear the filter to see everyone.
+              {searchQuery.trim() || selectedFilter !== 'all'
+                ? 'Try a different search, or clear the filter to see everyone.'
+                : 'Stylists appear here as soon as they are approved. Check back soon.'}
             </Text>
           </View>
         ) : (

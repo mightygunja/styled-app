@@ -73,8 +73,6 @@ export interface ReductionStrategy {
   id: string;
   title: string;
   description: string;
-  potentialReduction: number; // kg CO2
-  percentageReduction: number;
   difficulty: 'easy' | 'medium' | 'hard';
   timeframe: string;
   steps: string[];
@@ -111,10 +109,6 @@ export interface OffsetCalculation {
 
 export interface ComparisonData {
   userFootprint: number;
-  averageUser: number;
-  sustainableTarget: number;
-  percentile: number; // 0-100, where user ranks
-  message: string;
   recommendations: string[];
 }
 
@@ -143,7 +137,6 @@ class CarbonFootprintService {
    * Calculate detailed carbon footprint for an item
    */
   async calculateItemFootprint(item: Item): Promise<DetailedFootprint> {
-    await new Promise(resolve => setTimeout(resolve, 800));
 
     // Calculate emissions by stage
     const materials = this.calculateMaterialsEmissions(item);
@@ -360,7 +353,6 @@ class CarbonFootprintService {
    * Calculate wardrobe footprint
    */
   async calculateWardrobeFootprint(items: Item[]): Promise<WardrobeFootprint> {
-    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // Calculate individual footprints
     const footprints = await Promise.all(
@@ -368,7 +360,8 @@ class CarbonFootprintService {
     );
 
     const totalKgCO2 = footprints.reduce((sum, fp) => sum + fp.totalKgCO2, 0);
-    const averagePerItem = totalKgCO2 / items.length;
+    // An empty closet must not produce NaN.
+    const averagePerItem = items.length > 0 ? totalKgCO2 / items.length : 0;
 
     // Category breakdown
     const categoryMap = new Map<string, { kgCO2: number; count: number }>();
@@ -384,7 +377,7 @@ class CarbonFootprintService {
     const breakdown = Array.from(categoryMap.entries()).map(([category, data]) => ({
       category,
       kgCO2: data.kgCO2,
-      percentage: (data.kgCO2 / totalKgCO2) * 100,
+      percentage: totalKgCO2 > 0 ? (data.kgCO2 / totalKgCO2) * 100 : 0,
       itemCount: data.count,
     })).sort((a, b) => b.kgCO2 - a.kgCO2);
 
@@ -449,7 +442,8 @@ class CarbonFootprintService {
       const kgCO2 = footprints.reduce((sum, fp) => {
         const dateStr = (fp.item as any).purchaseDate || (fp.item as any).createdAt;
         if (!dateStr) return sum;
-        const d = new Date(dateStr);
+        // createdAt arrives as a Firestore Timestamp on closet documents.
+        const d = typeof dateStr?.toDate === 'function' ? dateStr.toDate() : new Date(dateStr);
         if (d.getFullYear() === year && d.getMonth() === month) {
           return sum + fp.totalKgCO2;
         }
@@ -463,15 +457,12 @@ class CarbonFootprintService {
    * Get reduction strategies
    */
   async getReductionStrategies(currentFootprint: number): Promise<ReductionStrategy[]> {
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     return [
       {
         id: '1',
         title: 'Buy Secondhand First',
         description: 'Purchase pre-owned items instead of new ones',
-        potentialReduction: currentFootprint * 0.8,
-        percentageReduction: 80,
         difficulty: 'easy',
         timeframe: 'Immediate',
         steps: [
@@ -485,8 +476,6 @@ class CarbonFootprintService {
         id: '2',
         title: 'Choose Sustainable Materials',
         description: 'Opt for organic, recycled, or low-impact fabrics',
-        potentialReduction: currentFootprint * 0.4,
-        percentageReduction: 40,
         difficulty: 'medium',
         timeframe: '1-3 months',
         steps: [
@@ -500,8 +489,6 @@ class CarbonFootprintService {
         id: '3',
         title: 'Reduce Washing Frequency',
         description: 'Wash clothes only when necessary',
-        potentialReduction: currentFootprint * 0.15,
-        percentageReduction: 15,
         difficulty: 'easy',
         timeframe: 'Immediate',
         steps: [
@@ -515,8 +502,6 @@ class CarbonFootprintService {
         id: '4',
         title: 'Repair and Upcycle',
         description: 'Extend the life of your existing clothes',
-        potentialReduction: currentFootprint * 0.25,
-        percentageReduction: 25,
         difficulty: 'medium',
         timeframe: '1-6 months',
         steps: [
@@ -530,8 +515,6 @@ class CarbonFootprintService {
         id: '5',
         title: 'Support Local Brands',
         description: 'Reduce transportation emissions',
-        potentialReduction: currentFootprint * 0.2,
-        percentageReduction: 20,
         difficulty: 'medium',
         timeframe: '1-3 months',
         steps: [
@@ -548,7 +531,6 @@ class CarbonFootprintService {
    * Get offset projects
    */
   async getOffsetProjects(): Promise<OffsetProject[]> {
-    await new Promise(resolve => setTimeout(resolve, 400));
 
     return [
       {
@@ -606,7 +588,6 @@ class CarbonFootprintService {
    * Calculate offset cost
    */
   async calculateOffset(kgCO2: number, projectIds: string[]): Promise<OffsetCalculation> {
-    await new Promise(resolve => setTimeout(resolve, 600));
 
     const projects = await this.getOffsetProjects();
     const selectedProjects = projects.filter(p => projectIds.includes(p.id));
@@ -635,52 +616,16 @@ class CarbonFootprintService {
   }
 
   /**
-   * Compare user to average
+   * Formerly compared the wardrobe against "average user 500 kg" and
+   * "sustainable target 200 kg". Those were uncited literals (and per-year
+   * figures set against a whole-wardrobe stock total), so the comparison, the
+   * percentile and the threshold-driven verdict have been removed. Nothing here
+   * is measured against anything we cannot source.
    */
   async compareToAverage(userFootprint: number): Promise<ComparisonData> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const averageUser = 500; // kg CO2 per year
-    const sustainableTarget = 200; // kg CO2 per year
-
-    const percentile = Math.min(100, Math.max(0, 
-      100 - ((userFootprint - sustainableTarget) / (averageUser - sustainableTarget)) * 100
-    ));
-
-    let message: string;
-    let recommendations: string[];
-
-    if (userFootprint < sustainableTarget) {
-      message = 'Excellent! Your footprint is below the sustainable target.';
-      recommendations = [
-        'Keep up the great work!',
-        'Share your sustainable practices with others',
-        'Consider offsetting your remaining emissions',
-      ];
-    } else if (userFootprint < averageUser) {
-      message = 'Good! Your footprint is below average.';
-      recommendations = [
-        'Try buying more secondhand items',
-        'Choose sustainable materials when possible',
-        'Reduce washing frequency',
-      ];
-    } else {
-      message = 'Your footprint is above average. There\'s room for improvement.';
-      recommendations = [
-        'Start by buying secondhand',
-        'Focus on quality over quantity',
-        'Learn about sustainable materials',
-        'Consider offsetting your emissions',
-      ];
-    }
-
     return {
       userFootprint,
-      averageUser,
-      sustainableTarget,
-      percentile,
-      message,
-      recommendations,
+      recommendations: [],
     };
   }
 }

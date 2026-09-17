@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { groupService, Group, GroupEvent } from '../services/groupService';
@@ -37,14 +37,30 @@ export default function GroupsScreen() {
   const [newCategory, setNewCategory] = useState('');
   const [creating, setCreating] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  // Coming back from a group you just joined, My Groups and the member counts
+  // were stale until a pull-to-refresh (which does nothing on web). Re-read
+  // quietly on focus; the mount effect above does the first load.
+  const hasFocusedOnce = useRef(false);
+  const loadDataRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true;
+        return;
+      }
+      loadDataRef.current(true);
+    }, [])
+  );
+
+  const loadData = async (silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [groups, userGroups, events] = await Promise.all([
         groupService.getGroups(),
         groupService.getUserGroups(getCurrentUserId()),
@@ -54,12 +70,16 @@ export default function GroupsScreen() {
       setAllGroups(groups);
       setMyGroups(userGroups);
       setUpcomingEvents(events);
+      setLoadError(false);
     } catch (error) {
       console.error('Error loading groups:', error);
+      // A failed quiet refresh leaves what is already on screen alone.
+      if (!silent) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+  loadDataRef.current = loadData;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -216,9 +236,11 @@ export default function GroupsScreen() {
 
       <View style={styles.intro}>
         <Text style={styles.eyebrow}>COMMUNITY</Text>
-        <Text style={styles.title}>Groups & events</Text>
+        {/* Nothing in the app can create a group event yet, so events are not
+            advertised. The Events tab below appears only if real ones exist. */}
+        <Text style={styles.title}>Groups</Text>
         <Text style={styles.subtitle}>
-          Groups built around how people dress, and the events they run — virtual and in person.
+          Groups built around how people dress. Join one, or start your own.
         </Text>
       </View>
 
@@ -238,13 +260,15 @@ export default function GroupsScreen() {
           <Text style={[styles.tabText, activeTab === 'mygroups' && styles.activeTabText]}>My Groups
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-          onPress={() =>setActiveTab('events')}
-        >
-          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>Events
-          </Text>
-        </TouchableOpacity>
+        {upcomingEvents.length > 0 && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+            onPress={() =>setActiveTab('events')}
+          >
+            <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>Events
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Content */}
@@ -253,7 +277,14 @@ export default function GroupsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {activeTab === 'discover' && (
+        {loadError && (
+          <TouchableOpacity style={styles.emptyState} activeOpacity={0.85} onPress={() => loadData()}>
+            <Text style={styles.emptyText}>Couldn't load groups</Text>
+            <Text style={styles.emptySubtext}>Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
+        {!loadError && activeTab === 'discover' && (
           <>
             {!showCreate ? (
               <TouchableOpacity style={styles.startGroupButton} onPress={() => setShowCreate(true)}>
@@ -289,7 +320,7 @@ export default function GroupsScreen() {
                     <Text style={styles.createCancelText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.createSubmit}
+                    style={[styles.createSubmit, creating && { opacity: 0.4 }]}
                     onPress={handleCreateGroup}
                     disabled={creating}
                   >
@@ -312,7 +343,7 @@ export default function GroupsScreen() {
           </>
         )}
 
-        {activeTab === 'mygroups' && (
+        {!loadError && activeTab === 'mygroups' && (
           <>
             {myGroups.length === 0 ? (
               <View style={styles.emptyState}>
@@ -327,7 +358,7 @@ export default function GroupsScreen() {
           </>
         )}
 
-        {activeTab === 'events' && (
+        {!loadError && activeTab === 'events' && (
           <>
             {upcomingEvents.length === 0 ? (
               <View style={styles.emptyState}>
@@ -570,7 +601,7 @@ const styles = StyleSheet.create({
   },
   rsvpButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 18,
     paddingVertical: 10,
   },
@@ -643,7 +674,7 @@ const styles = StyleSheet.create({
   },
   createSubmit: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 18,
     paddingVertical: 10,
   },

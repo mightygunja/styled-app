@@ -11,14 +11,15 @@
  * written back to the user's calendar.
  */
 
+import { Platform } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import { closetAPI } from './api';
 import { styleProfileService } from './firestore';
 import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
-import { getLocalForecast, toISODate, DailyForecast } from './weatherService';
-import { outfitPlannerService, PlannedOutfitItem } from './outfitPlannerService';
+import { getLocalForecast, DailyForecast } from './weatherService';
+import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from './outfitPlannerService';
 
 const planOutfitsForScheduleFn = httpsCallable(functions, 'planOutfitsForSchedule');
 
@@ -45,6 +46,19 @@ export class CalendarPermissionError extends Error {
     super('33 Trends needs calendar access to plan around your schedule. You can grant it in Settings.');
     this.name = 'CalendarPermissionError';
   }
+}
+
+/**
+ * YYYY-MM-DD in the device's own timezone. weatherService.toISODate goes
+ * through toISOString() (UTC), which filed a 7pm dinner in New York under the
+ * following day. The planner's date keys are the dates the user sees on their
+ * calendar, so they have to be local.
+ */
+function toLocalISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function formatTime(date: Date): string {
@@ -83,7 +97,12 @@ export async function getUpcomingEvents(daysAhead: number = 7): Promise<Schedule
       return {
         id: event.id,
         title: event.title || 'Untitled event',
-        date: toISODate(startDate),
+        // Android stores all-day events at UTC midnight, so their calendar day
+        // is the UTC one; everything else is the local day the event starts on.
+        date:
+          event.allDay && Platform.OS === 'android'
+            ? startDate.toISOString().slice(0, 10)
+            : toLocalISODate(startDate),
         time: event.allDay ? undefined : formatTime(startDate),
         location: event.location || undefined,
         allDay: !!event.allDay,
@@ -94,12 +113,11 @@ export async function getUpcomingEvents(daysAhead: number = 7): Promise<Schedule
 }
 
 /** Item ids worn in the last `days` days, so the planner can avoid repeats. */
-async function recentlyWornIds(userId: string, days: number = 7): Promise<string[]> {
-  const planned = await outfitPlannerService.getForUser(userId);
+function recentlyWornIds(planned: Record<string, PlannedOutfit>, days: number = 7): string[] {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
-  const cutoffIso = toISODate(cutoff);
-  const todayIso = toISODate(new Date());
+  const cutoffIso = toLocalISODate(cutoff);
+  const todayIso = toLocalISODate(new Date());
 
   return Object.values(planned)
     .filter(p => p.date >= cutoffIso && p.date <= todayIso)
@@ -120,6 +138,13 @@ async function buildProfilePayload(userId: string) {
   };
 }
 
+export interface SchedulePlanResult {
+  /** Outfits actually saved - at most one per date. */
+  planned: PlannedAssignment[];
+  /** Dates with events that were left alone because the user already had a plan there. */
+  skippedDates: string[];
+}
+
 /**
  * Plans an outfit for each event and persists it to the calendar planner.
  *
@@ -130,15 +155,36 @@ export async function planForSchedule(
   userId: string,
   events: ScheduleEvent[]
 ): Promise<PlannedAssignment[]> {
-  if (events.length === 0) return [];
+  return (await planForScheduleDetailed(userId, events)).planned;
+}
+
+/**
+ * Same as planForSchedule, but also reports the dates it refused to touch.
+ * The planner keeps one doc per user+date and save() replaces it wholesale
+ * (resetting `worn`), so a date the user already planned is never overwritten
+ * here, and two events on one day produce one outfit rather than the second
+ * silently replacing the first.
+ */
+export async function planForScheduleDetailed(
+  userId: string,
+  allEvents: ScheduleEvent[]
+): Promise<SchedulePlanResult> {
+  if (allEvents.length === 0) return { planned: [], skippedDates: [] };
+
+  const existing = await outfitPlannerService.getForUser(userId);
+  const skippedDates = Array.from(
+    new Set(allEvents.filter(e => !!existing[e.date]).map(e => e.date))
+  ).sort();
+  const events = allEvents.filter(e => !existing[e.date]);
+  if (events.length === 0) return { planned: [], skippedDates };
 
   const dates = events.map(e => e.date).sort();
-  const [forecast, closetResponse, styleProfile, recentlyWorn] = await Promise.all([
+  const [forecast, closetResponse, styleProfile] = await Promise.all([
     getLocalForecast(dates[0], dates[dates.length - 1]),
     closetAPI.getItems(userId),
     buildProfilePayload(userId),
-    recentlyWornIds(userId),
   ]);
+  const recentlyWorn = recentlyWornIds(existing);
 
   const closetItems: any[] = closetResponse.data || [];
   if (closetItems.length === 0) {
@@ -184,7 +230,7 @@ export async function planForSchedule(
   const byId = new Map(closetItems.map(i => [i.id, i]));
   const eventsById = new Map(events.map(e => [e.id, e]));
 
-  const planned: PlannedAssignment[] = assignments
+  const mapped: PlannedAssignment[] = assignments
     .map(a => {
       const items: PlannedOutfitItem[] = a.itemIds
         .map(id => byId.get(id))
@@ -200,13 +246,22 @@ export async function planForSchedule(
       return {
         eventId: a.eventId,
         eventTitle: eventsById.get(a.eventId)?.title || '',
-        date: a.date,
+        // The event's own date wins over whatever the model echoed back.
+        date: eventsById.get(a.eventId)?.date || a.date,
         items,
         dressCode: a.dressCode,
         reason: a.reason,
       };
     })
     .filter((a): a is PlannedAssignment => a !== null);
+
+  // One outfit per date, and never on a date that already holds a plan.
+  const seenDates = new Set<string>();
+  const planned = mapped.filter(a => {
+    if (existing[a.date] || seenDates.has(a.date)) return false;
+    seenDates.add(a.date);
+    return true;
+  });
 
   // Persist into the same planner the calendar screen already reads from.
   await Promise.all(
@@ -215,5 +270,5 @@ export async function planForSchedule(
     )
   );
 
-  return planned;
+  return { planned, skippedDates };
 }

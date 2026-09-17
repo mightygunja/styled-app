@@ -82,7 +82,6 @@ export interface WardrobeSustainability {
   topBrands: { brand: string; score: number; wears: number }[];
   improvements: {
     action: string;
-    impact: number;
     difficulty: 'easy' | 'medium' | 'hard';
   }[];
 }
@@ -135,7 +134,6 @@ class SustainabilityService {
    * Calculate sustainability score for an item
    */
   async calculateItemScore(item: Item): Promise<SustainabilityScore> {
-    await new Promise(resolve => setTimeout(resolve, 600));
 
     // Mock scoring based on item properties
     const categories = this.analyzeSustainabilityCategories(item);
@@ -388,25 +386,23 @@ class SustainabilityService {
       sustainablePercentage,
       recommendations: this.getWardrobeRecommendations(averageScore, sustainablePercentage),
       topBrands: this.getTopSustainableBrands(items),
+      // General habits, not measurements: the former impact figures
+      // (25/40/15/35) were literals unrelated to the user's closet.
       improvements: [
         {
           action: 'Replace fast fashion items with sustainable alternatives',
-          impact: 25,
           difficulty: 'medium',
         },
         {
           action: 'Buy secondhand for your next purchase',
-          impact: 40,
           difficulty: 'easy',
         },
         {
           action: 'Donate or recycle items you no longer wear',
-          impact: 15,
           difficulty: 'easy',
         },
         {
           action: 'Choose quality over quantity',
-          impact: 35,
           difficulty: 'medium',
         },
       ],
@@ -419,23 +415,26 @@ class SustainabilityService {
   private getWardrobeRecommendations(averageScore: number, sustainablePercentage: number): string[] {
     const recommendations: string[] = [];
 
+    // The score behind these is wear count (plus fabric where identified), so
+    // the copy talks about wear - it does not call items or brands
+    // "sustainable", and it quotes no reduction percentages we cannot source.
     if (averageScore < 60) {
-      recommendations.push('Your wardrobe has room for improvement. Focus on sustainable brands.');
+      recommendations.push('Most of your closet is lightly worn. Wearing what you already own more often is the biggest change available to you.');
     } else if (averageScore < 75) {
-      recommendations.push('Good progress! Consider replacing low-scoring items gradually.');
+      recommendations.push('Good progress. The pieces you rarely wear are what pull the score down.');
     } else {
-      recommendations.push('Excellent! Your wardrobe is highly sustainable.');
+      recommendations.push('Your closet is well worn - most of what you own is earning its place.');
     }
 
     if (sustainablePercentage < 30) {
-      recommendations.push('Less than 30% of your items are sustainable. Aim for 50%+.');
+      recommendations.push('Fewer than 30% of your items score well. The score rises as each piece gets worn.');
     } else if (sustainablePercentage < 60) {
-      recommendations.push('You\'re halfway there! Keep choosing sustainable options.');
+      recommendations.push('Around half of your items score well. Keep reaching for the ones that do not.');
     } else {
-      recommendations.push('Over 60% sustainable - you\'re a sustainability champion!');
+      recommendations.push('Over 60% of your items score well on wear.');
     }
 
-    recommendations.push('Shop secondhand to reduce environmental impact by 80%');
+    recommendations.push('Shop secondhand before buying new');
     recommendations.push('Look for GOTS, Fair Trade, and B Corp certifications');
 
     return recommendations;
@@ -481,7 +480,6 @@ class SustainabilityService {
    * Get material impact
    */
   async getMaterialImpact(material: string): Promise<MaterialImpact> {
-    await new Promise(resolve => setTimeout(resolve, 400));
 
     const impacts: Record<string, Partial<MaterialImpact>> = {
       cotton: {
@@ -547,7 +545,6 @@ class SustainabilityService {
    * Get secondhand recommendations
    */
   async getSecondhandRecommendations(itemType: string): Promise<SecondhandRecommendation> {
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     return {
       itemType,
@@ -639,7 +636,6 @@ class SustainabilityService {
       impact: string;
     }[];
   }> {
-    await new Promise(resolve => setTimeout(resolve, 300));
 
     return {
       cost: Math.ceil(carbonKg * 0.5),

@@ -1106,9 +1106,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: spacing.md,
   },
+  // Rust, not ink: this is the one conversion action on the public guides and
+  // it leads to a Signup screen whose own button is rust.
   ctaButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 15,
     alignItems: 'center',
   },

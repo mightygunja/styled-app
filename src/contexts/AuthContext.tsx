@@ -142,6 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const clearIsNewUser = () => setIsNewUser(false);
+  // Bumped only to re-render consumers after the User object is mutated in place.
+  const [, bumpProfileVersion] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -161,17 +163,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, displayName: string) => {
+    // Whether the account exists yet. Decides if a failure below should undo
+    // the new-user flag (nothing was created) or leave it (the account is real).
+    let created = false;
     try {
+      // Set BEFORE the account exists. onAuthStateChanged fires the moment
+      // createUser succeeds; with the flag set only after the updateProfile
+      // round trip, the navigator mounted the full logged-in app (Home and all
+      // its loads) for that gap and then tore it down for the survey. While
+      // user is still null the flag selects nothing - the logged-out branch
+      // does not read it.
+      setIsNewUser(true);
+
       // Trimmed here rather than trusting every caller. A trailing space from
       // an autocomplete or a paste produces auth/invalid-email, which reads to
       // the user as "my email is wrong" when it is not.
       const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      created = true;
 
       if (result.user) {
         await updateProfile(result.user, { displayName: displayName.trim() });
+        // updateProfile mutates the same User object, so nothing re-renders on
+        // its own - and the survey, now mounted before this resolves, greets
+        // by first name. Re-render consumers so it reads the saved name.
+        bumpProfileVersion(v => v + 1);
       }
-      setIsNewUser(true);
     } catch (error: any) {
+      if (!created) setIsNewUser(false);
       // Rethrowing error.message discarded the code and surfaced
       // "Firebase: Error (auth/email-already-in-use)." to the user.
       throw new Error(authErrorMessage(error));

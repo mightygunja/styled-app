@@ -112,7 +112,11 @@ class UserProfileService {
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
-      return { id: snap.id, ...snap.data() } as UserProfile;
+      const profile = { id: snap.id, ...snap.data() } as UserProfile;
+      // realUserInfo is only passed for the signed-in user's OWN profile, the
+      // one doc they may write - so that is where stored counts are trued up.
+      if (realUserInfo) await this.reconcileFollowCounts(userId, profile);
+      return profile;
     }
 
     const newProfile = this.buildDefaultProfile(userId, realUserInfo);
@@ -123,6 +127,32 @@ class UserProfileService {
       await setDoc(ref, newProfile);
     }
     return { id: userId, ...newProfile };
+  }
+
+  /**
+   * Sets the owner's stored follower/following counts to the real number of
+   * follow edges. The stored counters drifted: for a long time a follow could
+   * not move the followee's count at all, so profiles showed "0 FOLLOWERS"
+   * above a populated followers list. Best-effort - never fails a profile load.
+   */
+  private async reconcileFollowCounts(userId: string, profile: UserProfile): Promise<void> {
+    try {
+      const [followersSnap, followingSnap] = await Promise.all([
+        getDocs(query(collection(db, 'follows'), where('followingId', '==', userId))),
+        getDocs(query(collection(db, 'follows'), where('followerId', '==', userId))),
+      ]);
+      const followers = followersSnap.size;
+      const following = followingSnap.size;
+      if (profile.stats?.followers === followers && profile.stats?.following === following) return;
+
+      await updateDoc(doc(db, 'userProfiles', userId), {
+        'stats.followers': followers,
+        'stats.following': following,
+      });
+      profile.stats = { ...(profile.stats || { posts: 0, looks: 0 }), followers, following };
+    } catch (error) {
+      console.log('Could not reconcile follow counts', error);
+    }
   }
 
   /**
@@ -156,8 +186,9 @@ class UserProfileService {
     });
 
     // Stat bumps are best-effort: the other user's profile doc may not exist
-    // yet (placeholders are no longer persisted on their behalf), and rules
-    // only let an owner write their own profile.
+    // yet (placeholders are no longer persisted on their behalf). Rules let an
+    // owner write their own profile, and let anyone move someone else's
+    // stats.followers by exactly one - nothing else on the doc.
     await Promise.all([
       updateDoc(doc(db, 'userProfiles', followerId), { 'stats.following': increment(1) }).catch(() => {}),
       updateDoc(doc(db, 'userProfiles', followingId), { 'stats.followers': increment(1) }).catch(() => {}),
@@ -260,7 +291,15 @@ class UserProfileService {
       .slice(0, limitCount)
       .map(user => ({
         user,
-        reason: user.stats.followers > 100 ? 'Popular in the community' : 'New to 33 Trends',
+        // Only a reason the data supports: "new" means the profile really was
+        // created in the last 30 days. Otherwise no reason is shown at all
+        // (the feed hides an empty one) rather than an invented label.
+        reason:
+          (user.stats?.followers || 0) > 100
+            ? 'Popular in the community'
+            : Date.now() - new Date(user.createdAt).getTime() < 30 * 24 * 60 * 60 * 1000
+              ? 'New to 33 Trends'
+              : '',
         mutualFollowers: 0,
       }));
 

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -22,8 +21,10 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
 
-const { width } = Dimensions.get('window');
-const ITEM_SIZE = (width - 60) / 3;
+// Tiles are three across as a share of the card, not of the raw window: the
+// old `(window width - 60) / 3` measured once at module load gave 460px tiles
+// on a desktop browser, where the screen is framed far narrower than the window.
+const ITEM_MAX_SIZE = 160;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -32,6 +33,8 @@ export default function SmartRecommendationsScreen() {
   const [outfits, setOutfits] = useState<DailyOutfit[]>([]);
   const [selectedOccasion, setSelectedOccasion] = useState<OccasionKey>('casual');
   const [loading, setLoading] = useState(true);
+  // A failed closet read is not "no recommendations".
+  const [loadError, setLoadError] = useState(false);
   // Null when no real reading exists - outfits then rank on occasion and
   // closet alone rather than being dressed for invented conditions.
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
@@ -97,8 +100,11 @@ export default function SmartRecommendationsScreen() {
         count: 4,
       });
       setOutfits(dailyOutfitService.composeOutfits(pool, selectedOccasion));
+      setLoadError(false);
     } catch (error) {
       console.error('Error loading recommendations:', error);
+      setOutfits([]);
+      setLoadError(true);
       showToast('Failed to load recommendations', 'error');
     } finally {
       setLoading(false);
@@ -189,17 +195,9 @@ export default function SmartRecommendationsScreen() {
     </View>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.ink} />
-          <Text style={styles.loadingText}>Generating recommendations...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
+  // Loading no longer replaces the whole screen: the header (with Back), the
+  // weather card and the occasion chips stay mounted and only the list area
+  // shows the spinner, so there is always a way out and the chips don't jump.
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -265,11 +263,32 @@ export default function SmartRecommendationsScreen() {
 
       {/* Recommendations */}
       <ScrollView>
-        {outfits.length === 0 ? (
+        {loading ? (
+          <View style={styles.listLoading}>
+            <ActivityIndicator size="large" color={colors.ink} />
+            <Text style={styles.loadingText}>Generating recommendations...</Text>
+          </View>
+        ) : loadError ? (
+          <TouchableOpacity
+            style={styles.emptyState}
+            accessibilityRole="button"
+            onPress={loadRecommendations}
+          >
+            <Text style={styles.emptyText}>Couldn't load recommendations</Text>
+            <Text style={styles.emptySubtext}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : outfits.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No recommendations available</Text>
             <Text style={styles.emptySubtext}>Add more items to your closet for better recommendations
             </Text>
+            <TouchableOpacity
+              style={styles.emptyAction}
+              accessibilityRole="button"
+              onPress={() =>navigation.navigate('AddClosetItem')}
+            >
+              <Text style={styles.emptyActionText}>Add pieces</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -430,12 +449,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   itemContainer: {
-    width: ITEM_SIZE,
+    width: '30%',
+    maxWidth: ITEM_MAX_SIZE,
   },
   itemImage: {
     borderRadius: radius.sm,
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
+    width: '100%',
+    aspectRatio: 1,
     backgroundColor: colors.paper,
     marginBottom: 4,
   },
@@ -517,5 +537,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
+  },
+  listLoading: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  emptyAction: {
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    marginTop: 20,
+  },
+  emptyActionText: {
+    color: colors.white,
+    fontSize: 15,
+    fontFamily: fonts.sansSemiBold,
   },
 });

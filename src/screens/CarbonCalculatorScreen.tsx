@@ -69,6 +69,8 @@ export default function CarbonCalculatorScreen() {
   const [strategies, setStrategies] = useState<ReductionStrategy[]>([]);
   const [comparison, setComparison] = useState<ComparisonData | null>(null);
   const [selectedTab, setSelectedTab] = useState<Tab>('overview');
+  // A failed load is not an empty closet - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -78,11 +80,16 @@ export default function CarbonCalculatorScreen() {
   const load = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
 
       const response = await closetAPI.getItems(getCurrentUserId());
       const items: Item[] = (response.data || []).map((item: any) => ({
         id: item.id,
-        name: item.name || 'Item',
+        // Closet items have no name field - compose one from what we do have.
+        name:
+          item.name ||
+          [item.color, item.subcategory || item.category].filter(Boolean).join(' ') ||
+          'Item',
         imageUrl: item.imageUrl,
         category: item.category as any,
         color: item.color,
@@ -108,6 +115,7 @@ export default function CarbonCalculatorScreen() {
       setComparison(comparisonData);
     } catch (error) {
       console.error('Error loading carbon data:', error);
+      setLoadError(true);
       showToast('Failed to load carbon footprint data', 'error');
     } finally {
       setLoading(false);
@@ -120,43 +128,15 @@ export default function CarbonCalculatorScreen() {
     setRefreshing(false);
   };
 
-  const renderOverview = (f: WardrobeFootprint, c: ComparisonData) => {
-    const scale = Math.max(f.totalKgCO2, c.averageUser, c.sustainableTarget) || 1;
-    const rows: Array<{ label: string; value: number; strong?: boolean }> = [
-      { label: 'Your wardrobe', value: f.totalKgCO2, strong: true },
-      { label: 'Typical wardrobe', value: c.averageUser },
-      { label: 'Low-impact target', value: c.sustainableTarget },
-    ];
-
+  // The former "How this compares" bars (typical wardrobe 500 kg, low-impact
+  // target 200 kg) are gone: they were uncited constants described as published
+  // reference figures, and the verdict under them was chosen from them.
+  const renderOverview = (f: WardrobeFootprint) => {
     // The timeline chart needs a scale from the data, not a hardcoded 70.
     const peak = Math.max(...f.timeline.map(p => p.kgCO2), 1);
 
     return (
       <>
-        <Text style={styles.sectionLabel}>HOW THIS COMPARES</Text>
-        <Text style={styles.sectionNote}>
-          Measured against published reference figures for a typical wardrobe, not against other
-          users of this app.
-        </Text>
-        {rows.map(row => (
-          <View key={row.label} style={styles.barRow}>
-            <View style={styles.barHeader}>
-              <Text style={row.strong ? styles.barLabelStrong : styles.barLabel}>{row.label}</Text>
-              <Text style={styles.barValue}>{row.value.toFixed(0)} kg</Text>
-            </View>
-            <View style={styles.bar}>
-              <View
-                style={[
-                  styles.barFill,
-                  { width: `${Math.min(100, (row.value / scale) * 100)}%` },
-                  !row.strong && styles.barFillMuted,
-                ]}
-              />
-            </View>
-          </View>
-        ))}
-        {!!c.message && <Text style={styles.bodyText}>{c.message}</Text>}
-
         <Text style={styles.sectionLabel}>WHAT THAT LOOKS LIKE</Text>
         <View style={styles.figureBox}>
           <Text style={styles.figureValue}>
@@ -270,7 +250,7 @@ export default function CarbonCalculatorScreen() {
 
           <View style={styles.strategyMeta}>
             <Text style={styles.strategyMetaText}>
-              −{strategy.percentageReduction}% · {strategy.difficulty} · {strategy.timeframe}
+              {strategy.difficulty} · {strategy.timeframe}
             </Text>
           </View>
 
@@ -316,13 +296,24 @@ export default function CarbonCalculatorScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
-        ) : !ready ? (
+        ) : loadError || !ready ? (
+          <TouchableOpacity
+            style={styles.emptyBox}
+            onPress={load}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your carbon footprint"
+          >
+            <Text style={styles.emptyTitle}>Couldn't load your closet</Text>
+            <Text style={styles.emptyText}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : wardrobeFootprint.itemCount === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Nothing to calculate yet</Text>
             <Text style={styles.emptyText}>Add items to your closet and this fills in.</Text>
             <TouchableOpacity
               style={styles.emptyAction}
               onPress={() => navigation.navigate('AddClosetItem')}
+              accessibilityRole="button"
             >
               <Text style={styles.emptyActionText}>Add to closet</Text>
             </TouchableOpacity>
@@ -362,7 +353,7 @@ export default function CarbonCalculatorScreen() {
               ))}
             </View>
 
-            {selectedTab === 'overview' && renderOverview(wardrobeFootprint, comparison)}
+            {selectedTab === 'overview' && renderOverview(wardrobeFootprint)}
             {selectedTab === 'breakdown' && renderBreakdown(wardrobeFootprint)}
             {selectedTab === 'reduce' && renderReduce(comparison)}
           </>
@@ -485,7 +476,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.md,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
   },

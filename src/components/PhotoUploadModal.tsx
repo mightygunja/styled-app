@@ -8,6 +8,8 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
@@ -76,6 +78,12 @@ export default function PhotoUploadModal({
   // The untouched pick, so Reset can undo every adjustment.
   const [originalUri, setOriginalUri] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  // Why the last tap on Take photo / Choose from library produced nothing.
+  // iOS never re-prompts after one denial, so a silent return left both
+  // buttons permanently dead with no route to Settings.
+  const [accessProblem, setAccessProblem] = useState<
+    { message: string; canOpenSettings: boolean } | null
+  >(null);
   
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -86,48 +94,87 @@ export default function PhotoUploadModal({
         setStep('choose');
         setImageUri(null);
         setOriginalUri(null);
+        setAccessProblem(null);
       }, 300);
     }
   }, [visible]);
 
-  const pickFromLibrary = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      return;
-    }
+  const reportDenied = (what: 'camera' | 'photo library') => {
+    setAccessProblem(
+      Platform.OS === 'web'
+        ? {
+            message: `Your browser blocked access to the ${what}. Allow it in the browser's site settings, then try again.`,
+            canOpenSettings: false,
+          }
+        : {
+            message: `33 Trends doesn't have access to your ${what}. Turn it on in Settings to add a photo.`,
+            canOpenSettings: true,
+          }
+    );
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
+  const reportPickerError = (error: unknown) => {
+    console.error('Error picking photo:', error);
+    setAccessProblem({
+      message: "Couldn't open that. Please try again.",
+      canOpenSettings: false,
     });
+  };
 
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-      setOriginalUri(result.assets[0].uri);
-      setStep('edit');
+  const openSettings = () => {
+    Linking.openSettings().catch(error => console.error('Error opening settings:', error));
+  };
+
+  const pickFromLibrary = async () => {
+    try {
+      setAccessProblem(null);
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        reportDenied('photo library');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+        setOriginalUri(result.assets[0].uri);
+        setStep('edit');
+      }
+    } catch (error) {
+      reportPickerError(error);
     }
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
-    if (status !== 'granted') {
-      return;
-    }
+    try {
+      setAccessProblem(null);
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
-    });
+      if (status !== 'granted') {
+        reportDenied('camera');
+        return;
+      }
 
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-      setOriginalUri(result.assets[0].uri);
-      setStep('edit');
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+        setOriginalUri(result.assets[0].uri);
+        setStep('edit');
+      }
+    } catch (error) {
+      reportPickerError(error);
     }
   };
 
@@ -226,6 +273,22 @@ export default function PhotoUploadModal({
                 </Text>
               ))}
             </View>
+
+            {accessProblem && (
+              <View style={styles.accessNotice} accessibilityRole="alert">
+                <Text style={styles.accessNoticeText}>{accessProblem.message}</Text>
+                {accessProblem.canOpenSettings && (
+                  <TouchableOpacity
+                    onPress={openSettings}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open Settings"
+                    style={styles.accessNoticeAction}
+                  >
+                    <Text style={styles.accessNoticeActionText}>Open Settings</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             <View style={styles.actionButtons}>
               <TouchableOpacity
@@ -400,10 +463,35 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
+  accessNotice: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.rust,
+    backgroundColor: colors.card,
+    padding: 14,
+    marginBottom: 16,
+  },
+  accessNoticeText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.ink,
+  },
+  accessNoticeAction: {
+    alignSelf: 'flex-start',
+    paddingTop: 10,
+  },
+  accessNoticeActionText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
+    color: colors.rust,
+  },
+
   actionButtons: { gap: 10 },
+  // Rust, to match "Use photo" on the next step - one primary colour per modal.
   actionButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -413,7 +501,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   actionButtonSecondary: {
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.hair,

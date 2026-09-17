@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Calendar } from 'react-native-calendars';
@@ -50,6 +52,14 @@ export default function StylistDetailScreen() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  // Shown inside the booking sheet: the screen-level Toast renders behind a
+  // pageSheet Modal, so a failed booking used to show nothing at all.
+  const [bookingError, setBookingError] = useState('');
+  // Guards against an older date's slots landing after a newer selection.
+  const slotsRequestRef = useRef(0);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -59,6 +69,7 @@ export default function StylistDetailScreen() {
   const loadStylistData = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const [stylistData, reviewsData] = await Promise.all([
         stylistAPI.getStylist(stylistId),
         stylistAPI.getStylistReviews(stylistId),
@@ -67,6 +78,7 @@ export default function StylistDetailScreen() {
       setReviews(reviewsData);
     } catch (error) {
       console.error('Error loading stylist:', error);
+      setLoadError(true);
       showToast('Failed to load stylist details', 'error');
     } finally {
       setLoading(false);
@@ -76,23 +88,35 @@ export default function StylistDetailScreen() {
   const handleDateSelect = async (date: string) => {
     setSelectedDate(date);
     setSelectedTime('');
-    
+    // Clear the previous date's slots so they can never sit under the new date.
+    setTimeSlots([]);
+    setSlotsError(false);
+    setBookingError('');
+    setSlotsLoading(true);
+    const requestId = ++slotsRequestRef.current;
+
     try {
       const slots = await stylistAPI.getAvailableSlots(stylistId, date);
+      if (requestId !== slotsRequestRef.current) return;
       setTimeSlots(slots);
     } catch (error) {
       console.error('Error loading time slots:', error);
+      if (requestId !== slotsRequestRef.current) return;
+      setSlotsError(true);
+    } finally {
+      if (requestId === slotsRequestRef.current) setSlotsLoading(false);
     }
   };
 
   const handleBookSession = async () => {
     if (!selectedDate || !selectedTime) {
-      showToast('Please select a date and time', 'error');
+      setBookingError('Please select a date and time.');
       return;
     }
 
     try {
       setBookingLoading(true);
+      setBookingError('');
       const sessionType = SESSION_TYPES.find(s => s.id === selectedSessionType);
       const duration = sessionType?.duration || 60;
       
@@ -106,19 +130,66 @@ export default function StylistDetailScreen() {
       
       setShowBookingModal(false);
       setShowSuccess(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error booking session:', error);
-      showToast('Failed to book session', 'error');
+      // Surface the specific reason (e.g. "That time was just taken") inside
+      // the sheet, where it is actually visible.
+      setBookingError(
+        typeof error?.message === 'string' && error.message
+          ? error.message
+          : "Couldn't book that session. Please try again."
+      );
     } finally {
       setBookingLoading(false);
     }
   };
 
-  if (loading || !stylist) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // A failed load or a missing stylist used to spin forever with no way out.
+  if (!stylist) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <BackButton />
+        </View>
+        <View style={styles.notFoundBox}>
+          <Text style={styles.notFoundTitle}>
+            {loadError ? "Couldn't load this stylist" : 'Stylist not found'}
+          </Text>
+          <Text style={styles.notFoundText}>
+            {loadError
+              ? 'Check your connection and try again.'
+              : 'This stylist may no longer be on 33 Trends.'}
+          </Text>
+          {loadError && (
+            <TouchableOpacity
+              style={styles.notFoundRetry}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading this stylist"
+              onPress={loadStylistData}
+            >
+              <Text style={styles.notFoundRetryText}>Tap to retry</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.notFoundLink}
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('StylistMarketplace')}
+          >
+            <Text style={styles.notFoundLinkText}>Browse stylists</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -142,7 +213,13 @@ export default function StylistDetailScreen() {
 
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <Image source={{ uri: stylist.profileImageUrl }} style={styles.profileImage} />
+          {stylist.profileImageUrl ? (
+            <Image source={{ uri: stylist.profileImageUrl }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
+              <Text style={styles.profileInitial}>{(stylist.name || '').charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
           
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
@@ -152,10 +229,24 @@ export default function StylistDetailScreen() {
             
             <View style={styles.statsRow}>
               <Text style={styles.rating}>{stylist.reviewCount > 0 ? stylist.rating.toFixed(1) : 'New'}</Text>
-              <Text style={styles.divider}>•</Text>
-              <Text style={styles.reviews}>{stylist.reviewCount} reviews</Text>
-              <Text style={styles.divider}>•</Text>
-              <Text style={styles.experience}>{stylist.yearsExperience} years</Text>
+              {/* Same rule as the marketplace card: a new stylist shows "New",
+                  not "0 reviews - 0 years". */}
+              {stylist.reviewCount > 0 && (
+                <>
+                  <Text style={styles.divider}>•</Text>
+                  <Text style={styles.reviews}>
+                    {stylist.reviewCount} {stylist.reviewCount === 1 ? 'review' : 'reviews'}
+                  </Text>
+                </>
+              )}
+              {stylist.yearsExperience > 0 && (
+                <>
+                  <Text style={styles.divider}>•</Text>
+                  <Text style={styles.experience}>
+                    {stylist.yearsExperience} {stylist.yearsExperience === 1 ? 'year' : 'years'}
+                  </Text>
+                </>
+              )}
             </View>
             
             <Text style={styles.location}>{stylist.location}</Text>
@@ -192,6 +283,28 @@ export default function StylistDetailScreen() {
                 <Text style={styles.certIcon}>—</Text>
                 <Text style={styles.certText}>{cert}</Text>
               </View>
+            ))}
+          </View>
+        )}
+
+        {/* Links from the application that are pages (Instagram, a website),
+            not images - they used to be stored as portfolio image URLs and
+            rendered as broken tiles. */}
+        {(stylist.links?.length ?? 0) > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Find their work</Text>
+            {(stylist.links ?? []).map(link => (
+              <TouchableOpacity
+                key={link}
+                accessibilityRole="link"
+                accessibilityLabel={`Open ${link}`}
+                onPress={() => {
+                  const url = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+                  Linking.openURL(url).catch(() => {});
+                }}
+              >
+                <Text style={styles.stylistLink} numberOfLines={1}>{link.replace(/^https?:\/\//i, '')}</Text>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -253,7 +366,10 @@ export default function StylistDetailScreen() {
         </View>
         <TouchableOpacity
           style={styles.bookBarButton}
-          onPress={() => setShowBookingModal(true)}
+          onPress={() => {
+            setBookingError('');
+            setShowBookingModal(true);
+          }}
         >
           <Text style={styles.bookBarButtonText}>Book Session</Text>
         </TouchableOpacity>
@@ -268,8 +384,13 @@ export default function StylistDetailScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowBookingModal(false)}>
-              <Text style={styles.modalClose}>✕</Text>
+            <TouchableOpacity
+              onPress={() => setShowBookingModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close booking"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={24} color={colors.inkMuted} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Book Session</Text>
             <View style={{ width: 24 }} />
@@ -327,7 +448,19 @@ export default function StylistDetailScreen() {
             {selectedDate && (
               <>
                 <Text style={styles.modalSectionTitle}>Select Time</Text>
-                {timeSlots.length === 0 && (
+                {slotsLoading && (
+                  <ActivityIndicator color={colors.ink} style={styles.slotsSpinner} />
+                )}
+                {!slotsLoading && slotsError && (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading times"
+                    onPress={() => handleDateSelect(selectedDate)}
+                  >
+                    <Text style={styles.noSlotsText}>Couldn't load times for that day. Tap to retry.</Text>
+                  </TouchableOpacity>
+                )}
+                {!slotsLoading && !slotsError && timeSlots.length === 0 && (
                   <Text style={styles.noSlotsText}>
                     This stylist isn't taking bookings on that day. Try another date.
                   </Text>
@@ -395,6 +528,7 @@ export default function StylistDetailScreen() {
 
           {/* Book Button */}
           <View style={styles.modalFooter}>
+            {!!bookingError && <Text style={styles.bookingErrorText}>{bookingError}</Text>}
             <TouchableOpacity
               style={[
                 styles.confirmButton,
@@ -437,6 +571,19 @@ export default function StylistDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bone },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notFoundBox: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
+  notFoundTitle: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
+  notFoundText: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22, color: colors.inkMuted, marginTop: 10 },
+  notFoundRetry: {
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  notFoundRetryText: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.bone },
+  notFoundLink: { paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  notFoundLinkText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
   header: { paddingHorizontal: 24, paddingTop: 12 },
   backButton: { display: 'none' },
 
@@ -446,6 +593,8 @@ const styles = StyleSheet.create({
   profileSection: { flexDirection: 'row', alignItems: 'flex-start', padding: 24 },
   // Portraits stay circular; the square corners are for panels and controls.
   profileImage: { width: 72, height: 72, borderRadius: radius.full, backgroundColor: colors.paper },
+  profileImagePlaceholder: { backgroundColor: colors.sand, alignItems: 'center', justifyContent: 'center' },
+  profileInitial: { fontFamily: fonts.serif, fontSize: 28, color: colors.tobacco },
   profileInfo: { flex: 1, marginLeft: 16 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, flexShrink: 1 },
@@ -491,6 +640,7 @@ const styles = StyleSheet.create({
   certIcon: { fontFamily: fonts.sans, fontSize: 13, color: colors.camel },
   certText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted, flex: 1 },
 
+  stylistLink: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.rust, paddingVertical: 6 },
   portfolioItem: { width: 200, marginRight: 12 },
   portfolioImage: {
     borderRadius: radius.sm, width: 200, height: 240, backgroundColor: colors.paper },
@@ -528,7 +678,7 @@ const styles = StyleSheet.create({
   bookBarLabel: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkFaint },
   bookBarPrice: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
   bookBarButton: {
-    borderRadius: radius.full, backgroundColor: colors.ink, paddingHorizontal: 28, paddingVertical: 15 },
+    borderRadius: radius.full, backgroundColor: colors.rust, paddingHorizontal: 28, paddingVertical: 15 },
   bookBarButtonText: {
     fontFamily: fonts.sansSemiBold,
     fontSize: 14,
@@ -577,6 +727,9 @@ const styles = StyleSheet.create({
 
   noSlotsText: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, lineHeight: 19, marginBottom: 12 },
 
+  slotsSpinner: { alignSelf: 'flex-start', marginBottom: 12 },
+  bookingErrorText: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.rust, marginBottom: 12 },
+
   timeSlotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   timeSlot: {
     borderRadius: radius.md,
@@ -622,7 +775,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hair,
   },
   confirmButton: {
-    borderRadius: radius.full, backgroundColor: colors.ink, paddingVertical: 16, alignItems: 'center' },
+    borderRadius: radius.full, backgroundColor: colors.rust, paddingVertical: 16, alignItems: 'center' },
   confirmButtonDisabled: { opacity: 0.4 },
   confirmButtonText: {
     fontFamily: fonts.sansSemiBold,

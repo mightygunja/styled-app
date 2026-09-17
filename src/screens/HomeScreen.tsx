@@ -595,9 +595,17 @@ export default function HomeScreen() {
           rather than truncating at four. */}
       <View style={styles.thumbRow}>
         {look.items.slice(0, 6).map(item => {
-          const costPerWear = item.price && item.wornCount
-            ? (item.price / (item.wornCount + 1)).toFixed(2)
-            : item.price?.toFixed(2);
+          // Nothing when there is no real price (unpriced pieces used to read
+          // "$0.00"). A cost-per-wear is labelled as one, and only when both
+          // the price and the wear count are real; otherwise it is the price.
+          const price = typeof item.price === 'number' && item.price > 0 ? item.price : null;
+          const wears = typeof item.wornCount === 'number' && item.wornCount > 0 ? item.wornCount : null;
+          const priceLabel =
+            price === null
+              ? null
+              : wears !== null
+                ? `$${(price / wears).toFixed(2)}/wear`
+                : `$${price.toFixed(2)}`;
           const isSwapping = swapTargetId === item.id;
           return (
             <TouchableOpacity
@@ -623,7 +631,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.thumbMeta}>
                 <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
-                {costPerWear && <Text style={styles.thumbPrice}>${costPerWear}</Text>}
+                {!!priceLabel && <Text style={styles.thumbPrice}>{priceLabel}</Text>}
               </View>
             </TouchableOpacity>
           );
@@ -698,13 +706,27 @@ export default function HomeScreen() {
       {starterMode ? (
         // Saving a look of catalogue products would write shop ids into the
         // user's outfits - these pieces are not owned yet. The primary action
-        // is the honest one: go get them.
-        <Button
-          title="Shop this look"
-          variant="primary"
-          onPress={() => navigation.navigate('Shop', undefined)}
-          style={{ flex: 1 }}
-        />
+        // is the honest one: go get them. There is no multi-product Shop
+        // route, so the button opens the look's hero piece (a catalogue
+        // product, same ids the rail below opens) and says so - it used to
+        // say "Shop this look" and open the generic Shop.
+        look.items[0]?.id ? (
+          <Button
+            title="Shop the hero piece"
+            variant="primary"
+            onPress={() =>
+              navigation.navigate('ProductDetail', { productId: look.items[0].id, surface: 'shop' })
+            }
+            style={{ flex: 1 }}
+          />
+        ) : (
+          <Button
+            title="Browse the shop"
+            variant="primary"
+            onPress={() => navigation.navigate('Shop', undefined)}
+            style={{ flex: 1 }}
+          />
+        )
       ) : (
         <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
       )}

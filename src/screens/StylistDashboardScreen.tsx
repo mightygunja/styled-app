@@ -22,6 +22,8 @@ import { StylingSession } from '../types';
 import { getCurrentUserId } from '../services/api';
 import { stylistsService, stylistBookingsService } from '../services/firestore';
 import { colors, fonts, radius } from '../theme/designSystem';
+import BackButton from '../components/BackButton';
+import { formatSessionDay, formatSessionTime, sessionDateMs } from '../utils/sessionDate';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -84,7 +86,11 @@ export default function StylistDashboardScreen() {
       
       setEarnings(earningsData);
       setStats(statsData);
-      setUpcomingSessions(sessions);
+      // The service sorts with new Date() on "YYYY-MM-DD h:mm AM", which is NaN
+      // on Hermes/Safari, so order them here with the real parser.
+      setUpcomingSessions(
+        [...sessions].sort((a, b) => sessionDateMs(a.scheduledDate) - sessionDateMs(b.scheduledDate))
+      );
       setClients(clientsData);
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -187,11 +193,10 @@ export default function StylistDashboardScreen() {
                   {session.sessionType.replace('-', ' ')}
                 </Text>
                 <Text style={styles.sessionDate}>
-                  {new Date(session.scheduledDate).toLocaleDateString()} at{' '}
-                  {new Date(session.scheduledDate).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+                  {formatSessionDay(session.scheduledDate)}
+                  {formatSessionTime(session.scheduledDate)
+                    ? ` at ${formatSessionTime(session.scheduledDate)}`
+                    : ''}
                 </Text>
               </View>
               <View style={styles.sessionPrice}>
@@ -304,6 +309,9 @@ export default function StylistDashboardScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.stateHeader}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
@@ -317,6 +325,9 @@ export default function StylistDashboardScreen() {
   if (!isStylist) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.stateHeader}>
+          <BackButton />
+        </View>
         <View style={styles.notStylistBox}>
           <Text style={styles.notStylistTitle}>This is for stylists</Text>
           <Text style={styles.notStylistText}>Earnings, bookings and client tools appear here once you're set up as a stylist on
@@ -337,9 +348,7 @@ export default function StylistDashboardScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
+        <BackButton style={styles.backButton} />
         <Text style={styles.title}>Stylist Dashboard</Text>
         <View style={{ width: 50 }} />
       </View>
@@ -382,8 +391,9 @@ export default function StylistDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
+  stateHeader: { paddingHorizontal: 20, paddingTop: 12 },
   notStylistBox: {
     flex: 1,
     justifyContent: 'center',
@@ -403,7 +413,7 @@ const styles = StyleSheet.create({
   },
   notStylistButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 28,
@@ -420,6 +430,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -431,9 +442,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  // Shared BackButton inside the existing centred row: drop its own bottom
+  // margin / side padding so the row geometry is unchanged.
   backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   title: {
     fontSize: 18,
@@ -488,6 +501,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   earningsLabel: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 20,
@@ -509,6 +523,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   earningsStatLabel: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
   },
@@ -533,6 +548,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -552,6 +568,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.paper,
   },
   metricLabel: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
@@ -590,6 +607,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   sessionDate: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -610,6 +628,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sessionDuration: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -690,6 +709,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   clientEmail: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -711,6 +731,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   clientStatLabel: {
+    fontFamily: fonts.sans,
     fontSize: 11,
     color: colors.inkMuted,
   },
@@ -728,6 +749,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,15 @@ export default function ProductDetailScreen() {
   const [ownedMatches, setOwnedMatches] = useState<ReturnType<typeof findSimilarOwnedItems>>([]);
   const [wishlistDocId, setWishlistDocId] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  // A failed read is not a missing product - it gets its own state and a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // True when the saved-state read failed, so SAVE re-checks before adding
+  // rather than writing a duplicate wishlist row.
+  const savedUnknownRef = useRef(false);
+  // The outbound URL, resolved ahead of the tap so the press handler can open
+  // it synchronously (a link opened after an await is popup-blocked on web).
+  const wrappedUrlRef = useRef<{ productId: string; url: string } | null>(null);
   const [budget, setBudget] = useState<{ label: string; withinBudget: boolean } | null>(null);
   const [wearForecast, setWearForecast] = useState<WearForecast | null>(null);
 
@@ -58,18 +67,34 @@ export default function ProductDetailScreen() {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
+      // The closet and wishlist reads are enrichment: if either fails the
+      // product still opens (scored against an empty closet, shown as not yet
+      // saved) instead of being reported as gone.
+      let savedReadFailed = false;
       const [liveProduct, profile, closetResponse, saved] = await Promise.all([
         getActiveAdapter().getById(productId),
         buildProfileMatchContext(userId),
-        closetAPI.getItems(userId),
-        wishlistService.getSaved(userId, productId),
+        closetAPI.getItems(userId).catch(error => {
+          console.error('Error loading closet for product:', error);
+          return { data: [] as any[] };
+        }),
+        wishlistService.getSaved(userId, productId).catch(error => {
+          console.error('Error loading saved state:', error);
+          savedReadFailed = true;
+          return null;
+        }),
       ]);
+      setLoadFailed(false);
       // The adapter can lose track of a product the user saved - curated ids
       // get renamed, and live providers can't resolve an id from a previous
       // session. The wishlist doc keeps a snapshot of what they saw, so a
       // saved item always opens instead of dead-ending.
       const product = liveProduct ?? saved?.product ?? null;
+      savedUnknownRef.current = savedReadFailed;
       if (!product) {
+        // The saved snapshot might have resolved it - without that read we
+        // cannot honestly say the item is gone.
+        if (savedReadFailed) setLoadFailed(true);
         setMatched(null);
         setWishlistDocId(saved?.id ?? null);
         return;
@@ -110,6 +135,7 @@ export default function ProductDetailScreen() {
       setWishlistDocId(saved?.id ?? null);
     } catch (error) {
       console.error('Error loading product:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -122,42 +148,96 @@ export default function ProductDetailScreen() {
   );
 
   const toggleWishlist = async (product: Product) => {
+    // In-flight guard: two quick taps used to both see "not saved" and write
+    // two wishlist rows.
+    if (saving) return;
     haptics.tap();
+    setSaving(true);
     try {
       const userId = getCurrentUserId();
-      if (wishlistDocId) {
-        await wishlistService.remove(wishlistDocId);
+      let docId = wishlistDocId;
+      if (!docId && savedUnknownRef.current) {
+        docId = (await wishlistService.getSaved(userId, product.id))?.id ?? null;
+        savedUnknownRef.current = false;
+        if (docId) {
+          // It was saved all along - show that rather than toggling it off.
+          setWishlistDocId(docId);
+          return;
+        }
+      }
+      if (docId) {
+        await wishlistService.remove(docId);
         setWishlistDocId(null);
       } else {
         const id = await wishlistService.add(userId, product);
         setWishlistDocId(id);
-        shopperSignals.recordSave(product);
+        shopperSignals.recordSave(product).catch(() => {});
       }
     } catch (error) {
       console.error('Error updating wishlist:', error);
+      Alert.alert(
+        wishlistDocId ? 'Could not remove' : 'Could not save',
+        'Your wishlist was not changed. Please try again.'
+      );
+    } finally {
+      setSaving(false);
     }
   };
+
+  // Resolve the outbound link as soon as the product is known. Only for
+  // providers whose wrapLink is local string work - the server-wrapped
+  // networks are resolved at tap time, as before.
+  useEffect(() => {
+    wrappedUrlRef.current = null;
+    const product = matched?.product;
+    if (!product) return;
+    const provider = activeProviderName();
+    if (provider === 'sovrn' || provider === 'skimlinks' || provider === 'both') return;
+    let cancelled = false;
+    getActiveAdapter()
+      .wrapLink(product)
+      .then(url => {
+        if (!cancelled && url) wrappedUrlRef.current = { productId: product.id, url };
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [matched]);
 
   const handleShop = async (product: Product) => {
     setOpening(true);
     haptics.impact();
     try {
-      const userId = getCurrentUserId();
-      const [wrappedUrl] = await Promise.all([
-        getActiveAdapter().wrapLink(product),
-        // Two separate records on purpose: Firestore for revenue accounting,
-        // local signals for ranking. Different lifetimes, different costs.
-        // Attributed so the admin view can say which surface and which kind of
-        // reason actually produced the click.
-        affiliateClicksService.record(userId, product, {
-          surface: surface || 'unknown',
-          reason,
-          matchScore: (product as any).matchScore,
-          provider: activeProviderName(),
-        }),
-        shopperSignals.recordTap(product),
-      ]);
-      await Linking.openURL(wrappedUrl);
+      const ready = wrappedUrlRef.current;
+      // No await on the ready path: the link opens inside the press itself.
+      const wrappedUrl =
+        ready && ready.productId === product.id
+          ? ready.url
+          : await getActiveAdapter().wrapLink(product);
+      if (!wrappedUrl) throw new Error('No outbound link for this product');
+      const opened = Linking.openURL(wrappedUrl);
+
+      // Logging never gates the link: fired after the open, not awaited, and a
+      // failed write is swallowed. Two separate records on purpose: Firestore
+      // for revenue accounting, local signals for ranking. Attributed so the
+      // admin view can say which surface and which kind of reason actually
+      // produced the click.
+      try {
+        affiliateClicksService
+          .record(getCurrentUserId(), product, {
+            surface: surface || 'unknown',
+            reason,
+            matchScore: (product as any).matchScore,
+            provider: activeProviderName(),
+          })
+          .catch(error => console.error('Error recording affiliate click:', error));
+        shopperSignals.recordTap(product).catch(() => {});
+      } catch (error) {
+        console.error('Error recording affiliate click:', error);
+      }
+
+      await opened;
     } catch (error) {
       console.error('Error opening product link:', error);
       Alert.alert('Could not open link', 'Please try again.');
@@ -172,6 +252,18 @@ export default function ProductDetailScreen() {
         <View style={styles.header}><BackButton /></View>
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.ink} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!matched && loadFailed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}><BackButton /></View>
+        <View style={styles.loadingBox}>
+          <Text style={styles.emptyText}>We couldn't load this item.</Text>
+          <Button title="Try again" onPress={load} style={{ marginTop: spacing.md }} />
         </View>
       </SafeAreaView>
     );
@@ -192,12 +284,21 @@ export default function ProductDetailScreen() {
   }
 
   const { product, matchScore, matchReasons } = matched;
+  // One source for both the line under the price and the button label, so the
+  // page never names a retailer the button does not go to.
+  const destination = shopDestination(product);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <BackButton />
-        <TouchableOpacity style={styles.wishlistToggle} onPress={() => toggleWishlist(product)}>
+        <TouchableOpacity
+          style={[styles.wishlistToggle, saving && { opacity: 0.5 }]}
+          onPress={() => toggleWishlist(product)}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel={wishlistDocId ? 'Remove from wishlist' : 'Save to wishlist'}
+        >
           <Text style={styles.wishlistToggleText}>{wishlistDocId ? 'SAVED' : 'SAVE'}</Text>
         </TouchableOpacity>
       </View>
@@ -219,7 +320,13 @@ export default function ProductDetailScreen() {
               </>
             )}
           </View>
-          <Text style={styles.retailer}>at {product.retailer}</Text>
+          {destination && destination === product.retailer ? (
+            <Text style={styles.retailer}>at {product.retailer}</Text>
+          ) : destination === 'Amazon' ? (
+            <Text style={styles.retailer}>Opens a matching search on Amazon</Text>
+          ) : destination ? (
+            <Text style={styles.retailer}>on {destination}</Text>
+          ) : null}
 
           {/* Amazon's operating agreement requires its disclosure wherever
               its links appear, and the shop button below is one - and the
@@ -321,7 +428,7 @@ export default function ProductDetailScreen() {
           <Button
             // Named for where the tap lands, which under Amazon is usually
             // Amazon rather than the catalogue retailer.
-            title={opening ? 'Opening…' : `Shop at ${shopDestination(product) ?? product.retailer}`}
+            title={opening ? 'Opening…' : `Shop at ${destination ?? product.retailer}`}
             onPress={() => handleShop(product)}
             disabled={opening}
             fullWidth

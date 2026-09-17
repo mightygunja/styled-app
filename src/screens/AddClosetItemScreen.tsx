@@ -28,6 +28,7 @@ const CATEGORIES = [
   { id: 'outerwear', label: 'Outerwear' },
   { id: 'shoes', label: 'Shoes' },
   { id: 'accessories', label: 'Accessories' },
+  { id: 'bags', label: 'Bags' },
 ];
 
 // Swatches represent the garment's actual colour, so these are real hues -
@@ -412,6 +413,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     width: '30%',
     flexGrow: 1,
+    // A lone card on the last row must not stretch across the whole form.
+    maxWidth: '32%',
     paddingVertical: 18,
     backgroundColor: colors.paper,
     borderWidth: 2,

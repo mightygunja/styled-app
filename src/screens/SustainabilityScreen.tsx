@@ -55,6 +55,11 @@ export default function SustainabilityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [analysis, setAnalysis] = useState<WardrobeSustainability | null>(null);
   const [selectedTab, setSelectedTab] = useState<Tab>('overview');
+  // A failed load is not an empty closet - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
+  // The grade is built mostly from wear counts, so with no wears logged it
+  // would be an automatic "F" that says nothing about the wardrobe.
+  const [hasWearHistory, setHasWearHistory] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -64,10 +69,15 @@ export default function SustainabilityScreen() {
   const load = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const response = await closetAPI.getItems(getCurrentUserId());
       const items: Item[] = (response.data || []).map((item: any) => ({
         id: item.id,
-        name: item.name || 'Item',
+        // Closet items have no name field - compose one from what we do have.
+        name:
+          item.name ||
+          [item.color, item.subcategory || item.category].filter(Boolean).join(' ') ||
+          'Item',
         imageUrl: item.imageUrl,
         category: item.category as any,
         color: item.color,
@@ -80,11 +90,15 @@ export default function SustainabilityScreen() {
         tags: item.tags,
         seasons: item.seasons,
         style: item.style,
+        // The materials score reads this; without it only wear was scored.
+        fabricTexture: item.fabricTexture,
       }));
 
+      setHasWearHistory(items.some(item => (item.wornCount || 0) > 0));
       setAnalysis(await sustainabilityService.analyzeWardrobe(items));
     } catch (error) {
       console.error('Error loading sustainability analysis:', error);
+      setLoadError(true);
       showToast('Failed to load sustainability data', 'error');
     } finally {
       setLoading(false);
@@ -186,22 +200,19 @@ export default function SustainabilityScreen() {
   const renderActions = (a: WardrobeSustainability) => (
     <>
       <Text style={styles.sectionLabel}>WORTH DOING</Text>
+      {/* A plain list. The proportional "impact" bars and the "ordered by how
+          much difference" claim were backed by hard-coded numbers. */}
       <Text style={styles.sectionNote}>
-        Ordered by how much difference each would make, with how hard it is to actually do.
+        General habits that lower a wardrobe's footprint, with how hard each is to actually do.
       </Text>
-      {[...a.improvements]
-        .sort((x, y) => y.impact - x.impact)
-        .map((improvement, i) => (
-          <View key={i} style={styles.actionRow}>
-            <View style={styles.actionHeader}>
-              <Text style={styles.actionTitle}>{improvement.action}</Text>
-              <Text style={styles.actionDifficulty}>{improvement.difficulty.toUpperCase()}</Text>
-            </View>
-            <View style={styles.bar}>
-              <View style={[styles.barFill, { width: `${Math.min(100, improvement.impact)}%` }]} />
-            </View>
+      {a.improvements.map((improvement, i) => (
+        <View key={i} style={styles.actionRow}>
+          <View style={[styles.actionHeader, { marginBottom: 0 }]}>
+            <Text style={styles.actionTitle}>{improvement.action}</Text>
+            <Text style={styles.actionDifficulty}>{improvement.difficulty.toUpperCase()}</Text>
           </View>
-        ))}
+        </View>
+      ))}
 
       <Text style={styles.sectionLabel}>CERTIFICATIONS WORTH LOOKING FOR</Text>
       <Text style={styles.sectionNote}>
@@ -243,11 +254,16 @@ export default function SustainabilityScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
-        ) : !analysis ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>Nothing to analyse yet</Text>
-            <Text style={styles.emptyText}>Add items to your closet and this fills in.</Text>
-          </View>
+        ) : loadError || !analysis ? (
+          <TouchableOpacity
+            style={styles.emptyBox}
+            onPress={load}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your wardrobe impact"
+          >
+            <Text style={styles.emptyTitle}>Couldn't load your closet</Text>
+            <Text style={styles.emptyText}>Tap to retry.</Text>
+          </TouchableOpacity>
         ) : analysis.totalItems === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Your closet is empty</Text>
@@ -267,14 +283,29 @@ export default function SustainabilityScreen() {
                 palette carries no semantic green, and a red-to-green scale
                 would be the only place in the app using colour to mean good
                 or bad. */}
-            <View style={styles.gradeBox}>
-              <Text style={styles.gradeLabel}>WARDROBE GRADE</Text>
-              <Text style={styles.gradeValue}>{analysis.grade}</Text>
-              <Text style={styles.gradeScore}>
-                {analysis.averageScore.toFixed(0)} out of 100 ·{' '}
-                {analysis.sustainablePercentage.toFixed(0)}% of items score well
-              </Text>
-            </View>
+            {hasWearHistory ? (
+              <View style={styles.gradeBox}>
+                <Text style={styles.gradeLabel}>WEAR GRADE</Text>
+                <Text style={styles.gradeValue}>{analysis.grade}</Text>
+                <Text style={styles.gradeScore}>
+                  {analysis.averageScore.toFixed(0)} out of 100 ·{' '}
+                  {analysis.sustainablePercentage.toFixed(0)}% of items score well
+                </Text>
+                <Text style={styles.gradeScore}>
+                  Scored on how often you wear each piece, plus its fabric where we could identify
+                  it. It is not a rating of the brands you own.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.gradeBox}>
+                <Text style={styles.gradeLabel}>WEAR GRADE</Text>
+                <Text style={styles.emptyTitle}>No grade yet</Text>
+                <Text style={styles.gradeScore}>
+                  The grade is built from how often you wear what you own, and no wears are logged
+                  yet. Mark an item as worn from its page in your closet and it appears here.
+                </Text>
+              </View>
+            )}
 
             <View style={styles.tabs}>
               {TABS.map(tab => (
@@ -402,7 +433,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: spacing.md,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
   },

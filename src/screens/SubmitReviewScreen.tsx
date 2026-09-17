@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -16,6 +17,7 @@ import { reviewService } from '../services/reviewService';
 import { SessionType } from '../types';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
+import BackButton from '../components/BackButton';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
 
@@ -74,10 +76,14 @@ export default function SubmitReviewScreen() {
             key={star}
             onPress={() =>setRating(star)}
             style={styles.starButton}
+            accessibilityRole="button"
+            accessibilityLabel={`${star} ${star === 1 ? 'star' : 'stars'}`}
           >
-            <Text style={[styles.star, star <= rating && styles.starFilled]}>
-              {star <= rating ? '●' : '○'}
-            </Text>
+            <Ionicons
+              name={star <= rating ? 'star' : 'star-outline'}
+              size={36}
+              color={star <= rating ? colors.camel : colors.inkFaint}
+            />
           </TouchableOpacity>
         ))}
       </View>
@@ -86,15 +92,14 @@ export default function SubmitReviewScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Write Review</Text>
-          <View style={{ width: 50 }} />
-        </View>
+      {/* Header - outside the ScrollView so the way back never scrolls away */}
+      <View style={styles.header}>
+        <BackButton style={styles.backButton} />
+        <Text style={styles.title}>Write Review</Text>
+        <View style={{ width: 50 }} />
+      </View>
+
+      <ScrollView keyboardShouldPersistTaps="handled">
 
         {/* Stylist Info */}
         <View style={styles.stylistInfo}>
@@ -121,6 +126,7 @@ export default function SubmitReviewScreen() {
           <TextInput
             style={styles.commentInput}
             placeholder="Tell us about your experience with this stylist..."
+            placeholderTextColor={colors.inkFaint}
             value={comment}
             onChangeText={setComment}
             multiline
@@ -199,7 +205,7 @@ export default function SubmitReviewScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   header: {
     flexDirection: 'row',
@@ -209,9 +215,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  // Shared BackButton inside the existing centred row: drop its own bottom
+  // margin / side padding so the row geometry is unchanged.
   backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   title: {
     fontSize: 18,
@@ -231,6 +239,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sessionTypeText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textTransform: 'capitalize',
@@ -267,6 +276,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   commentInput: {
+    fontFamily: fonts.sans,
     borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
@@ -277,6 +287,7 @@ const styles = StyleSheet.create({
     minHeight: 150,
   },
   characterCount: {
+    fontFamily: fonts.sans,
     textAlign: 'right',
     fontSize: 12,
     color: colors.inkFaint,
@@ -332,6 +343,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tipText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.tobacco,
     marginBottom: 6,
@@ -344,12 +356,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     padding: 16,
     alignItems: 'center',
   },
+  // Disabled stays rust at reduced opacity - never a grey fill.
   submitButtonDisabled: {
-    backgroundColor: colors.hair,
+    opacity: 0.4,
   },
   submitButtonText: {
     color: colors.white,

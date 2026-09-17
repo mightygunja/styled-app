@@ -22,6 +22,8 @@ const { width } = Dimensions.get('window');
 interface AnalyticsData {
   totalItems: number;
   totalValue: number;
+  /** How many items actually carry a price - the value cards only cover these. */
+  pricedCount: number;
   mostWornItems: any[];
   leastWornItems: any[];
   categoryBreakdown: { [key: string]: number };
@@ -47,7 +49,11 @@ export default function ClosetAnalyticsScreen() {
 
       // Calculate analytics
       const totalItems = items.length;
-      const totalValue = items.reduce((sum: number, item: any) =>sum + (item.price || 0), 0);
+      // Most items have no price, so the value figures cover priced items only
+      // and say so, rather than averaging known prices over the whole closet.
+      const pricedItems = items.filter((item: any) => typeof item.price === 'number' && item.price > 0);
+      const pricedCount = pricedItems.length;
+      const totalValue = pricedItems.reduce((sum: number, item: any) => sum + item.price, 0);
 
       // Category breakdown
       const categoryBreakdown: { [key: string]: number } = {};
@@ -96,6 +102,7 @@ export default function ClosetAnalyticsScreen() {
       setAnalytics({
         totalItems,
         totalValue,
+        pricedCount,
         mostWornItems,
         leastWornItems,
         categoryBreakdown,
@@ -126,9 +133,13 @@ export default function ClosetAnalyticsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <BackButton />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Unable to load analytics</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.errorContainer}
+          onPress={loadAnalytics}
+          accessibilityRole="button"
+        >
+          <Text style={styles.errorText}>Couldn't load your closet. Tap to retry.</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -180,17 +191,28 @@ export default function ClosetAnalyticsScreen() {
             <Text style={styles.statValue}>{analytics.totalItems}</Text>
             <Text style={styles.statLabel}>Total Items</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>${analytics.totalValue.toFixed(0)}</Text>
-            <Text style={styles.statLabel}>Total Value</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>
-              ${(analytics.totalValue / Math.max(1, analytics.totalItems)).toFixed(0)}
-            </Text>
-            <Text style={styles.statLabel}>Avg Value</Text>
-          </View>
+          {analytics.pricedCount > 0 && (
+            <>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>${analytics.totalValue.toFixed(0)}</Text>
+                <Text style={styles.statLabel}>Total Value</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>
+                  ${(analytics.totalValue / analytics.pricedCount).toFixed(0)}
+                </Text>
+                <Text style={styles.statLabel}>Avg Value</Text>
+              </View>
+            </>
+          )}
         </View>
+        {analytics.pricedCount > 0 && (
+          <Text style={styles.valueCaption}>
+            Value figures cover the {analytics.pricedCount}{' '}
+            {analytics.pricedCount === 1 ? 'item' : 'items'} with a price, out of{' '}
+            {analytics.totalItems}.
+          </Text>
+        )}
 
         {/* Category Breakdown */}
         <View style={styles.section}>
@@ -400,6 +422,14 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: colors.inkMuted,
+  },
+  valueCaption: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkMuted,
+    paddingHorizontal: 20,
+    marginTop: -8,
+    marginBottom: 16,
   },
   section: {
     padding: 20,

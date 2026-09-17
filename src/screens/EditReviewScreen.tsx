@@ -28,6 +28,8 @@ import { styleEditService, StyleEdit, coverageStats } from '../services/styleEdi
 export default function EditReviewScreen() {
   const [edits, setEdits] = useState<StyleEdit[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed read is not "no requests" - it gets its own state and a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [active, setActive] = useState<StyleEdit | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,8 +43,10 @@ export default function EditReviewScreen() {
   const load = async () => {
     try {
       setEdits(await styleEditService.getForStylist(getCurrentUserId()));
+      setLoadFailed(false);
     } catch (error) {
       console.error('Error loading stylist edits:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -77,13 +81,24 @@ export default function EditReviewScreen() {
     setBusy(true);
     try {
       await styleEditService.saveDraft(active.id, active.looks, note);
-      Alert.alert('Saved', 'Your changes are saved. The client still cannot see this Edit.');
+      // Saving writes to the same document the client reads, so once an Edit
+      // has been delivered the changes are live the moment they are saved.
+      Alert.alert(
+        'Saved',
+        clientCanSee(active)
+          ? 'Your changes are saved. This Edit has already been delivered, so your client sees them now.'
+          : 'Your changes are saved. The client still cannot see this Edit.'
+      );
     } catch (error: any) {
       Alert.alert('Could not save', error?.message || 'Please try again.');
     } finally {
       setBusy(false);
     }
   };
+
+  // Delivered once = visible to the client, including while a revision is pending.
+  const clientCanSee = (edit: StyleEdit) =>
+    edit.status === 'delivered' || edit.status === 'revision-requested';
 
   const handleDeliver = async () => {
     if (!active) return;
@@ -126,6 +141,13 @@ export default function EditReviewScreen() {
             <View style={styles.revisionBox}>
               <Text style={styles.revisionText}>{active.revisionNote}</Text>
             </View>
+          )}
+
+          {clientCanSee(active) && (
+            <Text style={styles.helper}>
+              Your client can already see this Edit. Anything you save here changes what they see
+              straight away.
+            </Text>
           )}
 
           {active.looks.length === 0 ? (
@@ -185,7 +207,7 @@ export default function EditReviewScreen() {
               ))}
 
               <Button
-                title="Save without delivering"
+                title={clientCanSee(active) ? 'Save changes' : 'Save without delivering'}
                 variant="secondary"
                 onPress={handleSave}
                 fullWidth
@@ -223,6 +245,18 @@ export default function EditReviewScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : loadFailed && edits.length === 0 ? (
+          <>
+            <Text style={styles.helper}>We couldn't load your Edit requests.</Text>
+            <Button
+              title="Try again"
+              onPress={() => {
+                setLoading(true);
+                load();
+              }}
+              style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}
+            />
+          </>
         ) : edits.length === 0 ? (
           <Text style={styles.helper}>No Edit requests yet.</Text>
         ) : (

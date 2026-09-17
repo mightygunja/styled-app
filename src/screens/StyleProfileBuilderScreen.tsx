@@ -14,7 +14,16 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
-import { PersonalStyleProfile, STYLE_ARCHETYPES, DEFAULT_PERSONAL_STYLE_PROFILE, normalizeLifestyleWeights } from '../models/personalStyleProfile';
+import {
+  PersonalStyleProfile,
+  STYLE_ARCHETYPES,
+  DEFAULT_PERSONAL_STYLE_PROFILE,
+  normalizeLifestyleWeights,
+  WardrobeFocus,
+  WOMENS_BODY_TYPES,
+  MENS_BODY_TYPES,
+} from '../models/personalStyleProfile';
+import { rememberWardrobeFocus } from '../services/profileMatchContext';
 import { styleProfileService } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
@@ -23,19 +32,44 @@ import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-type BuilderStep = 'lifestyle' | 'archetypes' | 'colors' | 'avoid' | 'fit' | 'guidance' | 'review';
+type BuilderStep = 'wardrobe' | 'lifestyle' | 'archetypes' | 'colors' | 'avoid' | 'fit' | 'guidance' | 'review';
 
 // Body areas offered on the fit step. Neutral wording that works across
 // wardrobes - the Body & Fit analysis writes the same fitPreferences shape.
+// Same three answers, same wording, as the first-run survey's department
+// question (FOCUS_OPTIONS in OnboardingScreen) - this is where it is edited.
+const FOCUS_OPTIONS: Array<{ key: WardrobeFocus; label: string; line: string }> = [
+  { key: 'womens', label: 'Womenswear', line: 'Dresses and skirts included — the full range' },
+  { key: 'mens', label: 'Menswear', line: 'Tailoring, denim, knits — menswear cuts and sizing' },
+  { key: 'all', label: 'A bit of both', line: 'Show everything; I dress across the aisle' },
+];
+
+/**
+ * The survey clears a chosen build when the department changes, because the
+ * build lists are per department. Same rule here: a saved Body & Fit result
+ * survives only if its body type is one the new department offers.
+ */
+function bodyResultFitsFocus(profile: PersonalStyleProfile): boolean {
+  const bodyType = profile.bodyAnalysis?.bodyType;
+  if (!bodyType) return true;
+  if (profile.wardrobeFocus === 'mens') return (MENS_BODY_TYPES as readonly string[]).includes(bodyType);
+  if (profile.wardrobeFocus === 'womens') return (WOMENS_BODY_TYPES as readonly string[]).includes(bodyType);
+  return true;
+}
+
 const FIT_AREAS = ['shoulders', 'chest', 'waist', 'midsection', 'hips', 'legs', 'arms', 'neckline'];
 
 export default function StyleProfileBuilderScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { toast, showToast, hideToast } = useToast();
   
-  const [currentStep, setCurrentStep] = useState<BuilderStep>('lifestyle');
+  const [currentStep, setCurrentStep] = useState<BuilderStep>('wardrobe');
   const [styleProfile, setStyleProfile] = useState<PersonalStyleProfile>(DEFAULT_PERSONAL_STYLE_PROFILE);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  // A failed read must never be mistaken for "no profile": saving replaces the
+  // whole styleProfile map, so saving defaults over an unread profile would
+  // erase the department, colour analysis and body analysis.
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Color input states
@@ -52,18 +86,21 @@ export default function StyleProfileBuilderScreen() {
 
   const loadExistingProfile = async () => {
     try {
+      setLoadingProfile(true);
+      setLoadError(false);
       const existing = await styleProfileService.getStyleProfile(getCurrentUserId());
       if (existing) {
         setStyleProfile(existing);
       }
     } catch (error) {
       console.error('Error loading style profile:', error);
+      setLoadError(true);
     } finally {
       setLoadingProfile(false);
     }
   };
 
-  const steps: BuilderStep[] = ['lifestyle', 'archetypes', 'colors', 'avoid', 'fit', 'guidance', 'review'];
+  const steps: BuilderStep[] = ['wardrobe', 'lifestyle', 'archetypes', 'colors', 'avoid', 'fit', 'guidance', 'review'];
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
@@ -160,15 +197,23 @@ export default function StyleProfileBuilderScreen() {
   };
 
   const handleSave = async () => {
+    // Never write over a profile that could not be read.
+    if (loadError) return;
     // Normalize lifestyle weights before saving
-    const normalizedProfile = {
+    const normalizedProfile: PersonalStyleProfile = {
       ...styleProfile,
       lifestyleWeights: normalizeLifestyleWeights(styleProfile.lifestyleWeights),
     };
+    // A Body & Fit result from the other department goes with the change, as
+    // in the survey. Deleted, not set to undefined - Firestore rejects undefined.
+    if (!bodyResultFitsFocus(normalizedProfile)) {
+      delete normalizedProfile.bodyAnalysis;
+    }
 
     try {
       setSaving(true);
       await styleProfileService.saveStyleProfile(getCurrentUserId(), normalizedProfile);
+      rememberWardrobeFocus(getCurrentUserId(), normalizedProfile.wardrobeFocus);
       showToast('Style profile saved!', 'success');
       setTimeout(() => {
         navigation.goBack();
@@ -180,6 +225,44 @@ export default function StyleProfileBuilderScreen() {
       setSaving(false);
     }
   };
+
+  const renderWardrobeStep = () => (
+    <View style={styles.stepContainer}>
+      <Text style={styles.stepTitle}>Whose wardrobe are we dressing?</Text>
+      <Text style={styles.stepSubtitle}>
+        This decides which cuts, sizes and pieces you'll ever be shown — every recommendation and
+        every shopping link stays in your department.
+      </Text>
+
+      {FOCUS_OPTIONS.map(option => {
+        const selected = styleProfile.wardrobeFocus === option.key;
+        return (
+          <TouchableOpacity
+            key={option.key}
+            style={[styles.guidanceOption, selected && styles.guidanceOptionSelected]}
+            onPress={() => setStyleProfile(prev => ({ ...prev, wardrobeFocus: option.key }))}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={option.label}
+          >
+            <Text style={[styles.guidanceTitle, selected && styles.guidanceTitleSelected]}>
+              {option.label}
+            </Text>
+            <Text style={[styles.guidanceDescription, selected && styles.archetypeDescriptionSelected]}>
+              {option.line}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+
+      {!bodyResultFitsFocus(styleProfile) && (
+        <Text style={styles.skipText}>
+          Your saved Body & Fit result belongs to the other department, so it will be cleared when
+          you save. You can retake it from the Style tab.
+        </Text>
+      )}
+    </View>
+  );
 
   const renderLifestyleStep = () => (
     <View style={styles.stepContainer}>
@@ -536,6 +619,13 @@ export default function StyleProfileBuilderScreen() {
       <Text style={styles.stepSubtitle}>Everything looks good?</Text>
 
       <View style={styles.reviewSection}>
+        <Text style={styles.reviewLabel}>Whose Wardrobe</Text>
+        <Text style={styles.reviewText}>
+          {FOCUS_OPTIONS.find(o => o.key === styleProfile.wardrobeFocus)?.label ?? 'Not chosen'}
+        </Text>
+      </View>
+
+      <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Lifestyle Split</Text>
         {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
           <Text key={key} style={styles.reviewText}>
@@ -579,6 +669,8 @@ export default function StyleProfileBuilderScreen() {
 
   const renderStep = () => {
     switch (currentStep) {
+      case 'wardrobe':
+        return renderWardrobeStep();
       case 'lifestyle':
         return renderLifestyleStep();
       case 'archetypes':
@@ -601,8 +693,38 @@ export default function StyleProfileBuilderScreen() {
   if (loadingProfile) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={ds.ink} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // The form is not shown at all when the saved profile could not be read -
+  // there is no Save to press, so defaults can never overwrite the real one.
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <BackButton />
+        </View>
+        <View style={[styles.loadingContainer, styles.loadErrorBody]}>
+          <Text style={[styles.stepTitle, styles.loadErrorText]}>We couldn't load your style profile</Text>
+          <Text style={[styles.stepSubtitle, styles.loadErrorText]}>
+            Nothing has been changed. Check your connection and try again — editing is paused until
+            your saved profile is in front of you.
+          </Text>
+          <TouchableOpacity
+            style={[styles.nextButton, styles.loadErrorButton]}
+            onPress={loadExistingProfile}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+          >
+            <Text style={styles.nextButtonText}>Try again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -852,16 +974,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  // Secondary action: an outline, so the rust footer CTA stays the one
+  // primary on the page.
   addButton: {
     borderRadius: radius.full,
     paddingHorizontal: 20,
     justifyContent: 'center',
-    backgroundColor: ds.ink,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: ds.ink,
   },
   addButtonText: {
     fontFamily: fonts.sansSemiBold,
     fontSize: 14,
-    color: ds.bone,
+    color: ds.ink,
   },
   colorTags: {
     flexDirection: 'row',
@@ -996,9 +1122,18 @@ const styles = StyleSheet.create({
     borderTopColor: ds.hair,
     backgroundColor: ds.bone,
   },
+  loadErrorBody: {
+    paddingHorizontal: 24,
+  },
+  loadErrorText: {
+    textAlign: 'center',
+  },
+  loadErrorButton: {
+    alignSelf: 'stretch',
+  },
   nextButton: {
     borderRadius: radius.full,
-    backgroundColor: ds.ink,
+    backgroundColor: ds.rust,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -1010,12 +1145,12 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     borderRadius: radius.full,
-    backgroundColor: ds.ink,
+    backgroundColor: ds.rust,
     paddingVertical: 16,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   saveButtonText: {
     fontFamily: fonts.sansSemiBold,

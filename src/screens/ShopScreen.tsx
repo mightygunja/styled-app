@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import Chip from '../components/Chip';
 import { colors, radius, fonts, type as textType, spacing } from '../theme/designSystem';
 import {
@@ -63,7 +64,24 @@ export default function ShopScreen() {
   const gridColumns = useGridColumns();
 
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
+  // A failed load is not "no matches" - it gets its own state and a retry.
+  const [failed, setFailed] = useState(false);
+  // An optional starting search (e.g. an Edit gap for a bag lands on
+  // Accessories searched for "bag"). Read loosely until the route type
+  // carries it.
+  const initialQuery = String((route.params as { query?: string } | undefined)?.query || '');
+  const [query, setQuery] = useState(initialQuery);
+  // What the search actually runs on: the typed query, settled for a moment,
+  // so a word is one reload rather than one per keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  useEffect(() => {
+    if (query === debouncedQuery) return;
+    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query, debouncedQuery]);
+  // Responses are applied only if they belong to the newest request, so a slow
+  // earlier search can never overwrite the results for the final query.
+  const requestSeq = useRef(0);
   const [category, setCategory] = useState<ItemCategory | 'all'>(route.params?.category || 'all');
   // On web the param arrives as a string, where "false" is truthy — compare,
   // don't coerce. String(undefined) is "undefined", so absent stays off.
@@ -88,6 +106,7 @@ export default function ShopScreen() {
   const [focusTrend, setFocusTrend] = useState<FashionTrend | null>(null);
 
   const load = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     try {
       const userId = getCurrentUserId();
@@ -96,11 +115,12 @@ export default function ShopScreen() {
       // (Sovrn) use it to return better candidates; keyword providers ignore
       // the extra fields harmlessly.
       const profile = await buildProfileMatchContext(userId);
+      if (seq !== requestSeq.current) return;
       setWardrobeFocus(profile?.wardrobeFocus ?? 'all');
 
       const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
-          query: query.trim() || undefined,
+          query: debouncedQuery.trim() || undefined,
           category: category === 'all' ? undefined : category,
           condition: secondhandOnly ? 'secondhand' : undefined,
           onSaleOnly: onSaleOnly || undefined,
@@ -126,6 +146,9 @@ export default function ShopScreen() {
         // the trend focus. Never blocks the page.
         getPublishedTrends().catch(() => [] as FashionTrend[]),
       ]);
+      // Superseded while in flight: drop it, and count no impressions for a
+      // grid the user never saw.
+      if (seq !== requestSeq.current) return;
       const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
         id: item.id,
         name: item.name || 'Item',
@@ -159,24 +182,33 @@ export default function ShopScreen() {
         ranked.slice(0, 12).map(r => r.product.price || 0)
       );
       setProducts(ranked);
+      setFailed(false);
     } catch (error) {
       console.error('Error loading marketplace products:', error);
+      if (seq === requestSeq.current) setFailed(true);
     } finally {
-      setLoading(false);
+      // Only the newest request owns the spinner.
+      if (seq === requestSeq.current) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, category, secondhandOnly, onSaleOnly, sort]);
+  }, [debouncedQuery, category, secondhandOnly, onSaleOnly, sort]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Coming back from a product must not tear the grid down and lose the
+  // scroll position, so focus does not re-run the load when the grid is
+  // already there (the mount-time load above also covers first focus, which
+  // used to double-count impressions). The one case worth a reload on return
+  // is a load that failed.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  const failedRef = useRef(false);
+  failedRef.current = failed;
   useFocusEffect(
     useCallback(() => {
-      // Re-run on focus too so wishlist/closet changes made on other screens
-      // are reflected in match scores when the user comes back.
-      load();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (failedRef.current) loadRef.current();
     }, [])
   );
 
@@ -388,6 +420,11 @@ export default function ShopScreen() {
       {loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.ink} />
+        </View>
+      ) : failed ? (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>We couldn't load the shop.</Text>
+          <Button title="Try again" onPress={load} style={{ marginTop: spacing.md }} />
         </View>
       ) : (
         <FlatList

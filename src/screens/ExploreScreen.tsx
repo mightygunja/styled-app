@@ -21,11 +21,13 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { RootStackParamList } from '../navigation/types';
 import { MatchedProduct } from '../models/product';
 import {
@@ -81,6 +83,14 @@ export default function ExploreScreen() {
     await load();
     setRefreshing(false);
   };
+
+  // Pull-to-refresh does nothing on web, so the error and empty states carry
+  // a real button there (and on native, alongside the pull gesture).
+  const handleRetry = () => {
+    setLoading(true);
+    load();
+  };
+  const retryHint = Platform.OS === 'web' ? '' : ' Pull down to try again.';
 
   const openProduct = (productId: string, reason?: string) =>
     navigation.navigate('ProductDetail', { productId, surface: 'explore', reason });
@@ -144,8 +154,9 @@ export default function ExploreScreen() {
         <View style={styles.emptyBox}>
           <Text style={styles.emptyTitle}>Nothing to show yet</Text>
           <Text style={styles.emptyText}>
-            No pieces came back from the retailers we search. Pull down to try again.
+            No pieces came back from the retailers we search.{retryHint}
           </Text>
+          <Button title="Try again" onPress={handleRetry} style={styles.retryButton} />
         </View>
       );
     }
@@ -312,7 +323,10 @@ export default function ExploreScreen() {
         ) : failed ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Couldn't load</Text>
-            <Text style={styles.emptyText}>Pull down to try again.</Text>
+            <Text style={styles.emptyText}>
+              Something went wrong fetching your picks.{retryHint}
+            </Text>
+            <Button title="Try again" onPress={handleRetry} style={styles.retryButton} />
           </View>
         ) : (
           renderBody()
@@ -401,6 +415,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },
   emptyTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
+  retryButton: { alignSelf: 'flex-start', marginTop: spacing.md },
 
   footerLink: { marginTop: spacing.section, paddingVertical: spacing.md },
   footerLinkText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },

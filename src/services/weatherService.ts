@@ -274,13 +274,21 @@ export async function getDestinationForecast(
   if (allDates.length === 0) return [];
 
   let fetched: DailyForecast[] = [];
+  // Open-Meteo forecasts about 16 days out and rejects a request whose end
+  // date passes that, which returned nothing at all for a trip that was only
+  // PARTLY beyond the window - so the "partly estimated" path below never
+  // ran. Ask only for the days it can answer; the rest are filled in below
+  // and flagged estimated.
+  const horizon = toISODate(new Date(Date.now() + 15 * MS_PER_DAY));
+  if (startDate > horizon) return [];
+  const fetchEnd = endDate > horizon ? horizon : endDate;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
         `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max` +
-        `&temperature_unit=fahrenheit&timezone=auto&start_date=${startDate}&end_date=${endDate}`,
+        `&temperature_unit=fahrenheit&timezone=auto&start_date=${startDate}&end_date=${fetchEnd}`,
       { signal: controller.signal }
     );
     clearTimeout(timeout);

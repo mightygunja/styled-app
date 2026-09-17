@@ -21,13 +21,30 @@ import { outfitPlannerService, PlannedOutfit, PlannedOutfitItem } from '../servi
 import { colors, fonts, radius } from '../theme/designSystem';
 import {
   getUpcomingEvents,
-  planForSchedule,
+  planForScheduleDetailed,
   CalendarPermissionError,
 } from '../services/schedulePlanningService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const OCCASIONS = ['Casual', 'Work', 'Formal', 'Athletic'];
+
+// Planner keys are date-only strings ("YYYY-MM-DD"). new Date('YYYY-MM-DD') is
+// UTC midnight, which west of UTC formats as the previous day, and
+// toISOString() flips "today" to tomorrow in the US evening. Both directions
+// stay in local time here.
+function parseLocalDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return new Date(iso);
+  return new Date(y, m - 1, d);
+}
+
+function todayLocalISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
+}
 
 export default function OutfitPlannerScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -44,18 +61,26 @@ export default function OutfitPlannerScreen() {
   const [pickerOccasion, setPickerOccasion] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [planningWeek, setPlanningWeek] = useState(false);
+  // A failed read is not an empty planner / an empty closet - say so and retry.
+  const [plansLoadError, setPlansLoadError] = useState(false);
+  const [closetLoadError, setClosetLoadError] = useState(false);
 
   useEffect(() => {
     loadPlannedOutfits();
     loadCloset();
   }, []);
 
-  const loadCloset = async () => {
+  const loadCloset = async (): Promise<any[] | null> => {
     try {
       const response = await closetAPI.getItems(getCurrentUserId());
-      setClosetItems(response.data || []);
+      const items = response.data || [];
+      setClosetItems(items);
+      setClosetLoadError(false);
+      return items;
     } catch (error) {
       console.error('Error loading closet:', error);
+      setClosetLoadError(true);
+      return null;
     }
   };
 
@@ -85,9 +110,22 @@ export default function OutfitPlannerScreen() {
     try {
       const outfits = await outfitPlannerService.getForUser(getCurrentUserId());
       setPlannedOutfits(outfits);
+      setPlansLoadError(false);
     } catch (error) {
       console.error('Error loading planned outfits:', error);
+      setPlansLoadError(true);
     }
+  };
+
+  const promptEmptyCloset = () => {
+    Alert.alert(
+      'Your closet is empty',
+      'Add a few items to your closet first — planned outfits are built from what you own.',
+      [
+        { text: 'Add an item', onPress: () => navigation.navigate('AddClosetItem') },
+        { text: 'Not now', style: 'cancel' },
+      ]
+    );
   };
 
   const handleDayPress = (day: DateData) => {
@@ -97,16 +135,27 @@ export default function OutfitPlannerScreen() {
     }
   };
 
-  const handleAddOutfit = () => {
+  const handleAddOutfit = async () => {
     if (!selectedDate) {
       Alert.alert('Select a Date', 'Please select a date to plan an outfit');
       return;
     }
-    if (closetItems.length === 0) {
-      Alert.alert(
-        'Your closet is empty',
-        'Add a few items to your closet first — planned outfits are built from what you own.'
-      );
+    if (closetLoadError) {
+      // The closet read failed - that is not the same as an empty closet.
+      const items = await loadCloset();
+      if (!items) {
+        Alert.alert(
+          "Couldn't load your closet",
+          'Check your connection and try again. Your items are still there.'
+        );
+        return;
+      }
+      if (items.length === 0) {
+        promptEmptyCloset();
+        return;
+      }
+    } else if (closetItems.length === 0) {
+      promptEmptyCloset();
       return;
     }
 
@@ -132,16 +181,30 @@ export default function OutfitPlannerScreen() {
         return;
       }
 
-      const planned = await planForSchedule(getCurrentUserId(), events);
+      const { planned, skippedDates } = await planForScheduleDetailed(getCurrentUserId(), events);
+      // Days the user already planned are left exactly as they were.
+      const skippedNote =
+        skippedDates.length > 0
+          ? `${skippedDates.length} day${skippedDates.length === 1 ? '' : 's'} you had already planned ${
+              skippedDates.length === 1 ? 'was' : 'were'
+            } left as ${skippedDates.length === 1 ? 'it was' : 'they were'}.`
+          : '';
       if (planned.length === 0) {
-        Alert.alert('Could not plan', 'We could not build outfits for those events. Please try again.');
+        if (skippedDates.length > 0) {
+          Alert.alert(
+            'Already planned',
+            'Every day with an event in the next week already has an outfit, so nothing was changed. Delete a planned outfit first if you want a new one for that day.'
+          );
+        } else {
+          Alert.alert('Could not plan', 'We could not build outfits for those events. Please try again.');
+        }
         return;
       }
 
       await loadPlannedOutfits();
       Alert.alert(
         'Your week is planned',
-        `${planned.length} outfit${planned.length === 1 ? '' : 's'} planned around your calendar. Tap any marked date to see the look and why it was chosen.`
+        `${planned.length} outfit${planned.length === 1 ? '' : 's'} planned around your calendar. Tap any marked date to see the look and why it was chosen.${skippedNote ? ` ${skippedNote}` : ''}`
       );
     } catch (error: any) {
       console.error('Error planning week:', error);
@@ -293,10 +356,12 @@ export default function OutfitPlannerScreen() {
               const updated = { ...plannedOutfits };
               delete updated[date];
               setPlannedOutfits(updated);
+              setShowOutfitModal(false);
             } catch (error) {
+              // Keep the sheet open: closing it read as a successful delete.
               console.error('Error deleting planned outfit:', error);
+              Alert.alert("Couldn't delete", 'That outfit is still planned. Check your connection and try again.');
             }
-            setShowOutfitModal(false);
           },
         },
         { text: 'Cancel', style: 'cancel' },
@@ -315,11 +380,12 @@ export default function OutfitPlannerScreen() {
             try {
               await outfitPlannerService.markWorn(getCurrentUserId(), date);
               setPlannedOutfits(prev => ({ ...prev, [date]: { ...prev[date], worn: true } }));
+              setShowOutfitModal(false);
               Alert.alert('Success', 'Outfit marked as worn!');
             } catch (error) {
               console.error('Error marking outfit worn:', error);
+              Alert.alert("Couldn't mark as worn", 'Nothing was saved. Check your connection and try again.');
             }
-            setShowOutfitModal(false);
           },
         },
         { text: 'Cancel', style: 'cancel' },
@@ -400,6 +466,18 @@ export default function OutfitPlannerScreen() {
   const monthOutfits = Object.values(plannedOutfits).filter(o => o.date.startsWith(monthPrefix));
   const monthWornCount = monthOutfits.filter(o => o.worn).length;
 
+  // UPCOMING means from today forward, soonest first - not the five oldest
+  // plans ever saved. ISO date keys sort chronologically as strings.
+  const todayIso = todayLocalISO();
+  const upcomingOutfits = Object.entries(plannedOutfits)
+    .filter(([date]) => date >= todayIso)
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .slice(0, 5);
+
+  // One rust primary per view: once a date is waiting for an outfit, "Plan an
+  // outfit" is the primary and the calendar shortcut steps back to an outline.
+  const planWeekSecondary = !!selectedDate && !plannedOutfits[selectedDate];
+
   return (
     <SafeAreaView style={styles.container}>
       {/* One back control. There was a shared BackButton and a hand-rolled
@@ -418,7 +496,7 @@ export default function OutfitPlannerScreen() {
         </Text>
 
         <Calendar
-          current={new Date().toISOString().split('T')[0]}
+          current={todayIso}
           onDayPress={handleDayPress}
           markedDates={markedDates}
           theme={{
@@ -450,27 +528,42 @@ export default function OutfitPlannerScreen() {
             screen could only flash and do nothing. De-scoped in words there. */}
         {Platform.OS === 'web' ? (
           <View style={styles.planWeekWebNote}>
-            <Text style={styles.planWeekSub}>
+            <Text style={styles.planWeekWebNoteText}>
               Planning a whole week from your calendar is available in the iOS app, where 33 Trends
               can read your events. Here you can still plan any day by tapping it.
             </Text>
           </View>
         ) : (
         <TouchableOpacity
-          style={[styles.planWeekButton, planningWeek && styles.planWeekButtonBusy]}
+          style={[
+            styles.planWeekButton,
+            planWeekSecondary && styles.planWeekButtonOutline,
+            planningWeek && styles.planWeekButtonBusy,
+          ]}
           onPress={handlePlanWeek}
           disabled={planningWeek}
           activeOpacity={0.85}
         >
-          <Text style={styles.planWeekText}>
+          <Text style={[styles.planWeekText, planWeekSecondary && styles.planWeekTextOutline]}>
             {planningWeek ? 'Reading your calendar…' : 'Plan my week from my calendar'}
           </Text>
-          <Text style={styles.planWeekSub}>Dresses every event in the next 7 days from your closet, against the forecast
+          <Text style={[styles.planWeekSub, planWeekSecondary && styles.planWeekSubOutline]}>Dresses every event in the next 7 days from your closet, against the forecast
           </Text>
         </TouchableOpacity>
         )}
 
-        {selectedDate && (
+        {plansLoadError && (
+          <TouchableOpacity
+            style={styles.loadErrorRow}
+            onPress={loadPlannedOutfits}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            <Text style={styles.loadErrorText}>Couldn't load your planned outfits. Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
+        {!!selectedDate && (
           <View style={styles.selectedDateSection}>
             <Text style={styles.selectedDateTitle}>
               {plannedOutfits[selectedDate] ? 'Outfit Planned' : 'No Outfit Planned'}
@@ -511,10 +604,14 @@ export default function OutfitPlannerScreen() {
 
         <View style={styles.upcomingSection}>
           <Text style={styles.upcomingTitle}>UPCOMING</Text>
-          {Object.entries(plannedOutfits)
-            .sort(([dateA], [dateB]) =>dateA.localeCompare(dateB))
-            .slice(0, 5)
-            .map(([date, outfit]) => (
+          {upcomingOutfits.length === 0 && (
+            <Text style={styles.upcomingEmpty}>
+              {plansLoadError
+                ? "Couldn't load your planned outfits."
+                : 'Nothing planned from today on. Tap a date above to plan a look.'}
+            </Text>
+          )}
+          {upcomingOutfits.map(([date, outfit]) => (
               <TouchableOpacity
                 key={date}
                 style={styles.upcomingCard}
@@ -525,10 +622,10 @@ export default function OutfitPlannerScreen() {
               >
                 <View style={styles.upcomingDate}>
                   <Text style={styles.upcomingDay}>
-                    {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
+                    {parseLocalDate(date).toLocaleDateString('en-US', { weekday: 'short' })}
                   </Text>
                   <Text style={styles.upcomingDateNumber}>
-                    {new Date(date).getDate()}
+                    {parseLocalDate(date).getDate()}
                   </Text>
                 </View>
                 <View style={styles.upcomingInfo}>
@@ -587,7 +684,44 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 16,
     padding: 16,
-    backgroundColor: colors.ink,
+    // The action colour is rust; ink pills read as chrome, not as the CTA.
+    backgroundColor: colors.rust,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  planWeekButtonOutline: {
+    backgroundColor: 'transparent',
+    borderColor: colors.hair,
+  },
+  planWeekTextOutline: {
+    color: colors.ink,
+  },
+  planWeekSubOutline: {
+    color: colors.inkMuted,
+  },
+  planWeekWebNoteText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.inkMuted,
+  },
+  loadErrorRow: {
+    borderRadius: radius.md,
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 14,
+    backgroundColor: colors.sand,
+  },
+  loadErrorText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+    color: colors.ink,
+  },
+  upcomingEmpty: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.inkMuted,
   },
   planWeekButtonBusy: {
     opacity: 0.6,
@@ -664,7 +798,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   actionButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   container: {
     flex: 1,
@@ -708,18 +842,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewButton: {
+    // Secondary: viewing an existing plan is not the screen's primary action.
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.hair,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
   viewButtonText: {
-    color: colors.bone,
+    color: colors.ink,
     fontFamily: fonts.sansSemiBold,
   },
   planButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
@@ -905,7 +1042,7 @@ const styles = StyleSheet.create({
   actionButton: {
     borderRadius: radius.full,
     flex: 1,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -915,9 +1052,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   deleteButton: {
-    backgroundColor: colors.bone,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.ink,
+    borderColor: colors.hair,
   },
   deleteButtonText: {
     color: colors.ink,

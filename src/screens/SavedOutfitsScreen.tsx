@@ -41,6 +41,8 @@ export default function SavedOutfitsScreen() {
   const [outfits, setOutfits] = useState<SavedOutfit[]>([]);
   const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
   const [loading, setLoading] = useState(true);
+  // A failed load is not "Nothing saved yet" - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const load = useCallback(async () => {
@@ -51,11 +53,13 @@ export default function SavedOutfitsScreen() {
         closetAPI.getItems(userId).catch(() => ({ data: [] })),
       ]);
       setOutfits(saved);
+      setLoadError(false);
       setItemsById(
         new Map(((closetResponse as any).data || []).map((item: any) => [item.id, item as Item]))
       );
     } catch (error) {
       console.error('Error loading saved outfits:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -98,6 +102,20 @@ export default function SavedOutfitsScreen() {
 
         {loading ? (
           <ActivityIndicator size="large" color={colors.ink} style={{ marginTop: 48 }} />
+        ) : loadError && outfits.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Couldn't load your saved looks</Text>
+            <Text style={styles.emptyText}>Check your connection and try again.</Text>
+            <Button
+              title="Tap to retry"
+              variant="primary"
+              onPress={() => {
+                setLoading(true);
+                load();
+              }}
+              style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}
+            />
+          </View>
         ) : outfits.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Nothing saved yet</Text>

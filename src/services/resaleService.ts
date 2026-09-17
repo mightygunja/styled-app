@@ -46,9 +46,15 @@ export interface ResaleCandidate {
   reason: string;
 }
 
-function monthsSince(iso?: string | null): number | null {
+function monthsSince(iso?: any): number | null {
   if (!iso) return null;
-  const then = new Date(iso).getTime();
+  // Closet documents carry createdAt as a Firestore Timestamp, not a string.
+  const then =
+    typeof iso?.toDate === 'function'
+      ? iso.toDate().getTime()
+      : typeof iso?.seconds === 'number'
+        ? iso.seconds * 1000
+        : new Date(iso).getTime();
   if (isNaN(then)) return null;
   return Math.max(0, Math.round((Date.now() - then) / (1000 * 60 * 60 * 24 * 30.44)));
 }
@@ -100,6 +106,9 @@ export function rankResaleCandidates(items: any[]): ResaleCandidate[] {
   });
 
   return candidates
+    // Too new to call: something added in the last three months has not had a
+    // chance to be worn, so "never worn" says nothing about it yet.
+    .filter(c => !(c.ageMonths !== null && c.ageMonths < 3))
     .filter(c => c.score >= 30)
     .sort((a, b) => b.score - a.score);
 }

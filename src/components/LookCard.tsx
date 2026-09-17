@@ -5,7 +5,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,14 +12,18 @@ import { Look } from '../types';
 import { scale } from '../utils/animations';
 import { colors, fonts, radius } from '../theme/designSystem';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - 32;
+// The card fills whatever column its parent gives it. It used to be a fixed
+// `window width - 32` measured once at module load, which overflowed padded
+// parents, 2-column grids and the framed desktop-web layout.
+const CARD_MAX_WIDTH = 520;
 
 interface LookCardProps {
   look: Look;
   onPress: () => void;
   onFavorite: () => void;
   isFavorited?: boolean;
+  /** Narrow columns (e.g. a 2-column grid): shorter image, tighter text. */
+  compact?: boolean;
 }
 
 export default function LookCard({
@@ -28,6 +31,7 @@ export default function LookCard({
   onPress,
   onFavorite,
   isFavorited = false,
+  compact = false,
 }: LookCardProps) {
   const [imageError, setImageError] = useState<boolean>(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -61,9 +65,10 @@ export default function LookCard({
       onPress={handleCardPress}
       activeOpacity={0.9}
       disabled={false}
+      style={styles.touchable}
     >
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, compact && styles.imageContainerCompact]}>
         {imageError ? (
           // Local fallback - a remote placeholder service is just a second
           // request that can fail.
@@ -85,6 +90,8 @@ export default function LookCard({
           onPress={handleFavoritePress}
           activeOpacity={0.7}
           disabled={false}
+          accessibilityRole="button"
+          accessibilityLabel={isFav ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Ionicons
             name={isFav ? 'heart' : 'heart-outline'}
@@ -101,8 +108,8 @@ export default function LookCard({
         )}
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+      <View style={[styles.content, compact && styles.contentCompact]}>
+        <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={2} ellipsizeMode="tail">
           {look.title}
         </Text>
         
@@ -123,10 +130,14 @@ export default function LookCard({
           </View>
         )}
 
-        {/* Item count */}
-        <Text style={styles.itemCount}>
-          {look.heroItem ? 1 : 0} + {look.alternateItems?.length || 0} items
-        </Text>
+        {/* Item count - only when the look actually carries its items. List
+            queries return the bare look doc, and this used to print
+            "0 + 0 items" on every card. */}
+        {Array.isArray(look.items) && look.items.length > 0 && (
+          <Text style={styles.itemCount}>
+            {look.items.length} {look.items.length === 1 ? 'item' : 'items'}
+          </Text>
+        )}
       </View>
       </Animated.View>
     </TouchableOpacity>
@@ -134,8 +145,13 @@ export default function LookCard({
 }
 
 const styles = StyleSheet.create({
+  touchable: {
+    width: '100%',
+    maxWidth: CARD_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   card: {
-    width: CARD_WIDTH,
+    width: '100%',
     backgroundColor: colors.card,
     marginBottom: 16,
     shadowColor: colors.ink,
@@ -152,6 +168,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 400,
     position: 'relative',
+  },
+  imageContainerCompact: {
+    height: 220,
   },
   image: {
     borderRadius: radius.sm,
@@ -203,11 +222,17 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  contentCompact: {
+    padding: 10,
+  },
   title: {
     fontSize: 20,
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 8,
+  },
+  titleCompact: {
+    fontSize: 15,
   },
   description: {
     fontSize: 14,

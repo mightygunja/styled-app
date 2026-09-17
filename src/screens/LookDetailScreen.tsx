@@ -11,9 +11,12 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import BackButton from '../components/BackButton';
 import { Look, Item } from '../types';
 import { Product } from '../models/product';
 import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
+import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { affiliateClicksService } from '../services/firestore';
 import {
   getActiveAdapter,
@@ -39,6 +42,13 @@ interface LookDetailScreenProps {
 export default function LookDetailScreen({ route, navigation }: LookDetailScreenProps) {
   const { lookId } = route.params;
   const [look, setLook] = useState<Look | null>(null);
+  // Whose wardrobe: un-gendered Amazon searches returned both departments.
+  const [wardrobeFocus, setWardrobeFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
+  useEffect(() => {
+    buildProfileMatchContext(getCurrentUserId())
+      .then(profile => setWardrobeFocus(profile?.wardrobeFocus))
+      .catch(() => undefined);
+  }, []);
   const [paletteLooks, setPaletteLooks] = useState<Look[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -109,6 +119,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       navigation.navigate('SimilarItems', {
         sourceItemId: lookId,
         similarItems: response.data,
+        source: 'look',
       });
     } catch (error) {
       setLoading(false);
@@ -121,37 +132,21 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
   // stored affiliateLink is only a landing hint for merchant deeplinks - the
   // seeded looks carry retailer homepages, never product pages - so it is
   // never opened as-is.
+  //
+  // The click record is fire-and-forget and is NOT awaited before opening: on
+  // web Linking.openURL is window.open, and a Firestore round trip between the
+  // tap and the open puts it outside the click's user activation, where popup
+  // blockers (Safari especially) swallow it silently.
   const openPiece = async (piece: LookPiece) => {
-    const [url] = await Promise.all([
-      getActiveAdapter().wrapLink(piece.product),
-      affiliateClicksService
-        .record(getCurrentUserId(), piece.product, {
-          surface: 'look-detail',
-          provider: activeProviderName(),
-        })
-        .catch(error => console.error('Error recording look click:', error)),
-    ]);
-    await Linking.openURL(url);
-  };
-
-  const handleShopCompleteLook = async (shoppableItems: LookPiece[]) => {
-    if (shoppableItems.length === 0) return;
-
-    try {
-      await openPiece(shoppableItems[0]);
-
-      if (shoppableItems.length >1) {
-        Alert.alert(
-          'Opening first item',
-          `Opening "${shoppableItems[0].name}". ${shoppableItems.length - 1} more item${
-            shoppableItems.length - 1 === 1 ? '' : 's'
-          } in this look can be shopped individually below.`
-        );
-      }
-    } catch (error) {
-      console.error('Error opening shop links:', error);
-      Alert.alert('Something went wrong', "Couldn't open that shop link. Please try again.");
-    }
+    const url = await getActiveAdapter().wrapLink(piece.product);
+    const opening = Linking.openURL(url);
+    affiliateClicksService
+      .record(getCurrentUserId(), piece.product, {
+        surface: 'look-detail',
+        provider: activeProviderName(),
+      })
+      .catch(error => console.error('Error recording look click:', error));
+    await opening;
   };
 
   const handleShopItem = async (piece: LookPiece) => {
@@ -166,6 +161,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading look details...</Text>
@@ -189,7 +185,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 
   // Transform backend response - Firebase returns items directly with itemType
   const allItems: LookPiece[] = (look as any).items?.map((item: any) => {
-    const product = productFromListing({ ...item, link: item.affiliateLink }, 'look');
+    const product = productFromListing({ ...item, link: item.affiliateLink }, 'look', wardrobeFocus);
     return {
       ...item,
       type: item.itemType, // 'hero', 'alternate', or 'budget'
@@ -198,12 +194,10 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     };
   }) || [];
   const shoppableItems = allItems.filter(item => item.destination);
-  // The complete-look button opens the first piece, so it can only name one
-  // store honestly when every shoppable piece goes to the same one.
-  const lookDestination =
-    shoppableItems.length > 0 && shoppableItems.every(i => i.destination === shoppableItems[0].destination)
-      ? shoppableItems[0].destination
-      : null;
+  // One rust action per view: the hero piece's shop button (or the first
+  // shoppable piece when no hero is tagged). The rest are outline. There is no
+  // "Shop Complete Look" button any more - it only ever opened the first piece.
+  const primaryPiece = shoppableItems.find(i => i.type === 'hero') || shoppableItems[0];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -222,18 +216,24 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           <TouchableOpacity
             style={styles.backIconButton}
             onPress={() =>navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
-            <Text style={styles.backIcon}>←</Text>
+            <Ionicons name="chevron-back" size={24} color={colors.ink} />
           </TouchableOpacity>
 
           {/* Favorite Button */}
           <TouchableOpacity
             style={styles.favoriteButton}
             onPress={handleFavorite}
+            accessibilityRole="button"
+            accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Text style={styles.favoriteIcon}>
-              {isFavorited ? '●' : '○'}
-            </Text>
+            <Ionicons
+              name={isFavorited ? 'heart' : 'heart-outline'}
+              size={24}
+              color={colors.ink}
+            />
           </TouchableOpacity>
         </View>
 
@@ -362,10 +362,18 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 
                   {item.destination && (
                     <TouchableOpacity
-                      style={styles.shopButton}
+                      style={[styles.shopButton, item === primaryPiece && styles.shopButtonPrimary]}
                       onPress={() =>handleShopItem(item)}
+                      accessibilityRole="button"
                     >
-                      <Text style={styles.shopButtonText}>Shop at {item.destination} →</Text>
+                      <Text
+                        style={[
+                          styles.shopButtonText,
+                          item === primaryPiece && styles.shopButtonTextPrimary,
+                        ]}
+                      >
+                        Shop at {item.destination}
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -373,15 +381,6 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
             ))}
           </View>
 
-          {/* Shop All Button */}
-          {lookDestination && (
-            <TouchableOpacity
-              style={styles.shopAllButton}
-              onPress={() =>handleShopCompleteLook(shoppableItems)}
-            >
-              <Text style={styles.shopAllButtonText}>Shop Complete Look at {lookDestination}</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -418,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
   },
   backButtonText: {
     color: colors.white,
@@ -602,29 +601,27 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginBottom: 8,
   },
+  // Outline by default; the single primary piece gets the rust fill.
   shopButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.ink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignSelf: 'flex-start',
   },
+  shopButtonPrimary: {
+    backgroundColor: colors.rust,
+    borderColor: colors.rust,
+  },
   shopButtonText: {
-    color: colors.white,
+    color: colors.ink,
     fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },
-  shopAllButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.ink,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  shopAllButtonText: {
+  shopButtonTextPrimary: {
     color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
   },
   paletteLooksScroll: {
     marginTop: 16,
@@ -666,20 +663,21 @@ const styles = StyleSheet.create({
   },
   shopMyClosetButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.tobacco,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.ink,
     padding: 16,
     marginTop: 20,
     alignItems: 'center',
   },
   shopMyClosetText: {
-    color: colors.white,
+    color: colors.ink,
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
     marginBottom: 4,
   },
   shopMyClosetSubtext: {
-    color: colors.white,
+    color: colors.inkMuted,
     fontSize: 12,
-    opacity: 0.9,
   },
 });

@@ -56,7 +56,7 @@ class BeforeAfterService {
     imageUri: string,
     category: PhotoCategory,
     caption: string | undefined,
-    isPublic: boolean = true,
+    isPublic: boolean = false,
     userId: string = 'user'
   ): Promise<BeforeAfterPhoto> {
     const base64 = await readImageAsBase64(imageUri);

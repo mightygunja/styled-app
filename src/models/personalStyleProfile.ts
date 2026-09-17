@@ -562,20 +562,27 @@ export const STYLE_ARCHETYPES = {
 } as const;
 
 /**
- * Default Personal Style Profile for new users
+ * Default Personal Style Profile for new users.
+ *
+ * Deliberately NEUTRAL: no archetypes and no colours. It used to assert
+ * classic + polished and black/white/navy/gray, which the builder showed as
+ * pre-selected and the colour/body "Apply" paths saved as the user's own
+ * taste. Empty taste fields read as "no signal" to every engine - the same
+ * minimal profile Onboarding and Home write. Lifestyle weights have to sum to
+ * 1, so they use the survey's "A bit of everything" split.
  */
 export const DEFAULT_PERSONAL_STYLE_PROFILE: PersonalStyleProfile = {
   lifestyleWeights: {
-    work: 0.4,
-    casual: 0.4,
-    social: 0.15,
-    travel: 0.05,
+    work: 0.25,
+    casual: 0.35,
+    social: 0.25,
+    travel: 0.15,
   },
-  styleArchetypes: ["classic", "polished"],
+  styleArchetypes: [],
   avoidRules: [],
   colorProfile: {
-    primary: ["black", "white", "navy", "gray"],
-    secondary: ["beige", "brown", "blue"],
+    primary: [],
+    secondary: [],
     stretch: [],
   },
   fitPreferences: {},
@@ -653,14 +660,14 @@ export function calculateStyleCompatibility(profile1: PersonalStyleProfile, prof
   const sharedArchetypes = profile1.styleArchetypes.filter(a =>
     profile2.styleArchetypes.includes(a)
   );
-  score += (sharedArchetypes.length / Math.max(profile1.styleArchetypes.length, profile2.styleArchetypes.length)) * 0.4;
+  score += (sharedArchetypes.length / Math.max(profile1.styleArchetypes.length, profile2.styleArchetypes.length, 1)) * 0.4;
   factors += 0.4;
 
   // Compare primary colors (30% weight)
   const sharedColors = profile1.colorProfile.primary.filter(c =>
     profile2.colorProfile.primary.includes(c)
   );
-  score += (sharedColors.length / Math.max(profile1.colorProfile.primary.length, profile2.colorProfile.primary.length)) * 0.3;
+  score += (sharedColors.length / Math.max(profile1.colorProfile.primary.length, profile2.colorProfile.primary.length, 1)) * 0.3;
   factors += 0.3;
 
   // Compare lifestyle weights (30% weight)

@@ -61,6 +61,26 @@ function formatShortDate(iso: string): string {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// Local "today": toISODate() goes through UTC, which flips to tomorrow in the
+// US evening and disabled today as a departure date.
+function todayLocalISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
+}
+
+// The forecast provider covers today plus 15 days. Whole days from today to a
+// date-only string, both taken as local dates.
+const FORECAST_HORIZON_DAYS = 15;
+function daysFromToday(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return 0;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((new Date(y, m - 1, d).getTime() - today.getTime()) / 86_400_000);
+}
+
 export default function PackingListScreen() {
   const [screenState, setScreenState] = useState<ScreenState>('form');
 
@@ -68,6 +88,10 @@ export default function PackingListScreen() {
   const [destinationResults, setDestinationResults] = useState<DestinationMatch[]>([]);
   const [destination, setDestination] = useState<DestinationMatch | null>(null);
   const [searching, setSearching] = useState(false);
+  // True once a finished search came back with nothing (no such place, or the
+  // lookup failed - the service reports both as an empty list).
+  const [searchEmpty, setSearchEmpty] = useState(false);
+  const [searchAttempt, setSearchAttempt] = useState(0);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -93,15 +117,27 @@ export default function PackingListScreen() {
   useEffect(() => {
     if (destination || destinationQuery.trim().length < 2) {
       setDestinationResults([]);
+      // Without this, deleting back under two characters cancelled the timer
+      // that was the only thing clearing "Searching…".
+      setSearching(false);
+      setSearchEmpty(false);
       return;
     }
     let cancelled = false;
     setSearching(true);
+    setSearchEmpty(false);
     const timer = setTimeout(async () => {
-      const results = await searchDestinations(destinationQuery);
-      if (!cancelled) {
-        setDestinationResults(results);
-        setSearching(false);
+      let results: DestinationMatch[] = [];
+      try {
+        results = await searchDestinations(destinationQuery);
+      } catch (error) {
+        console.log('Destination search failed', error);
+      } finally {
+        if (!cancelled) {
+          setDestinationResults(results);
+          setSearchEmpty(results.length === 0);
+          setSearching(false);
+        }
       }
     }, 350);
 
@@ -109,7 +145,7 @@ export default function PackingListScreen() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [destinationQuery, destination]);
+  }, [destinationQuery, destination, searchAttempt]);
 
   const handleDayPress = useCallback(
     (day: DateData) => {
@@ -202,8 +238,8 @@ export default function PackingListScreen() {
             <Text style={styles.eyebrow}>TRIP PACKING</Text>
             <Text style={styles.title}>Pack lighter, wear more</Text>
             <Text style={styles.subtitle}>
-              Tell us where and when. We'll check the real forecast there and pack the fewest
-              pieces from your closet that still cover every day.
+              Tell us where and when. We'll check the forecast there (it reaches about 16 days
+              ahead) and pack the fewest pieces from your closet that still cover every day.
             </Text>
 
             {savedTrips.length > 0 && (
@@ -255,6 +291,18 @@ export default function PackingListScreen() {
                   autoCorrect={false}
                 />
                 {searching && <Text style={styles.searchingText}>Searching…</Text>}
+                {!searching && searchEmpty && (
+                  <TouchableOpacity
+                    onPress={() => setSearchAttempt(n => n + 1)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.searchingText}>
+                      No places found for “{destinationQuery.trim()}”. Check the spelling or your
+                      connection, then tap to search again.
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {destinationResults.map(match => (
                   <TouchableOpacity
                     key={match.id}
@@ -283,7 +331,7 @@ export default function PackingListScreen() {
               onDayPress={handleDayPress}
               markingType="period"
               markedDates={markedDates}
-              minDate={toISODate(new Date())}
+              minDate={todayLocalISO()}
               theme={{
                 calendarBackground: colors.bone,
                 textSectionTitleColor: colors.inkFaint,
@@ -297,6 +345,16 @@ export default function PackingListScreen() {
                 textDayHeaderFontFamily: fonts.sansSemiBold,
               }}
             />
+
+            {!!startDate && daysFromToday(endDate || startDate) > FORECAST_HORIZON_DAYS && (
+              <View style={styles.noticeBox}>
+                <Text style={styles.noticeText}>
+                  {daysFromToday(startDate) > FORECAST_HORIZON_DAYS
+                    ? 'These dates are beyond the 16-day forecast window, so there is no forecast for them yet. Your list will be based on the trip type, your notes and your closet instead. Build it again closer to departure for the weather.'
+                    : 'Part of this trip is beyond the 16-day forecast window, so the forecast may be partial or unavailable for the later days.'}
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.sectionLabel}>WHAT KIND OF TRIP?</Text>
             <View style={styles.chipRow}>
@@ -336,8 +394,9 @@ export default function PackingListScreen() {
           <View style={styles.analyzingBox}>
             <ActivityIndicator size="large" color={colors.ink} />
             <Text style={styles.analyzingText}>
-              Checking the forecast in {destination ? destination.name : 'your destination'} and
-              working out the smallest bag that covers it…
+              {startDate && daysFromToday(startDate) > FORECAST_HORIZON_DAYS
+                ? `Working out the smallest bag for ${destination ? destination.name : 'your destination'} from the trip type and your closet…`
+                : `Checking the forecast in ${destination ? destination.name : 'your destination'} and working out the smallest bag that covers it…`}
             </Text>
           </View>
         )}
@@ -383,6 +442,15 @@ function PackingResult({ list }: { list: PackingList }) {
       )}
 
       <Text style={styles.sectionLabel}>THE FORECAST</Text>
+      {list.forecast.length === 0 && (
+        <View style={[styles.noticeBox, styles.noticeBoxFlush]}>
+          <Text style={styles.noticeText}>
+            {daysFromToday(list.startDate) > FORECAST_HORIZON_DAYS
+              ? 'These dates are beyond the 16-day forecast window, so there is no forecast yet. This list is based on the trip type, your notes and your closet, not on the weather. Build it again within two weeks of departure.'
+              : 'No forecast was available when this list was built, so it is based on the trip type, your notes and your closet, not on the weather.'}
+          </Text>
+        </View>
+      )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.forecastStrip}>
         {list.forecast.map(day => (
           <View key={day.date} style={styles.forecastDay}>
@@ -543,6 +611,7 @@ const styles = StyleSheet.create({
 
   noticeBox: {
     borderRadius: radius.md, marginTop: spacing.sm, backgroundColor: colors.sand, padding: 14 },
+  noticeBoxFlush: { marginTop: 0 },
   noticeText: { ...textType.body, fontSize: 12, color: colors.inkMuted },
 
   forecastStrip: { marginHorizontal: -spacing.page, paddingHorizontal: spacing.page },

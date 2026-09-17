@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   RefreshControl,
   Dimensions,
   Share,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
+import { Ionicons } from '@expo/vector-icons';
 import { socialFeedService, Post } from '../services/socialFeedService';
 import { userProfileService, FollowSuggestion } from '../services/userProfileService';
 import { exploreService } from '../services/exploreService';
@@ -49,11 +51,41 @@ export default function SocialFeedScreen() {
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
+  const [loadError, setLoadError] = useState(false);
+  // Images and the discover grid are sized to the measured content column,
+  // not the browser window: on desktop web the feed sits in a 720px frame, so
+  // window-width images overflowed it and broke paging. On a phone the two
+  // widths are the same.
+  const [columnWidth, setColumnWidth] = useState(
+    Platform.OS === 'web' ? Math.min(width, 720) : width
+  );
+
   const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadFeed();
   }, []);
+
+  // The feed stays mounted under CreatePost and PostDetail, so a post just
+  // published (or deleted, liked, saved) was missing or stale on return until
+  // a pull-to-refresh - which does nothing on web. Coming back into focus
+  // quietly re-reads the pages already on screen: no spinner, no scroll jump.
+  const pageRef = useRef(1);
+  const activeHashtagRef = useRef<string | null>(null);
+  const hasFocusedOnce = useRef(false);
+  const refreshOnFocusRef = useRef<() => void>(() => {});
+  pageRef.current = page;
+  activeHashtagRef.current = activeHashtag;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true; // the mount effect above does the first load
+        return;
+      }
+      refreshOnFocusRef.current();
+    }, [])
+  );
 
   // The "Show following only" toggle in Settings is a real filter here, not a
   // stored bit nothing reads: when it's on, the feed keeps posts from people
@@ -75,6 +107,7 @@ export default function SocialFeedScreen() {
   const loadFeed = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const userId = getCurrentUserId();
       const fetchedPosts = await socialFeedService.getFeed(userId);
       const feedPosts = await applyFeedSettings(userId, fetchedPosts);
@@ -117,11 +150,39 @@ export default function SocialFeedScreen() {
       }
     } catch (error) {
       console.error('Error loading feed:', error);
+      setLoadError(true);
       showToast('Failed to load feed', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  // Silent re-read used when the screen regains focus. It fetches as many
+  // posts as are already showing (page x PAGE_SIZE) so paging stays intact,
+  // and on failure it leaves what is on screen alone.
+  const refreshOnFocus = async () => {
+    if (activeHashtagRef.current) return;
+    try {
+      const userId = getCurrentUserId();
+      const shownPages = pageRef.current;
+      const fetchedPosts = await socialFeedService.getFeed(userId, 1, shownPages * PAGE_SIZE);
+      const feedPosts = await applyFeedSettings(userId, fetchedPosts);
+      const postsWithUsers = await Promise.all(
+        feedPosts.map(async (post) => {
+          const user = await userProfileService.getUserProfile(post.userId);
+          return { ...post, user: user || undefined };
+        })
+      );
+      // The user may have opened a tag or paged on while this was in flight.
+      if (activeHashtagRef.current || pageRef.current !== shownPages) return;
+      setPosts(postsWithUsers);
+      setHasMore(fetchedPosts.length === shownPages * PAGE_SIZE);
+      setLoadError(false);
+    } catch (error) {
+      console.error('Error refreshing feed on focus:', error);
+    }
+  };
+  refreshOnFocusRef.current = refreshOnFocus;
 
   const loadMore = async () => {
     if (loadingMore || !hasMore || activeHashtag) return;
@@ -152,13 +213,32 @@ export default function SocialFeedScreen() {
 
   // Public posts carrying one tag, newest first, with the same like/save
   // state the feed loads. Replaces the empty onPress the hashtags shipped with.
-  const loadHashtag = async (tag: string) => {
+  const normaliseTag = (value: string) => value.replace(/^#+/, '').trim().toLowerCase();
+
+  const loadHashtag = async (rawTag: string) => {
+    const tag = normaliseTag(rawTag);
+    if (!tag) return;
     try {
       setLoading(true);
+      setLoadError(false);
       const userId = getCurrentUserId();
       const tagPosts = await socialFeedService.searchByHashtag(tag);
+      // The search matches lower-case tags exactly, but posts published before
+      // tags were normalised on write kept their typed case (#OOTD), so the
+      // post that was just tapped could be missing from its own tag. Any
+      // public post already on screen that carries the tag is kept in.
+      const known = new Set(tagPosts.map(p => p.id));
+      const alreadyShown = posts.filter(
+        p =>
+          p.privacy === 'public' &&
+          !known.has(p.id) &&
+          (p.hashtags || []).some(h => normaliseTag(h) === tag)
+      );
+      const merged = [...tagPosts, ...alreadyShown].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       const withState = await Promise.all(
-        tagPosts.map(async (post) => {
+        merged.map(async (post) => {
           const [user, isLiked, isSaved] = await Promise.all([
             userProfileService.getUserProfile(post.userId),
             socialFeedService.isPostLiked(post.id, userId),
@@ -219,21 +299,59 @@ export default function SocialFeedScreen() {
         await socialFeedService.savePost(postId, getCurrentUserId());
         setPosts(posts.map(p =>p.id === postId ? { ...p, isSaved: true, saves: p.saves + 1 } : p
         ));
-        showToast('Saved!', 'success');
+        showToast('Saved — find it under Your profile', 'success');
       }
     } catch (error) {
       showToast('Action failed', 'error');
     }
   };
 
+  // Shares the post's own link. Where the share sheet is unavailable (most
+  // desktop browsers) the link is copied instead, and the share is counted
+  // only when one of the two actually happened.
   const handleShare = async (post: Post) => {
+    const url = `https://www.thirtythreetrends.com/post/${post.id}`;
+    const message = post.caption ? `${post.caption}\n${url}` : url;
+    const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
+    let shared = false;
     try {
-      await Share.share({ message: `${post.caption}\n${post.images[0]}` });
+      if (Platform.OS === 'web' && typeof nav?.share !== 'function') {
+        throw new Error('share-unsupported');
+      }
+      const result = await Share.share({ message });
+      shared = !result || result.action !== Share.dismissedAction;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return; // the user closed the share sheet
+      if (Platform.OS === 'web' && nav?.clipboard?.writeText) {
+        try {
+          await nav.clipboard.writeText(url);
+          shared = true;
+          showToast('Link copied', 'success');
+        } catch {
+          shared = false;
+        }
+      }
+      if (!shared) {
+        showToast("Couldn't share this post", 'error');
+        return;
+      }
+    }
+    if (!shared) return;
+    try {
       await socialFeedService.sharePost(post.id);
       setPosts(prev =>prev.map(p => (p.id === post.id ? { ...p, shares: p.shares + 1 } : p)));
     } catch (error) {
-      console.error('Error sharing post:', error);
+      console.error('Error recording share:', error);
     }
+  };
+
+  // Three across inside the 20px page gutters, with two 4px gaps.
+  const discoverCell = (columnWidth - 40 - 8) / 3;
+  const discoverSize = { width: discoverCell, height: discoverCell };
+
+  const openOwnProfile = () => {
+    const userId = getCurrentUserId();
+    if (userId) navigation.navigate('UserProfile', { userId });
   };
 
   const renderPost = (post: Post) => (
@@ -270,20 +388,23 @@ export default function SocialFeedScreen() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        style={styles.imagesContainer}
+        style={[styles.imagesContainer, { width: columnWidth }]}
       >
         {post.images.map((image, index) => (
           <TouchableOpacity
             key={index}
             onPress={() =>navigation.navigate('PostDetail', { postId: post.id })}
           >
-            <Image source={{ uri: image }} style={styles.postImage} />
+            <Image
+              source={{ uri: image }}
+              style={[styles.postImage, { width: columnWidth, height: columnWidth }]}
+            />
           </TouchableOpacity>
         ))}
       </ScrollView>
-      
+
       {post.images.length >1 && (
-        <View style={styles.imageIndicator}>
+        <View style={[styles.imageIndicator, { top: columnWidth - 40 }]}>
           <Text style={styles.imageCount}>1/{post.images.length}</Text>
         </View>
       )}
@@ -364,11 +485,29 @@ export default function SocialFeedScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.headerBar}>
-        <BackButton />
+        <View style={styles.headerRow}>
+          <BackButton />
+          {/* The only way into your own profile - and so to your saved posts
+              and Edit profile - used to be tapping your avatar on something
+              you had already posted. */}
+          <TouchableOpacity
+            style={styles.profileLink}
+            onPress={openOwnProfile}
+            accessibilityRole="button"
+            accessibilityLabel="Your profile and saved posts"
+          >
+            <Ionicons name="person-circle-outline" size={18} color={colors.tobacco} />
+            <Text style={styles.profileLinkText}>Your profile</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
+        onLayout={event => {
+          const measured = event.nativeEvent.layout.width;
+          if (measured > 0 && Math.abs(measured - columnWidth) > 1) setColumnWidth(measured);
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
         }
@@ -398,7 +537,14 @@ export default function SocialFeedScreen() {
           </View>
         )}
 
-        {posts.length === 0 && (
+        {posts.length === 0 && loadError && (
+          <TouchableOpacity style={styles.emptyState} activeOpacity={0.85} onPress={loadFeed}>
+            <Text style={styles.emptyText}>Couldn't load the feed</Text>
+            <Text style={styles.emptySubtext}>Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
+        {posts.length === 0 && !loadError && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>
               {activeHashtag ? 'Nothing under this tag' : 'The feed is quiet'}
@@ -470,9 +616,9 @@ export default function SocialFeedScreen() {
                   onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
                 >
                   {post.images?.[0] ? (
-                    <Image source={{ uri: post.images[0] }} style={styles.discoverImage} />
+                    <Image source={{ uri: post.images[0] }} style={[styles.discoverImage, discoverSize]} />
                   ) : (
-                    <View style={styles.discoverImage} />
+                    <View style={[styles.discoverImage, discoverSize]} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -505,6 +651,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  profileLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  profileLinkText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.tobacco,
+  },
   content: {
     paddingBottom: 60,
   },
@@ -536,7 +699,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: 20,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },

@@ -4,6 +4,7 @@
  */
 
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { sessionDateMs } from '../utils/sessionDate';
 import { db } from '../config/firebase';
 import { StylingSession } from '../types';
 import { userProfileService } from './userProfileService';
@@ -123,7 +124,7 @@ class StylistDashboardService {
     const bookings = await getBookingsForStylist(stylistId);
     return bookings
       .filter(b => b.status === 'confirmed' || b.status === 'pending')
-      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()) as StylingSession[];
+      .sort((a, b) => sessionDateMs(a.scheduledDate) - sessionDateMs(b.scheduledDate)) as StylingSession[];
   }
 }
 

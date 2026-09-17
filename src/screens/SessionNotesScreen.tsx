@@ -20,6 +20,8 @@ import {
   SessionNote,
   NoteCategory,
 } from '../services/sessionNotesService';
+import { stylistBookingsService } from '../services/firestore';
+import { getCurrentUserId } from '../services/api';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
@@ -46,9 +48,29 @@ export default function SessionNotesScreen() {
   const [newNoteContent, setNewNoteContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<NoteCategory>('observation');
   const { toast, showToast, hideToast } = useToast();
+  // Which side of the session is looking. The stylist opens this same screen
+  // from their dashboard; their notes used to be saved as the client's, so
+  // the client saw them signed "You" with a delete button.
+  const [viewerRole, setViewerRole] = useState<'user' | 'stylist'>('user');
 
   useEffect(() => {
     loadSessionData();
+  }, [sessionId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    stylistBookingsService
+      .getById(sessionId)
+      .then(booking => {
+        const uid = getCurrentUserId();
+        if (!cancelled && booking && booking.stylistId === uid && booking.userId !== uid) {
+          setViewerRole('stylist');
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId]);
 
   // Recommendations and deliverables tabs are gone: no stylist-side tool
@@ -77,7 +99,7 @@ export default function SessionNotesScreen() {
         sessionId,
         newNoteContent,
         selectedCategory,
-        'user'
+        viewerRole
       );
 
       setNotes([...notes, note]);
@@ -140,7 +162,7 @@ export default function SessionNotesScreen() {
             {NOTE_CATEGORIES.find(c =>c.id === note.category)?.label}
           </Text>
         </View>
-        {note.createdBy === 'user' && (
+        {note.createdBy === viewerRole && (
           <TouchableOpacity onPress={() =>handleDeleteNote(note.id)}>
             <Text style={styles.deleteButton}>✕</Text>
           </TouchableOpacity>
@@ -149,7 +171,7 @@ export default function SessionNotesScreen() {
       <Text style={styles.noteContent}>{note.content}</Text>
       <View style={styles.noteFooter}>
         <Text style={styles.noteAuthor}>
-          {note.createdBy === 'stylist' ? ' Stylist' : ' You'}
+          {note.createdBy === viewerRole ? ' You' : note.createdBy === 'stylist' ? ' Stylist' : ' Client'}
         </Text>
         <Text style={styles.noteDate}>
           {new Date(note.createdAt).toLocaleDateString()}
@@ -378,7 +400,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.ink,

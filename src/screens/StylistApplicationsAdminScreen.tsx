@@ -22,6 +22,24 @@ const listApplicationsFn = httpsCallable(functions, 'listStylistApplications');
 const reviewApplicationFn = httpsCallable(functions, 'reviewStylistApplication');
 
 /**
+ * Applicants type their links free-form ("instagram.com/me"). Without a scheme
+ * openURL rejects on iOS, and on web the browser resolves it as a path on this
+ * app's own domain. Bare hosts get https://; anything that is not http(s) -
+ * javascript:, tel:, a custom app scheme - is refused rather than opened from
+ * an admin session.
+ */
+function safePortfolioUrl(raw: string): string | null {
+  const trimmed = (raw || '').trim();
+  if (!trimmed || /\s/.test(trimmed)) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  // Any other explicit scheme ("javascript:", "mailto:", "app://") is refused.
+  // A colon followed by digits is a port on a bare host, not a scheme.
+  if (/^[a-z][a-z0-9+.-]*:(?!\d)/i.test(trimmed)) return null;
+  if (!/^[^/]+\.[^/]+/.test(trimmed)) return null;
+  return `https://${trimmed}`;
+}
+
+/**
  * Admin review queue.
  *
  * Access is enforced server-side: both Cloud Functions check the caller's uid
@@ -33,6 +51,10 @@ export default function StylistApplicationsAdminScreen() {
   const [applications, setApplications] = useState<StylistApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  // A failed load is not an empty queue. Without this, a network or deploy
+  // failure rendered as "Nothing waiting." and told the admin there was
+  // nobody to review.
+  const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
 
@@ -46,15 +68,28 @@ export default function StylistApplicationsAdminScreen() {
       const result = await listApplicationsFn({ status: 'pending' });
       setApplications(((result.data as any).applications || []) as StylistApplication[]);
       setDenied(false);
+      setLoadError(false);
     } catch (error: any) {
       if (error?.code === 'functions/permission-denied' || error?.code === 'permission-denied') {
         setDenied(true);
       } else {
         console.error('Error loading applications:', error);
+        setLoadError(true);
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const openPortfolio = (raw: string) => {
+    const url = safePortfolioUrl(raw);
+    if (!url) {
+      Alert.alert('Not a web link', `"${raw}" can't be opened from here. Copy it if you want to look it up.`);
+      return;
+    }
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Could not open that link', url);
+    });
   };
 
   const review = async (application: StylistApplication, decision: 'approve' | 'decline') => {
@@ -117,11 +152,17 @@ export default function StylistApplicationsAdminScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>ADMIN</Text>
         <Text style={styles.title}>Stylist applications</Text>
-        <Text style={styles.subtitle}>
-          {applications.length === 0
-            ? 'Nothing waiting.'
-            : `${applications.length} waiting on a decision.`}
-        </Text>
+        {loadError ? (
+          <TouchableOpacity onPress={load} accessibilityRole="button">
+            <Text style={styles.subtitle}>Couldn't load applications. Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.subtitle}>
+            {applications.length === 0
+              ? 'Nothing waiting.'
+              : `${applications.length} waiting on a decision.`}
+          </Text>
+        )}
 
         {applications.map(application => (
           <View key={application.id} style={styles.card}>
@@ -158,7 +199,7 @@ export default function StylistApplicationsAdminScreen() {
               <>
                 <Text style={styles.blockLabel}>WORK</Text>
                 {application.portfolioUrls.map(url => (
-                  <TouchableOpacity key={url} onPress={() => Linking.openURL(url).catch(() => {})}>
+                  <TouchableOpacity key={url} onPress={() => openPortfolio(url)}>
                     <Text style={styles.link} numberOfLines={1}>
                       {url}
                     </Text>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/types';
@@ -9,6 +9,7 @@ import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useAuth } from '../contexts/AuthContext';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { getCurrentUserId } from '../services/api';
+import { userProfileService } from '../services/userProfileService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -79,6 +80,26 @@ export default function MoreScreen() {
       .catch(() => undefined);
   }, []);
 
+  // Edit profile saves to the userProfiles doc, which this card never read -
+  // so an edited name or photo did not appear here. Re-read on focus, since a
+  // tab stays mounted while the user is away editing. With no profile doc the
+  // service returns a neutral placeholder, which is never shown over the real
+  // Auth name.
+  const [savedProfile, setSavedProfile] = useState<{ displayName?: string; profileImageUrl?: string } | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      userProfileService
+        .getUserProfile(getCurrentUserId())
+        .then(profile => {
+          if (!profile || profile.displayName === '33 Trends member') return;
+          setSavedProfile({ displayName: profile.displayName, profileImageUrl: profile.profileImageUrl });
+        })
+        .catch(() => undefined);
+    }, [])
+  );
+  const shownName = savedProfile?.displayName || user?.displayName;
+  const shownPhoto = savedProfile?.profileImageUrl || user?.photoURL || undefined;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -90,13 +111,17 @@ export default function MoreScreen() {
           onPress={() => navigation.navigate('Account')}
           activeOpacity={0.85}
         >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>
-              {(user?.displayName || user?.email || '?').charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          {shownPhoto ? (
+            <Image source={{ uri: shownPhoto }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>
+                {(shownName || user?.email || '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={styles.profileName}>{user?.displayName || 'Your profile'}</Text>
+            <Text style={styles.profileName}>{shownName || 'Your profile'}</Text>
             {/* No SUBSCRIPTION here - there are no paid tiers, and the
                 Subscription screen is no longer registered. */}
             <Text style={styles.profileSubtitle}>ACCOUNT · STYLISTS · SETTINGS</Text>

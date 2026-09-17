@@ -11,6 +11,7 @@ import {
   FlatList,
   Pressable,
   Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,11 +19,22 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
+import BackButton from '../components/BackButton';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Every occasion a look can carry (types/index.ts Occasion). lookAPI.getAll
+// silently defaults to 'home' when none is given, so the lookbook used to be
+// 'home' looks only.
+const LOOK_OCCASIONS = ['home', 'work', 'going-out'] as const;
+const OCCASION_LABELS: Record<string, string> = {
+  home: 'At Home',
+  work: 'Work',
+  'going-out': 'Going Out',
+};
 
 interface RecommendationCategory {
   title: string;
@@ -37,6 +49,8 @@ export default function RecommendationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [recommendations, setRecommendations] = useState<RecommendationCategory[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  // A failed lookbook fetch is not an empty lookbook.
+  const [loadError, setLoadError] = useState(false);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -69,6 +83,11 @@ export default function RecommendationsScreen() {
       const preferredOccasions = analyzeOccasions(userFavorites);
       const currentSeason = getCurrentSeason();
 
+      // One fetch of the whole lookbook (all occasions), shared by the
+      // sections below.
+      const { looks: allLooks, failed } = await getAllLooks();
+      setLoadError(failed);
+
       // Build recommendation categories
       const recs: RecommendationCategory[] = [];
 
@@ -77,7 +96,9 @@ export default function RecommendationsScreen() {
       // 1. Occasion-based - only when favorites exist, so "the occasion you
       // favorite most" is a real observation, not a default.
       if (userFavorites.length >0 && preferredOccasions.length >0) {
-        const occasionLooks = await getOccasionLooks(preferredOccasions[0]);
+        const occasionLooks = allLooks
+          .filter(look => look.occasion === preferredOccasions[0])
+          .slice(0, 5);
         const uniqueLooks = occasionLooks.filter(look => {
           if (usedLookIds.has(look.id)) return false;
           usedLookIds.add(look.id);
@@ -85,16 +106,16 @@ export default function RecommendationsScreen() {
         });
         if (uniqueLooks.length >0) {
           recs.push({
-            title: `${preferredOccasions[0]} Looks`,
+            title: `${OCCASION_LABELS[preferredOccasions[0]] || preferredOccasions[0]} Looks`,
             subtitle: 'For your lifestyle',
             looks: uniqueLooks,
-            reason: `You favorite ${preferredOccasions[0].toLowerCase()} looks most`,
+            reason: `You favorite ${(OCCASION_LABELS[preferredOccasions[0]] || preferredOccasions[0]).toLowerCase()} looks most`,
           });
         }
       }
 
       // 2. Seasonal - only looks actually tagged for the current season.
-      const seasonalLooks = await getSeasonalLooks(currentSeason);
+      const seasonalLooks = getSeasonalLooks(allLooks, currentSeason);
       const uniqueSeasonalLooks = seasonalLooks.filter(look => {
         if (usedLookIds.has(look.id)) return false;
         usedLookIds.add(look.id);
@@ -109,21 +130,22 @@ export default function RecommendationsScreen() {
         });
       }
 
-      // 3. The lookbook itself - no personalization claim attached.
-      const lookbookLooks = await getLookbookLooks();
-      const uniqueLookbookLooks = lookbookLooks.filter(look => {
-        if (usedLookIds.has(look.id)) return false;
-        usedLookIds.add(look.id);
-        return true;
-      });
-      if (uniqueLookbookLooks.length >0) {
-        recs.push({
-          title: 'From the Lookbook',
-          subtitle: 'Browse the collection',
-          looks: uniqueLookbookLooks,
-          reason: 'A place to start',
+      // 3. The lookbook itself, by occasion - no personalization claim attached.
+      LOOK_OCCASIONS.forEach(occasion => {
+        const occasionLooks = allLooks.filter(look => {
+          if (look.occasion !== occasion || usedLookIds.has(look.id)) return false;
+          usedLookIds.add(look.id);
+          return true;
         });
-      }
+        if (occasionLooks.length >0) {
+          recs.push({
+            title: OCCASION_LABELS[occasion],
+            subtitle: 'From the lookbook',
+            looks: occasionLooks.slice(0, 6),
+            reason: 'Browse the collection',
+          });
+        }
+      });
 
       setRecommendations(recs);
       
@@ -133,6 +155,7 @@ export default function RecommendationsScreen() {
       }
     } catch (error) {
       console.error('Error loading recommendations:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -142,7 +165,10 @@ export default function RecommendationsScreen() {
   const analyzeOccasions = (favorites: any[]) => {
     const occasions: Record<string, number> = {};
     favorites.forEach(fav => {
-      const occasion = fav.occasion || 'casual';
+      // No occasion on the favorite = nothing to count. It used to be counted
+      // as 'casual', an occasion no look carries.
+      const occasion = fav.occasion;
+      if (!occasion) return;
       occasions[occasion] = (occasions[occasion] || 0) + 1;
     });
     return Object.entries(occasions)
@@ -158,35 +184,39 @@ export default function RecommendationsScreen() {
     return 'Winter';
   };
 
-  const getSeasonalLooks = async (season: string) => {
-    try {
-      const response = await lookAPI.getAll({});
-      // Strictly looks tagged for the season - an untagged look is not
-      // "in season", it is unknown.
-      return response.data
-        .filter((look: Look) => look.season === season)
-        .slice(0, 5);
-    } catch (error) {
-      return [];
-    }
+  // Strictly looks tagged for the season - an untagged look is not "in
+  // season", it is unknown. Seasons are stored lowercase, usually as an array
+  // (['fall','winter']); this used to compare that to the string 'Fall' and
+  // so never matched anything.
+  const getSeasonalLooks = (allLooks: Look[], season: string) => {
+    const wanted = season.toLowerCase();
+    return allLooks
+      .filter((look: Look) => {
+        const tagged = Array.isArray(look.season) ? look.season : look.season ? [look.season] : [];
+        return tagged.some(s => String(s).toLowerCase() === wanted);
+      })
+      .slice(0, 6);
   };
 
-  const getOccasionLooks = async (occasion: string) => {
-    try {
-      const response = await lookAPI.getAll({ occasion });
-      return response.data.slice(0, 5);
-    } catch (error) {
-      return [];
-    }
-  };
-
-  const getLookbookLooks = async () => {
-    try {
-      const response = await lookAPI.getAll({});
-      return response.data.slice(0, 5);
-    } catch (error) {
-      return [];
-    }
+  /** Every look in the lookbook, across all occasions. `failed` only when every query failed. */
+  const getAllLooks = async (): Promise<{ looks: Look[]; failed: boolean }> => {
+    const results = await Promise.allSettled(
+      LOOK_OCCASIONS.map(occasion => lookAPI.getAll({ occasion, limit: 50 }))
+    );
+    const seen = new Set<string>();
+    const looks: Look[] = [];
+    results.forEach(result => {
+      if (result.status !== 'fulfilled') {
+        console.error('Error loading lookbook looks:', result.reason);
+        return;
+      }
+      (result.value.data || []).forEach((look: Look) => {
+        if (seen.has(look.id)) return;
+        seen.add(look.id);
+        looks.push(look);
+      });
+    });
+    return { looks, failed: results.every(result => result.status === 'rejected') };
   };
 
   const handleFavorite = async (lookId: string) => {
@@ -205,6 +235,7 @@ export default function RecommendationsScreen() {
       });
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      Alert.alert('Something went wrong', "Couldn't update your favorites. Please try again.");
     }
   };
 
@@ -225,6 +256,7 @@ export default function RecommendationsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Finding perfect looks for you...</Text>
@@ -270,7 +302,7 @@ export default function RecommendationsScreen() {
             </View>
 
             <View style={styles.looksContainer}>
-              {category.looks.slice(0, 2).map((look, lookIndex) => (
+              {category.looks.map((look, lookIndex) => (
                 <LookCard
                   key={`${index}-${look.id}-${lookIndex}`}
                   look={look}
@@ -286,17 +318,25 @@ export default function RecommendationsScreen() {
           </View>
         ))}
 
-        {recommendations.length === 0 && (
+        {recommendations.length === 0 && loadError && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Nothing to show yet</Text>
-            <Text style={styles.emptyStateText}>Favorite a few looks on the home feed and this screen gets sharper.
-            </Text>
+            <Text style={styles.emptyStateTitle}>Couldn't load looks</Text>
+            <Text style={styles.emptyStateText}>Check your connection and try again.</Text>
             <TouchableOpacity
               style={styles.emptyStateButton}
-              onPress={() =>navigation.navigate('MainTabs', { screen: 'Home' })}
+              accessibilityRole="button"
+              onPress={loadRecommendations}
             >
-              <Text style={styles.emptyStateButtonText}>Browse Looks</Text>
+              <Text style={styles.emptyStateButtonText}>Tap to retry</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {recommendations.length === 0 && !loadError && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Nothing to show yet</Text>
+            <Text style={styles.emptyStateText}>The lookbook has no looks right now. Check back soon.
+            </Text>
           </View>
         )}
         </Animated.View>
@@ -457,7 +497,7 @@ const styles = StyleSheet.create({
   },
   emptyStateButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },

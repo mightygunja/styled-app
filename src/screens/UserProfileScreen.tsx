@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -46,6 +47,14 @@ export default function UserProfileScreen() {
   const [savedLoaded, setSavedLoaded] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  const [loadError, setLoadError] = useState(false);
+  // The grid is sized to the measured content column rather than the browser
+  // window: on desktop web this screen sits in a centred 880px frame, so
+  // window-width cells came out far too large. On a phone the two are equal.
+  const [columnWidth, setColumnWidth] = useState(
+    Platform.OS === 'web' ? Math.min(width, 880) : width
+  );
+  const gridSize = (columnWidth - spacing.page * 2 - 8) / 3;
 
   const isOwnProfile = userId === getCurrentUserId();
 
@@ -76,6 +85,7 @@ export default function UserProfileScreen() {
   const loadProfile = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       // If this is the signed-in user's own profile, seed it from their real
       // Firebase Auth identity the first time it's created rather than a fake persona.
       const realUserInfo =
@@ -94,6 +104,7 @@ export default function UserProfileScreen() {
       setIsFollowing(followingStatus);
     } catch (error) {
       console.error('Error loading profile:', error);
+      setLoadError(true);
       showToast('Failed to load profile', 'error');
     } finally {
       setLoading(false);
@@ -131,7 +142,7 @@ export default function UserProfileScreen() {
   const renderPost = (post: Post) => (
     <TouchableOpacity
       key={post.id}
-      style={styles.gridItem}
+      style={[styles.gridItem, { width: gridSize, height: gridSize }]}
       activeOpacity={0.85}
       onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
     >
@@ -160,10 +171,17 @@ export default function UserProfileScreen() {
         <View style={styles.headerBar}>
           <BackButton />
         </View>
-        <View style={styles.centred}>
-          <Text style={styles.emptyTitle}>Profile not found</Text>
-          <Text style={styles.emptyText}>This account may have been removed.</Text>
-        </View>
+        {loadError ? (
+          <TouchableOpacity style={styles.centred} activeOpacity={0.85} onPress={loadProfile}>
+            <Text style={styles.emptyTitle}>Couldn't load this profile</Text>
+            <Text style={styles.emptyText}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.centred}>
+            <Text style={styles.emptyTitle}>Profile not found</Text>
+            <Text style={styles.emptyText}>This account may have been removed.</Text>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -174,7 +192,13 @@ export default function UserProfileScreen() {
         <BackButton />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        onLayout={event => {
+          const measured = event.nativeEvent.layout.width;
+          if (measured > 0 && Math.abs(measured - columnWidth) > 1) setColumnWidth(measured);
+        }}
+      >
         <Text style={styles.eyebrow}>@{profile.username}</Text>
         <Text style={styles.title}>{profile.displayName}</Text>
         {!!profile.bio && <Text style={styles.subtitle}>{profile.bio}</Text>}
@@ -363,10 +387,10 @@ const styles = StyleSheet.create({
 
   actionButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   primaryButton: {
-    borderRadius: radius.full, flex: 1, backgroundColor: colors.ink, paddingVertical: 14, alignItems: 'center' },
+    borderRadius: radius.full, flex: 1, backgroundColor: colors.rust, paddingVertical: 14, alignItems: 'center' },
   primaryButtonInline: {
-    borderRadius: radius.md,
-    backgroundColor: colors.ink,
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
     paddingVertical: 14,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   getOutfitButton: {
     borderRadius: radius.full,
     marginTop: 16,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -765,13 +765,14 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 20,
     paddingVertical: 10,
     justifyContent: 'center',
   },
+  // Disabled stays rust at reduced opacity - never a grey fill.
   sendButtonDisabled: {
-    backgroundColor: colors.inkFaint,
+    opacity: 0.4,
   },
   sendButtonText: {
     fontFamily: fonts.sansSemiBold,

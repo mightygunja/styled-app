@@ -29,6 +29,11 @@ export default function StyleProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [colorAnalysis, setColorAnalysis] = useState<ColorAnalysisResult | null>(null);
   const [bodyAnalysis, setBodyAnalysis] = useState<BodyAnalysisResult | null>(null);
+  const [menswear, setMenswear] = useState(false);
+  // The analysis screens always start a new run, so the saved result is read
+  // here, in full, on the card - "Retake" is its own separate link.
+  const [showFullColor, setShowFullColor] = useState(false);
+  const [showFullBody, setShowFullBody] = useState(false);
 
   // Loaded independently of the wardrobe-derived voice below, so a failure here
   // never blocks the rest of the screen from rendering.
@@ -37,6 +42,7 @@ export default function StyleProfileScreen() {
       const saved = await styleProfileService.getStyleProfile(getCurrentUserId());
       setColorAnalysis(saved?.colorAnalysis || null);
       setBodyAnalysis(saved?.bodyAnalysis || null);
+      setMenswear(saved?.wardrobeFocus === 'mens');
     } catch (error) {
       console.error('Error loading color/body analysis:', error);
     }
@@ -143,19 +149,28 @@ export default function StyleProfileScreen() {
           </>
         )}
 
-        <Text style={styles.sectionLabel}>YOUR PALETTE</Text>
-        <View style={styles.paletteRow}>
-          {palette.length === 0 ? (
-            <Text style={styles.emptyText}>Add closet items to reveal your palette.</Text>
-          ) : (
-            palette.map((c, i) => (
-              <View key={i} style={styles.swatchWrap}>
-                <View style={[styles.swatch, { backgroundColor: safeColor(c.color) }]} />
-                <Text style={styles.swatchName} numberOfLines={1}>{c.name}</Text>
-              </View>
-            ))
-          )}
-        </View>
+        {/* With an empty closet the "Add my first pieces" button sits directly
+            above, so the palette section is left out rather than repeated as a
+            line of text with nothing to press. */}
+        {(hasCloset || palette.length > 0) && (
+          <>
+            <Text style={styles.sectionLabel}>YOUR PALETTE</Text>
+            <View style={styles.paletteRow}>
+              {palette.length === 0 ? (
+                <Text style={styles.emptyText}>
+                  None of your pieces has a colour recorded yet.
+                </Text>
+              ) : (
+                palette.map((c, i) => (
+                  <View key={i} style={styles.swatchWrap}>
+                    <View style={[styles.swatch, { backgroundColor: safeColor(c.color) }]} />
+                    <Text style={styles.swatchName} numberOfLines={1}>{c.name}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </>
+        )}
 
         {/* The profile editor gets the same card treatment as the analyses,
             up here where people look for it. It used to be a "Retake quiz"
@@ -176,20 +191,64 @@ export default function StyleProfileScreen() {
 
         <Text style={styles.sectionLabel}>PERSONAL COLOR ANALYSIS</Text>
         {colorAnalysis ? (
-          <TouchableOpacity
-            style={styles.colorAnalysisCard}
-            onPress={() => navigation.navigate('ColorAnalysis')}
-            activeOpacity={0.8}
-          >
+          <View style={styles.colorAnalysisCard}>
             <Text style={styles.colorSeasonName}>{colorAnalysis.season}</Text>
-            <Text style={styles.colorSeasonDesc} numberOfLines={2}>{colorAnalysis.description}</Text>
-            <View style={styles.paletteRow}>
-              {colorAnalysis.palette.slice(0, 6).map((swatch, i) => (
-                <View key={i} style={[styles.miniSwatch, { backgroundColor: swatch.hex }]} />
-              ))}
+            <Text style={styles.colorSeasonDesc} numberOfLines={showFullColor ? undefined : 2}>
+              {colorAnalysis.description}
+            </Text>
+            {showFullColor ? (
+              <>
+                <Text style={styles.resultLabel}>
+                  YOUR PALETTE · {colorAnalysis.undertone.toUpperCase()} UNDERTONE
+                </Text>
+                <View style={styles.namedSwatchGrid}>
+                  {(colorAnalysis.palette || []).map((swatch, i) => (
+                    <View key={i} style={styles.namedSwatch}>
+                      <View style={[styles.miniSwatch, { backgroundColor: swatch.hex }]} />
+                      <Text style={styles.namedSwatchText} numberOfLines={1}>{swatch.name}</Text>
+                    </View>
+                  ))}
+                </View>
+                {(colorAnalysis.colorsToAvoid || []).length > 0 && (
+                  <>
+                    <Text style={styles.resultLabel}>COLOURS TO AVOID</Text>
+                    <View style={styles.namedSwatchGrid}>
+                      {colorAnalysis.colorsToAvoid.map((swatch, i) => (
+                        <View key={i} style={styles.namedSwatch}>
+                          <View style={[styles.miniSwatch, { backgroundColor: swatch.hex }]} />
+                          <Text style={styles.namedSwatchText} numberOfLines={1}>{swatch.name}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </>
+            ) : (
+              <View style={styles.paletteRow}>
+                {(colorAnalysis.palette || []).slice(0, 6).map((swatch, i) => (
+                  <View key={i} style={[styles.miniSwatch, { backgroundColor: swatch.hex }]} />
+                ))}
+              </View>
+            )}
+            <View style={styles.cardLinks}>
+              <TouchableOpacity
+                onPress={() => setShowFullColor(v => !v)}
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.colorAnalysisLink}>
+                  {showFullColor ? 'Show less' : 'View my full result'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ColorAnalysis')}
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={[styles.colorAnalysisLink, styles.retakeLink]}>Retake analysis</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.colorAnalysisLink}>Retake analysis →</Text>
-          </TouchableOpacity>
+          </View>
         ) : (
           <TouchableOpacity
             style={styles.colorAnalysisCard}
@@ -206,15 +265,60 @@ export default function StyleProfileScreen() {
 
         <Text style={styles.sectionLabel}>BODY & FIT ANALYSIS</Text>
         {bodyAnalysis ? (
-          <TouchableOpacity
-            style={styles.colorAnalysisCard}
-            onPress={() => navigation.navigate('BodyAnalysis')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.colorSeasonName}>{BODY_TYPE_GUIDES[bodyAnalysis.bodyType].label}</Text>
-            <Text style={styles.colorSeasonDesc} numberOfLines={2}>{bodyAnalysis.description}</Text>
-            <Text style={styles.colorAnalysisLink}>Retake analysis →</Text>
-          </TouchableOpacity>
+          <View style={styles.colorAnalysisCard}>
+            <Text style={styles.colorSeasonName}>
+              {BODY_TYPE_GUIDES[bodyAnalysis.bodyType]?.label ?? 'Your body & fit type'}
+            </Text>
+            <Text style={styles.colorSeasonDesc} numberOfLines={showFullBody ? undefined : 2}>
+              {bodyAnalysis.description}
+            </Text>
+            {showFullBody && (
+              <>
+                {(bodyAnalysis.recommendedSilhouettes || []).length > 0 && (
+                  <>
+                    <Text style={styles.resultLabel}>CUTS THAT WORK</Text>
+                    <Text style={styles.resultText}>
+                      {bodyAnalysis.recommendedSilhouettes.join(' · ')}
+                    </Text>
+                  </>
+                )}
+                {(['tops', 'bottoms', 'dresses', 'shoes', 'outerwear'] as const)
+                  // Dresses guidance never reaches a menswear wardrobe, whatever
+                  // an older saved result happens to contain.
+                  .filter(category => !(menswear && category === 'dresses'))
+                  .map(category => {
+                    const lines = bodyAnalysis.categoryGuidance?.[category] || [];
+                    if (lines.length === 0) return null;
+                    return (
+                      <View key={category}>
+                        <Text style={styles.resultLabel}>{category.toUpperCase()}</Text>
+                        {lines.map((line, i) => (
+                          <Text key={i} style={styles.resultText}>{line}</Text>
+                        ))}
+                      </View>
+                    );
+                  })}
+              </>
+            )}
+            <View style={styles.cardLinks}>
+              <TouchableOpacity
+                onPress={() => setShowFullBody(v => !v)}
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.colorAnalysisLink}>
+                  {showFullBody ? 'Show less' : 'View my full result'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('BodyAnalysis')}
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={[styles.colorAnalysisLink, styles.retakeLink]}>Retake analysis</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : (
           <TouchableOpacity
             style={styles.colorAnalysisCard}
@@ -276,9 +380,12 @@ export default function StyleProfileScreen() {
         </View>
         )}
 
-        <View style={styles.divider} />
-
-        <Text style={styles.sectionLabel}>DOMINANT STYLES</Text>
+        {profile.dominantStyles.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>DOMINANT STYLES</Text>
+          </>
+        )}
         {profile.dominantStyles.slice(0, 3).map(style => (
           <View key={style.category} style={styles.styleRow}>
             <Text style={styles.styleName}>{style.category.charAt(0).toUpperCase() + style.category.slice(1)}</Text>
@@ -338,7 +445,7 @@ const styles = StyleSheet.create({
   retryButton: {
     borderRadius: radius.full,
     marginTop: 24,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 28,
     paddingVertical: 12,
   },
@@ -424,6 +531,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.tobacco,
     marginTop: 12,
+  },
+  cardLinks: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  retakeLink: {
+    color: colors.inkMuted,
+  },
+  resultLabel: {
+    ...textType.eyebrow,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  resultText: {
+    ...textType.body,
+    fontSize: 13,
+    color: colors.ink,
+    marginBottom: 4,
+  },
+  namedSwatchGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  namedSwatch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '50%',
+    marginBottom: 8,
+    paddingRight: 8,
+  },
+  namedSwatchText: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.ink,
+    marginLeft: 8,
+    flex: 1,
   },
   voiceColumns: {
     flexDirection: 'row',

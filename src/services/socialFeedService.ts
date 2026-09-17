@@ -252,9 +252,12 @@ class SocialFeedService {
       getDocs(query(collection(db, 'postLikes'), where('postId', '==', postId))),
       getDocs(query(collection(db, 'postComments'), where('postId', '==', postId))),
     ]);
+    // Best-effort cleanup. Likes and comments written by OTHER users are
+    // theirs to delete under the rules, so one denial must not turn a post
+    // that is already gone into a reported failure.
     await Promise.all([
-      ...likesSnap.docs.map(d => deleteDoc(d.ref)),
-      ...commentsSnap.docs.map(d => deleteDoc(d.ref)),
+      ...likesSnap.docs.map(d => deleteDoc(d.ref).catch(() => {})),
+      ...commentsSnap.docs.map(d => deleteDoc(d.ref).catch(() => {})),
     ]);
 
     return true;
@@ -374,10 +377,18 @@ class SocialFeedService {
     const postId = snap.data().postId;
     await deleteDoc(ref);
 
-    // Also delete any direct replies to this comment
-    const repliesQ = query(collection(db, 'postComments'), where('parentCommentId', '==', commentId));
-    const repliesSnap = await getDocs(repliesQ);
-    await Promise.all(repliesSnap.docs.map(d => deleteDoc(d.ref)));
+    // Also delete any direct replies to this comment. Best-effort: replies by
+    // other users are theirs to delete under the rules, and the comment itself
+    // is already gone - a denied reply must not report the delete as failed.
+    // (Orphaned replies are never shown: getPostComments only attaches replies
+    // to a top-level comment that still exists.)
+    try {
+      const repliesQ = query(collection(db, 'postComments'), where('parentCommentId', '==', commentId));
+      const repliesSnap = await getDocs(repliesQ);
+      await Promise.all(repliesSnap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+    } catch (error) {
+      console.log('Could not clean up replies', error);
+    }
 
     await updateDoc(doc(db, 'posts', postId), { comments: increment(-1) }).catch(() => {});
 
@@ -477,10 +488,16 @@ class SocialFeedService {
    * Search posts by hashtag
    */
   async searchByHashtag(hashtag: string): Promise<Post[]> {
+    const hashtagForms = (raw: string): string[] => {
+      const bare = raw.trim().replace(/^#+/, '');
+      return Array.from(new Set([bare, bare.toLowerCase(), `#${bare}`, `#${bare.toLowerCase()}`])).filter(Boolean);
+    };
     const q = query(
       collection(db, 'posts'),
       where('privacy', '==', 'public'),
-      where('hashtags', 'array-contains', hashtag.toLowerCase()),
+      // Older posts stored tags with their original case and sometimes the
+      // leading '#'; new ones are bare and lower-case. Match every form.
+      where('hashtags', 'array-contains-any', hashtagForms(hashtag)),
       orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);

@@ -147,6 +147,8 @@ export interface Stylist {
   yearsExperience: number;
   certifications?: string[];
   portfolio: PortfolioItem[];
+  /** Instagram / website links from the application that are pages, not images. */
+  links?: string[];
   sessionTypes: SessionType[];
   languages?: string[];
   location?: string;

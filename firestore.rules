@@ -26,8 +26,15 @@ service cloud.firestore {
     }
 
     // Users collection - doc id == uid
+    // Holds the private style profile (body type, colour season, avoid rules),
+    // so it is not readable by every signed-in account. Besides the owner, the
+    // only legitimate reader is a stylist drafting an Edit for this user
+    // (styleEditService.buildProfilePayload) - and requesting an Edit is exactly
+    // what creates closetShares/{userId}_{stylistId}, the same grant that lets
+    // them read the closet the Edit is built from. Public-facing profile data
+    // lives in userProfiles, not here.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId) || closetSharedWithCaller(userId);
       allow write: if isOwner(userId);
     }
 
@@ -216,6 +223,15 @@ service cloud.firestore {
     match /userProfiles/{userId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
+      // A follow or unfollow by someone else has to land on the followee's
+      // count. Nothing but stats.followers may change, by exactly one, and
+      // never below zero.
+      allow update: if isAuthenticated()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats'])
+        && request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly(['followers'])
+        && request.resource.data.stats.followers >= 0
+        && (request.resource.data.stats.followers == resource.data.stats.followers + 1
+            || request.resource.data.stats.followers == resource.data.stats.followers - 1);
     }
 
     // Follows - visible to signed-in users, only the follower can create/remove their own follow edge
@@ -227,10 +243,14 @@ service cloud.firestore {
     }
 
     // Notifications - readable/manageable only by the recipient; any signed-in user's
-    // action (like, comment, follow) can create a notification for someone else
+    // action (like, comment, follow) can create a notification for someone else,
+    // but only in their own name (actorId) and never as a 'system' notice -
+    // those come from Cloud Functions, which bypass these rules.
     match /notifications/{notificationId} {
       allow read: if isResourceOwner();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.actorId == request.auth.uid
+        && request.resource.data.type != 'system';
       allow update, delete: if isResourceOwner();
     }
 
@@ -246,13 +266,21 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
     }
 
-    // Messages - only participants of the parent conversation can read; only the sender can write
+    // Messages - only participants of the parent conversation can read; only the sender can write.
+    // The one exception is the read receipt: another participant may append
+    // their own uid to readBy (exactly what messagingService.markAsRead writes)
+    // and touch nothing else.
     match /messages/{messageId} {
       allow read: if isAuthenticated() &&
         request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants;
       allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid &&
         request.auth.uid in get(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)).data.participants;
-      allow update, delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.senderId == request.auth.uid ||
+         (request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+          request.resource.data.readBy == resource.data.readBy.concat([request.auth.uid])));
+      allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
     }
 
     // User interactions (analytics/recommendation signals) - private to the user
@@ -301,7 +329,11 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isAuthenticated(); // member-count increments come from any joining member
+      // The creator may edit their group; anyone else may only move the
+      // member count (a join), never the name, description or privacy.
+      allow update: if isAuthenticated() &&
+        (resource.data.createdBy == request.auth.uid ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
       allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
@@ -315,7 +347,11 @@ service cloud.firestore {
     match /groupEvents/{eventId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isAuthenticated(); // attendee-count increments come from any RSVPing user
+      // The creator may edit their event; anyone else may only move the
+      // attendee count (an RSVP or a cancelled one).
+      allow update: if isAuthenticated() &&
+        (resource.data.createdBy == request.auth.uid ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees']));
       allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
@@ -341,7 +377,11 @@ service cloud.firestore {
     match /challengeEntries/{entryId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated(); // vote-count increments come from any voting user
+      // The entrant may edit their entry; anyone else may only move the vote
+      // count, never the image or caption.
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes']));
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
@@ -461,8 +501,33 @@ service cloud.firestore {
 
     // ==================== STYLIST SESSIONS ====================
 
+    // A session id IS its stylistBookings doc id (MySessions and the stylist
+    // dashboard both navigate with booking.id), so the booking says who the two
+    // participants are. Notes and photos are private to those two. Reads are
+    // always queried with where('sessionId', '==', ...), the same shape the
+    // messages rule above relies on for its conversation lookup.
+    function sessionBooking(sessionId) {
+      return get(/databases/$(database)/documents/stylistBookings/$(sessionId)).data;
+    }
+
+    function isSessionParticipant(sessionId) {
+      return isAuthenticated() &&
+        (sessionBooking(sessionId).userId == request.auth.uid ||
+         sessionBooking(sessionId).stylistId == request.auth.uid);
+    }
+
+    // createdBy must be true: 'user' only from the client, 'stylist' only from
+    // the stylist. That is also who may delete the note.
+    function isSessionNoteAuthor(note) {
+      return isAuthenticated() &&
+        ((note.createdBy == 'user' && sessionBooking(note.sessionId).userId == request.auth.uid) ||
+         (note.createdBy == 'stylist' && sessionBooking(note.sessionId).stylistId == request.auth.uid));
+    }
+
     match /sessionNotes/{noteId} {
-      allow read, create, delete: if isAuthenticated();
+      allow read: if isSessionParticipant(resource.data.sessionId);
+      allow create: if isSessionNoteAuthor(request.resource.data);
+      allow delete: if isSessionNoteAuthor(resource.data);
       allow update: if false;
     }
 
@@ -476,8 +541,10 @@ service cloud.firestore {
       allow write: if false; // written by a stylist-side tool, not built yet
     }
 
+    // Before/after photos of the client's body - the two session participants only.
     match /sessionPhotos/{photoId} {
-      allow read, create: if isAuthenticated();
+      allow read: if isSessionParticipant(resource.data.sessionId);
+      allow create: if isSessionParticipant(request.resource.data.sessionId);
       allow update, delete: if false;
     }
   }

@@ -81,7 +81,19 @@ class GroupService {
     await addDoc(collection(db, 'groupMembers'), {
       groupId, userId, role: 'member', joinedAt: Timestamp.now(),
     });
-    await updateDoc(doc(db, 'groups', groupId), { members: increment(1) });
+    await updateDoc(doc(db, 'groups', groupId), { members: increment(1) }).catch(() => {});
+  }
+
+  /** Removes the caller's membership. The member count is best-effort, like the join. */
+  async leaveGroup(groupId: string, userId: string): Promise<void> {
+    const snapshot = await getDocs(query(
+      collection(db, 'groupMembers'),
+      where('groupId', '==', groupId),
+      where('userId', '==', userId)
+    ));
+    if (snapshot.empty) return;
+    await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)));
+    await updateDoc(doc(db, 'groups', groupId), { members: increment(-1) }).catch(() => {});
   }
 
   async createGroup(userId: string, name: string, description: string, category: string, privacy: GroupPrivacy = 'public'): Promise<Group> {

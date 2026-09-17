@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Share,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -31,6 +32,8 @@ const CONFIDENCE_COPY: Record<ResaleValuation['confidence'], string> = {
 
 export default function ResaleScreen() {
   const [loading, setLoading] = useState(true);
+  // A failed load is not "nothing worth listing" - it gets its own retry state.
+  const [loadError, setLoadError] = useState(false);
   const [candidates, setCandidates] = useState<ResaleCandidate[]>([]);
   const [valuations, setValuations] = useState<Record<string, ResaleValuation>>({});
   const [valuingId, setValuingId] = useState<string | null>(null);
@@ -41,6 +44,8 @@ export default function ResaleScreen() {
 
   const load = async () => {
     try {
+      setLoading(true);
+      setLoadError(false);
       const userId = getCurrentUserId();
       const [closetResponse, existing] = await Promise.all([
         closetAPI.getItems(userId),
@@ -50,6 +55,7 @@ export default function ResaleScreen() {
       setValuations(Object.fromEntries(existing.map(v => [v.itemId, v])));
     } catch (error) {
       console.error('Error loading resale candidates:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -72,13 +78,25 @@ export default function ResaleScreen() {
   };
 
   const handleShareListing = async (valuation: ResaleValuation) => {
+    const message = `${valuation.listingTitle}\n\n${valuation.listingDescription}\n\nAsking $${valuation.suggestedPrice.toFixed(2)}`;
     try {
-      await Share.share({
-        title: valuation.listingTitle,
-        message: `${valuation.listingTitle}\n\n${valuation.listingDescription}\n\nAsking $${valuation.suggestedPrice.toFixed(2)}`,
-      });
-    } catch (error) {
+      await Share.share({ title: valuation.listingTitle, message });
+    } catch (error: any) {
+      // The user closing the browser's share sheet is not a failure.
+      if (error?.name === 'AbortError') return;
       console.error('Error sharing listing:', error);
+      // Desktop browsers have no share sheet (react-native-web rejects), so
+      // copy the listing instead of leaving the button looking dead.
+      if (Platform.OS === 'web') {
+        try {
+          await (globalThis as any).navigator.clipboard.writeText(message);
+          Alert.alert('Listing copied', 'Paste it into the marketplace of your choice.');
+          return;
+        } catch (copyError) {
+          console.error('Error copying listing:', copyError);
+        }
+      }
+      Alert.alert("Couldn't share that", 'Select the listing text above and copy it instead.');
     }
   };
 
@@ -102,6 +120,16 @@ export default function ResaleScreen() {
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : loadError ? (
+          <TouchableOpacity
+            style={styles.emptyBox}
+            onPress={load}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your closet"
+          >
+            <Text style={styles.emptyTitle}>Couldn't load your closet</Text>
+            <Text style={styles.emptyText}>Tap to retry.</Text>
+          </TouchableOpacity>
         ) : candidates.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Nothing worth listing yet</Text>
@@ -173,8 +201,8 @@ export default function ResaleScreen() {
                       {!!valuation.listingTitle && (
                         <View style={styles.listingBox}>
                           <Text style={styles.listingLabel}>YOUR LISTING</Text>
-                          <Text style={styles.listingTitle}>{valuation.listingTitle}</Text>
-                          <Text style={styles.listingBody}>{valuation.listingDescription}</Text>
+                          <Text style={styles.listingTitle} selectable>{valuation.listingTitle}</Text>
+                          <Text style={styles.listingBody} selectable>{valuation.listingDescription}</Text>
                         </View>
                       )}
 

@@ -335,7 +335,11 @@ class AmazonAssociatesAdapter extends MockCatalogAdapter {
     // search for a men's oxford shirt without it comes back mixed.
     const dept =
       product.department === 'men' ? "men's " : product.department === 'women' ? "women's " : '';
-    const query = encodeURIComponent(`${dept}${product.brand} ${product.name}`.trim());
+    const phrase = `${product.brand} ${product.name}`.trim();
+    // A name that already says whose aisle it is ("Women's Linen Blazer")
+    // needs no second qualifier.
+    const alreadyQualified = /\b(wo)?men'?s\b/i.test(phrase);
+    const query = encodeURIComponent(`${alreadyQualified ? '' : dept}${phrase}`.trim());
     const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
     return `https://www.amazon.com/s?k=${query}${tag}`;
   }
@@ -858,9 +862,25 @@ export function productFromListing(
     imageUrl?: string;
     link?: string;
     inStock?: boolean;
+    department?: Product['department'];
   },
-  idPrefix: string
+  idPrefix: string,
+  /**
+   * Whose wardrobe the piece is being shopped for. Look pieces carry no gender
+   * of their own, and without it wrapLink builds an un-gendered Amazon search
+   * that comes back mixed. Accepts a Product department or the profile's
+   * wardrobeFocus as-is; "all"/unknown leaves the search unqualified.
+   */
+  department?: Product['department'] | 'womens' | 'mens' | 'all'
 ): Product {
+  const dept: Product['department'] | undefined =
+    department === 'mens' || department === 'men'
+      ? 'men'
+      : department === 'womens' || department === 'women'
+        ? 'women'
+        : department === 'unisex'
+          ? 'unisex'
+          : listing.department;
   return {
     id: `${idPrefix}-${listing.id}`,
     name: listing.name,
@@ -872,6 +892,7 @@ export function productFromListing(
     imageUrl: listing.imageUrl || '',
     sourceUrl: isRealShopUrl(listing.link) ? listing.link : '',
     inStock: listing.inStock ?? true,
+    ...(dept ? { department: dept } : {}),
   };
 }
 

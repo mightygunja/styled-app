@@ -139,8 +139,13 @@ class SmartSearchService {
       matchedTerms: this.getMatchedTerms(result, parsedQuery),
     }));
 
+    // Drop everything the query did not match. Without this every search
+    // returned the whole closet plus all the guides, "No results found" was
+    // unreachable, and the non-relevance sorts put unrelated items on top.
+    const matchedResults = scoredResults.filter(r => r.relevanceScore > 0);
+
     // Sort results
-    const sortedResults = this.sortResults(scoredResults, searchQuery.sortBy || 'relevance');
+    const sortedResults = this.sortResults(matchedResults, searchQuery.sortBy || 'relevance');
 
     return sortedResults.slice(0, 50); // Limit to 50 results
   }
@@ -156,7 +161,9 @@ class SmartSearchService {
     occasions: string[];
   } {
     const lowerQuery = query.toLowerCase();
-    const words = lowerQuery.split(' ');
+    // Empty strings (double spaces) and single letters match every title via
+    // includes(), which would defeat the relevance filter below.
+    const words = lowerQuery.split(/\s+/).filter(w => w.length > 1);
 
     // Extract colors
     const colorKeywords = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'pink', 'purple', 'gray', 'brown', 'beige', 'navy'];
@@ -202,6 +209,8 @@ class SmartSearchService {
         wornCount: item.wornCount,
         tags: item.tags,
         seasons: item.seasons,
+        subcategory: item.subcategory,
+        style: item.style,
       }));
 
       closetItems.forEach(item => {
@@ -312,6 +321,12 @@ class SmartSearchService {
     const lowerSubtitle = result.subtitle?.toLowerCase() || '';
     const lowerQuery = originalQuery.toLowerCase();
 
+    // People arrive already matched by the user search itself, so they carry
+    // a base score and survive the relevance filter.
+    if (result.type === 'user') {
+      score += 50;
+    }
+
     // Exact match
     if (lowerTitle.includes(lowerQuery)) {
       score += 100;
@@ -335,8 +350,25 @@ class SmartSearchService {
     if (result.type === 'item') {
       const item = result.data as Item;
       parsedQuery.categories.forEach(cat => {
-        if (item.category.toLowerCase().includes(cat)) score += 25;
+        if ((item.category || '').toLowerCase().includes(cat)) score += 25;
       });
+
+      // What the classifier actually stored about the piece (subcategory,
+      // tags, style) - so "jeans" or "linen" finds the item even though the
+      // displayed title is only colour + brand + category.
+      const hidden = [
+        (item as any).subcategory,
+        (item as any).style,
+        ...(Array.isArray(item.tags) ? item.tags : []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      if (hidden) {
+        parsedQuery.keywords.forEach(keyword => {
+          if (hidden.includes(keyword)) score += 15;
+        });
+      }
     }
 
     // Style matches
@@ -416,7 +448,6 @@ class SmartSearchService {
    * Get search suggestions
    */
   async getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
 
     if (!query.trim()) {
       return this.exampleSearches.slice(0, 5);
@@ -482,7 +513,6 @@ class SmartSearchService {
    * Get search history
    */
   async getSearchHistory(userId: string): Promise<SearchQuery[]> {
-    await new Promise(resolve => setTimeout(resolve, 100));
     return this.searchHistory.get(userId) || [];
   }
 
@@ -490,7 +520,6 @@ class SmartSearchService {
    * Clear search history
    */
   async clearSearchHistory(userId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 100));
     this.searchHistory.delete(userId);
   }
 

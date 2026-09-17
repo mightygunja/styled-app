@@ -28,7 +28,6 @@ export interface OrganizationPlan {
   method: OrganizationMethod;
   sections: OrganizationSection[];
   totalItems: number;
-  estimatedTime: number; // minutes
 }
 
 export interface OrganizationSection {
@@ -117,7 +116,6 @@ class ClosetOrganizationService {
     items: Item[],
     method: OrganizationMethod
   ): Promise<OrganizationPlan> {
-    await new Promise(resolve => setTimeout(resolve, 700));
 
     const sections = this.organizeBySections(items, method);
 
@@ -125,7 +123,6 @@ class ClosetOrganizationService {
       method,
       sections,
       totalItems: items.length,
-      estimatedTime: Math.ceil(items.length * 2), // 2 minutes per item
     };
   }
 
@@ -384,7 +381,6 @@ class ClosetOrganizationService {
     pieceCount: number = 30,
     profile?: CapsuleProfileContext
   ): Promise<CapsuleWardrobe> {
-    await new Promise(resolve => setTimeout(resolve, 900));
 
     // Hard exclusion: items matching an explicit avoid-rule never enter the
     // capsule, same treatment avoidRules gets everywhere else in the app.
@@ -578,7 +574,6 @@ class ClosetOrganizationService {
    * Get organization tips
    */
   async getOrganizationTips(): Promise<OrganizationTip[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
 
     return [
       {
@@ -626,7 +621,6 @@ class ClosetOrganizationService {
     dominantColors: { color: string; count: number; percentage: number }[];
     suggestions: string[];
   }> {
-    await new Promise(resolve => setTimeout(resolve, 400));
 
     // Count colors
     const colorCounts = new Map<string, number>();

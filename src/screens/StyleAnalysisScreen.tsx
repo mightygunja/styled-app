@@ -19,6 +19,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
 import BackButton from '../components/BackButton';
+import { buildProfileMatchContext } from '../services/profileMatchContext';
 
 const { width } = Dimensions.get('window');
 
@@ -29,16 +30,26 @@ export default function StyleAnalysisScreen() {
   const [profile, setProfile] = useState<StyleProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     loadAnalysis();
   }, []);
 
-  const loadAnalysis = async () => {
+  // Resolves true only when a fresh analysis actually landed. `keepContent`
+  // leaves the current page mounted (re-analysis) instead of swapping the
+  // whole screen for the loader, which also unmounted the toast.
+  const loadAnalysis = async (keepContent = false): Promise<boolean> => {
     try {
-      setLoading(true);
-      const response = await closetAPI.getItems(getCurrentUserId());
+      if (!keepContent) setLoading(true);
+      const userId = getCurrentUserId();
+      const [response, matchContext] = await Promise.all([
+        closetAPI.getItems(userId),
+        // Department only steers which categories count as "missing"; it must
+        // never block the analysis. It does not throw, the catch is a belt.
+        buildProfileMatchContext(userId).catch(() => undefined),
+      ]);
       // Convert API items to Item type
       const items: Item[] = response.data.map((item: any) => ({
         id: item.id,
@@ -56,11 +67,15 @@ export default function StyleAnalysisScreen() {
         seasons: item.seasons,
         style: item.style,
       }));
-      const analysis = await aiStyleService.analyzeStyle(items);
+      const analysis = await aiStyleService.analyzeStyle(items, matchContext?.wardrobeFocus);
       setProfile(analysis);
+      setLoadFailed(false);
+      return true;
     } catch (error) {
       console.error('Error loading analysis:', error);
+      setLoadFailed(true);
       showToast('Failed to load analysis', 'error');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -69,9 +84,10 @@ export default function StyleAnalysisScreen() {
   const handleReanalyze = async () => {
     try {
       setAnalyzing(true);
-      showToast('Analyzing your style...', 'success');
-      await loadAnalysis();
-      showToast('Analysis complete!', 'success');
+      // Success is only reported when the reload succeeded; on failure
+      // loadAnalysis has already shown the error and the old read stays up.
+      const ok = await loadAnalysis(true);
+      if (ok) showToast('Analysis updated', 'success');
     } catch (error) {
       showToast('Failed to analyze', 'error');
     } finally {
@@ -115,10 +131,35 @@ export default function StyleAnalysisScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
-          <Text style={styles.loadingText}>Analyzing your style...</Text>
+          <Text style={styles.loadingText}>Analysing your wardrobe…</Text>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // The closet could not be read. That is not an empty closet, so it must not
+  // be described as one - say what happened and offer the retry.
+  if (!profile && loadFailed) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <BackButton />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            We couldn't load your wardrobe analysis. Check your connection and try again.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyCta}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+            onPress={() => loadAnalysis()}
+          >
+            <Text style={styles.emptyCtaText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
       </SafeAreaView>
     );
   }
@@ -152,10 +193,8 @@ export default function StyleAnalysisScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Style Analysis</Text>
+        <BackButton style={styles.headerBack} />
+        <Text style={styles.headerTitle}>Wardrobe analysis</Text>
         <TouchableOpacity onPress={handleReanalyze} disabled={analyzing}>
           <Text style={[styles.reanalyzeButton, analyzing && styles.reanalyzeButtonDisabled]}>
             {analyzing ? 'Analysing…' : 'Reanalyse'}
@@ -166,7 +205,7 @@ export default function StyleAnalysisScreen() {
       <ScrollView>
         {/* Overview */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Style Profile</Text>
+          <Text style={styles.sectionTitle}>Your wardrobe at a glance</Text>
           <View style={styles.overviewCard}>
             <View style={styles.overviewRow}>
               <View style={styles.overviewItem}>
@@ -191,7 +230,12 @@ export default function StyleAnalysisScreen() {
 
         {/* Dominant Styles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Style Profile</Text>
+          <Text style={styles.sectionTitle}>Dominant styles</Text>
+          {profile.dominantStyles.length === 0 && (
+            <Text style={styles.errorText}>
+              Not enough detail on your pieces to read a style yet.
+            </Text>
+          )}
           {profile.dominantStyles.map((style, index) => (
             <View key={style.category} style={styles.styleCard}>
               <View style={styles.styleHeader}>
@@ -403,7 +447,7 @@ const styles = StyleSheet.create({
   emptyCtaText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -412,6 +456,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -419,10 +464,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
   errorText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
+    lineHeight: 23,
     color: colors.inkMuted,
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -432,17 +481,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+  // BackButton carries its own bottom margin for the bare-under-SafeAreaView
+  // case; inside this centred row it would push the label off the baseline.
+  headerBack: {
+    alignSelf: 'center',
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serifMedium,
     color: colors.ink,
   },
   reanalyzeButton: {
-    fontSize: 20,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.tobacco,
   },
   reanalyzeButtonDisabled: {
     opacity: 0.5,
@@ -454,7 +508,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serifMedium,
     color: colors.ink,
     marginBottom: 16,
   },

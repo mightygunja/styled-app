@@ -42,6 +42,10 @@ const LEAD_OPTIONS = [0, 12, 24, 48];
 export default function StylistAvailabilityScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // If the schedule could not be read, the form must not be shown (or saved):
+  // saveSchedule is a full overwrite, so saving a blank week would wipe the
+  // stylist's real hours and days off.
+  const [loadError, setLoadError] = useState(false);
   const [weekly, setWeekly] = useState<Record<string, DayWindow[]>>({});
   const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
   const [slotMinutes, setSlotMinutes] = useState(60);
@@ -53,6 +57,8 @@ export default function StylistAvailabilityScreen() {
 
   const load = async () => {
     try {
+      setLoading(true);
+      setLoadError(false);
       const existing = await stylistAvailabilityService.getSchedule(getCurrentUserId());
       const source: Omit<StylistSchedule, 'stylistId' | 'updatedAt'> = existing || DEFAULT_SCHEDULE;
       setWeekly(source.weekly || {});
@@ -61,6 +67,7 @@ export default function StylistAvailabilityScreen() {
       setLeadTimeHours(source.leadTimeHours ?? 24);
     } catch (error) {
       console.error('Error loading schedule:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -97,6 +104,7 @@ export default function StylistAvailabilityScreen() {
   };
 
   const handleSave = async () => {
+    if (loadError) return;
     if (Object.keys(weekly).length === 0) {
       Alert.alert(
         'No working days set',
@@ -143,6 +151,18 @@ export default function StylistAvailabilityScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : loadError ? (
+          <TouchableOpacity
+            style={styles.errorBox}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your availability"
+            onPress={load}
+          >
+            <Text style={styles.errorTitle}>Couldn't load your availability</Text>
+            <Text style={styles.errorText}>
+              Your published hours are unchanged. Tap to retry.
+            </Text>
+          </TouchableOpacity>
         ) : (
           <>
             <Text style={styles.sectionLabel}>WEEKLY HOURS</Text>
@@ -291,6 +311,16 @@ const styles = StyleSheet.create({
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
   helper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
   busyBox: { paddingVertical: 80, alignItems: 'center' },
+  errorBox: {
+    borderRadius: radius.md,
+    marginTop: spacing.section,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.rust,
+    padding: spacing.lg,
+  },
+  errorTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  errorText: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
 
   dayBlock: { marginBottom: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.hair },
   dayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

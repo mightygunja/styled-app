@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { wishlistService, WishlistDoc } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
@@ -17,14 +18,23 @@ export default function WishlistScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<WishlistDoc[]>([]);
+  // A failed read is not an empty wishlist - it gets its own state and a retry.
+  const [failed, setFailed] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const loadedOnce = useRef(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // Spinner only on the first load (or a retry after failure): refreshing on
+    // focus must not tear down the grid and lose the scroll position.
+    if (!loadedOnce.current) setLoading(true);
     try {
       const data = await wishlistService.getAll(getCurrentUserId());
       setItems(data);
+      setFailed(false);
+      loadedOnce.current = true;
     } catch (error) {
       console.error('Error loading wishlist:', error);
+      if (!loadedOnce.current) setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -37,9 +47,18 @@ export default function WishlistScreen() {
   );
 
   const handleRemove = async (wishlistDocId: string) => {
+    if (removingId) return;
     haptics.tap();
-    await wishlistService.remove(wishlistDocId);
-    setItems(prev => prev.filter(i => i.id !== wishlistDocId));
+    setRemovingId(wishlistDocId);
+    try {
+      await wishlistService.remove(wishlistDocId);
+      setItems(prev => prev.filter(i => i.id !== wishlistDocId));
+    } catch (error) {
+      console.error('Error removing wishlist item:', error);
+      Alert.alert('Could not remove', 'That item is still saved. Please try again.');
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -55,6 +74,11 @@ export default function WishlistScreen() {
       {loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.ink} />
+        </View>
+      ) : failed ? (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>We couldn't load your wishlist.</Text>
+          <Button title="Try again" onPress={load} style={{ marginTop: spacing.md }} />
         </View>
       ) : (
         <FlatList
@@ -94,8 +118,14 @@ export default function WishlistScreen() {
                 <Text style={styles.cardName} numberOfLines={1}>{item.product.name}</Text>
                 <Text style={styles.cardPrice}>${item.product.price.toFixed(0)}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.removeButton} onPress={() => handleRemove(item.id)}>
-                <Text style={styles.removeButtonText}>Remove</Text>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemove(item.id)}
+                disabled={removingId !== null}
+              >
+                <Text style={styles.removeButtonText}>
+                  {removingId === item.id ? 'Removing…' : 'Remove'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}

@@ -9,6 +9,8 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -41,6 +43,10 @@ export default function EditsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [edits, setEdits] = useState<StyleEdit[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed read is not "No Edits yet" - it gets its own state and a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [stylistsLoading, setStylistsLoading] = useState(false);
+  const [stylistsFailed, setStylistsFailed] = useState(false);
 
   const [showRequest, setShowRequest] = useState(false);
   const [stylists, setStylists] = useState<Stylist[]>([]);
@@ -58,22 +64,31 @@ export default function EditsScreen() {
   const load = async () => {
     try {
       setEdits(await styleEditService.getForUser(getCurrentUserId()));
+      setLoadFailed(false);
     } catch (error) {
       console.error('Error loading edits:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadStylists = async () => {
+    setStylistsLoading(true);
+    setStylistsFailed(false);
+    try {
+      setStylists(await stylistAPI.getStylists());
+    } catch (error) {
+      console.error('Error loading stylists:', error);
+      setStylistsFailed(true);
+    } finally {
+      setStylistsLoading(false);
+    }
+  };
+
   const openRequest = async () => {
     setShowRequest(true);
-    if (stylists.length === 0) {
-      try {
-        setStylists(await stylistAPI.getStylists());
-      } catch (error) {
-        console.error('Error loading stylists:', error);
-      }
-    }
+    if (stylists.length === 0 && !stylistsLoading) loadStylists();
   };
 
   const handleSubmit = async () => {
@@ -102,7 +117,7 @@ export default function EditsScreen() {
       load();
       Alert.alert(
         'Edit requested',
-        `${selectedStylist.name} will build your Edit from the clothes you already own. You'll be notified when it's ready.`
+        `${selectedStylist.name} will build your Edit from the clothes you already own. Check back here — it will show as Ready on this screen when it's done.`
       );
     } catch (error: any) {
       Alert.alert('Could not request', error?.message || 'Please try again.');
@@ -131,7 +146,23 @@ export default function EditsScreen() {
           </View>
         ) : (
           <>
-            {edits.length === 0 ? (
+            {loadFailed && edits.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyTitle}>Couldn't load your Edits</Text>
+                <Text style={styles.emptyText}>
+                  Something went wrong fetching them. Check your connection and try again.
+                </Text>
+                <Button
+                  title="Try again"
+                  variant="outline"
+                  onPress={() => {
+                    setLoading(true);
+                    load();
+                  }}
+                  style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}
+                />
+              </View>
+            ) : edits.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyTitle}>No Edits yet</Text>
                 <Text style={styles.emptyText}>
@@ -143,12 +174,16 @@ export default function EditsScreen() {
               edits.map(edit => {
                 const stats = coverageStats(edit);
                 const ready = edit.status === 'delivered';
+                // A delivered Edit stays openable while another pass is
+                // pending - the looks they already received do not go away.
+                const openable = ready || edit.status === 'revision-requested';
                 return (
                   <TouchableOpacity
                     key={edit.id}
                     style={styles.editCard}
-                    activeOpacity={ready ? 0.85 : 1}
-                    onPress={() => ready && navigation.navigate('EditDetail', { editId: edit.id })}
+                    activeOpacity={openable ? 0.85 : 1}
+                    disabled={!openable}
+                    onPress={() => navigation.navigate('EditDetail', { editId: edit.id })}
                   >
                     <View style={styles.editHead}>
                       <Text style={styles.editFocus}>{edit.focus}</Text>
@@ -159,9 +194,14 @@ export default function EditsScreen() {
                       </View>
                     </View>
                     <Text style={styles.editStylist}>by {edit.stylistName}</Text>
-                    {ready && stats.pieces > 0 && (
+                    {openable && stats.pieces > 0 && (
                       <Text style={styles.editCoverage}>
                         {stats.looks} looks from {stats.pieces} pieces you own
+                      </Text>
+                    )}
+                    {!openable && (
+                      <Text style={styles.editPending}>
+                        It will open here once your stylist delivers it.
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -180,7 +220,10 @@ export default function EditsScreen() {
       </ScrollView>
 
       <Modal visible={showRequest} animationType="slide" transparent onRequestClose={() => setShowRequest(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request an Edit</Text>
@@ -204,6 +247,24 @@ export default function EditsScreen() {
               </View>
 
               <Text style={styles.modalLabel}>WHO SHOULD BUILD IT?</Text>
+              {stylistsLoading ? (
+                <ActivityIndicator color={colors.ink} style={{ marginVertical: spacing.md }} />
+              ) : stylistsFailed ? (
+                <View>
+                  <Text style={styles.paymentNote}>We couldn't load the stylists.</Text>
+                  <Button
+                    title="Try again"
+                    variant="outline"
+                    size="small"
+                    onPress={loadStylists}
+                    style={{ marginTop: spacing.sm, alignSelf: 'flex-start' }}
+                  />
+                </View>
+              ) : stylists.length === 0 ? (
+                <Text style={styles.paymentNote}>
+                  No stylists are taking Edits yet. Check back soon.
+                </Text>
+              ) : null}
               {stylists.map(s => (
                 <TouchableOpacity
                   key={s.id}
@@ -240,16 +301,23 @@ export default function EditsScreen() {
                 so they can build looks from what you own. You can end it any time under Closet sharing.
               </Text>
 
+              {!selectedStylist && !submitting && (
+                <Text style={styles.submitHint}>
+                  {stylists.length > 0
+                    ? 'Choose a stylist above to send your request.'
+                    : 'You can send a request once a stylist is available to choose.'}
+                </Text>
+              )}
               <Button
                 title={submitting ? 'Requesting…' : 'Request Edit'}
                 onPress={handleSubmit}
                 fullWidth
                 disabled={submitting || !selectedStylist}
-                style={{ marginTop: spacing.lg, marginBottom: spacing.section }}
+                style={{ marginTop: selectedStylist ? spacing.lg : spacing.sm, marginBottom: spacing.section }}
               />
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -281,6 +349,8 @@ const styles = StyleSheet.create({
   editFocus: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink, flex: 1 },
   editStylist: { ...textType.meta, fontSize: 12, marginTop: 4 },
   editCoverage: { ...textType.body, fontSize: 13, color: colors.tobacco, marginTop: 8 },
+  editPending: { ...textType.meta, fontSize: 12, marginTop: 8 },
+  submitHint: { ...textType.meta, fontSize: 12, lineHeight: 17, marginTop: spacing.lg },
   statusChip: {
     borderRadius: radius.full, backgroundColor: colors.sand, paddingHorizontal: 9, paddingVertical: 4 },
   statusChipReady: { backgroundColor: colors.ink },

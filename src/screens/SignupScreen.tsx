@@ -221,6 +221,14 @@ export default function SignupScreen() {
               )}
             </TouchableOpacity>
 
+            {/* Terms and Privacy were registered routes nothing linked to. */}
+            <Text style={styles.legalLine}>
+              By creating an account you agree to the{' '}
+              <Text style={styles.legalLink} onPress={() => navigation.navigate('Terms' as never)}>Terms</Text>
+              {' '}and{' '}
+              <Text style={styles.legalLink} onPress={() => navigation.navigate('Privacy' as never)}>Privacy Policy</Text>.
+            </Text>
+
             <TouchableOpacity
               style={styles.linkButton}
               onPress={() => navigation.navigate('Login')}
@@ -293,5 +301,7 @@ const styles = StyleSheet.create({
 
   linkButton: { paddingVertical: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },
+  legalLine: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 18, color: colors.inkMuted, textAlign: 'center', marginTop: 10 },
+  legalLink: { fontFamily: fonts.sansMedium, color: colors.ink, textDecorationLine: 'underline' },
   linkTextBold: { fontFamily: fonts.sansMedium, color: colors.ink },
 });

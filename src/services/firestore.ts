@@ -23,6 +23,29 @@ import { Product } from '../models/product';
 
 // ==================== CLOSET ITEMS ====================
 
+/**
+ * Firestore hands back Timestamp objects; most of the app does
+ * `new Date(item.createdAt)`, which is Invalid Date for a Timestamp. That
+ * quietly disabled every age- and recency-based rule (declutter's "too new
+ * to judge", resale age, the carbon timeline, wear rotation). Convert once,
+ * here, to the ISO strings the Item type already promises.
+ */
+function closetDates(data: any): any {
+  const iso = (value: any) =>
+    value instanceof Timestamp
+      ? value.toDate().toISOString()
+      : value && typeof value.toDate === 'function'
+        ? value.toDate().toISOString()
+        : value;
+  return {
+    ...data,
+    createdAt: iso(data.createdAt),
+    updatedAt: iso(data.updatedAt),
+    lastWornDate: iso(data.lastWornDate),
+    purchaseDate: iso(data.purchaseDate),
+  };
+}
+
 export const closetService = {
   // Get all closet items for a user
   getAll: async (userId: string) => {
@@ -32,7 +55,7 @@ export const closetService = {
       orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClosetItem));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...closetDates(doc.data()) } as ClosetItem));
   },
 
   // Get single closet item
@@ -479,6 +502,19 @@ export const stylistBookingsService = {
       status,
       updatedAt: new Date().toISOString(),
     });
+  },
+
+  // One booking by id. Readable only by its two participants (the client and
+  // the stylist it is with) - Session Notes uses it to tell which one is looking.
+  getById: async (bookingId: string): Promise<StylingSession | null> => {
+    const snap = await getDoc(doc(db, 'stylistBookings', bookingId));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return {
+      id: snap.id,
+      ...data,
+      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+    } as StylingSession;
   },
 
   // Create a booking for the given user, resolving price from the stylist's real hourly rate
