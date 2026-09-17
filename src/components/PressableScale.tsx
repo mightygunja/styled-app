@@ -1,9 +1,10 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef } from 'react';
 import { Platform, StyleProp, TouchableOpacity as RNTouchableOpacity, ViewStyle } from 'react-native';
 import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
 } from 'react-native-reanimated';
 import { haptics } from '../utils/haptics';
@@ -25,6 +26,12 @@ interface PressableScaleProps {
   style?: StyleProp<ViewStyle>;
   scaleTo?: number;
   haptic?: 'tap' | 'select' | 'impact' | 'none';
+  /**
+   * Change this number to make the control "breathe" once - a small
+   * scale-up and settle that draws the eye. Button uses it the moment a
+   * disabled action becomes available.
+   */
+  pulse?: number;
 }
 
 // Spring-based press feedback (scale down on touch, spring back on release) -
@@ -37,8 +44,23 @@ export default function PressableScale({
   style,
   scaleTo = 0.96,
   haptic = 'tap',
+  pulse,
 }: PressableScaleProps) {
   const scale = useSharedValue(1);
+  const firstPulse = useRef(true);
+
+  useEffect(() => {
+    // Skip the mount: only a CHANGE of pulse is an event.
+    if (firstPulse.current) {
+      firstPulse.current = false;
+      return;
+    }
+    if (pulse === undefined) return;
+    scale.value = withSequence(
+      withSpring(1.04, { damping: 10, stiffness: 260 }),
+      withSpring(1, { damping: 12, stiffness: 220 })
+    );
+  }, [pulse, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

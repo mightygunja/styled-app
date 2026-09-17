@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Text,
   StyleSheet,
@@ -32,11 +32,24 @@ export default function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  // The moment a disabled action becomes available it pulses once. A tester
+  // on build 13 picked an option in the style survey and still read Continue
+  // as unavailable: the only change was opacity 0.55 -> 1 on the same pill,
+  // which is easy to miss. The pulse is the event; the shadow below is the
+  // standing difference.
+  const wasDisabled = useRef(disabled);
+  const [pulse, setPulse] = useState(0);
+  useEffect(() => {
+    if (wasDisabled.current && !disabled) setPulse(p => p + 1);
+    wasDisabled.current = disabled;
+  }, [disabled]);
+
   const buttonStyles = [
     styles.button,
     styles[variant],
     styles[`${size}Button`],
     fullWidth && styles.fullWidth,
+    variant === 'primary' && !disabled && styles.primaryEnabled,
     disabled && styles.disabled,
     style,
   ];
@@ -56,6 +69,7 @@ export default function Button({
       disabled={disabled || loading}
       haptic={variant === 'primary' ? 'impact' : 'tap'}
       scaleTo={0.97}
+      pulse={pulse}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.bone : colors.ink} />
@@ -97,10 +111,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: 'transparent',
   },
+  // An available primary action is lifted off the page; a disabled one lies
+  // flat. Together with the opacity step this makes the two states read as
+  // different objects, not two tints of one.
+  primaryEnabled: {
+    shadowColor: colors.rust,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
   disabled: {
     // Kept brown-family rather than washed to grey, so a not-yet-enabled
-    // Continue still reads as the button you're working toward.
-    opacity: 0.55,
+    // Continue still reads as the button you're working toward - but far
+    // enough from full strength that enabling it is unmistakable.
+    opacity: 0.4,
   },
   // Sizes
   smallButton: {
@@ -136,7 +161,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   disabledText: {
-    opacity: 0.6,
+    // The pill already carries the dimming; dimming the label again made
+    // disabled text close to unreadable.
+    opacity: 0.85,
   },
   smallText: {
     fontSize: 9,

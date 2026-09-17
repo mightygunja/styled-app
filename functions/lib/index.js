@@ -2146,15 +2146,31 @@ Return ONLY valid JSON:
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
-/** Everything on the desk, freshest first, for the admin screen. */
+/**
+ * Editorial seed trends ship inside the app bundle (src/data/seedTrends.ts)
+ * and are merged into every user's report. They cannot be edited from here,
+ * but they can be retired and restored: an override document per seed id
+ * records the editor's decision, and the client drops any seed whose
+ * override says archived. Readable by every signed-in user (see rules),
+ * written only through these admin functions.
+ */
+const SEED_OVERRIDES = 'trendSeedOverrides';
+const isSeedId = (id) => id.startsWith('seed-');
+/** Everything on the desk, freshest first, for the admin screen - plus the seed overrides. */
 exports.listTrendDesk = functions
     .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
     .https.onCall(async (data, context) => {
     requireAdmin(context);
-    const snapshot = await db.collection('trends').orderBy('createdAt', 'desc').limit(60).get();
+    const [snapshot, overrides] = await Promise.all([
+        db.collection('trends').orderBy('createdAt', 'desc').limit(60).get(),
+        db.collection(SEED_OVERRIDES).get(),
+    ]);
     return {
         success: true,
-        data: { trends: snapshot.docs.map(d => (Object.assign({ id: d.id }, d.data()))) },
+        data: {
+            trends: snapshot.docs.map(d => (Object.assign({ id: d.id }, d.data()))),
+            seedOverrides: overrides.docs.map(d => (Object.assign({ id: d.id }, d.data()))),
+        },
     };
 });
 /** Human sign-off. Only now does a draft reach users. */
@@ -2165,6 +2181,15 @@ exports.publishTrend = functions
     const trendId = String((data === null || data === void 0 ? void 0 : data.trendId) || '');
     if (!trendId) {
         throw new functions.https.HttpsError('invalid-argument', 'trendId is required');
+    }
+    // A retired editorial seed is restored by clearing its override.
+    if (isSeedId(trendId)) {
+        await db.collection(SEED_OVERRIDES).doc(trendId).set({
+            status: 'published',
+            name: String((data === null || data === void 0 ? void 0 : data.name) || trendId),
+            updatedAt: new Date().toISOString(),
+        });
+        return { success: true };
     }
     const ref = db.collection('trends').doc(trendId);
     const snap = await ref.get();
@@ -2182,6 +2207,15 @@ exports.archiveTrend = functions
     const trendId = String((data === null || data === void 0 ? void 0 : data.trendId) || '');
     if (!trendId) {
         throw new functions.https.HttpsError('invalid-argument', 'trendId is required');
+    }
+    // Editorial seeds live in the app bundle; retiring one is an override.
+    if (isSeedId(trendId)) {
+        await db.collection(SEED_OVERRIDES).doc(trendId).set({
+            status: 'archived',
+            name: String((data === null || data === void 0 ? void 0 : data.name) || trendId),
+            updatedAt: new Date().toISOString(),
+        });
+        return { success: true };
     }
     await db.collection('trends').doc(trendId).update({ status: 'archived' });
     return { success: true };

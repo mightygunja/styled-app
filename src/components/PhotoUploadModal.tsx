@@ -21,14 +21,43 @@ interface PhotoUploadModalProps {
   onPhotoSelected: (uri: string) => void;
 }
 
-const FILTERS = [
-  { id: 'none', label: 'Original', brightness: 1, contrast: 1, saturation: 1 },
-  { id: 'bright', label: 'Bright', brightness: 1.2, contrast: 1.1, saturation: 1 },
-  { id: 'vivid', label: 'Vivid', brightness: 1, contrast: 1.2, saturation: 1.3 },
-  { id: 'cool', label: 'Cool', brightness: 1, contrast: 1.1, saturation: 0.9 },
-  { id: 'warm', label: 'Warm', brightness: 1.1, contrast: 1, saturation: 1.2 },
-  { id: 'bw', label: 'B&W', brightness: 1, contrast: 1.2, saturation: 0 },
+/**
+ * What the editor can genuinely do to a photo, on every platform.
+ *
+ * This used to be a row of colour "filters" (Bright, Vivid, Cool, Warm, B&W)
+ * that did nothing: tapping one never changed the preview, and "Use photo"
+ * only resized the file - a tester reported "Filters do not work" on build
+ * 13, correctly. They are gone rather than faked, for two reasons. Nothing
+ * in the app can apply a colour matrix natively without a new native
+ * dependency, and - more importantly - a colour filter would make the
+ * closet wrong: the garment's real colour is what the AI tags and what
+ * every outfit pairing is scored on (the first photo tip is "natural light,
+ * or the colour will read wrong").
+ *
+ * What a garment photo actually needs is straightening: shots taken
+ * sideways, or mirrored by a front camera. Each adjustment below is applied
+ * to the file immediately, so the preview is always exactly what is saved.
+ */
+type Adjustment = 'rotate-left' | 'rotate-right' | 'flip';
+
+const ADJUSTMENTS: Array<{ id: Adjustment; label: string }> = [
+  { id: 'rotate-left', label: 'Rotate left' },
+  { id: 'rotate-right', label: 'Rotate right' },
+  { id: 'flip', label: 'Mirror' },
 ];
+
+/** Longest edge kept on save. Enough for tagging and display; keeps uploads small. */
+const MAX_WIDTH = 1600;
+
+function imageSize(uri: string): Promise<{ width: number; height: number } | null> {
+  return new Promise(resolve => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      () => resolve(null)
+    );
+  });
+}
 
 const GUIDANCE_TIPS = [
   'Natural light, or the colour will read wrong',
@@ -44,7 +73,8 @@ export default function PhotoUploadModal({
 }: PhotoUploadModalProps) {
   const [step, setStep] = useState<'choose' | 'edit'>('choose');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState('none');
+  // The untouched pick, so Reset can undo every adjustment.
+  const [originalUri, setOriginalUri] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -55,7 +85,7 @@ export default function PhotoUploadModal({
       setTimeout(() => {
         setStep('choose');
         setImageUri(null);
-        setSelectedFilter('none');
+        setOriginalUri(null);
       }, 300);
     }
   }, [visible]);
@@ -76,6 +106,7 @@ export default function PhotoUploadModal({
 
     if (!result.canceled && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+      setOriginalUri(result.assets[0].uri);
       setStep('edit');
     }
   };
@@ -95,41 +126,64 @@ export default function PhotoUploadModal({
 
     if (!result.canceled && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+      setOriginalUri(result.assets[0].uri);
       setStep('edit');
     }
   };
 
-  const applyFilter = async () => {
-    if (!imageUri) return;
-
+  /**
+   * Applies one adjustment to the file itself and swaps the preview to the
+   * result - what the user sees is what will be saved. A failure leaves the
+   * photo as it was rather than losing it.
+   */
+  const applyAdjustment = async (adjustment: Adjustment) => {
+    if (!imageUri || processing) return;
     setProcessing(true);
-    
     try {
-      const filter = FILTERS.find(f => f.id === selectedFilter);
-      if (!filter || filter.id === 'none') {
-        onPhotoSelected(imageUri);
-        onClose();
-        return;
-      }
+      const action =
+        adjustment === 'rotate-left'
+          ? { rotate: -90 }
+          : adjustment === 'rotate-right'
+            ? { rotate: 90 }
+            : { flip: FlipType.Horizontal };
+      const result = await manipulateAsync(imageUri, [action], {
+        compress: 0.95,
+        format: SaveFormat.JPEG,
+      });
+      setImageUri(result.uri);
+    } catch (error) {
+      console.error('Error adjusting photo:', error);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
-      // Apply filter using image manipulator
-      const manipResult = await manipulateAsync(
-        imageUri,
-        [
-          // Resize for performance
-          { resize: { width: 1200 } },
-        ],
-        {
+  const resetAdjustments = () => {
+    if (originalUri) setImageUri(originalUri);
+  };
+
+  /**
+   * Hands the photo back, downsized when it is larger than the closet ever
+   * displays. Never upscales, and falls back to the file as it stands if
+   * the resize fails - a photo is never lost to an optimisation.
+   */
+  const usePhoto = async () => {
+    if (!imageUri) return;
+    setProcessing(true);
+    try {
+      const size = await imageSize(imageUri);
+      if (size && size.width > MAX_WIDTH) {
+        const result = await manipulateAsync(imageUri, [{ resize: { width: MAX_WIDTH } }], {
           compress: 0.8,
           format: SaveFormat.JPEG,
-        }
-      );
-
-      onPhotoSelected(manipResult.uri);
+        });
+        onPhotoSelected(result.uri);
+      } else {
+        onPhotoSelected(imageUri);
+      }
       onClose();
     } catch (error) {
-      console.error('Error applying filter:', error);
-      // Fallback to original
+      console.error('Error preparing photo:', error);
       onPhotoSelected(imageUri);
       onClose();
     } finally {
@@ -140,8 +194,10 @@ export default function PhotoUploadModal({
   const handleRetake = () => {
     setStep('choose');
     setImageUri(null);
-    setSelectedFilter('none');
+    setOriginalUri(null);
   };
+
+  const adjusted = !!imageUri && !!originalUri && imageUri !== originalUri;
 
   const handleButtonPress = (callback: () => void) => {
     scale(scaleAnim, 0.95, 100).start(() => {
@@ -219,39 +275,48 @@ export default function PhotoUploadModal({
                 )}
               </View>
 
-              <Text style={styles.filtersTitle}>FILTERS</Text>
+              <Text style={styles.filtersTitle}>STRAIGHTEN</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.filtersScroll}
                 style={styles.filtersRow}
               >
-                {FILTERS.map(filter => (
+                {ADJUSTMENTS.map(adjustment => (
                   <TouchableOpacity
-                    key={filter.id}
-                    style={[
-                      styles.filterButton,
-                      selectedFilter === filter.id && styles.filterButtonActive,
-                    ]}
-                    onPress={() => setSelectedFilter(filter.id)}
+                    key={adjustment.id}
+                    style={[styles.filterButton, processing && styles.filterButtonBusy]}
+                    disabled={processing}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${adjustment.label} the photo`}
+                    onPress={() => applyAdjustment(adjustment.id)}
                   >
-                    <Text
-                      style={[
-                        styles.filterLabel,
-                        selectedFilter === filter.id && styles.filterLabelActive,
-                      ]}
-                    >
-                      {filter.label}
-                    </Text>
+                    <Text style={styles.filterLabel}>{adjustment.label}</Text>
                   </TouchableOpacity>
                 ))}
+                {adjusted && (
+                  <TouchableOpacity
+                    style={[styles.filterButton, styles.filterButtonActive]}
+                    disabled={processing}
+                    accessibilityRole="button"
+                    accessibilityLabel="Undo every adjustment"
+                    onPress={resetAdjustments}
+                  >
+                    <Text style={[styles.filterLabel, styles.filterLabelActive]}>Reset</Text>
+                  </TouchableOpacity>
+                )}
               </ScrollView>
+              <Text style={styles.colourNote}>
+                Colour is left exactly as shot, so the piece is tagged and paired in its real shade.
+              </Text>
             </ScrollView>
 
             <TouchableOpacity
               style={[styles.doneButton, processing && styles.doneButtonDisabled]}
-              onPress={applyFilter}
+              onPress={usePhoto}
               disabled={processing}
+              accessibilityRole="button"
+              accessibilityLabel="Use this photo"
             >
               {processing ? (
                 <ActivityIndicator color={colors.white} />
@@ -401,6 +466,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     borderColor: colors.ink,
   },
+  filterButtonBusy: { opacity: 0.5 },
+  colourNote: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.inkMuted,
+    marginTop: 12,
+  },
   filterLabel: {
     fontFamily: fonts.sans,
     fontSize: 13,
@@ -413,12 +486,13 @@ const styles = StyleSheet.create({
 
   doneButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 4,
   },
-  doneButtonDisabled: { backgroundColor: colors.hair },
+  // Stays brown while working - a grey pill reads as a broken button.
+  doneButtonDisabled: { opacity: 0.55 },
   doneButtonText: {
     fontFamily: fonts.sansMedium,
     fontSize: 15,

@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
+import Button from '../components/Button';
 import { colors, radius, fonts } from '../theme/designSystem';
 
 const CATEGORIES = [
@@ -96,19 +109,40 @@ export default function AddClosetItemScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.cancelButton}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Add Item</Text>
-          <TouchableOpacity onPress={handleSave} disabled={uploading}>
-            <Text style={[styles.saveButton, uploading && styles.saveButtonDisabled]}>
-              {uploading ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+      {/* The header is pinned, and the primary Save lives in a footer that
+          never scrolls. Both used to sit inside the ScrollView, so after
+          filling in the form the only Save control had scrolled off the top
+          (TestFlight feedback, build 13). */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel adding this item"
+        >
+          <Text style={styles.cancelButton}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Add Item</Text>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={uploading}
+          accessibilityRole="button"
+          accessibilityLabel="Save this item"
+        >
+          <Text style={[styles.saveButton, uploading && styles.saveButtonDisabled]}>
+            {uploading ? 'Saving...' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
 
         {/* Image Section */}
         <View style={styles.imageSection}>
@@ -224,6 +258,22 @@ export default function AddClosetItemScreen() {
           </View>
         )}
       </ScrollView>
+
+      <View style={styles.footer}>
+        {!imageUri && (
+          <Text style={styles.footerHint}>Add a photo first — everything else is optional.</Text>
+        )}
+        <Button
+          title={uploading ? 'Saving…' : 'Save to closet'}
+          variant="primary"
+          size="large"
+          fullWidth
+          loading={uploading}
+          disabled={!imageUri}
+          onPress={handleSave}
+        />
+      </View>
+      </KeyboardAvoidingView>
       
       <PhotoUploadModal
         visible={showPhotoModal}
@@ -271,7 +321,23 @@ const styles = StyleSheet.create({
   saveButton: {
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    color: colors.rust,
+  },
+  scrollContent: { paddingBottom: 24 },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    backgroundColor: colors.card,
+  },
+  footerHint: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   saveButtonDisabled: {
     color: colors.hair,
@@ -347,7 +413,8 @@ const styles = StyleSheet.create({
   optionCard: {
     borderRadius: radius.md,
     width: '30%',
-    aspectRatio: 1,
+    flexGrow: 1,
+    paddingVertical: 18,
     backgroundColor: colors.paper,
     borderWidth: 2,
     borderColor: colors.hair,

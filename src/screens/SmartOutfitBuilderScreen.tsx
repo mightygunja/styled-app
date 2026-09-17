@@ -17,6 +17,7 @@ import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
 import { generateOutfitSuggestions, OutfitSuggestion } from '../services/outfitPairing';
 import { outfitsService } from '../services/firestore';
 import SuccessAnimation from '../components/SuccessAnimation';
+import Button from '../components/Button';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
@@ -122,17 +123,19 @@ export default function SmartOutfitBuilderScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Pinned, with the primary Save in a footer below: both used to scroll
+          away with the closet grid, so after picking pieces there was no
+          Save on screen (same flaw testers reported on Add Item). */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() =>navigation.goBack()}>
+          <Text style={styles.backButton}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Outfit Builder</Text>
+        <TouchableOpacity onPress={saveOutfit}>
+          <Text style={styles.saveButton}>Save</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Outfit Builder</Text>
-          <TouchableOpacity onPress={saveOutfit}>
-            <Text style={styles.saveButton}>Save</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Selected Items Preview */}
         <View style={styles.previewSection}>
@@ -266,6 +269,18 @@ export default function SmartOutfitBuilderScreen() {
         </View>
       </ScrollView>
 
+      {selectedItems.length > 0 && (
+        <View style={styles.saveFooter}>
+          <Button
+            title={`Save outfit · ${selectedItems.length} ${selectedItems.length === 1 ? 'piece' : 'pieces'}`}
+            variant="primary"
+            size="large"
+            fullWidth
+            onPress={saveOutfit}
+          />
+        </View>
+      )}
+
       <SuccessAnimation
         visible={showSuccess}
         message="Outfit saved"
@@ -286,6 +301,14 @@ export default function SmartOutfitBuilderScreen() {
 }
 
 const styles = StyleSheet.create({
+  saveFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    backgroundColor: colors.bone,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.card,

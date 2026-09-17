@@ -365,7 +365,10 @@ export default function OnboardingScreen() {
           <View style={styles.stepFooter}>
             <Button
               title={bodyType ? 'Continue' : 'Skip for now'}
-              variant={bodyType ? 'primary' : 'secondary'}
+              // Outline, not the filled camel pill: a filled tan button in the
+              // Continue slot read as a washed-out Continue. Picking a build
+              // now swaps an outline for the solid rust action.
+              variant={bodyType ? 'primary' : 'outline'}
               fullWidth
               onPress={() => setStep('words')}
             />
