@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
@@ -225,7 +226,7 @@ export default function EditDetailScreen() {
                   <Text style={styles.gapTitle}>{gap.description}</Text>
                   <Text style={styles.gapWhy}>{gap.whyNeeded}</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
               </TouchableOpacity>
             ))}
           </>
@@ -255,8 +256,13 @@ export default function EditDetailScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowRevisionModal(false)}>
-              <Text style={styles.modalClose}>✕</Text>
+            <TouchableOpacity
+              onPress={() => setShowRevisionModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={24} color={colors.inkMuted} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Another pass</Text>
             <View style={{ width: 24 }} />
@@ -295,12 +301,12 @@ const styles = StyleSheet.create({
   content: { padding: spacing.page, paddingBottom: 60 },
   busyBox: { paddingVertical: 100, alignItems: 'center' },
   eyebrow: { ...textType.eyebrow, marginBottom: 12 },
-  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
 
   coverageCard: {
-    borderRadius: radius.sm, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
+    borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg, marginTop: spacing.lg },
   coverageNumber: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
   coverageSub: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: 6 },
 
@@ -341,7 +347,6 @@ const styles = StyleSheet.create({
   gapInfo: { flex: 1 },
   gapTitle: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
   gapWhy: { ...textType.body, fontSize: 12, color: colors.inkMuted, marginTop: 3 },
-  chevron: { fontSize: 22, color: colors.inkFaint },
 
   revisionNote: {
     ...textType.body,
@@ -359,7 +364,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
-  modalClose: { fontSize: 20, color: colors.inkMuted },
   modalTitle: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
   modalBody: { paddingHorizontal: spacing.page, paddingBottom: 40 },
   modalHint: { ...textType.body, color: colors.inkMuted, lineHeight: 22, marginBottom: spacing.md },

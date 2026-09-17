@@ -91,6 +91,10 @@ export default function TrendInsightsScreen() {
   const [placeQuery, setPlaceQuery] = useState('');
   const [placeResults, setPlaceResults] = useState<DestinationMatch[]>([]);
   const [searchingPlace, setSearchingPlace] = useState(false);
+  // The query the current results answer, so "No places found" only shows
+  // for a finished search, never while the user is still typing.
+  const [placeSearchedFor, setPlaceSearchedFor] = useState('');
+  const [placeError, setPlaceError] = useState<string | null>(null);
 
   // Set once a report has painted: coming back from a product or the Shop
   // refreshes in place instead of swapping the whole report for a spinner and
@@ -189,7 +193,11 @@ export default function TrendInsightsScreen() {
         .then(results => {
           if (!cancelled) setPlaceResults(results);
         })
+        .catch(() => {
+          if (!cancelled) setPlaceResults([]);
+        })
         .finally(() => {
+          if (!cancelled) setPlaceSearchedFor(query);
           if (!cancelled) setSearchingPlace(false);
         });
     }, 350);
@@ -200,13 +208,20 @@ export default function TrendInsightsScreen() {
   }, [placeQuery, editingPlace]);
 
   const choosePlace = async (match: DestinationMatch) => {
-    await setStyleLocation({
-      city: match.name,
-      region: match.region,
-      country: match.country,
-      latitude: match.latitude,
-      longitude: match.longitude,
-    });
+    setPlaceError(null);
+    try {
+      await setStyleLocation({
+        city: match.name,
+        region: match.region,
+        country: match.country,
+        latitude: match.latitude,
+        longitude: match.longitude,
+      });
+    } catch (error) {
+      console.error('Error saving the style location:', error);
+      setPlaceError("Couldn't save that place. Please try again.");
+      return;
+    }
     setEditingPlace(false);
     setPlaceQuery('');
     setPlaceResults([]);
@@ -214,7 +229,14 @@ export default function TrendInsightsScreen() {
   };
 
   const useDeviceLocation = async () => {
-    await setStyleLocation(null);
+    setPlaceError(null);
+    try {
+      await setStyleLocation(null);
+    } catch (error) {
+      console.error('Error clearing the style location:', error);
+      setPlaceError("Couldn't switch back to your location. Please try again.");
+      return;
+    }
     setEditingPlace(false);
     setPlaceQuery('');
     setPlaceResults([]);
@@ -245,7 +267,9 @@ export default function TrendInsightsScreen() {
     shopperSignals.recordTrendTap(remix.trend.id).catch(() => {});
     const gap = gapFor(remix);
     if (gap) {
-      Linking.openURL(amazonSearchUrl(gap)).catch(() => {});
+      // If the link can't open, the in-app Shop focused on the same gap is
+      // the next best thing - never a dead button.
+      Linking.openURL(amazonSearchUrl(gap)).catch(() => browseTrend(remix, false));
       return;
     }
     browseTrend(remix, false);
@@ -345,6 +369,13 @@ export default function TrendInsightsScreen() {
                   <Text style={styles.placeResultText}>{formatDestination(match)}</Text>
                 </TouchableOpacity>
               ))}
+              {!searchingPlace &&
+                placeResults.length === 0 &&
+                placeQuery.trim().length >= 2 &&
+                placeSearchedFor === placeQuery.trim() && (
+                  <Text style={styles.placeNote}>No places found. Try another spelling or a nearby city.</Text>
+                )}
+              {!!placeError && <Text style={[styles.placeNote, { color: colors.tobacco }]}>{placeError}</Text>}
               <View style={styles.placeActions}>
                 {overridden && (
                   <TouchableOpacity accessibilityRole="button" onPress={useDeviceLocation}>
@@ -357,6 +388,7 @@ export default function TrendInsightsScreen() {
                     setEditingPlace(false);
                     setPlaceQuery('');
                     setPlaceResults([]);
+                    setPlaceError(null);
                   }}
                 >
                   <Text style={styles.placeCancel}>Cancel</Text>
@@ -567,7 +599,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
   content: { padding: spacing.page, paddingBottom: 60 },
   eyebrow: { ...textType.eyebrow, marginBottom: 8 },
-  title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink },
+  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 8 },
   emptyText: { ...textType.body, color: colors.inkMuted, marginTop: 40, textAlign: 'center' },
   disclosure: { ...textType.meta, fontSize: 11, lineHeight: 16, color: colors.tobacco, marginTop: spacing.lg },
@@ -603,6 +635,7 @@ const styles = StyleSheet.create({
   },
   placeResult: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.hair },
   placeResultText: { fontFamily: fonts.sans, fontSize: 14, color: colors.ink },
+  placeNote: { ...textType.meta, fontSize: 12, marginTop: 8 },
   placeActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 8 },
 
   trendCard: {

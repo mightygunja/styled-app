@@ -11,11 +11,13 @@ import { wishlistService, WishlistDoc } from '../services/firestore';
 import { getCurrentUserId } from '../services/api';
 import { isOnSale, discountPercent } from '../models/product';
 import { haptics } from '../utils/haptics';
+import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function WishlistScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const gridColumns = useGridColumns();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<WishlistDoc[]>([]);
   // A failed read is not an empty wishlist - it gets its own state and a retry.
@@ -82,9 +84,12 @@ export default function WishlistScreen() {
         </View>
       ) : (
         <FlatList
-          data={items}
-          keyExtractor={i => i.id}
-          numColumns={2}
+          // Same responsive grid as Shop; numColumns can't change on a
+          // mounted list, so the key remounts it across a breakpoint.
+          key={`wishlist-grid-${gridColumns}`}
+          data={padToColumns(items as any[], gridColumns)}
+          keyExtractor={(i: any) => i.id}
+          numColumns={gridColumns}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={
@@ -95,8 +100,9 @@ export default function WishlistScreen() {
               </TouchableOpacity>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.card}>
+          renderItem={({ item }: { item: any }) => (
+            isGridSpacer(item) ? <View style={{ width: gridItemWidth(gridColumns) }} /> :
+            <View style={[styles.card, { width: gridItemWidth(gridColumns) }]}>
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() =>

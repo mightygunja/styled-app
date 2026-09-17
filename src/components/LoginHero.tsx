@@ -276,6 +276,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CARD_W,
     height: CARD_H,
+    // Matches the photo's radius so no square ground shows at the corners.
+    borderRadius: radius.sm,
     // The one shadow in the app; without it the layers read as flat
     // rectangles rather than depth.
     shadowColor: colors.ink,

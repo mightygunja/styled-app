@@ -95,30 +95,6 @@ export default function StyleAnalysisScreen() {
     }
   };
 
-  const getStyleEmoji = (style: string): string => {
-    const emojiMap: { [key: string]: string } = {
-      minimalist: '',
-      bohemian: '',
-      streetwear: '',
-      vintage: '',
-      classic: '',
-      athleisure: '',
-      formal: '',
-      casual: '',
-    };
-    return emojiMap[style] || '';
-  };
-
-  const getInsightIcon = (type: string): string => {
-    const iconMap: { [key: string]: string } = {
-      strength: '',
-      gap: '',
-      suggestion: '',
-      trend: '',
-    };
-    return iconMap[type] || '';
-  };
-
   const getPriorityColor = (priority: string): string => {
     const colorMap: { [key: string]: string } = {
       high: colors.ink,
@@ -240,7 +216,6 @@ export default function StyleAnalysisScreen() {
             <View key={style.category} style={styles.styleCard}>
               <View style={styles.styleHeader}>
                 <View style={styles.styleInfo}>
-                  <Text style={styles.styleEmoji}>{getStyleEmoji(style.category)}</Text>
                   <View>
                     <Text style={styles.styleName}>
                       {style.category.charAt(0).toUpperCase() + style.category.slice(1)}
@@ -276,22 +251,25 @@ export default function StyleAnalysisScreen() {
             </View>
             
             <View style={styles.colorGrid}>
-              {profile.colorPalette.dominantColors.slice(0, 6).map((color, index) => (
+              {profile.colorPalette.dominantColors.slice(0, 6).map((color, index) => {
+                const swatch = swatchColor(color.color);
+                return (
                 <View key={index} style={styles.colorItem}>
-                  <View 
+                  <View
                     style={[
-                      styles.colorSwatch, 
-                      { backgroundColor: color.color === 'white' ? colors.paper : color.color }
-                    ]} 
+                      styles.colorSwatch,
+                      { backgroundColor: swatch }
+                    ]}
                   >
-                    {color.color === 'white' && (
+                    {swatch === colors.paper && (
                       <View style={styles.colorSwatchBorder} />
                     )}
                   </View>
                   <Text style={styles.colorName}>{color.name}</Text>
                   <Text style={styles.colorPercentage}>{color.percentage}%</Text>
                 </View>
-              ))}
+                );
+              })}
             </View>
 
             <View style={styles.colorFamilies}>
@@ -368,7 +346,6 @@ export default function StyleAnalysisScreen() {
               ]}
             >
               <View style={styles.insightHeader}>
-                <Text style={styles.insightIcon}>{getInsightIcon(insight.type)}</Text>
                 <View style={styles.insightContent}>
                   <Text style={styles.insightTitle}>{insight.title}</Text>
                   <Text style={styles.insightDescription}>{insight.description}</Text>
@@ -434,6 +411,19 @@ export default function StyleAnalysisScreen() {
       />
     </SafeAreaView>
   );
+}
+
+// Closet colours are free text ('burgundy', 'olive green', 'multicolor'),
+// which are not valid colour values and rendered as an invisible swatch.
+// Same guard as the Style tab: hex and plain names pass, anything else gets
+// a neutral outlined swatch next to its name.
+function swatchColor(color: string): string {
+  const known = ['black', 'gray', 'grey', 'red', 'blue', 'green', 'yellow', 'brown', 'navy', 'pink', 'purple', 'orange'];
+  const lower = (color || '').toLowerCase();
+  if (/^#[0-9a-f]{3,8}$/i.test(lower)) return lower;
+  if (lower === 'cream' || lower === 'beige' || lower === 'tan') return '#E8DCC8';
+  if (known.includes(lower)) return lower;
+  return colors.paper;
 }
 
 const styles = StyleSheet.create({
@@ -531,6 +521,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   overviewLabel: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -553,15 +544,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  styleEmoji: {
-    fontSize: 32,
-  },
   styleName: {
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   styleCount: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
     marginTop: 2,
@@ -600,6 +589,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   colorSeasonSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -626,6 +616,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.hair,
   },
@@ -636,6 +627,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   colorPercentage: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -657,6 +649,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   familyName: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
     width: 80,
@@ -703,6 +696,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   brandStats: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -734,6 +728,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   categoryCount: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -767,9 +762,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  insightIcon: {
-    fontSize: 24,
-  },
   insightContent: {
     flex: 1,
   },
@@ -780,6 +772,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   insightDescription: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -807,6 +800,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.paper,
   },
   statLabel: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
   Animated,
@@ -17,8 +16,9 @@ import { lookAPI, getCurrentUserId } from '../services/api';
 import { Look } from '../types';
 import LookCard from '../components/LookCard';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { fadeIn } from '../utils/animations';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, spacing, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,7 +76,9 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BackButton />
+        <View style={styles.headerBar}>
+          <BackButton />
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading favorites...</Text>
@@ -87,16 +89,12 @@ export default function FavoritesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.headerBar}>
+        <BackButton />
+      </View>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() =>navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>My Favorites</Text>
+        <Text style={styles.eyebrow}>LOOKBOOK</Text>
+        <Text style={styles.title}>My favorites</Text>
         <Text style={styles.subtitle}>
           {looks.length} {looks.length === 1 ? 'look' : 'looks'} saved
         </Text>
@@ -106,28 +104,24 @@ export default function FavoritesScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>Couldn't load your favorites</Text>
           <Text style={styles.emptyText}>Check your connection and try again.</Text>
-          <TouchableOpacity
-            style={styles.browseButton}
-            accessibilityRole="button"
+          <Button
+            title="Tap to retry"
+            variant="primary"
             onPress={() => {
               setLoading(true);
               fetchFavorites();
             }}
-          >
-            <Text style={styles.browseButtonText}>Tap to retry</Text>
-          </TouchableOpacity>
+          />
         </View>
       ) : looks.length === 0 ? (
         <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-          <Text style={styles.emptyText}>Tap the heart icon on any look to save it here
-          </Text>
-          <TouchableOpacity
-            style={styles.browseButton}
-            onPress={() =>navigation.navigate('Recommendations')}
-          >
-            <Text style={styles.browseButtonText}>Browse Looks</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptyTitle}>No favorites yet</Text>
+          <Text style={styles.emptyText}>Tap the heart icon on any look to save it here.</Text>
+          <Button
+            title="Browse looks"
+            variant="primary"
+            onPress={() => navigation.navigate('Recommendations')}
+          />
         </View>
       ) : (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -158,9 +152,14 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Same header block as Saved looks, the sibling row in the menu.
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
+  },
+  headerBar: {
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -168,38 +167,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...textType.body,
     marginTop: 12,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   header: {
-    padding: 20,
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.page,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  headerTop: {
-    marginBottom: 12,
-  },
-  backButton: {
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: colors.paper,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: colors.ink,
-    fontFamily: fonts.sansSemiBold,
+  eyebrow: {
+    ...textType.eyebrow,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 28,
-    fontFamily: fonts.sansSemiBold,
-    marginBottom: 4,
+    fontFamily: fonts.serif,
+    fontSize: 30,
+    color: colors.ink,
   },
   subtitle: {
-    fontSize: 16,
+    ...textType.body,
     color: colors.inkMuted,
+    marginTop: 8,
   },
   grid: {
     padding: 16,
@@ -215,31 +206,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   emptyTitle: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.ink,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    ...textType.body,
     color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 24,
-  },
-  browseButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.rust,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-  },
-  browseButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
   },
 });

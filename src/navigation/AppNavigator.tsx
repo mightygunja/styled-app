@@ -268,16 +268,18 @@ const publicScreens = PUBLIC_SCREENS.map(screen => (
 ));
 
 /**
- * URL map for the web build (harmless on native, where it also powers deep
- * links via the app scheme). Paths follow the content, not the code: the
- * browser bar reads /closet/item/abc123, back and forward work, and any URL
- * cold-loads into the right screen because web output is a single page.
+ * URL map for the web build. On native the same config resolves
+ * styledapp:// links (app.json scheme); web ignores prefixes. Paths follow
+ * the content, not the code: the browser bar reads /closet/item/abc123, back
+ * and forward work, and any URL cold-loads into the right screen because web
+ * output is a single page.
  *
- * Screens without an entry still navigate normally - they just get a
- * generated URL instead of a designed one.
+ * Screens without an entry still navigate normally, but their generated URL
+ * cannot be parsed back - a refresh or shared link on one lands on Home. Only
+ * screens whose params are not URL-serializable should be left out.
  */
 const linking = {
-  prefixes: [],
+  prefixes: ['styledapp://'],
   config: {
     screens: {
       MainTabs: {
@@ -322,8 +324,23 @@ const linking = {
       // SimilarItems deliberately has no URL: its params carry a computed,
       // non-serializable match list, so a cold load from an address bar could
       // never reconstruct them.
-      OutfitBuilder: 'outfits/new',
+      // /outfits/new is the builder every in-app entry point uses; the legacy
+      // manual builder keeps a URL of its own but nothing links to it.
+      SmartOutfitBuilder: 'outfits/new',
+      OutfitBuilder: 'outfits/manual',
+      SmartRecommendations: 'outfits/ideas',
       SavedOutfits: 'outfits',
+      LookDetail: 'looks/:lookId',
+      PaletteDetail: 'palettes/:paletteId',
+      Recommendations: 'looks',
+      ClosetAnalytics: 'closet/analytics',
+      ClosetOrganization: 'closet/organize',
+      ClosetSharing: 'closet/sharing',
+      ReceiptImport: 'closet/import',
+      TryOn: 'try-on',
+      StyleAnalysis: 'style/analysis',
+      Settings: 'settings',
+      EditProfile: 'account/profile',
       OutfitPlanner: 'planner',
       PackingList: 'packing',
       SmartSearch: 'search',
@@ -352,6 +369,89 @@ const linking = {
 };
 
 const navigationRef = createNavigationContainerRef();
+
+/**
+ * Browser tab / history titles for routes that set no options.title. A route
+ * missing here reads plain "33 Trends" rather than its code name.
+ */
+const ROUTE_TITLES: Record<string, string> = {
+  Closet: 'Closet',
+  StyleProfile: 'Style',
+  StylistChat: 'Stylist',
+  More: 'More',
+  Intro: 'Welcome',
+  Login: 'Sign in',
+  Signup: 'Create account',
+  Onboarding: 'Welcome',
+  ProfileSurvey: 'Style survey',
+  LookDetail: 'Look',
+  PaletteDetail: 'Palette',
+  AddClosetItem: 'Add to closet',
+  ClosetItemDetail: 'Closet item',
+  SimilarItems: 'Similar items',
+  Favorites: 'Favorites',
+  SavedOutfits: 'Saved outfits',
+  OutfitBuilder: 'Outfit builder',
+  SmartOutfitBuilder: 'Outfit builder',
+  OutfitPlanner: 'Outfit planner',
+  PackingList: 'Packing list',
+  Resale: 'Resale',
+  TryOn: 'Try on',
+  ReceiptImport: 'Import receipts',
+  ClosetSharing: 'Closet sharing',
+  Edits: 'Edits',
+  EditDetail: 'Edit',
+  EditReview: 'Review edits',
+  StylistAvailability: 'Availability',
+  StylistApplication: 'Become a stylist',
+  StylistApplicationsAdmin: 'Stylist applications',
+  Admin: 'Admin',
+  AffiliateAnalytics: 'Affiliate analytics',
+  TrendDeskAdmin: 'Trend desk',
+  ClosetAnalytics: 'Closet analytics',
+  StylistMarketplace: 'Stylists',
+  StylistDetail: 'Stylist',
+  VideoCall: 'Video call',
+  SessionNotes: 'Session notes',
+  MySessions: 'My sessions',
+  BeforeAfterPhotos: 'Before and after',
+  SubmitReview: 'Write a review',
+  StylistDashboard: 'Stylist dashboard',
+  UserProfile: 'Profile',
+  EditProfile: 'Edit profile',
+  Followers: 'Followers',
+  Following: 'Following',
+  SocialFeed: 'Feed',
+  CreatePost: 'New post',
+  PostDetail: 'Post',
+  Explore: 'Explore',
+  Notifications: 'Notifications',
+  Messages: 'Messages',
+  Chat: 'Messages',
+  Challenges: 'Challenges',
+  ChallengeDetail: 'Challenge',
+  Groups: 'Groups',
+  GroupDetail: 'Group',
+  EventDetail: 'Event',
+  StyleAnalysis: 'Style analysis',
+  SmartRecommendations: 'Outfit ideas',
+  StylingAssistant: 'Stylist',
+  SmartSearch: 'Search',
+  TrendInsights: 'Trends',
+  ClosetOrganization: 'Closet organization',
+  Sustainability: 'Sustainability',
+  CarbonCalculator: 'Carbon calculator',
+  Settings: 'Settings',
+  Recommendations: 'Looks for you',
+  StyleProfileBuilder: 'Edit style profile',
+  ColorAnalysis: 'Color analysis',
+  BodyAnalysis: 'Body analysis',
+  InStoreCheck: 'In-store check',
+  Account: 'Account',
+  Shop: 'Shop',
+  ProductDetail: 'Product',
+  Wishlist: 'Saved',
+};
 
 /**
  * Per-route SEO meta for the pages a crawler can actually read logged-out.
@@ -417,9 +517,16 @@ export default function AppNavigator() {
   const [introSeen, setIntroSeen] = React.useState<boolean | null>(null);
   React.useEffect(() => {
     AsyncStorage.getItem(INTRO_SEEN_KEY)
-      .then(value => setIntroSeen(!!value))
+      .then(value => setIntroSeen(prev => prev === true || !!value))
       .catch(() => setIntroSeen(true));
   }, []);
+  // Anyone who has signed in is past the pitch: without this, signing out in
+  // the same session would reopen the logged-out stack on Intro, because the
+  // flag above is only read once. Set on the transition to logged-in, while
+  // Intro is not mounted.
+  React.useEffect(() => {
+    if (user) setIntroSeen(true);
+  }, [user]);
 
   if (loading || (!user && introSeen === null)) {
     return (
@@ -447,8 +554,8 @@ export default function AppNavigator() {
       }}
       documentTitle={{
         formatter: (options, route) => {
-          const label = (options?.title as string) || route?.name || '';
-          return label && label !== 'MainTabs' ? `${label} · 33 Trends` : '33 Trends';
+          const label = (options?.title as string) || (route?.name ? ROUTE_TITLES[route.name] : '') || '';
+          return label ? `${label} · 33 Trends` : '33 Trends';
         },
       }}
     >

@@ -13,6 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
@@ -98,7 +99,7 @@ export default function AdminScreen() {
                 <Text style={styles.rowLabel}>{entry.label}</Text>
                 <Text style={styles.rowDetail}>{entry.detail}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </TouchableOpacity>
           ))
         )}
@@ -128,7 +129,6 @@ const styles = StyleSheet.create({
   rowEyebrow: { ...textType.eyebrow, fontSize: 9, marginBottom: 6 },
   rowLabel: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
   rowDetail: { ...textType.meta, fontSize: 12, lineHeight: 18, marginTop: 4 },
-  chevron: { fontSize: 20, color: colors.inkFaint },
 
   emptyBox: {
     borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },

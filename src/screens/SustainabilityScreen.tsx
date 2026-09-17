@@ -168,7 +168,7 @@ export default function SustainabilityScreen() {
       <Text style={styles.sectionLabel}>CARBON</Text>
       <View style={styles.figureBox}>
         <Text style={styles.figureValue}>{a.totalCarbonFootprint.toFixed(0)}</Text>
-        <Text style={styles.figureUnit}>kg CO₂ to produce your wardrobe</Text>
+        <Text style={styles.figureUnit}>kg CO₂ over your wardrobe's life, from making to washing</Text>
         <Text style={styles.figureNote}>
           About the same as driving{' '}
           {Math.round(a.totalCarbonFootprint / KG_CO2_PER_CAR_KM).toLocaleString()} km in an average
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
 
   certRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cert: {
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: colors.hair,

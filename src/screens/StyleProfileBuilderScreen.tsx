@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -71,6 +72,9 @@ export default function StyleProfileBuilderScreen() {
   // erase the department, colour analysis and body analysis.
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Editing a saved profile: Save is offered on every step, so changing one
+  // preference doesn't mean walking the whole wizard.
+  const [hasExisting, setHasExisting] = useState(false);
 
   // Color input states
   const [primaryInput, setPrimaryInput] = useState('');
@@ -91,6 +95,7 @@ export default function StyleProfileBuilderScreen() {
       const existing = await styleProfileService.getStyleProfile(getCurrentUserId());
       if (existing) {
         setStyleProfile(existing);
+        setHasExisting(true);
       }
     } catch (error) {
       console.error('Error loading style profile:', error);
@@ -269,6 +274,13 @@ export default function StyleProfileBuilderScreen() {
       <Text style={styles.stepTitle}>How do you split your wardrobe?</Text>
       <Text style={styles.stepSubtitle}>
         Adjust the sliders to show how you divide your clothing needs
+      </Text>
+
+      {/* Each control moves one share on its own, so the total can drift from
+          100%. Say so; the split is scaled to 100% on save (and in the review). */}
+      <Text style={styles.fitHint}>
+        Total: {Math.round(Object.values(styleProfile.lifestyleWeights).reduce((sum, v) => sum + v, 0) * 100)}%
+        {' '}— saved scaled to 100%.
       </Text>
 
       {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
@@ -627,7 +639,8 @@ export default function StyleProfileBuilderScreen() {
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Lifestyle Split</Text>
-        {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
+        {/* The normalised split - exactly what handleSave writes. */}
+        {Object.entries(normalizeLifestyleWeights(styleProfile.lifestyleWeights)).map(([key, value]) => (
           <Text key={key} style={styles.reviewText}>
             {key.charAt(0).toUpperCase() + key.slice(1)}: {Math.round(value * 100)}%
           </Text>
@@ -642,6 +655,21 @@ export default function StyleProfileBuilderScreen() {
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Primary Colors</Text>
         <Text style={styles.reviewText}>{styleProfile.colorProfile.primary.join(', ') || 'None added'}</Text>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <Text style={styles.reviewLabel}>Secondary Colors</Text>
+        <Text style={styles.reviewText}>{styleProfile.colorProfile.secondary.join(', ') || 'None added'}</Text>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <Text style={styles.reviewLabel}>Stretch Colors</Text>
+        <Text style={styles.reviewText}>{styleProfile.colorProfile.stretch.join(', ') || 'None added'}</Text>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <Text style={styles.reviewLabel}>Avoid</Text>
+        <Text style={styles.reviewText}>{styleProfile.avoidRules.join(', ') || 'None added'}</Text>
       </View>
 
       <View style={styles.reviewSection}>
@@ -734,6 +762,17 @@ export default function StyleProfileBuilderScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <BackButton onPress={handleBack} />
+        {/* Back steps through the wizard; this leaves it (unsaved changes are dropped). */}
+        {currentStepIndex > 0 && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Close without saving"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={24} color={ds.ink} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Step count reads first, then the rule - an eyebrow above a hairline,
@@ -747,15 +786,31 @@ export default function StyleProfileBuilderScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {renderStep()}
       </ScrollView>
 
       <View style={styles.footer}>
         {currentStep !== 'review' ? (
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>Next</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextButtonText}>Next</Text>
+            </TouchableOpacity>
+            {hasExisting && (
+              <TouchableOpacity
+                style={[styles.saveNowButton, saving && styles.saveButtonDisabled]}
+                onPress={handleSave}
+                disabled={saving}
+                accessibilityRole="button"
+              >
+                <Text style={styles.saveNowText}>{saving ? 'Saving…' : 'Save changes now'}</Text>
+              </TouchableOpacity>
+            )}
+          </>
         ) : (
           <TouchableOpacity
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -796,6 +851,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingTop: 12,
   },
@@ -936,7 +992,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   archetypeDescriptionSelected: {
-    color: 'rgba(253, 251, 250, 0.7)',
+    color: ds.bone,
+    opacity: 0.7,
   },
 
   // ---- Colours ----
@@ -1148,6 +1205,15 @@ const styles = StyleSheet.create({
     backgroundColor: ds.rust,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  saveNowButton: {
+    alignItems: 'center',
+    paddingTop: 12,
+  },
+  saveNowText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
+    color: ds.tobacco,
   },
   saveButtonDisabled: {
     opacity: 0.4,

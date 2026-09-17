@@ -8,9 +8,12 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
+  processColor,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -18,6 +21,23 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
+
+// Explicit per label - anything unlisted gets a neutral icon, not a snowflake.
+const SEASON_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  Spring: 'flower-outline',
+  Summer: 'sunny-outline',
+  Fall: 'leaf-outline',
+  Autumn: 'leaf-outline',
+  Winter: 'snow-outline',
+  'All Season': 'infinite-outline',
+  'All-season': 'infinite-outline',
+};
+
+/** Free-text colour names ("navy blue", "Unknown") that can't be painted get a neutral swatch. */
+function swatchColor(value: string): string | null {
+  const color = value.trim().toLowerCase();
+  return color && processColor(color) != null ? color : null;
+}
 
 interface AnalyticsData {
   totalItems: number;
@@ -91,11 +111,12 @@ export default function ClosetAnalyticsScreen() {
       const mostWornItems = sortedByWear.slice(0, 3);
       const leastWornItems = sortedByWear.slice(-3).reverse();
 
-      // Cost per wear = purchase price / times actually worn (real wornCount)
+      // Cost per wear = purchase price / times actually worn (real wornCount).
+      // A never-worn item has no per-wear cost, so it is left out.
       const costPerWear: { [key: string]: number } = {};
       items.forEach((item: any) => {
-        if (item.price) {
-          costPerWear[item.id] = item.price / Math.max(1, item.wornCount || 0);
+        if (item.price && (item.wornCount || 0) > 0) {
+          costPerWear[item.id] = item.price / item.wornCount;
         }
       });
 
@@ -156,12 +177,11 @@ export default function ClosetAnalyticsScreen() {
             Add items to your closet and this page will show what you own, what you wear, and
             what it costs per wear.
           </Text>
-          <TouchableOpacity
-            style={styles.emptyButton}
+          <Button
+            title="Add an item"
+            variant="primary"
             onPress={() => navigation.navigate('AddClosetItem')}
-          >
-            <Text style={styles.emptyButtonText}>Add an item</Text>
-          </TouchableOpacity>
+          />
         </View>
       </SafeAreaView>
     );
@@ -175,15 +195,14 @@ export default function ClosetAnalyticsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header - pinned, and the same BackButton as the other states. */}
+      <View style={styles.header}>
+        <BackButton style={styles.backButton} />
+        <Text style={styles.title}>Closet Analytics</Text>
+        <View style={{ width: 50 }} />
+      </View>
+
       <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() =>navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Closet Analytics</Text>
-          <View style={{ width: 50 }} />
-        </View>
 
         {/* Overview Cards */}
         <View style={styles.overviewSection}>
@@ -246,7 +265,11 @@ export default function ClosetAnalyticsScreen() {
               .slice(0, 6)
               .map(([color, count]) => (
                 <View key={color} style={styles.colorCard}>
-                  <View style={[styles.colorSwatch, { backgroundColor: color.toLowerCase() }]} />
+                  {swatchColor(color) ? (
+                    <View style={[styles.colorSwatch, { backgroundColor: swatchColor(color)! }]} />
+                  ) : (
+                    <View style={[styles.colorSwatch, styles.colorSwatchUnknown]} />
+                  )}
                   <Text style={styles.colorName}>{color}</Text>
                   <Text style={styles.colorCount}>{count} items</Text>
                 </View>
@@ -260,9 +283,12 @@ export default function ClosetAnalyticsScreen() {
           <View style={styles.seasonGrid}>
             {Object.entries(analytics.seasonBreakdown).map(([season, count]) => (
               <View key={season} style={styles.seasonCard}>
-                <Text style={styles.seasonEmoji}>
-                  {season === 'Spring' ? '✿' : season === 'Summer' ? '☀' : season === 'Fall' ? '❋' : '❄'}
-                </Text>
+                <Ionicons
+                  name={SEASON_ICONS[season] || 'calendar-outline'}
+                  size={28}
+                  color={colors.tobacco}
+                  style={styles.seasonIcon}
+                />
                 <Text style={styles.seasonName}>{season}</Text>
                 <Text style={styles.seasonCount}>{count} items</Text>
               </View>
@@ -326,7 +352,9 @@ export default function ClosetAnalyticsScreen() {
                     Object.values(analytics.costPerWear).reduce((sum, v) =>sum + v, 0) /
                     Object.values(analytics.costPerWear).length
                   ).toFixed(2)}`
-                : 'Add purchase prices to your items to see cost-per-wear'}
+                : analytics.pricedCount > 0
+                  ? 'Mark a priced item as worn to see cost-per-wear'
+                  : 'Add purchase prices to your items to see cost-per-wear'}
             </Text>
           </View>
         </View>
@@ -338,7 +366,7 @@ export default function ClosetAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -347,6 +375,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -356,6 +385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.ink,
   },
@@ -366,23 +396,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 20,
     paddingHorizontal: 32,
-  },
-  emptyButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.ink,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  emptyButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
   },
   header: {
     flexDirection: 'row',
@@ -392,13 +412,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  // The shared BackButton, minus its standalone spacing, inside the header row.
   backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   title: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
     color: colors.ink,
   },
   overviewSection: {
@@ -420,6 +441,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -451,6 +473,7 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: {
     width: 80,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
@@ -491,6 +514,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hair,
   },
+  colorSwatchUnknown: {
+    backgroundColor: colors.card,
+    borderStyle: 'dashed',
+    borderColor: colors.inkFaint,
+  },
   colorName: {
     fontSize: 12,
     fontFamily: fonts.sansSemiBold,
@@ -498,6 +526,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   colorCount: {
+    fontFamily: fonts.sans,
     fontSize: 11,
     color: colors.inkMuted,
   },
@@ -512,8 +541,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  seasonEmoji: {
-    fontSize: 32,
+  seasonIcon: {
     marginBottom: 8,
   },
   seasonName: {
@@ -523,6 +551,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   seasonCount: {
+    fontFamily: fonts.sans,
     fontSize: 11,
     color: colors.inkMuted,
   },
@@ -538,11 +567,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemCategory: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.ink,
     marginBottom: 2,
   },
   itemWears: {
+    fontFamily: fonts.sans,
     fontSize: 11,
     color: colors.inkMuted,
   },
@@ -554,12 +585,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  insightEmoji: {
-    fontSize: 24,
-    marginRight: 12,
-  },
   insightText: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.ink,
   },

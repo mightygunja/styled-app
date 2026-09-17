@@ -280,6 +280,20 @@ export default function ClosetScreen() {
                 </Text>
                 <Text style={styles.placeholderSubtext}>Tap to retry.</Text>
               </TouchableOpacity>
+            ) : searchQuery.trim() ? (
+              // A search with no hits is not an empty closet.
+              <TouchableOpacity
+                style={styles.placeholder}
+                onPress={() => setSearchQuery('')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Text style={styles.placeholderText}>
+                  Nothing matches "{searchQuery.trim()}"
+                </Text>
+                <Text style={styles.placeholderSubtext}>Tap to clear the search.</Text>
+              </TouchableOpacity>
             ) : (
             <View style={styles.placeholder}>
               <Text style={styles.placeholderText}>
@@ -291,8 +305,9 @@ export default function ClosetScreen() {
           }
           renderItem={({ item }: { item: ClosetItem }) => {
             if (isGridSpacer(item)) return <View style={{ width: gridItemWidth(gridColumns) }} />;
-            const costPerWear = item.price
-              ? (item.price / Math.max(item.wornCount || 1, 1)).toFixed(2)
+            // Only once it has actually been worn - a never-worn piece has no per-wear cost.
+            const costPerWear = item.price && item.wornCount > 0
+              ? (item.price / item.wornCount).toFixed(2)
               : undefined;
             return (
               <TouchableOpacity
@@ -531,6 +546,8 @@ const styles = StyleSheet.create({
   },
   gridContent: {
     padding: 16,
+    // Clears the floating add button so it never covers the last row.
+    paddingBottom: 96,
   },
   gridRow: {
     justifyContent: 'space-between',
@@ -619,11 +636,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
-  },
-  fabText: {
-    fontSize: 28,
-    color: colors.bone,
-    fontFamily: fonts.sans,
-    lineHeight: 32,
   },
 });

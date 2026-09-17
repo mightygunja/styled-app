@@ -47,12 +47,14 @@ const SECTIONS: MoreSection[] = [
       { label: 'Wardrobe analysis', subtitle: 'YOUR STYLES, COLORS AND BRANDS IN NUMBERS', icon: 'analytics-outline', route: 'StyleAnalysis' },
       { label: 'Outfit ideas', subtitle: 'OUTFITS FROM YOUR CLOSET, BY OCCASION', icon: 'shirt-outline', route: 'SmartRecommendations' },
       { label: 'Looks to browse', subtitle: 'THE LOOKBOOK, BY SEASON AND OCCASION', icon: 'book-outline', route: 'Recommendations' },
+      // Explore is product discovery against the user's closet, not a social
+      // surface, so it sits here rather than under COMMUNITY.
+      { label: 'Explore', subtitle: 'PIECES CHOSEN AGAINST YOUR CLOSET', icon: 'compass-outline', route: 'Explore' },
     ],
   },
   {
     label: 'COMMUNITY',
     items: [
-      { label: 'Explore', subtitle: 'DISCOVER STYLES & PEOPLE', icon: 'compass-outline', route: 'Explore' },
       { label: 'Groups & events', subtitle: 'JOIN THE CONVERSATION', icon: 'people-outline', route: 'Groups' },
       { label: 'Challenges', subtitle: 'STYLE CONTESTS', icon: 'trophy-outline', route: 'Challenges' },
       { label: 'Messages', subtitle: 'YOUR CONVERSATIONS', icon: 'chatbubble-outline', route: 'Messages' },
@@ -126,7 +128,7 @@ export default function MoreScreen() {
                 Subscription screen is no longer registered. */}
             <Text style={styles.profileSubtitle}>ACCOUNT · STYLISTS · SETTINGS</Text>
           </View>
-          <Text style={styles.rowArrow}>›</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
         </TouchableOpacity>
 
         {SECTIONS.map(section => ({
@@ -152,7 +154,7 @@ export default function MoreScreen() {
                     <Text style={styles.rowLabel}>{item.label}</Text>
                     <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
                   </View>
-                  <Text style={styles.rowArrow}>›</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -212,6 +214,4 @@ const styles = StyleSheet.create({
   rowLast: { borderBottomWidth: 0 },
   rowIcon: { marginRight: 14, width: 20 },
   rowLabel: { fontFamily: fonts.sans, fontSize: 15, color: colors.ink },
-  rowSubtitle: { fontFamily: fonts.sans, fontSize: 10, letterSpacing: 1, color: colors.inkFaint, marginTop: 2 },
-  rowArrow: { fontSize: 20, color: colors.inkFaint },
-});
+  rowSubtitle: { fontFamily: fonts.sans, fontSize: 10, letterSpacing: 1, color: colors.inkFaint, marginTop: 2 },});

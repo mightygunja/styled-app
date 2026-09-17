@@ -14,11 +14,12 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import BrandWordmark from '../components/BrandWordmark';
+import BackButton from '../components/BackButton';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 const CONTACT_EMAIL = 'support@thirtythreetrends.com';
@@ -40,10 +41,9 @@ function PublicPage({
   const { user, isNewUser } = useAuth();
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Back"
+      {/* Pinned above the scroll so the exit stays in view on a long page. */}
+      <View style={styles.headerBar}>
+        <BackButton
           onPress={() => {
             if (navigation.canGoBack()) navigation.goBack();
             // Cold load (deep link / web refresh) - route to whichever branch
@@ -51,9 +51,9 @@ function PublicPage({
             else (navigation as any).navigate(user ? (isNewUser ? 'Onboarding' : 'MainTabs') : 'Login');
           }}
           style={styles.back}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
+        />
+      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <BrandWordmark variant="header" />
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.title}>{title}</Text>
@@ -63,7 +63,13 @@ function PublicPage({
             Questions? Write to{' '}
             <Text
               style={styles.footerLink}
-              onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
+              onPress={() => {
+                // No mail handler (simulator, unconfigured Mail, many desktops)
+                // rejects; the address is on screen, so say so instead.
+                Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() =>
+                  Alert.alert('No mail app found', `Write to us at ${CONTACT_EMAIL}.`)
+                );
+              }}
             >
               {CONTACT_EMAIL}
             </Text>
@@ -298,8 +304,14 @@ const styles = StyleSheet.create({
     maxWidth: 720,
     alignSelf: 'center',
   },
-  back: { paddingVertical: 8, marginBottom: spacing.sm },
-  backText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
+  headerBar: {
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.sm,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  back: { paddingHorizontal: 0, marginBottom: 0 },
   eyebrow: { ...textType.eyebrow, marginTop: spacing.lg },
   title: {
     fontFamily: fonts.serif,

@@ -11,6 +11,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 import AnimatedModal from './AnimatedModal';
@@ -260,8 +261,13 @@ export default function PhotoUploadModal({
           <>
             <View style={styles.header}>
               <Text style={styles.title}>Add a photo</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Text style={styles.closeText}>✕</Text>
+              <TouchableOpacity
+                onPress={onClose}
+                style={styles.closeButton}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Ionicons name="close" size={18} color={colors.inkMuted} />
               </TouchableOpacity>
             </View>
 
@@ -427,11 +433,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeText: {
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: colors.inkMuted,
   },
   backButton: {
     paddingVertical: 6,

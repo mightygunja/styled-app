@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform, processColor } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -27,6 +27,15 @@ const EDIT_CATEGORIES = [
   { id: 'accessories', label: 'Accessories' },
   { id: 'bags', label: 'Bags' },
 ];
+
+/**
+ * Item colours are free text ("navy blue", "unknown"), not always a colour the
+ * renderer understands - those would draw as an empty ring, so no dot is shown.
+ */
+function swatchColor(value?: string): string | null {
+  const color = (value || '').trim().toLowerCase();
+  return color && processColor(color) != null ? color : null;
+}
 
 export default function ClosetItemDetailScreen() {
   const navigation = useNavigation();
@@ -471,7 +480,9 @@ export default function ClosetItemDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Primary:</Text>
             <View style={styles.colorRow}>
-              <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+              {swatchColor(item.color) && (
+                <View style={[styles.colorDot, { backgroundColor: swatchColor(item.color)! }]} />
+              )}
               <Text style={styles.infoValue}>{item.color}</Text>
             </View>
           </View>
@@ -479,9 +490,14 @@ export default function ClosetItemDetailScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Secondary:</Text>
               <View style={styles.colorRow}>
-                {item.secondaryColors.map((color, index) => (
-                  <View key={index} style={[styles.colorDot, { backgroundColor: color }]} />
-                ))}
+                {item.secondaryColors.map((color, index) => {
+                  const swatch = swatchColor(color);
+                  return swatch ? (
+                    <View key={index} style={[styles.colorDot, { backgroundColor: swatch }]} />
+                  ) : (
+                    <Text key={index} style={styles.infoValue}>{color}</Text>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -655,7 +671,7 @@ export default function ClosetItemDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   header: {
     flexDirection: 'row',
@@ -670,8 +686,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  // Same label treatment as the shared BackButton on the loading/error states.
   backButton: {
-    fontSize: 16,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
     color: colors.inkMuted,
   },
   headerActions: {
@@ -695,6 +713,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -723,6 +742,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   addPhotoSubtext: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkFaint,
     textAlign: 'center',
@@ -802,6 +822,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   notesText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,

@@ -250,7 +250,7 @@ export default function TrendDeskAdminScreen() {
                 <View style={styles.rowActions}>
                   {trend.status === 'draft' && (
                     <TouchableOpacity
-                      style={styles.publishAction}
+                      style={[styles.publishAction, busyId === trend.id && styles.publishActionBusy]}
                       disabled={busyId === trend.id}
                       onPress={() => handlePublish(trend)}
                     >
@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
   draftButton: {
     borderRadius: radius.full,
     marginTop: spacing.lg,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 14,
     alignItems: 'center',
   },
   draftButtonBusy: { opacity: 0.6 },
-  draftButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
+  draftButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.bone },
 
   emptyBox: {
     borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
@@ -331,8 +331,9 @@ const styles = StyleSheet.create({
   rowDetail: { ...textType.meta, fontSize: 11, lineHeight: 17, marginTop: 6 },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: spacing.md },
   publishAction: {
-    borderRadius: radius.full, backgroundColor: colors.ink, paddingHorizontal: 16, paddingVertical: 10 },
-  publishActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
+    borderRadius: radius.full, backgroundColor: colors.rust, paddingHorizontal: 16, paddingVertical: 10 },
+  publishActionBusy: { opacity: 0.6 },
+  publishActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.bone },
   archiveAction: { paddingVertical: 10 },
   archiveActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkFaint },
   restoreActionText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.rust },

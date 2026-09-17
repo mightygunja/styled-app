@@ -139,9 +139,8 @@ class ReviewService {
   /**
    * Check if the signed-in user has already reviewed a given session
    */
-  async hasReviewedSession(stylistId: string, sessionId: string): Promise<boolean> {
-    const reviews = await this.getStylistReviews(stylistId);
-    return reviews.some(r => (r as any).sessionId === sessionId && r.userId === getCurrentUserId());
+  async hasReviewedSession(_stylistId: string, sessionId: string): Promise<boolean> {
+    return reviewsService.hasReviewedSession(sessionId, getCurrentUserId());
   }
 
   /**

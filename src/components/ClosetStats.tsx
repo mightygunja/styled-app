@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type } from '../theme/designSystem';
 
 interface ClosetStatsProps {
   totalItems: number;
@@ -16,6 +16,8 @@ export default function ClosetStats({
   leastWornItems = [],
 }: ClosetStatsProps) {
   const categories = Object.entries(itemsByCategory).sort((a, b) => b[1] - a[1]);
+  // A "Most Worn" row only means something once the item has actually been worn.
+  const wornItems = mostWornItems.filter((item) => item.wornCount > 0);
 
   return (
     <View style={styles.container}>
@@ -41,10 +43,10 @@ export default function ClosetStats({
       </View>
 
       {/* Most Worn */}
-      {mostWornItems.length > 0 && (
+      {wornItems.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Most Worn</Text>
-          {mostWornItems.slice(0, 3).map((item, index) => (
+          {wornItems.slice(0, 3).map((item, index) => (
             <View key={index} style={styles.wornItem}>
               <Text style={styles.wornItemName}>{item.name}</Text>
               <Text style={styles.wornItemCount}>{item.wornCount}x</Text>
@@ -79,8 +81,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   title: {
-    fontSize: 24,
-    fontFamily: fonts.sansSemiBold,
+    ...type.section,
+    color: colors.ink,
     marginBottom: 20,
   },
   statCard: {
@@ -98,6 +100,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   statLabel: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
     marginTop: 4,
@@ -106,11 +109,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    ...type.h3,
+    color: colors.ink,
     marginBottom: 4,
   },
   sectionSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     marginBottom: 12,
@@ -137,6 +141,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   categoryName: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     marginTop: 4,
@@ -155,7 +160,9 @@ const styles = StyleSheet.create({
     borderColor: colors.hair,
   },
   wornItemName: {
+    fontFamily: fonts.sans,
     fontSize: 16,
+    color: colors.ink,
     flex: 1,
   },
   wornItemCount: {

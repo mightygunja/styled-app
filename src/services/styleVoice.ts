@@ -13,6 +13,8 @@ export interface StyleVoiceResult {
   rarelyYou: string[];
 }
 
+// Shown to every wardrobe focus (getStyleVoice never sees wardrobeFocus), so
+// the trait copy stays department-neutral - no heels, crops or dresses.
 const ARCHETYPES: Record<StyleCategory, StyleVoiceResult> = {
   classic: {
     archetype: 'Quiet Luxe',
@@ -20,7 +22,7 @@ const ARCHETYPES: Record<StyleCategory, StyleVoiceResult> = {
     description:
       'A closet of warm neutrals, structured shoulders, and one softening detail per look — built from quiet, considered choices.',
     inYourStyle: ['Structured shoulders', 'Wide-leg trouser', 'Warm neutrals', 'Natural fabrics'],
-    rarelyYou: ['Cropped silhouettes', 'High saturation', 'Logo-forward pieces'],
+    rarelyYou: ['Exaggerated silhouettes', 'High saturation', 'Logo-forward pieces'],
   },
   minimalist: {
     archetype: 'Minimal Edge',
@@ -60,7 +62,7 @@ const ARCHETYPES: Record<StyleCategory, StyleVoiceResult> = {
     description:
       'Soft structure, easy layering, and performance fabrics styled to look considered rather than accidental.',
     inYourStyle: ['Easy layering', 'Soft structure', 'Performance fabrics'],
-    rarelyYou: ['Formal tailoring', 'Delicate embellishment', 'High heels'],
+    rarelyYou: ['Formal tailoring', 'Delicate embellishment', 'Dress shoes'],
   },
   formal: {
     archetype: 'Refined Formal',

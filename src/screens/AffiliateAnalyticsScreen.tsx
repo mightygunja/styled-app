@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import Chip from '../components/Chip';
 import { adminService, AffiliateAnalytics } from '../services/adminService';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
@@ -88,14 +89,32 @@ export default function AffiliateAnalyticsScreen() {
       setSaveError('Network is required.');
       return;
     }
+    // Money is the one thing this screen treats as ground truth, so a blank or
+    // unparseable figure is refused rather than silently recorded as $0.
+    const parse = (s: string) => (s.trim() === '' ? 0 : Number(s.replace(/[,$\s]/g, '')));
+    const grossValue = gross.trim() === '' ? NaN : parse(gross);
+    const returnsValue = parse(returned);
+    const ordersValue = parse(orders);
+    if (!isFinite(grossValue) || grossValue < 0) {
+      setSaveError('Gross must be a number.');
+      return;
+    }
+    if (!isFinite(returnsValue) || returnsValue < 0 || returnsValue > grossValue) {
+      setSaveError('Reversed must be a number no larger than gross.');
+      return;
+    }
+    if (!Number.isInteger(ordersValue) || ordersValue < 0) {
+      setSaveError('Orders must be a whole number.');
+      return;
+    }
     setSaving(true);
     try {
       await adminService.recordAffiliateRevenue({
         period,
         network: network.trim(),
-        gross: Number(gross) || 0,
-        returns: Number(returned) || 0,
-        orders: Number(orders) || 0,
+        gross: grossValue,
+        returns: returnsValue,
+        orders: ordersValue,
       });
       setPeriod('');
       setNetwork('');
@@ -141,7 +160,15 @@ export default function AffiliateAnalyticsScreen() {
         ) : !data ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>Couldn't load</Text>
-            <Text style={styles.emptyText}>Pull down to try again.</Text>
+            <Text style={styles.emptyText}>Check your connection and try again.</Text>
+            {/* Pull-to-refresh is inert on web, where this screen is mostly used. */}
+            <Button
+              title="Try again"
+              variant="outline"
+              size="small"
+              onPress={() => { setLoading(true); load(); }}
+              style={styles.retryButton}
+            />
           </View>
         ) : (
           <>
@@ -347,7 +374,7 @@ export default function AffiliateAnalyticsScreen() {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color={colors.white} />
+                <ActivityIndicator color={colors.bone} />
               ) : (
                 <Text style={styles.buttonText}>Record</Text>
               )}
@@ -434,13 +461,15 @@ const styles = StyleSheet.create({
 
   button: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 4,
   },
-  buttonDisabled: { backgroundColor: colors.hair },
-  buttonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
+  // Disabled stays rust at reduced strength, never grey.
+  buttonDisabled: { opacity: 0.5 },
+  buttonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.bone },
+  retryButton: { alignSelf: 'flex-start', marginTop: spacing.md },
 
   emptyBox: {
     borderRadius: radius.md, marginTop: spacing.section, backgroundColor: colors.paper, padding: spacing.lg },

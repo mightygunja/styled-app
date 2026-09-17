@@ -16,6 +16,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -436,7 +437,7 @@ export default function PostDetailScreen() {
                   })}
                 </Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </TouchableOpacity>
           </View>
 
@@ -607,7 +608,6 @@ const styles = StyleSheet.create({
   userInfo: { flex: 1, marginLeft: 12 },
   userName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   postTime: { ...textType.meta, fontSize: 12, marginTop: 2 },
-  chevron: { fontSize: 20, color: colors.inkFaint },
 
   imagesContainer: { width },
   postImage: {

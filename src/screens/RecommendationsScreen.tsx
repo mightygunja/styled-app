@@ -20,9 +20,10 @@ import { RootStackParamList } from '../navigation/types';
 import { lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { Look } from '../types';
 import { fadeIn } from '../utils/animations';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -259,7 +260,7 @@ export default function RecommendationsScreen() {
         <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
-          <Text style={styles.loadingText}>Finding perfect looks for you...</Text>
+          <Text style={styles.loadingText}>Loading the lookbook...</Text>
         </View>
       </SafeAreaView>
     );
@@ -268,11 +269,10 @@ export default function RecommendationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>For You</Text>
-        <View style={{ width: 50 }} />
+        <BackButton style={styles.headerBack} />
+        {/* Named as the menu names it; the screen makes no "for you" claim. */}
+        <Text style={styles.title}>Looks to browse</Text>
+        <View style={{ width: 60 }} />
       </View>
 
       <ScrollView
@@ -281,7 +281,7 @@ export default function RecommendationsScreen() {
         }
       >
         <View style={styles.intro}>
-          <Text style={styles.introTitle}>Looks to browse</Text>
+          <Text style={styles.introTitle}>The lookbook</Text>
           <Text style={styles.introText}>From the lookbook, grouped by season and the occasions you favorite
           </Text>
         </View>
@@ -322,13 +322,7 @@ export default function RecommendationsScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>Couldn't load looks</Text>
             <Text style={styles.emptyStateText}>Check your connection and try again.</Text>
-            <TouchableOpacity
-              style={styles.emptyStateButton}
-              accessibilityRole="button"
-              onPress={loadRecommendations}
-            >
-              <Text style={styles.emptyStateButtonText}>Tap to retry</Text>
-            </TouchableOpacity>
+            <Button title="Tap to retry" variant="primary" onPress={loadRecommendations} />
           </View>
         )}
 
@@ -348,7 +342,7 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -356,8 +350,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...textType.body,
     marginTop: 12,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   header: {
@@ -368,26 +362,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  backButton: {
-    fontSize: 16,
-    color: colors.ink,
+  headerBack: {
+    marginBottom: 0,
   },
   title: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
+    color: colors.ink,
   },
+  // Inset from the edges: a rounded block run full-bleed reads as clipped.
   intro: {
     borderRadius: radius.md,
     padding: 20,
     backgroundColor: colors.paper,
+    marginHorizontal: 20,
+    marginTop: 16,
     marginBottom: 8,
   },
   introTitle: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 22,
+    fontFamily: fonts.serif,
+    color: colors.ink,
     marginBottom: 8,
   },
   introText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -403,10 +402,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 20,
+    fontFamily: fonts.serif,
+    color: colors.ink,
   },
   categorySubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
     marginTop: 2,
@@ -484,26 +485,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateTitle: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 22,
+    fontFamily: fonts.serif,
+    color: colors.ink,
     marginBottom: 12,
   },
   emptyStateText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
-  },
-  emptyStateButton: {
-    borderRadius: radius.full,
-    backgroundColor: colors.rust,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  emptyStateButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
   },
 });

@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -139,7 +140,15 @@ export default function StylistDashboardScreen() {
           <Text style={styles.statLabel}>Sessions</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>● {stats?.averageRating.toFixed(1) || 0}</Text>
+          {/* No reviews yet reads as "New", not as a 0.0 score. */}
+          {stats && stats.totalReviews > 0 ? (
+            <View style={styles.ratingRow}>
+              <Ionicons name="star" size={18} color={colors.camel} />
+              <Text style={styles.statValue}>{stats.averageRating.toFixed(1)}</Text>
+            </View>
+          ) : (
+            <Text style={styles.statValue}>New</Text>
+          )}
           <Text style={styles.statLabel}>Rating</Text>
         </View>
         <View style={styles.statCard}>
@@ -503,7 +512,8 @@ const styles = StyleSheet.create({
   earningsLabel: {
     fontFamily: fonts.sans,
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: colors.white,
+    opacity: 0.8,
     marginBottom: 20,
   },
   earningsGrid: {
@@ -513,7 +523,8 @@ const styles = StyleSheet.create({
   earningsStat: {
     borderRadius: radius.md,
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // colors.white at 20% alpha - a view-level opacity would fade the figures too.
+    backgroundColor: `${colors.white}33`,
     padding: 12,
   },
   earningsStatValue: {
@@ -525,7 +536,8 @@ const styles = StyleSheet.create({
   earningsStatLabel: {
     fontFamily: fonts.sans,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: colors.white,
+    opacity: 0.8,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -546,6 +558,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
     marginBottom: 4,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   statLabel: {
     fontFamily: fonts.sans,
@@ -651,14 +668,16 @@ const styles = StyleSheet.create({
   acceptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   declineButton: { paddingVertical: 10 },
   declineButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
+  // Secondary (outline) - Accept / Mark complete is the card's rust primary.
   viewButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.hair,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   viewButtonText: {
-    color: colors.white,
+    color: colors.ink,
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
   },

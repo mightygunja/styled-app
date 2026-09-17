@@ -71,11 +71,16 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = async (notification: Notification) => {
     // Mark as read
+    // A failed mark-read must not swallow the tap - navigate regardless.
     if (!notification.isRead) {
-      await notificationService.markAsRead(notification.id, getCurrentUserId());
-      setNotifications(notifications.map(n =>n.id === notification.id ? { ...n, isRead: true } : n
-      ));
-      setUnreadCount(unreadCount - 1);
+      try {
+        await notificationService.markAsRead(notification.id, getCurrentUserId());
+        setNotifications(prev => prev.map(n =>n.id === notification.id ? { ...n, isRead: true } : n
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error('Error marking notification read:', error);
+      }
     }
 
     // Navigate based on type
@@ -100,6 +105,14 @@ export default function NotificationsScreen() {
       case 'stylist_booking':
       case 'session_reminder':
         navigation.navigate('MySessions');
+        break;
+      case 'system':
+        // The only system notice today is the stylist approval
+        // (functions approveStylistApplication); other system notices are
+        // informational and stay put.
+        if (/stylist/i.test(notification.title || '')) {
+          navigation.navigate('StylistDashboard');
+        }
         break;
     }
   };
@@ -410,7 +423,7 @@ const styles = StyleSheet.create({
   unreadDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.full,
     backgroundColor: colors.ink,
   },
   deleteButton: {

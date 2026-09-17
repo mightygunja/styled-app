@@ -9,6 +9,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -149,7 +151,11 @@ export default function CreatePostScreen() {
         <BackButton />
       </View>
 
-      <ScrollView style={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>COMMUNITY</Text>
           <Text style={styles.title}>Share a look</Text>
@@ -238,9 +244,12 @@ export default function CreatePostScreen() {
           <Text style={styles.tipsTitle}>WHAT WORKS</Text>
           <Text style={styles.tipText}>Clear, well-lit photos in front of a plain wall.</Text>
           <Text style={styles.tipText}>Say what the pieces are and where they came from.</Text>
-          <Text style={styles.tipText}>Tag items from your closet so people can see the detail.</Text>
+          {/* No "tag items from your closet" tip - the form has no tagger. */}
         </View>
+      </ScrollView>
 
+      {/* Fixed footer so Post stays reachable while typing the caption. */}
+      <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.postButton, posting && styles.postButtonDisabled]}
           onPress={handlePost}
@@ -252,7 +261,8 @@ export default function CreatePostScreen() {
             <Text style={styles.postButtonText}>Post</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+      </View>
+      </KeyboardAvoidingView>
 
       <SuccessAnimation
         visible={showSuccess}
@@ -306,11 +316,15 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginTop: 12,
   },
+  footer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
+    backgroundColor: colors.bone,
+  },
   postButton: {
     borderRadius: radius.full,
-    marginHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 60,
     backgroundColor: colors.rust,
     paddingVertical: 16,
     alignItems: 'center',
@@ -459,6 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
+    marginBottom: 24,
     padding: 20,
     backgroundColor: colors.paper,
   },

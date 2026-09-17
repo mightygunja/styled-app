@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,6 +22,7 @@ import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import LoginHero from '../components/LoginHero';
 import BrandWordmark from '../components/BrandWordmark';
+import Button from '../components/Button';
 import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
 import { GUIDES } from './GuideScreens';
@@ -87,7 +87,6 @@ export default function LoginScreen() {
   const heroIn = useRef(new Animated.Value(0)).current;
   const titleIn = useRef(new Animated.Value(0)).current;
   const formIn = useRef(new Animated.Value(0)).current;
-  const pressScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.stagger(140, [
@@ -139,10 +138,6 @@ export default function LoginScreen() {
     }
   };
 
-  const pressIn = () =>
-    Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
-  const pressOut = () =>
-    Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 40 }).start();
 
   const intro = (
     <Animated.View style={[styles.intro, rise(titleIn)]}>
@@ -221,22 +216,18 @@ export default function LoginScreen() {
               </View>
             )}
 
-            <Animated.View style={{ transform: [{ scale: pressScale }] }}>
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
-                onPressIn={pressIn}
-                onPressOut={pressOut}
-                disabled={loading}
-                activeOpacity={1}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.buttonText}>Sign in</Text>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
+            {/* The shared primary Button, so the CTA matches Intro and the survey
+                (label, shadow, press scale, disabled treatment). */}
+            <Button
+              title="Sign in"
+              variant="primary"
+              size="large"
+              fullWidth
+              loading={loading}
+              disabled={loading}
+              onPress={handleLogin}
+              style={styles.button}
+            />
 
             <TouchableOpacity
               style={styles.linkButton}
@@ -514,6 +505,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   legalDot: {
+    fontFamily: fonts.sans,
     color: colors.inkFaint,
   },
   legalCopy: {
@@ -552,20 +544,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  button: {
-    backgroundColor: colors.rust,
-    borderRadius: radius.full,
-    paddingVertical: 17,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: { opacity: 0.55 },
-  buttonText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 15,
-    letterSpacing: 0.4,
-    color: colors.white,
-  },
+  button: { marginTop: 4 },
 
   forgotButton: { alignSelf: 'flex-end', paddingVertical: 6 },
   forgotText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.rust },

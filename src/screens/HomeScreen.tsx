@@ -159,6 +159,7 @@ export default function HomeScreen() {
   // profile, and every surface filters to their department from then on.
   const [needsWardrobeFocus, setNeedsWardrobeFocus] = useState(false);
   const [savingFocus, setSavingFocus] = useState(false);
+  const [savingLook, setSavingLook] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
   // Trend remixes: what's moving in the world, anchored to this closet.
   // Regular mode renders the lead one as a card; starter mode (empty
@@ -524,18 +525,25 @@ export default function HomeScreen() {
   };
 
   const handleSave = async () => {
-    if (!look) return;
+    if (!look || savingLook) return;
+    setSavingLook(true);
     try {
+      // Saved looks display the occasion, so store the chip the user chose
+      // ('Weekend'), not the engine's key ('casual').
+      const occasionLabel =
+        OCCASION_OPTIONS.find(option => option.value === look.occasion)?.label || look.occasion;
       await outfitsService.create(
         getCurrentUserId(),
         look.items.map(item => item.id),
-        look.occasion,
+        occasionLabel,
         look.title
       );
       showToast('Look saved!', 'success');
     } catch (error) {
       console.error('Error saving look:', error);
       showToast('Failed to save look', 'error');
+    } finally {
+      setSavingLook(false);
     }
   };
 
@@ -728,7 +736,13 @@ export default function HomeScreen() {
           />
         )
       ) : (
-        <Button title="Save this look" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+        <Button
+          title="Save this look"
+          variant="primary"
+          onPress={handleSave}
+          loading={savingLook}
+          style={{ flex: 1 }}
+        />
       )}
     </View>
   ) : null;
@@ -882,7 +896,7 @@ export default function HomeScreen() {
               accessibilityLabel="Community feed"
             >
               <View style={styles.menuIconSlot}>
-                <Text style={styles.socialIcon}>◎</Text>
+                <Ionicons name="people-outline" size={20} color={colors.ink} />
               </View>
               <Text style={styles.menuButtonLabel}>COMMUNITY</Text>
             </TouchableOpacity>
@@ -919,7 +933,7 @@ export default function HomeScreen() {
                       accessibilityLabel="Community feed"
                     >
                       <View style={styles.menuIconSlot}>
-                        <Text style={styles.socialIcon}>◎</Text>
+                        <Ionicons name="people-outline" size={20} color={colors.ink} />
                       </View>
                       <Text style={styles.menuButtonLabel}>COMMUNITY</Text>
                     </TouchableOpacity>
@@ -982,7 +996,7 @@ export default function HomeScreen() {
               <Text style={styles.profilePromptEyebrow}>TWO MINUTES</Text>
               <Text style={styles.profilePromptTitle}>Help your stylist know you</Text>
               <Text style={styles.profilePromptLine}>
-                Four questions — your build, your taste, your hard nos — and every recommendation
+                Five questions — your wardrobe, your build, your taste, your hard nos — and every recommendation
                 sharpens from today.
               </Text>
               <View style={styles.profilePromptActions}>
@@ -1153,17 +1167,15 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hair,
     backgroundColor: colors.bone,
   },
-  // Wide enough for the caption beneath the glyph — the ◎ read as a mystery
-  // without one.
+  // Wide enough for the caption beneath the icon.
   menuButton: {
     minWidth: 52,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Both glyphs sit in the same fixed-height slot so the captions share a
-  // baseline — the ◎ is a text glyph with taller line metrics than the
-  // 20px bag icon, which used to push its caption a few pixels lower.
+  // Both icons sit in the same fixed-height slot so the captions share a
+  // baseline.
   menuIconSlot: {
     height: 24,
     justifyContent: 'center',
@@ -1182,11 +1194,6 @@ const styles = StyleSheet.create({
   },
   headerRightRow: {
     flexDirection: 'row',
-  },
-  socialIcon: {
-    fontSize: 20,
-    lineHeight: 24,
-    color: colors.ink,
   },
   headerTitle: {
     fontFamily: fonts.sansSemiBold,

@@ -424,18 +424,21 @@ export default function ProductDetailScreen() {
           >
             <Text style={styles.dismissText}>Not for me — show me less like this</Text>
           </TouchableOpacity>
-
-          <Button
-            // Named for where the tap lands, which under Amazon is usually
-            // Amazon rather than the catalogue retailer.
-            title={opening ? 'Opening…' : `Shop at ${destination ?? product.retailer}`}
-            onPress={() => handleShop(product)}
-            disabled={opening}
-            fullWidth
-            style={{ marginTop: spacing.section }}
-          />
         </View>
       </ScrollView>
+
+      {/* Pinned below the scroll so the one action the page exists for is
+          always in reach, not parked under the whole argument. */}
+      <SafeAreaView edges={['bottom']} style={styles.footer}>
+        <Button
+          // Named for where the tap lands, which under Amazon is usually
+          // Amazon rather than the catalogue retailer.
+          title={opening ? 'Opening…' : `Shop at ${destination ?? product.retailer}`}
+          onPress={() => handleShop(product)}
+          disabled={opening}
+          fullWidth
+        />
+      </SafeAreaView>
     </SafeAreaView>
   );
 }
@@ -465,7 +468,15 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   content: {
-    paddingBottom: 60,
+    paddingBottom: spacing.lg,
+  },
+  footer: {
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.bone,
+    borderTopWidth: 1,
+    borderTopColor: colors.hair,
   },
   loadingBox: {
     flex: 1,

@@ -104,7 +104,17 @@ export const closetSharingService = {
    * what comes back.
    */
   getSharedCloset: async (ownerId: string, viewerId: string): Promise<SharedClosetItem[]> => {
-    const shareDoc = await getDoc(doc(db, 'closetShares', shareId(ownerId, viewerId)));
+    // The read rule checks the share's own fields, so a revoked (deleted)
+    // share is denied rather than returned empty - both mean the same thing.
+    let shareDoc;
+    try {
+      shareDoc = await getDoc(doc(db, 'closetShares', shareId(ownerId, viewerId)));
+    } catch (error: any) {
+      if (error?.code === 'permission-denied') {
+        throw new Error('That closet is no longer shared with you.');
+      }
+      throw error;
+    }
     if (!shareDoc.exists()) {
       throw new Error('That closet is no longer shared with you.');
     }

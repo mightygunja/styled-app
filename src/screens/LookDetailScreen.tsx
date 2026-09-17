@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { Look, Item } from '../types';
 import { Product } from '../models/product';
-import { lookAPI, closetAPI, getCurrentUserId } from '../services/api';
+import { lookAPI, closetAPI, paletteAPI, getCurrentUserId } from '../services/api';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { affiliateClicksService } from '../services/firestore';
 import {
@@ -25,7 +25,7 @@ import {
   productFromListing,
   shopDestination,
 } from '../services/affiliateNetwork';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 /** A look piece plus where its shop button goes; null destination = no button. */
 type LookPiece = Item & { type?: string; product: Product; destination: string | null };
@@ -51,6 +51,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
   }, []);
   const [paletteLooks, setPaletteLooks] = useState<Look[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchingCloset, setSearchingCloset] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
@@ -65,13 +66,16 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
       console.log('Look data:', response.data);
       setLook(response.data);
 
-      // Fetch other looks in the same palette
+      // Other looks in the same palette, whatever their occasion. getAll
+      // defaults to 'home' looks, so work and going-out siblings were never
+      // found. The rail is optional: a failure falls back to the palette card.
       if (response.data.paletteId) {
-        const allLooksResponse = await lookAPI.getAll({ limit: 50 });
-        const samePaletteLooks = allLooksResponse.data.filter(
-          l =>l.paletteId === response.data.paletteId && l.id !== lookId
-        );
-        setPaletteLooks(samePaletteLooks);
+        try {
+          const paletteResponse = await paletteAPI.getLooks(response.data.paletteId);
+          setPaletteLooks((paletteResponse.data || []).filter(l => l.id !== lookId));
+        } catch (paletteError) {
+          console.error('Error loading palette looks:', paletteError);
+        }
       }
 
       // Seed the favorite state from the user's real favorites. The heart
@@ -104,12 +108,15 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
     }
   };
 
+  // Its own flag: reusing the page `loading` swapped the whole look for the
+  // full-screen spinner and remounted it scrolled to the top.
   const handleShopMyCloset = async () => {
+    if (searchingCloset) return;
     try {
-      setLoading(true);
+      setSearchingCloset(true);
       const response = await closetAPI.shopMyCloset(lookId, getCurrentUserId(), 10);
-      setLoading(false);
-      
+      setSearchingCloset(false);
+
       if (response.data.length === 0) {
         Alert.alert('No matches yet', 'Nothing in your closet matches this look. Add more items and try again.');
         return;
@@ -122,7 +129,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
         source: 'look',
       });
     } catch (error) {
-      setLoading(false);
+      setSearchingCloset(false);
       console.error('Error finding closet items:', error);
       Alert.alert('Something went wrong', "Couldn't search your closet. Please try again.");
     }
@@ -257,9 +264,20 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
           )}
 
           {/* Shop My Closet Button */}
-          <TouchableOpacity style={styles.shopMyClosetButton} onPress={handleShopMyCloset}>
-            <Text style={styles.shopMyClosetText}>Shop My Closet</Text>
-            <Text style={styles.shopMyClosetSubtext}>Find similar items you already own</Text>
+          <TouchableOpacity
+            style={styles.shopMyClosetButton}
+            onPress={handleShopMyCloset}
+            disabled={searchingCloset}
+            accessibilityRole="button"
+          >
+            {searchingCloset ? (
+              <ActivityIndicator color={colors.ink} />
+            ) : (
+              <>
+                <Text style={styles.shopMyClosetText}>Shop My Closet</Text>
+                <Text style={styles.shopMyClosetSubtext}>Find similar items you already own</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Palette Info */}
@@ -390,7 +408,7 @@ export default function LookDetailScreen({ route, navigation }: LookDetailScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -398,8 +416,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingText: {
+    ...textType.body,
     marginTop: 16,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   errorContainer: {
@@ -409,7 +427,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   errorText: {
-    fontSize: 18,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.inkMuted,
     marginBottom: 24,
   },
@@ -466,12 +485,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 30,
+    fontFamily: fonts.serif,
     color: colors.ink,
     marginBottom: 12,
   },
   description: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
     lineHeight: 24,
@@ -498,8 +518,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 22,
+    fontFamily: fonts.serif,
     color: colors.ink,
     marginBottom: 12,
   },
@@ -515,6 +535,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paletteDescription: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     marginBottom: 12,
@@ -541,11 +562,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   itemCount: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     marginBottom: 16,
   },
   catalogNotice: {
+    fontFamily: fonts.sans,
     fontSize: 11,
     lineHeight: 16,
     color: colors.tobacco,
@@ -553,6 +576,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   itemCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     backgroundColor: colors.card,
     marginBottom: 16,
@@ -592,11 +616,13 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   itemBrand: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     marginBottom: 8,
   },
   itemDetail: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
     marginBottom: 8,
@@ -627,6 +653,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   miniLookCard: {
+    borderRadius: radius.md,
     width: 140,
     marginRight: 12,
     backgroundColor: colors.card,
@@ -648,6 +675,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   viewAllCard: {
+    borderRadius: radius.md,
     width: 140,
     height: 180,
     backgroundColor: colors.ink,
@@ -669,6 +697,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+    // Holds its height while the label is swapped for the spinner.
+    minHeight: 72,
   },
   shopMyClosetText: {
     color: colors.ink,
@@ -677,6 +708,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   shopMyClosetSubtext: {
+    fontFamily: fonts.sans,
     color: colors.inkMuted,
     fontSize: 12,
   },

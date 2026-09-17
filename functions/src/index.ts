@@ -40,7 +40,7 @@ export const classifyGarmentImage = functions
                 type: 'text',
                 text: `Analyze this clothing item and provide detailed attributes in JSON format. Return ONLY valid JSON with these fields:
 {
-  "category": "tops|bottoms|dresses|outerwear|shoes|accessories",
+  "category": "tops|bottoms|dresses|outerwear|shoes|bags|accessories",
   "subcategory": "specific type (e.g., blouse, jeans, sneakers)",
   "color": "primary color",
   "secondaryColors": ["array", "of", "additional", "colors"],
@@ -339,7 +339,7 @@ ${profileLines.length > 0 ? `Their profile:\n${profileLines.join('\n')}\n` : 'Th
 
 Return ONLY valid JSON with this exact shape:
 {
-  "classification": { "category": "tops|bottoms|dresses|outerwear|shoes|accessories", "subcategory": "specific type", "color": "primary color", "pattern": "solid|striped|floral|etc", "style": "casual|formal|sporty|etc" },
+  "classification": { "category": "tops|bottoms|dresses|outerwear|shoes|bags|accessories", "subcategory": "specific type", "color": "primary color", "pattern": "solid|striped|floral|etc", "style": "casual|formal|sporty|etc" },
   "colorVerdict": { "matches": true|false|null, "reasoning": "1 sentence" },
   "fitVerdict": { "matches": true|false|null, "reasoning": "1 sentence" },
   "styleVerdict": { "matches": true|false|null, "reasoning": "1 sentence" },

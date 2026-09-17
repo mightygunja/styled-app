@@ -28,6 +28,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -183,9 +184,32 @@ export default function OnboardingScreen() {
     ...(bodyType ? { bodyAnalysis: buildBodyAnalysisResult(bodyType, 'quiz') } : {}),
   });
 
+  // saveStyleProfile replaces the whole field, and /survey is reachable by an
+  // existing user on web. Merge over what is saved so a retake keeps the
+  // colour analysis and any builder edits the survey does not ask about.
+  const saveProfile = async () => {
+    const userId = getCurrentUserId();
+    const existing = await styleProfileService.getStyleProfile(userId);
+    const answers = buildProfile();
+    const existingColors = existing?.colorProfile;
+    const hasColors = !!existingColors && (
+      (existingColors.primary?.length ?? 0) +
+      (existingColors.secondary?.length ?? 0) +
+      (existingColors.stretch?.length ?? 0)
+    ) > 0;
+    const merged: PersonalStyleProfile = existing
+      ? {
+          ...existing,
+          ...answers,
+          colorProfile: hasColors ? existingColors! : answers.colorProfile,
+          fitPreferences: { ...(existing.fitPreferences || {}), ...answers.fitPreferences },
+        }
+      : answers;
+    await styleProfileService.saveStyleProfile(userId, merged);
+  };
+
   const startSave = () => {
-    savePromise.current = styleProfileService
-      .saveStyleProfile(getCurrentUserId(), buildProfile())
+    savePromise.current = saveProfile()
       .catch(error => {
         console.error('Error saving onboarding profile:', error);
         // Rethrow so the CTA's await can retry rather than silently losing
@@ -207,9 +231,15 @@ export default function OnboardingScreen() {
       // One retry, awaited. If Firestore is down twice, proceeding without
       // the profile beats trapping the user on the reveal screen.
       try {
-        await styleProfileService.saveStyleProfile(getCurrentUserId(), buildProfile());
+        await saveProfile();
       } catch (error) {
         console.error('Onboarding profile save failed twice, continuing:', error);
+        // Still not trapping the user, but not pretending either: the reveal
+        // just said the stylist knows their answers.
+        Alert.alert(
+          "We couldn't save your answers",
+          'Check your connection. You can retake the style survey from Home.'
+        );
       }
     } finally {
       setFinishing(false);
@@ -580,7 +610,7 @@ export default function OnboardingScreen() {
           {focus && (
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>DRESSING</Text>
-              <Text style={styles.revealValue}>
+              <Text style={[styles.revealValue, styles.revealValueCaps]}>
                 {FOCUS_OPTIONS.find(o => o.key === focus)?.label ?? 'Everything'}
               </Text>
             </View>
@@ -588,7 +618,7 @@ export default function OnboardingScreen() {
           {bodyType && (
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>CUTS</Text>
-              <Text style={styles.revealValue}>
+              <Text style={[styles.revealValue, styles.revealValueCaps]}>
                 {BODY_TYPE_GUIDES[bodyType].recommendedSilhouettes.slice(0, 3).join(', ')}
               </Text>
             </View>
@@ -596,7 +626,7 @@ export default function OnboardingScreen() {
           {occasionIndex !== null && (
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>LEANS</Text>
-              <Text style={styles.revealValue}>{OCCASIONS[occasionIndex].label}</Text>
+              <Text style={[styles.revealValue, styles.revealValueCaps]}>{OCCASIONS[occasionIndex].label}</Text>
             </View>
           )}
           {nevers.length > 0 && (
@@ -625,7 +655,9 @@ export default function OnboardingScreen() {
                 ? 'One moment…'
                 : presentedAsRoute
                   ? 'Done — style me sharper'
-                  : 'Add my first closet items'
+                  // Completion lands on Home (whose first-run block offers
+                  // "Add your first pieces"), so the label promises only that.
+                  : 'Take me in'
             }
             variant="primary"
             fullWidth
@@ -765,7 +797,8 @@ const styles = StyleSheet.create({
     ...textType.body,
     fontSize: 14,
     color: colors.ink,
-    textTransform: 'capitalize',
   },
+  // Short list values only; a sentence would be title-cased word by word.
+  revealValueCaps: { textTransform: 'capitalize' },
   revealBody: { ...textType.body, color: colors.inkMuted, marginTop: spacing.lg, lineHeight: 22 },
 });

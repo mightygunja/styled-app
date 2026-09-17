@@ -15,7 +15,9 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
+import BackButton from '../components/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
@@ -171,18 +173,17 @@ function GuidePage({
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Back"
+      {/* Pinned above the scroll so the exit stays in view on a long article. */}
+      <View style={styles.headerBar}>
+        <BackButton
           onPress={() => {
             if (navigation.canGoBack()) navigation.goBack();
             else navigation.navigate(user ? (isNewUser ? 'Onboarding' : 'MainTabs') : 'Login');
           }}
           style={styles.back}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
+        />
+      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <BrandWordmark variant="header" />
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.title}>{title}</Text>
@@ -219,7 +220,7 @@ function GuidePage({
               onPress={() => navigation.navigate(g.route)}
             >
               <Text style={styles.moreTitle}>{g.title}</Text>
-              <Text style={styles.moreArrow}>→</Text>
+              <Ionicons name="arrow-forward" size={16} color={colors.camel} />
             </TouchableOpacity>
           ))}
         </View>
@@ -1047,8 +1048,14 @@ const styles = StyleSheet.create({
     maxWidth: 720,
     alignSelf: 'center',
   },
-  back: { paddingVertical: 8, marginBottom: spacing.sm },
-  backText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.inkMuted },
+  headerBar: {
+    paddingHorizontal: spacing.page,
+    paddingTop: spacing.sm,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  back: { paddingHorizontal: 0, marginBottom: 0 },
   eyebrow: { ...textType.eyebrow, marginTop: spacing.lg },
   title: {
     fontFamily: fonts.serif,
@@ -1086,10 +1093,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingLeft: 2,
   },
-  liDot: { color: colors.camel, fontSize: 16, lineHeight: 22 },
+  liDot: { fontFamily: fonts.sans, color: colors.camel, fontSize: 16, lineHeight: 22 },
 
   cta: {
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     borderWidth: 1,
@@ -1138,5 +1145,4 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   moreTitle: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink, flex: 1 },
-  moreArrow: { color: colors.camel, fontSize: 16 },
 });

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  processColor,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
@@ -34,6 +35,12 @@ import { colors as ds, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
+
+/** Closet colours are free text ("navy blue", "Unknown"); only paintable ones get a swatch. */
+function swatchColor(value?: string): string | null {
+  const color = (value || '').trim().toLowerCase();
+  return color && processColor(color) != null ? color : null;
+}
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -350,9 +357,7 @@ export default function ClosetOrganizationScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
+        <BackButton style={styles.backButton} />
         <Text style={styles.headerTitle}>Closet Organization</Text>
         <View style={{ width: 50 }} />
       </View>
@@ -493,12 +498,19 @@ export default function ClosetOrganizationScreen() {
               <View style={styles.capsuleStat}>
                 <Text style={styles.capsuleStatLabel}>Color Palette</Text>
                 <View style={styles.colorPalette}>
-                  {capsuleWardrobe.colorPalette.map((color, index) => (
-                    <View
-                      key={index}
-                      style={[styles.colorSwatch, { backgroundColor: color }]}
-                    />
-                  ))}
+                  {capsuleWardrobe.colorPalette.map((color, index) => {
+                    const swatch = swatchColor(color);
+                    // A colour name the renderer can't paint would be an empty
+                    // circle, so it is written out instead.
+                    return swatch ? (
+                      <View
+                        key={index}
+                        style={[styles.colorSwatch, { backgroundColor: swatch }]}
+                      />
+                    ) : (
+                      <Text key={index} style={styles.colorName}>{color}</Text>
+                    );
+                  })}
                 </View>
               </View>
             </View>
@@ -564,7 +576,7 @@ export default function ClosetOrganizationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ds.card,
+    backgroundColor: ds.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -573,6 +585,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: ds.inkMuted,
   },
@@ -612,17 +625,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: ds.hair,
   },
+  // The shared BackButton, minus its standalone spacing, inside the header row.
   backButton: {
-    fontSize: 16,
-    color: ds.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
     color: ds.ink,
   },
+  // Full-width bar, so square - a radius only showed as clipped corners.
   statsBanner: {
-    borderRadius: radius.md,
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 20,
@@ -640,6 +654,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: ds.inkMuted,
   },
@@ -724,6 +739,7 @@ const styles = StyleSheet.create({
     color: ds.ink,
   },
   sectionCount: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: ds.inkMuted,
   },
@@ -742,6 +758,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   itemName: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: ds.inkMuted,
     lineHeight: 16,
@@ -761,6 +778,7 @@ const styles = StyleSheet.create({
     color: ds.inkMuted,
   },
   moreLabel: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: ds.inkFaint,
   },
@@ -799,6 +817,7 @@ const styles = StyleSheet.create({
     color: ds.inkMuted,
   },
   tipPriority: {
+    borderRadius: radius.full,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
@@ -808,6 +827,7 @@ const styles = StyleSheet.create({
     color: ds.white,
   },
   tipText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: ds.inkMuted,
     lineHeight: 20,
@@ -822,11 +842,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   declutterSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: ds.inkMuted,
     marginBottom: 20,
   },
   declutterCard: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     backgroundColor: ds.card,
     marginBottom: 16,
@@ -852,6 +874,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   declutterReason: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -863,35 +886,11 @@ const styles = StyleSheet.create({
     color: ds.white,
   },
   declutterExplanation: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: ds.inkMuted,
     marginBottom: 12,
     lineHeight: 18,
-  },
-  declutterConfidence: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  declutterConfidenceLabel: {
-    fontSize: 12,
-    color: ds.inkMuted,
-  },
-  declutterConfidenceBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: ds.paper,
-    overflow: 'hidden',
-  },
-  declutterConfidenceFill: {
-    height: '100%',
-    backgroundColor: ds.camel,
-  },
-  declutterConfidenceValue: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-    color: ds.camel,
   },
   declutterActions: {
     flexDirection: 'row',
@@ -906,8 +905,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   declutterActionButtonPrimary: {
-    backgroundColor: ds.ink,
-    borderColor: ds.ink,
+    backgroundColor: ds.rust,
+    borderColor: ds.rust,
   },
   declutterActionText: {
     fontSize: 13,
@@ -927,6 +926,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   capsuleSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: ds.inkMuted,
     marginBottom: 20,
@@ -945,7 +945,15 @@ const styles = StyleSheet.create({
   },
   colorPalette: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
+  },
+  colorName: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: ds.inkMuted,
+    textTransform: 'capitalize',
   },
   colorSwatch: {
     width: 40,
@@ -974,6 +982,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   gapText: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: ds.tobacco,
     marginBottom: 2,
@@ -1007,6 +1016,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   essentialText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: ds.inkMuted,
   },

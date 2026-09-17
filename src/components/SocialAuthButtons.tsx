@@ -12,6 +12,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, radius } from '../theme/designSystem';
 
+/** Apple's native button needs an explicit height; half of it gives the app's capsule. */
+const APPLE_BUTTON_HEIGHT = 52;
+
 interface Props {
   onError: (message: string) => void;
   disabled?: boolean;
@@ -125,7 +128,7 @@ export default function SocialAuthButtons({ onError, disabled }: Props) {
             <AppleAuth.AppleAuthenticationButton
               buttonType={AppleAuth.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={AppleAuth.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={12}
+              cornerRadius={APPLE_BUTTON_HEIGHT / 2}
               style={styles.appleButton}
               onPress={() => {
                 if (busy) return;
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
   appleButton: {
     // Apple's native button needs an explicit height; 52 matches the vertical
     // rhythm of the other buttons (15pt padding + 16pt line height + borders).
-    height: 52,
+    height: APPLE_BUTTON_HEIGHT,
     width: '100%',
   },
   // The three brand colours below (#000000 Apple, #4285F4 Google, #1877F2
@@ -230,8 +233,10 @@ const styles = StyleSheet.create({
   // constrain the mark and the button ground; restyling them to the app
   // palette would put the build at risk of a guideline rejection. Everything
   // around them - borders, dividers, secondary text - is on the tokens.
+  // Same capsule as the native button, so it does not change shape while loading.
   appleFallback: {
-    height: 52,
+    height: APPLE_BUTTON_HEIGHT,
+    borderRadius: radius.full,
     backgroundColor: '#000000',
     marginBottom: 0,
   },
@@ -253,6 +258,7 @@ const styles = StyleSheet.create({
   },
   facebookButton: {
     backgroundColor: '#1877F2',
+    borderRadius: radius.full,
   },
   facebookIcon: {
     fontFamily: fonts.sansSemiBold,

@@ -67,8 +67,16 @@ function getColorScore(items: ClosetItem[]): number {
   return totalPairs > 0 ? compatiblePairs / totalPairs : 0.5;
 }
 
+// Closet docs store `seasons` (array); older docs used `season`, which may be
+// an array or a single string.
+function itemSeasons(item: ClosetItem): string[] {
+  const raw: unknown = (item as { seasons?: unknown }).seasons ?? item.season;
+  if (Array.isArray(raw)) return raw.filter((s): s is string => typeof s === 'string' && s.length > 0);
+  return typeof raw === 'string' && raw ? [raw] : [];
+}
+
 function getSeasonScore(items: ClosetItem[]): number {
-  const seasons = items.map(item => item.season).filter(Boolean) as string[];
+  const seasons = items.flatMap(itemSeasons);
   if (seasons.length === 0) return 0.5;
   const uniqueSeasons = new Set(seasons);
   if (uniqueSeasons.size === 1) return 1;
@@ -113,7 +121,7 @@ function buildSuggestion(
     score,
     reason: generateReason(combo, colorScore, seasonScore, occasionScore > 0.3),
     occasion,
-    season: combo.map(i => i.season).filter(Boolean) as string[],
+    season: Array.from(new Set(combo.flatMap(itemSeasons))),
   };
 }
 

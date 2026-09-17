@@ -9,7 +9,7 @@ import { TrendPalette, Look } from '../types';
 import { paletteAPI, lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PaletteDetailRouteProp = RouteProp<RootStackParamList, 'PaletteDetail'>;
@@ -83,6 +83,11 @@ export default function PaletteDetailScreen() {
       // state - it must not read as "no looks for this palette".
       try {
         setLooks(await fetchPaletteLooks());
+        // Seed the hearts from the saved favourites - starting from an empty
+        // set made a tap on an already-saved look un-save it.
+        lookAPI.getFavorites(getCurrentUserId())
+          .then(res => setFavorites(new Set((res.data || []).map(look => look.id))))
+          .catch(favError => console.error('Error loading favourites:', favError));
       } catch (looksFetchError) {
         console.error('Error fetching palette looks:', looksFetchError);
         setLooksError(true);
@@ -234,7 +239,7 @@ export default function PaletteDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   content: {
     flex: 1,
@@ -245,8 +250,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...textType.body,
     marginTop: 16,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   errorContainer: {
@@ -256,6 +261,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
+    fontFamily: fonts.sans,
     fontSize: 18,
     color: colors.inkMuted,
     marginBottom: 20,
@@ -273,22 +279,19 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   paletteSection: {
-    borderRadius: radius.md,
     padding: 20,
     backgroundColor: colors.paper,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
   paletteName: {
-    fontSize: 28,
-    fontFamily: fonts.sansSemiBold,
+    ...textType.section,
     color: colors.ink,
     marginBottom: 8,
   },
   paletteDescription: {
-    fontSize: 16,
+    ...textType.body,
     color: colors.inkMuted,
-    lineHeight: 24,
     marginBottom: 20,
   },
   colorSwatchesLarge: {
@@ -343,6 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkFaint,
     textAlign: 'center',

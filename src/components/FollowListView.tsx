@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from './BackButton';
@@ -87,7 +88,7 @@ export default function FollowListView({ userId, mode }: Props) {
               <Text style={styles.displayName}>{item.displayName}</Text>
               <Text style={styles.username}>@{item.username}</Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -144,7 +145,6 @@ const styles = StyleSheet.create({
   rowInfo: { flex: 1, marginLeft: 12 },
   displayName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   username: { ...textType.meta, fontSize: 12, marginTop: 2 },
-  chevron: { fontSize: 20, color: colors.inkFaint },
 
   emptyBox: {
     borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.lg },

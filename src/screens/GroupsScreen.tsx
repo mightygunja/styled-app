@@ -448,6 +448,7 @@ const styles = StyleSheet.create({
   // Square, hairline-bordered, no drop shadow. The 16px radius and elevation
   // belonged to a different design language than the rest of the app.
   groupCard: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     backgroundColor: colors.card,
@@ -520,6 +521,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   eventCard: {
+    borderRadius: radius.md,
     marginHorizontal: 20,
     marginTop: 20,
     backgroundColor: colors.card,

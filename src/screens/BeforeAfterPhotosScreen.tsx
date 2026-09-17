@@ -12,6 +12,7 @@ import {
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +21,8 @@ import { beforeAfterService, BeforeAfterPhoto, PhotoPair } from '../services/bef
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SuccessAnimation from '../components/SuccessAnimation';
+import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
@@ -207,6 +210,7 @@ export default function BeforeAfterPhotosScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <BackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
           <Text style={styles.loadingText}>Loading photos...</Text>
@@ -219,9 +223,7 @@ export default function BeforeAfterPhotosScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
+        <BackButton style={styles.backButton} />
         <Text style={styles.title}>Transformation</Text>
         <View style={{ width: 50 }} />
       </View>
@@ -257,7 +259,7 @@ export default function BeforeAfterPhotosScreen() {
           <View style={styles.pairsContainer}>
             {photoPairs.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>◎</Text>
+                <Ionicons name="images-outline" size={48} color={colors.ink} style={styles.emptyIcon} />
                 <Text style={styles.emptyText}>No comparisons yet</Text>
                 <Text style={styles.emptySubtext}>Upload before and after photos to create comparisons</Text>
               </View>
@@ -272,7 +274,7 @@ export default function BeforeAfterPhotosScreen() {
             {beforePhotos.map(renderPhoto)}
             {beforePhotos.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>○</Text>
+                <Ionicons name="camera-outline" size={48} color={colors.ink} style={styles.emptyIcon} />
                 <Text style={styles.emptyText}>No before photos</Text>
               </View>
             )}
@@ -284,7 +286,8 @@ export default function BeforeAfterPhotosScreen() {
             {afterPhotos.map(renderPhoto)}
             {afterPhotos.length === 0 && (
               <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>No after photos</Text>
+                <Ionicons name="image-outline" size={48} color={colors.ink} style={styles.emptyIcon} />
+                <Text style={styles.emptyText}>No after photos</Text>
               </View>
             )}
           </View>
@@ -293,32 +296,23 @@ export default function BeforeAfterPhotosScreen() {
 
       {/* Upload Buttons */}
       <View style={styles.uploadButtons}>
-        <TouchableOpacity
-          style={[styles.uploadButton, styles.uploadButtonBefore]}
-          onPress={() =>pickImage('before')}
+        <Button
+          title="Add Before"
+          variant="outline"
+          size="large"
           disabled={uploading}
-        >
-          {uploading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <>
-                            <Text style={styles.uploadText}>Add Before</Text>
-            </>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.uploadButton, styles.uploadButtonAfter]}
-          onPress={() =>pickImage('after')}
+          onPress={() => pickImage('before')}
+          style={styles.uploadButton}
+        />
+        <Button
+          title="Add After"
+          variant="primary"
+          size="large"
+          loading={uploading}
           disabled={uploading}
-        >
-          {uploading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <>
-                            <Text style={styles.uploadText}>Add After</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          onPress={() => pickImage('after')}
+          style={styles.uploadButton}
+        />
       </View>
 
       <SuccessAnimation
@@ -340,7 +334,7 @@ export default function BeforeAfterPhotosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -349,6 +343,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -360,13 +355,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  // The shared BackButton, minus its standalone spacing, inside the header row.
   backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   title: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
     color: colors.ink,
   },
   tabs: {
@@ -422,7 +418,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   photoLabel: {
-    borderRadius: radius.sm,
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     left: 8,
@@ -447,6 +443,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   pairCaption: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -495,6 +492,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   typeTag: {
+    borderRadius: radius.full,
     position: 'absolute',
     top: 8,
     right: 8,
@@ -514,6 +512,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   photoCaption: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -522,10 +521,8 @@ const styles = StyleSheet.create({
     padding: 60,
     alignItems: 'center',
   },
-  emptyEmoji: {
-    fontSize: 48,
+  emptyIcon: {
     marginBottom: 16,
-    color: colors.ink,
   },
   emptyText: {
     fontSize: 18,
@@ -534,6 +531,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
@@ -547,24 +545,5 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    gap: 8,
-  },
-  uploadButtonBefore: {
-    backgroundColor: colors.inkMuted,
-  },
-  uploadButtonAfter: {
-    backgroundColor: colors.camel,
-  },
-  uploadIcon: {
-    fontSize: 20,
-  },
-  uploadText: {
-    color: colors.white,
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
   },
 });

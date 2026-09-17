@@ -119,7 +119,7 @@ export default function MessagesScreen() {
         ) : (
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarInitial}>
-              {otherUser?.displayName.charAt(0) || 'U'}
+              {otherUser?.displayName?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
         )}

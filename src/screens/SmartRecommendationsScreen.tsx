@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -16,10 +17,26 @@ import { dailyOutfitService, DailyOutfit, OccasionKey } from '../services/dailyO
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService } from '../services/firestore';
+import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { getPublishedTrends } from '../services/trendService';
+import { FashionTrend, itemMatchesTrend } from '../models/fashionTrend';
 import { Item } from '../types';
 import Toast from '../components/Toast';
+import Button from '../components/Button';
+import BackButton from '../components/BackButton';
+import Chip from '../components/Chip';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
+
+// Ionicons in place of the ☀ ☁ ☂ ❄ characters, which iOS draws as colour emoji.
+const WEATHER_ICON: Record<CurrentWeather['condition'], keyof typeof Ionicons.glyphMap> = {
+  sunny: 'sunny-outline',
+  cloudy: 'cloud-outline',
+  rainy: 'rainy-outline',
+  snowy: 'snow-outline',
+  cold: 'snow-outline',
+  hot: 'sunny-outline',
+};
 
 // Tiles are three across as a share of the card, not of the raw window: the
 // old `(window width - 60) / 3` measured once at module load gave 460px tiles
@@ -39,6 +56,8 @@ export default function SmartRecommendationsScreen() {
   // closet alone rather than being dressed for invented conditions.
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [weatherLoaded, setWeatherLoaded] = useState(false);
+  // Which card's save is in flight - a double tap used to write two docs.
+  const [savingId, setSavingId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const occasions: OccasionKey[] = ['casual', 'work', 'formal', 'date', 'workout', 'party'];
@@ -67,8 +86,12 @@ export default function SmartRecommendationsScreen() {
     try {
       setLoading(true);
 
-      // Get closet items
-      const response = await closetAPI.getItems(getCurrentUserId());
+      // Closet items, plus the survey's avoid rules so this screen and Home
+      // compose from the same wearable pool.
+      const [response, matchContext] = await Promise.all([
+        closetAPI.getItems(getCurrentUserId()),
+        buildProfileMatchContext(getCurrentUserId()).catch(() => undefined),
+      ]);
       const items: Item[] = response.data.map((item: any) => ({
         id: item.id,
         name: item.name || 'Item',
@@ -92,7 +115,33 @@ export default function SmartRecommendationsScreen() {
         fitType: item.fitType,
       }));
 
-      const pool = dailyOutfitService.buildOutfits(items, {
+      // Same rule as Home: avoid rules are a strong preference, not a veto -
+      // an avoided piece stays in only when it anchors a live trend.
+      const avoidRules = matchContext?.avoidRules ?? [];
+      let activeTrends: FashionTrend[] = [];
+      if (avoidRules.length > 0) {
+        try {
+          activeTrends = await getPublishedTrends();
+        } catch {}
+      }
+      const anchorsCurrentTrend = (item: Item) =>
+        activeTrends.some(t => {
+          if (t.stage === 'fading') return false;
+          const match = itemMatchesTrend(t, item);
+          return match === 'garment' || match === 'silhouette';
+        });
+      const wearable =
+        avoidRules.length === 0
+          ? items
+          : items.filter(item => {
+              const haystack = [item.name, item.subcategory, item.category, ...(item.tags || [])]
+                .join(' ')
+                .toLowerCase();
+              const hitsRule = avoidRules.some(rule => haystack.includes(rule.toLowerCase()));
+              return !hitsRule || anchorsCurrentTrend(item);
+            });
+
+      const pool = dailyOutfitService.buildOutfits(wearable, {
         occasion: selectedOccasion,
         weather: weather
           ? { condition: weather.condition, temperature: weather.temperature }
@@ -112,6 +161,8 @@ export default function SmartRecommendationsScreen() {
   };
 
   const handleAcceptRecommendation = async (rec: DailyOutfit) => {
+    if (savingId) return;
+    setSavingId(rec.id);
     try {
       await outfitsService.create(
         getCurrentUserId(),
@@ -123,21 +174,9 @@ export default function SmartRecommendationsScreen() {
     } catch (error) {
       console.error('Error saving outfit:', error);
       showToast('Failed to save outfit', 'error');
+    } finally {
+      setSavingId(null);
     }
-  };
-
-  const getOccasionEmoji = (occasion: OccasionKey): string => {
-    const emojiMap: { [key in OccasionKey]: string } = {
-      casual: '',
-      work: '▭',
-      formal: '◇',
-      party: '◉',
-      date: '◎',
-      workout: '○',
-      travel: '◐',
-      outdoor: '◆',
-    };
-    return emojiMap[occasion];
   };
 
   const renderRecommendation = (rec: DailyOutfit) => (
@@ -177,12 +216,13 @@ export default function SmartRecommendationsScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.acceptButton}
-          onPress={() =>handleAcceptRecommendation(rec)}
-        >
-          <Text style={styles.acceptButtonText}>✓ Save Outfit</Text>
-        </TouchableOpacity>
+        <Button
+          title="Save outfit"
+          variant="primary"
+          onPress={() => handleAcceptRecommendation(rec)}
+          loading={savingId === rec.id}
+          style={{ flex: 1 }}
+        />
         {/* The builder opens empty - "Build your own" says so, where
             "Modify" promised to carry this outfit over and didn't. */}
         <TouchableOpacity
@@ -202,21 +242,23 @@ export default function SmartRecommendationsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Smart Recommendations</Text>
-        <TouchableOpacity onPress={loadRecommendations}>
-          <Text style={styles.refreshButton}>○</Text>
+        <BackButton style={styles.headerBack} />
+        {/* Named as the More menu names it. */}
+        <Text style={styles.headerTitle}>Outfit ideas</Text>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={loadRecommendations}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh outfit ideas"
+        >
+          <Ionicons name="refresh-outline" size={22} color={colors.ink} />
         </TouchableOpacity>
       </View>
 
       {/* Weather Info - a real reading or an honest absence, never 72°-and-sunny invented */}
       {weather ? (
         <View style={styles.weatherCard}>
-          <Text style={styles.weatherIcon}>
-            {{ sunny: '☀', cloudy: '☁', rainy: '☂', snowy: '❄', cold: '❄', hot: '☀' }[weather.condition]}
-          </Text>
+          <Ionicons name={WEATHER_ICON[weather.condition]} size={36} color={colors.tobacco} />
           <View>
             <Text style={styles.weatherTemp}>{weather.temperature}°F</Text>
             <Text style={styles.weatherCondition}>
@@ -239,25 +281,15 @@ export default function SmartRecommendationsScreen() {
         style={styles.occasionScroll}
         contentContainerStyle={styles.occasionContainer}
       >
+        {/* Text-only chips: the geometric glyphs that replaced the emoji
+            carried no meaning. */}
         {occasions.map((occasion) => (
-          <TouchableOpacity
+          <Chip
             key={occasion}
-            style={[
-              styles.occasionChip,
-              selectedOccasion === occasion && styles.occasionChipActive,
-            ]}
-            onPress={() =>setSelectedOccasion(occasion)}
-          >
-            <Text style={styles.occasionEmoji}>{getOccasionEmoji(occasion)}</Text>
-            <Text
-              style={[
-                styles.occasionText,
-                selectedOccasion === occasion && styles.occasionTextActive,
-              ]}
-            >
-              {occasion.charAt(0).toUpperCase() + occasion.slice(1)}
-            </Text>
-          </TouchableOpacity>
+            label={occasion}
+            active={selectedOccasion === occasion}
+            onPress={() => setSelectedOccasion(occasion)}
+          />
         ))}
       </ScrollView>
 
@@ -282,13 +314,12 @@ export default function SmartRecommendationsScreen() {
             <Text style={styles.emptyText}>No recommendations available</Text>
             <Text style={styles.emptySubtext}>Add more items to your closet for better recommendations
             </Text>
-            <TouchableOpacity
-              style={styles.emptyAction}
-              accessibilityRole="button"
-              onPress={() =>navigation.navigate('AddClosetItem')}
-            >
-              <Text style={styles.emptyActionText}>Add pieces</Text>
-            </TouchableOpacity>
+            <Button
+              title="Add pieces"
+              variant="primary"
+              onPress={() => navigation.navigate('AddClosetItem')}
+              style={{ marginTop: 20 }}
+            />
           </View>
         ) : (
           <>
@@ -316,16 +347,11 @@ export default function SmartRecommendationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.bone,
   },
   loadingText: {
+    ...textType.body,
     marginTop: 16,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   header: {
@@ -336,18 +362,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
+  headerBack: {
+    marginBottom: 0,
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontFamily: fonts.serif,
     color: colors.ink,
   },
   refreshButton: {
-    fontSize: 20,
-    color: colors.ink,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   weatherCard: {
     borderRadius: radius.md,
@@ -358,15 +385,14 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  weatherIcon: {
-    fontSize: 40,
-  },
   weatherTemp: {
     fontSize: 24,
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
   weatherCondition: {
+    flexShrink: 1,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
@@ -375,34 +401,8 @@ const styles = StyleSheet.create({
   },
   occasionContainer: {
     paddingHorizontal: 20,
-    gap: 12,
-  },
-  occasionChip: {
-    borderRadius: radius.full,
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: colors.paper,
-    borderWidth: 1,
-    borderColor: colors.hair,
-    gap: 6,
-  },
-  occasionChipActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  occasionEmoji: {
-    fontSize: 16,
-    color: colors.ink,
-  },
-  occasionText: {
-    fontSize: 14,
-    fontFamily: fonts.sansMedium,
-    color: colors.inkMuted,
-  },
-  occasionTextActive: {
-    color: colors.white,
+    gap: 8,
   },
   recCount: {
     padding: 20,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     margin: 20,
     marginTop: 0,
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     padding: 20,
     borderWidth: 1,
     borderColor: colors.hair,
@@ -433,12 +433,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   recTitle: {
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 20,
+    fontFamily: fonts.serif,
     color: colors.ink,
     marginBottom: 4,
   },
   recDescription: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
@@ -460,6 +461,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   itemCategory: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
     textAlign: 'center',
@@ -485,6 +487,7 @@ const styles = StyleSheet.create({
   },
   reasonText: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
     lineHeight: 18,
@@ -492,18 +495,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 12,
-  },
-  acceptButton: {
-    borderRadius: radius.full,
-    flex: 1,
-    backgroundColor: colors.ink,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  acceptButtonText: {
-    color: colors.white,
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
   },
   modifyButton: {
     borderRadius: radius.full,
@@ -522,18 +513,14 @@ const styles = StyleSheet.create({
     padding: 60,
     alignItems: 'center',
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-    color: colors.ink,
-  },
   emptyText: {
-    fontSize: 20,
-    fontFamily: fonts.sansSemiBold,
+    fontSize: 22,
+    fontFamily: fonts.serif,
     color: colors.ink,
     marginBottom: 8,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
@@ -541,17 +528,5 @@ const styles = StyleSheet.create({
   listLoading: {
     paddingVertical: 60,
     alignItems: 'center',
-  },
-  emptyAction: {
-    borderRadius: radius.full,
-    backgroundColor: colors.rust,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    marginTop: 20,
-  },
-  emptyActionText: {
-    color: colors.white,
-    fontSize: 15,
-    fontFamily: fonts.sansSemiBold,
   },
 });

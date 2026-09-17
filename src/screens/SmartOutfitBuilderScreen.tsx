@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -21,7 +22,7 @@ import Button from '../components/Button';
 import BackButton from '../components/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { colors, fonts, radius } from '../theme/designSystem';
+import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -37,6 +38,7 @@ export default function SmartOutfitBuilderScreen() {
   // A failed closet read must not be presented as an empty closet.
   const [loadError, setLoadError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [occasion, setOccasion] = useState<'casual' | 'work' | 'formal' | 'athletic'>('casual');
   const { toast, showToast, hideToast } = useToast();
 
@@ -93,11 +95,15 @@ export default function SmartOutfitBuilderScreen() {
   };
 
   const saveOutfit = async () => {
+    // A double tap used to write two identical outfits before the success
+    // animation appeared.
+    if (saving) return;
     if (selectedItems.length === 0) {
       showToast('Please select at least one item', 'error');
       return;
     }
 
+    setSaving(true);
     try {
       await outfitsService.create(
         getCurrentUserId(),
@@ -108,6 +114,8 @@ export default function SmartOutfitBuilderScreen() {
     } catch (error) {
       console.error('Error saving outfit:', error);
       showToast('Failed to save outfit', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -159,7 +167,7 @@ export default function SmartOutfitBuilderScreen() {
               ) : (
                 <>
                   <Text style={styles.emptyText}>Tap items below to build your outfit</Text>
-                  <Text style={styles.emptySubtext}>or choose from AI suggestions</Text>
+                  <Text style={styles.emptySubtext}>or start from a suggested pairing</Text>
                 </>
               )}
             </View>
@@ -171,8 +179,10 @@ export default function SmartOutfitBuilderScreen() {
                   <TouchableOpacity
                     style={styles.removeButton}
                     onPress={() =>toggleItemSelection(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove from outfit"
                   >
-                    <Text style={styles.removeButtonText}>×</Text>
+                    <Ionicons name="close" size={14} color={colors.white} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -203,10 +213,12 @@ export default function SmartOutfitBuilderScreen() {
           </View>
         </View>
 
-        {/* AI Suggestions */}
+        {/* Suggested pairings. These come from a local colour/occasion rules
+            score, not a model, so they are not called "AI" and the score is
+            not shown as a "% match" confidence. */}
         {suggestions.length >0 && (
           <View style={styles.suggestionsSection}>
-            <Text style={styles.sectionTitle}>AI Suggestions</Text>
+            <Text style={styles.sectionTitle}>Suggested pairings</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {suggestions.map(suggestion => (
                 <TouchableOpacity
@@ -224,9 +236,6 @@ export default function SmartOutfitBuilderScreen() {
                     ))}
                   </View>
                   <View style={styles.suggestionInfo}>
-                    <Text style={styles.suggestionScore}>
-                      {Math.round(suggestion.score * 100)}% match
-                    </Text>
                     <Text style={styles.suggestionReason} numberOfLines={2}>
                       {suggestion.reason}
                     </Text>
@@ -260,12 +269,12 @@ export default function SmartOutfitBuilderScreen() {
               <Text style={styles.emptyClosetText}>
                 Your closet is empty. Add your first item to start building outfits.
               </Text>
-              <TouchableOpacity
-                style={styles.emptyClosetButton}
+              {/* The only action in the empty state, so it is the rust primary. */}
+              <Button
+                title="Add an item"
+                variant="primary"
                 onPress={() => navigation.navigate('AddClosetItem')}
-              >
-                <Text style={styles.emptyClosetButtonText}>Add an item</Text>
-              </TouchableOpacity>
+              />
             </View>
           )}
           <View style={styles.itemsGrid}>
@@ -280,7 +289,7 @@ export default function SmartOutfitBuilderScreen() {
                   <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
                   {isSelected && (
                     <View style={styles.selectedBadge}>
-                      <Text style={styles.selectedBadgeText}>✓</Text>
+                      <Ionicons name="checkmark" size={14} color={colors.white} />
                     </View>
                   )}
                   <Text style={styles.itemCategory} numberOfLines={1}>
@@ -301,6 +310,7 @@ export default function SmartOutfitBuilderScreen() {
             size="large"
             fullWidth
             onPress={saveOutfit}
+            loading={saving || showSuccess}
           />
         </View>
       )}
@@ -343,8 +353,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...textType.body,
     marginTop: 12,
-    fontSize: 16,
     color: colors.inkMuted,
   },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
@@ -390,11 +400,13 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   emptyText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
     marginBottom: 4,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkFaint,
   },
@@ -422,11 +434,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  removeButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontFamily: fonts.sansSemiBold,
   },
   clearButton: {
     borderRadius: radius.full,
@@ -495,13 +502,8 @@ const styles = StyleSheet.create({
   suggestionInfo: {
     marginBottom: 8,
   },
-  suggestionScore: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-    color: colors.camel,
-    marginBottom: 4,
-  },
   suggestionReason: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -527,30 +529,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   emptyClosetText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 20,
   },
-  emptyClosetButton: {
-    borderRadius: radius.full,
-    // The only action in the empty state, so it is the rust primary.
-    backgroundColor: colors.rust,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  emptyClosetButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-  },
   itemsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
+  // A rounded card, so the selected border follows the tile.
   itemCard: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
     width: ITEM_SIZE,
     backgroundColor: colors.card,
     borderWidth: 2,
@@ -561,11 +555,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   itemImage: {
-    borderRadius: radius.sm,
+    // The card's radius and overflow clip the top corners.
     width: '100%',
     aspectRatio: 1,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
     backgroundColor: colors.paper,
   },
   selectedBadge: {
@@ -579,12 +571,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  selectedBadgeText: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-  },
   itemCategory: {
+    fontFamily: fonts.sans,
     padding: 8,
     fontSize: 12,
     color: colors.inkMuted,

@@ -12,6 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { getCurrentUserId, getCurrentUserName } from '../services/firebaseApi';
@@ -26,6 +27,7 @@ type Tab = 'shared-with-me' | 'my-shares';
 export default function ClosetSharingScreen() {
   const [tab, setTab] = useState<Tab>('shared-with-me');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [sharedWithMe, setSharedWithMe] = useState<ClosetShare[]>([]);
   const [myShares, setMyShares] = useState<ClosetShare[]>([]);
@@ -50,11 +52,19 @@ export default function ClosetSharingScreen() {
       ]);
       setSharedWithMe(incoming);
       setMyShares(outgoing);
+      setLoadError(false);
     } catch (error) {
       console.error('Error loading closet shares:', error);
+      // Not the same as "nobody has shared" - shown with a retry instead.
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const retryLoad = () => {
+    setLoading(true);
+    load();
   };
 
   const handleSearch = async (text: string) => {
@@ -87,6 +97,20 @@ export default function ClosetSharingScreen() {
     } catch (error: any) {
       Alert.alert('Could not share', error?.message || 'Please try again.');
     }
+  };
+
+  // Granting someone a view of your closet is privacy-sensitive, so it is confirmed first.
+  const confirmShare = (viewerId: string, displayName: string) => {
+    Alert.alert(
+      `Share your closet with ${displayName}?`,
+      includePrices
+        ? 'They will see your items, prices and wear counts. You can revoke this any time.'
+        : 'They will see your items; prices stay hidden. You can revoke this any time.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Share', onPress: () => handleShare(viewerId, displayName) },
+      ]
+    );
   };
 
   const handleRevoke = (share: ClosetShare) => {
@@ -192,9 +216,23 @@ export default function ClosetSharingScreen() {
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
           </View>
+        ) : loadError ? (
+          <TouchableOpacity
+            onPress={retryLoad}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading closet shares"
+          >
+            <Text style={styles.empty}>Couldn't load your closet shares.</Text>
+            <Text style={styles.emptyAction}>Try again</Text>
+          </TouchableOpacity>
         ) : tab === 'shared-with-me' ? (
           sharedWithMe.length === 0 ? (
-            <Text style={styles.empty}>Nobody has shared their closet with you yet.</Text>
+            <View>
+              <Text style={styles.empty}>Nobody has shared their closet with you yet.</Text>
+              <TouchableOpacity onPress={() => setTab('my-shares')} accessibilityRole="button">
+                <Text style={styles.emptyAction}>Share yours first</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             sharedWithMe.map(share => (
               <TouchableOpacity
@@ -207,7 +245,7 @@ export default function ClosetSharingScreen() {
                   <Text style={styles.rowName}>{share.ownerName}</Text>
                   <Text style={styles.rowMeta}>Tap to browse their closet</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
               </TouchableOpacity>
             ))
           )
@@ -234,7 +272,7 @@ export default function ClosetSharingScreen() {
               <TouchableOpacity
                 key={person.id}
                 style={styles.row}
-                onPress={() => handleShare(person.id, person.displayName)}
+                onPress={() => confirmShare(person.id, person.displayName)}
                 activeOpacity={0.85}
               >
                 <View style={styles.rowInfo}>
@@ -282,6 +320,7 @@ const styles = StyleSheet.create({
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
   empty: { ...textType.body, color: colors.inkMuted, marginTop: spacing.lg },
+  emptyAction: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.rust, marginTop: 10 },
 
   tabRow: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
   tab: {
@@ -321,7 +360,6 @@ const styles = StyleSheet.create({
   rowInfo: { flex: 1 },
   rowName: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   rowMeta: { ...textType.meta, fontSize: 12, marginTop: 3 },
-  chevron: { fontSize: 22, color: colors.inkFaint },
   shareLink: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
   revokeLink: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
 

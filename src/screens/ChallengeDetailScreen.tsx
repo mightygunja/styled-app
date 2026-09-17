@@ -132,7 +132,13 @@ export default function ChallengeDetailScreen() {
   }
 
   const remaining = daysLeft(challenge.endDate);
-  const isOpen = challenge.status !== 'completed';
+  const startsIn = daysLeft(challenge.startDate);
+  // Entering and voting only while it's actually running - an 'upcoming'
+  // challenge can be joined ahead of time but not entered or voted on, and an
+  // 'active' one past its end date is closed even before the rotation job runs.
+  const isUpcoming = challenge.status === 'upcoming';
+  const isOpen = challenge.status === 'active' && (remaining === null || remaining >= 0);
+  const canJoin = isOpen || isUpcoming;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -162,12 +168,21 @@ export default function ChallengeDetailScreen() {
             <Text style={styles.statLabel}>ENTRIES</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statNumber}>
-              {remaining !== null && remaining >= 0 ? remaining : '—'}
-            </Text>
-            <Text style={styles.statLabel}>{remaining === 1 ? 'DAY LEFT' : 'DAYS LEFT'}</Text>
-          </View>
+          {isUpcoming ? (
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>
+                {startsIn !== null && startsIn >= 0 ? startsIn : '—'}
+              </Text>
+              <Text style={styles.statLabel}>{startsIn === 1 ? 'DAY TO OPEN' : 'DAYS TO OPEN'}</Text>
+            </View>
+          ) : (
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>
+                {isOpen && remaining !== null && remaining >= 0 ? remaining : '—'}
+              </Text>
+              <Text style={styles.statLabel}>{remaining === 1 ? 'DAY LEFT' : 'DAYS LEFT'}</Text>
+            </View>
+          )}
         </View>
 
         {!!challenge.prize && (
@@ -199,7 +214,7 @@ export default function ChallengeDetailScreen() {
           </View>
         )}
 
-        {isOpen && (
+        {canJoin && (
           <Button
             title={hasJoined ? "You've joined" : 'Join this challenge'}
             onPress={handleJoinChallenge}
@@ -228,7 +243,9 @@ export default function ChallengeDetailScreen() {
 
         {entries.length === 0 ? (
           <Text style={styles.emptyText}>
-            {isOpen
+            {isUpcoming
+              ? 'Entries open when the challenge starts.'
+              : isOpen
               ? 'Nobody has entered yet. Yours would be the first.'
               : 'This challenge closed without any entries.'}
           </Text>

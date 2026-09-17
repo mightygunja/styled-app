@@ -10,8 +10,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -112,10 +114,15 @@ export default function StylingAssistantScreen() {
     }
   };
 
-  const doSend = async (messageText: string, context?: { occasion?: string; mood?: string }) => {
+  const doSend = async (
+    messageText: string,
+    context?: { occasion?: string; mood?: string },
+    historyOverride?: ChatMessage[],
+    isRetry?: boolean
+  ) => {
     if (!messageText || sending) return;
 
-    const localHistory = messages;
+    const localHistory = historyOverride ?? messages;
     const optimisticUser: ChatMessage = {
       id: `pending-${Date.now()}`,
       role: 'user',
@@ -139,7 +146,8 @@ export default function StylingAssistantScreen() {
           mood: context?.mood,
           weather: weather || undefined,
           styleProfile,
-        }
+        },
+        { skipSaveUserMessage: isRetry }
       );
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
@@ -164,6 +172,24 @@ export default function StylingAssistantScreen() {
     const messageText = `${parts.join(' ')}?`;
     setOutfitPickerOpen(false);
     doSend(messageText, { occasion: selectedOccasion || undefined, mood: selectedMood || undefined });
+  };
+
+  // A failed reply is local-only: drop it and the question it answered, then
+  // ask again with the same history the first attempt had.
+  const handleRetry = (failedId: string) => {
+    const idx = messages.findIndex(m => m.id === failedId);
+    const question = [...messages.slice(0, idx)].reverse().find(m => m.role === 'user');
+    if (!question) return;
+    const trimmed = messages.filter(m => m.id !== failedId && m.id !== question.id);
+    setMessages(trimmed);
+    doSend(question.content, undefined, trimmed, true);
+  };
+
+  const confirmClearChat = () => {
+    Alert.alert('Clear this chat?', 'Your whole conversation with the stylist will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: handleClearChat },
+    ]);
   };
 
   const handleClearChat = async () => {
@@ -257,6 +283,16 @@ export default function StylingAssistantScreen() {
             </>
           )}
 
+          {message.failed && (
+            <TouchableOpacity
+              style={styles.saveOutfitButton}
+              onPress={() => handleRetry(message.id)}
+              disabled={sending}
+            >
+              <Text style={styles.saveOutfitText}>Try again</Text>
+            </TouchableOpacity>
+          )}
+
           <Text style={[styles.messageTime, isUser && styles.userMessageTime]}>
             {formatTime(message.timestamp)}
           </Text>
@@ -290,15 +326,16 @@ export default function StylingAssistantScreen() {
           </View>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Your stylist</Text>
+            {/* No "ONLINE" - it read as a presence status the app can't vouch for. */}
             {weather ? (
               <Text style={styles.headerSubtitle}>
-                ONLINE · {weather.temperature}° · WARM &amp; DIRECT
+                AI STYLIST · {weather.temperature}° · WARM &amp; DIRECT
               </Text>
             ) : (
-              <Text style={styles.headerSubtitle}>ONLINE · WARM &amp; DIRECT</Text>
+              <Text style={styles.headerSubtitle}>AI STYLIST · WARM &amp; DIRECT</Text>
             )}
           </View>
-          <TouchableOpacity onPress={handleClearChat}>
+          <TouchableOpacity onPress={confirmClearChat}>
             <Text style={styles.clearButton}>CLEAR</Text>
           </TouchableOpacity>
         </View>
@@ -309,7 +346,7 @@ export default function StylingAssistantScreen() {
             <Text style={styles.contextStripText} numberOfLines={1}>
               Personalizing with your style profile
               {styleProfile.styleArchetypes.length > 0 ? `: ${styleProfile.styleArchetypes.slice(0, 2).join(', ')}` : ''}
-              {' '}+ live weather + time of day
+              {weather ? ' + live weather + time of day' : ' + time of day'}
             </Text>
           </View>
         ) : (
@@ -330,7 +367,11 @@ export default function StylingAssistantScreen() {
             onPress={() => setOutfitPickerOpen(prev => !prev)}
           >
             <Text style={styles.outfitCardTitle}>GET MY OUTFIT</Text>
-            <Text style={styles.outfitCardChevron}>{outfitPickerOpen ? '︿' : '﹀'}</Text>
+            <Ionicons
+              name={outfitPickerOpen ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={colors.inkMuted}
+            />
           </TouchableOpacity>
 
           {outfitPickerOpen && (
@@ -460,6 +501,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -551,10 +593,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     color: colors.ink,
   },
-  outfitCardChevron: {
-    fontSize: 14,
-    color: colors.inkMuted,
-  },
   outfitCardBody: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -618,6 +656,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   messageBubble: {
+    borderRadius: radius.md,
     maxWidth: '82%',
     padding: 14,
   },
@@ -647,7 +686,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   userMessageTime: {
-    color: 'rgba(253,251,250,0.6)',
+    color: colors.bone,
+    opacity: 0.6,
   },
   outfitContainer: {
     flexDirection: 'row',

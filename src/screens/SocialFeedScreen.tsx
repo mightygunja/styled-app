@@ -595,7 +595,7 @@ export default function SocialFeedScreen() {
                     {reason ? `  ·  ${reason}` : ''}
                   </Text>
                 </View>
-                <Text style={styles.suggestionChevron}>›</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
               </TouchableOpacity>
             ))}
           </View>
@@ -946,7 +946,6 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginTop: 2,
   },
-  suggestionChevron: { fontSize: 20, color: colors.inkFaint },
 
   discoverGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   discoverImage: {

@@ -250,6 +250,8 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridItem: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
     width: 92,
     height: 92,
     backgroundColor: colors.paper,

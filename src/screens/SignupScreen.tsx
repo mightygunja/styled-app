@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,6 +20,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SocialAuthButtons from '../components/SocialAuthButtons';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -209,17 +209,17 @@ export default function SignupScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSignup}
+            {/* The shared primary Button, matching Login, Intro and the survey. */}
+            <Button
+              title="Create account"
+              variant="primary"
+              size="large"
+              fullWidth
+              loading={loading}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.buttonText}>Create account</Text>
-              )}
-            </TouchableOpacity>
+              onPress={handleSignup}
+              style={styles.button}
+            />
 
             {/* Terms and Privacy were registered routes nothing linked to. */}
             <Text style={styles.legalLine}>
@@ -284,20 +284,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  button: {
-    backgroundColor: colors.rust,
-    borderRadius: radius.full,
-    paddingVertical: 17,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: { opacity: 0.55 },
-  buttonText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 15,
-    letterSpacing: 0.4,
-    color: colors.white,
-  },
+  button: { marginTop: 4 },
 
   linkButton: { paddingVertical: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.sans, fontSize: 14, color: colors.inkMuted },

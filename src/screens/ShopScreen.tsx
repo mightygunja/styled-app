@@ -10,6 +10,7 @@ import {
   FlatList,
   ScrollView,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -324,7 +325,11 @@ export default function ShopScreen() {
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel={`Search Amazon for ${route.params.trendGap}`}
-                  onPress={() => Linking.openURL(amazonSearchUrl(route.params!.trendGap!))}
+                  onPress={() =>
+                    Linking.openURL(amazonSearchUrl(route.params!.trendGap!)).catch(() =>
+                      Alert.alert('Could not open Amazon', 'Please try again in a moment.')
+                    )
+                  }
                 >
                   <Text style={styles.trendFocusSearch}>
                     Search Amazon for “{route.params.trendGap}” →

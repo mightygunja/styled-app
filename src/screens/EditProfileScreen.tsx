@@ -178,6 +178,12 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        {/* Cancel stays reachable while the profile loads; Save waits for data. */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() =>navigation.goBack()}>
+            <Text style={styles.cancelButton}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
@@ -199,7 +205,14 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      {/* The email/password fields sit last in the form, under the iOS keyboard
+          without inset adjustment; persisted taps let the send button fire
+          on the first press instead of only dismissing the keyboard. */}
+      <ScrollView
+        style={styles.content}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handleChangePhoto}>
             {profileImageUrl ? (
@@ -327,10 +340,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  cancelButton: { fontSize: 16, color: colors.inkMuted },
+  cancelButton: { fontSize: 16, fontFamily: fonts.sans, color: colors.inkMuted },
   title: { fontSize: 18, fontFamily: fonts.sansSemiBold, color: colors.ink },
-  saveButton: { fontSize: 16, fontFamily: fonts.sansSemiBold, color: colors.ink },
-  saveButtonDisabled: { color: colors.hair },
+  saveButton: { fontSize: 16, fontFamily: fonts.sansSemiBold, color: colors.rust },
+  // Dimmed, not greyed: the action stays rust while a save is in flight.
+  saveButtonDisabled: { opacity: 0.5 },
   content: { flex: 1 },
   avatarSection: { alignItems: 'center', paddingVertical: 24 },
   avatar: { width: 96, height: 96, borderRadius: radius.full, backgroundColor: colors.paper },
@@ -338,11 +352,11 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.sand,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: { fontSize: 36, fontFamily: fonts.sansSemiBold, color: colors.white },
+  avatarInitial: { fontSize: 36, fontFamily: fonts.serif, color: colors.tobacco },
   changePhotoText: { textAlign: 'center', marginTop: 8, fontSize: 14, color: colors.ink, fontFamily: fonts.sansSemiBold },
   section: { paddingHorizontal: 20, marginBottom: 16 },
   emailSection: {
@@ -376,7 +390,7 @@ const styles = StyleSheet.create({
   },
   emailButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 12,
@@ -394,6 +408,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hair,
     padding: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.ink,
   },

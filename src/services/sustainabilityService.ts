@@ -6,6 +6,7 @@
  */
 
 import { Item } from '../types';
+import { carbonFootprintService } from './carbonFootprintService';
 
 export type SustainabilityGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 /**
@@ -302,16 +303,13 @@ class SustainabilityService {
   }
 
   async calculateCarbonFootprint(item: Item): Promise<CarbonFootprint> {
-    // Deterministic, category-scaled breakdown (same shape as carbonFootprintService)
-    const categoryBase: Record<string, number> = {
-      tops: 15, bottoms: 20, dresses: 25, outerwear: 35, shoes: 30, accessories: 10,
-    };
-    const base = categoryBase[item.category] || 20;
-    const production = base * 0.55;
-    const transportation = base * 0.25;
-    const packaging = base * 0.1;
-    const endOfLife = base * 0.1;
-    const totalKgCO2 = production + transportation + packaging + endOfLife;
+    // The total comes from carbonFootprintService, so this screen and the
+    // Carbon calculator never report two different figures for one closet.
+    const { totalKgCO2 } = await carbonFootprintService.calculateItemFootprint(item);
+    const production = totalKgCO2 * 0.55;
+    const transportation = totalKgCO2 * 0.25;
+    const packaging = totalKgCO2 * 0.1;
+    const endOfLife = totalKgCO2 * 0.1;
 
     const averageItem = 25;
     const percentageDifference = ((totalKgCO2 - averageItem) / averageItem) * 100;

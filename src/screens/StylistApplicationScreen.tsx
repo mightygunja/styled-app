@@ -29,6 +29,13 @@ import { SessionType } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// "instagram.com/me" -> "https://instagram.com/me" so reviewers get a working
+// link. @handles, existing schemes and anything not domain-shaped are kept as typed.
+function withScheme(link: string): string {
+  if (!link || link.startsWith('@') || /^[a-z][a-z0-9+.-]*:/i.test(link)) return link;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/|$|\?|#)/i.test(link) ? `https://${link}` : link;
+}
+
 export default function StylistApplicationScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
@@ -101,7 +108,7 @@ export default function StylistApplicationScreen() {
         sessionTypes,
         certifications: certifications.split(',').map(s => s.trim()).filter(Boolean),
         languages: languages.split(',').map(s => s.trim()).filter(Boolean),
-        portfolioUrls: portfolio.split('\n').map(s => s.trim()).filter(Boolean),
+        portfolioUrls: portfolio.split('\n').map(s => withScheme(s.trim())).filter(Boolean),
       });
       setExisting(application);
     } catch (error: any) {

@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { stylistAPI } from '../services/stylistAPI';
 import { getCurrentUserId } from '../services/api';
-import { stylistBookingsService } from '../services/firestore';
+import { stylistBookingsService, reviewsService } from '../services/firestore';
 import { StylingSession } from '../types';
 import BackButton from '../components/BackButton';
 import { formatSessionDay, formatSessionTime } from '../utils/sessionDate';
@@ -31,6 +31,7 @@ export default function MySessionsScreen() {
   // A failed load must not read as "No sessions yet" - someone with bookings
   // would be told they have none and pushed to book again.
   const [loadError, setLoadError] = useState(false);
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadSessions();
@@ -52,6 +53,20 @@ export default function MySessionsScreen() {
       setLoadError(false);
       const data = await stylistAPI.getUserSessions(getCurrentUserId());
       setSessions(data);
+      // Completed sessions the user already reviewed show "Reviewed" instead
+      // of a Review button. A failed check just leaves the button in place.
+      const uid = getCurrentUserId();
+      const checks = await Promise.all(
+        data
+          .filter(s => s.status === 'completed')
+          .map(s =>
+            reviewsService
+              .hasReviewedSession(s.id, uid)
+              .then(done => (done ? s.id : null))
+              .catch(() => null)
+          )
+      );
+      setReviewedIds(new Set(checks.filter((id): id is string => Boolean(id))));
     } catch (error) {
       console.error('Error loading sessions:', error);
       setLoadError(true);
@@ -233,17 +248,24 @@ export default function MySessionsScreen() {
                       >
                         <Text style={styles.notesButtonText}>Photos</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.notesButton}
-                        onPress={() =>navigation.navigate('SubmitReview', {
-                          sessionId: session.id,
-                          stylistId: session.stylistId,
-                          stylistName: session.stylist?.name || 'Stylist',
-                          sessionType: session.sessionType,
-                        })}
-                      >
-                        <Text style={styles.notesButtonText}>Review</Text>
-                      </TouchableOpacity>
+                      {reviewedIds.has(session.id) ? (
+                        <View style={styles.reviewedTag}>
+                          <Ionicons name="checkmark" size={16} color={colors.inkMuted} />
+                          <Text style={styles.reviewedText}>Reviewed</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.notesButton}
+                          onPress={() =>navigation.navigate('SubmitReview', {
+                            sessionId: session.id,
+                            stylistId: session.stylistId,
+                            stylistName: session.stylist?.name || 'Stylist',
+                            sessionType: session.sessionType,
+                          })}
+                        >
+                          <Text style={styles.notesButtonText}>Review</Text>
+                        </TouchableOpacity>
+                      )}
                     </>
                   )}
                 </View>
@@ -423,7 +445,7 @@ const styles = StyleSheet.create({
   joinButton: {
     borderRadius: radius.full,
     flex: 1,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     padding: 14,
     alignItems: 'center',
   },
@@ -440,6 +462,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.hair,
+  },
+  reviewedTag: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 14,
+  },
+  reviewedText: {
+    color: colors.inkMuted,
+    fontSize: 15,
+    fontFamily: fonts.sansMedium,
   },
   notesButtonText: {
     color: colors.ink,

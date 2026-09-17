@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
+import Toast from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 import { userSettingsService, UserSettings, DEFAULT_USER_SETTINGS } from '../services/userSettingsService';
 import { getCurrentUserId } from '../services/api';
@@ -17,6 +19,7 @@ import { getCurrentUserId } from '../services/api';
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const { toast, showToast, hideToast } = useToast();
 
   const load = useCallback(async () => {
     try {
@@ -24,20 +27,25 @@ export default function SettingsScreen() {
       setSettings(data);
     } catch (error) {
       console.error('Error loading settings:', error);
+      showToast("Couldn't load your settings - showing defaults", 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const toggle = async (key: keyof UserSettings) => {
-    const next = { ...settings, [key]: !settings[key] };
+    const previous = settings[key];
+    const next = { ...settings, [key]: !previous };
     setSettings(next);
     try {
       await userSettingsService.update(getCurrentUserId(), { [key]: next[key] });
     } catch (error) {
       console.error('Error saving setting:', error);
+      // Put the switch back so it never shows a state that was not saved.
+      setSettings(s => ({ ...s, [key]: previous }));
+      showToast("Couldn't save that - try again", 'error');
     }
   };
 
@@ -69,6 +77,7 @@ export default function SettingsScreen() {
           When this is on, your feed keeps posts from people you follow and your own.
         </Text>
       </ScrollView>
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }

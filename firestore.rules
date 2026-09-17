@@ -155,10 +155,18 @@ service cloud.firestore {
     }
 
     // Stylist reviews - visible to all signed-in users, only the author can create/edit/remove their own
+    // A session review lives at {sessionId}_{uid} (one per user per session);
+    // auto-ids (no underscore) remain for reviews without a session. A setDoc
+    // onto an existing review is evaluated as an update, so update may not
+    // change createdAt - a fresh submit can never overwrite an existing review.
     match /reviews/{reviewId} {
       allow read: if isAuthenticated();
-      allow create: if isCreatingOwnResource();
-      allow update, delete: if isResourceOwner();
+      allow create: if isCreatingOwnResource() &&
+        (!reviewId.matches('.*_.*') ||
+         reviewId == request.resource.data.sessionId + '_' + request.auth.uid);
+      allow update: if isResourceOwner() &&
+        request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null);
+      allow delete: if isResourceOwner();
     }
 
     // Favorite looks - owned by userId field

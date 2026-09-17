@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,9 +34,26 @@ export default function SubmitReviewScreen() {
   const [wouldRecommend, setWouldRecommend] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // One review per session. Client-side guard only - the review doc id is
+  // still random, so the rules can't enforce it yet.
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
+  useEffect(() => {
+    let cancelled = false;
+    reviewService
+      .hasReviewedSession(stylistId, sessionId)
+      .then(done => {
+        if (!cancelled) setAlreadyReviewed(done);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [stylistId, sessionId]);
+
   const handleSubmit = async () => {
+    if (alreadyReviewed) return;
     if (rating === 0) {
       showToast('Please select a rating', 'error');
       return;
@@ -49,7 +66,12 @@ export default function SubmitReviewScreen() {
 
     try {
       setSubmitting(true);
-      
+
+      if (await reviewService.hasReviewedSession(stylistId, sessionId)) {
+        setAlreadyReviewed(true);
+        return;
+      }
+
       await reviewService.submitReview({
         stylistId,
         sessionId,
@@ -170,15 +192,23 @@ export default function SubmitReviewScreen() {
 
       {/* Submit Button */}
       <View style={styles.footer}>
+        {alreadyReviewed && (
+          <Text style={styles.alreadyText}>You've already reviewed this session.</Text>
+        )}
         <TouchableOpacity
-          style={[styles.submitButton, (rating === 0 || submitting) && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            (rating === 0 || submitting || alreadyReviewed) && styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
-          disabled={rating === 0 || submitting}
+          disabled={rating === 0 || submitting || alreadyReviewed}
         >
           {submitting ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.submitButtonText}>Submit Review</Text>
+            <Text style={styles.submitButtonText}>
+              {alreadyReviewed ? 'Already reviewed' : 'Submit Review'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -353,6 +383,13 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: colors.hair,
+  },
+  alreadyText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   submitButton: {
     borderRadius: radius.full,

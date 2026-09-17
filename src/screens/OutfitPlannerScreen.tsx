@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
@@ -277,8 +278,12 @@ export default function OutfitPlannerScreen() {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Plan {selectedDate}</Text>
-            <TouchableOpacity onPress={() =>setShowPicker(false)}>
-              <Text style={styles.closeButton}>✕</Text>
+            <TouchableOpacity
+              onPress={() =>setShowPicker(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={24} color={colors.inkMuted} />
             </TouchableOpacity>
           </View>
 
@@ -315,7 +320,7 @@ export default function OutfitPlannerScreen() {
                     <Image source={{ uri: item.imageUrl }} style={styles.pickerImage} />
                     {selected && (
                       <View style={styles.pickerCheck}>
-                        <Text style={styles.pickerCheckText}>✓</Text>
+                        <Ionicons name="checkmark" size={14} color={colors.bone} />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -393,6 +398,14 @@ export default function OutfitPlannerScreen() {
     );
   };
 
+  // Swapping one piece used to mean delete and rebuild. The picker already
+  // pre-fills from the existing plan; iOS won't present a modal while another
+  // is still animating out, hence the short wait.
+  const handleEditOutfit = () => {
+    setShowOutfitModal(false);
+    setTimeout(() => handleAddOutfit(), Platform.OS === 'ios' ? 400 : 0);
+  };
+
   const renderOutfitModal = () => {
     const outfit = selectedDate ? plannedOutfits[selectedDate] : null;
     if (!outfit) return null;
@@ -408,8 +421,12 @@ export default function OutfitPlannerScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Outfit for {selectedDate}</Text>
-              <TouchableOpacity onPress={() =>setShowOutfitModal(false)}>
-                <Text style={styles.closeButton}>✕</Text>
+              <TouchableOpacity
+                onPress={() =>setShowOutfitModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Ionicons name="close" size={24} color={colors.inkMuted} />
               </TouchableOpacity>
             </View>
 
@@ -442,11 +459,19 @@ export default function OutfitPlannerScreen() {
                 style={styles.actionButton}
                 onPress={() =>handleMarkWorn(selectedDate)}
               >
-                <Text style={styles.actionButtonText}>✓ Mark as Worn</Text>
+                <Text style={styles.actionButtonText}>Mark as worn</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
+                style={[styles.actionButton, styles.deleteButton, styles.secondaryAction]}
+                onPress={handleEditOutfit}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton, styles.secondaryAction]}
                 onPress={() =>handleDeleteOutfit(selectedDate)}
               >
                 <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete
@@ -571,12 +596,21 @@ export default function OutfitPlannerScreen() {
             <Text style={styles.selectedDateText}>{selectedDate}</Text>
             
             {plannedOutfits[selectedDate] ? (
-              <TouchableOpacity
-                style={styles.viewButton}
-                onPress={() =>setShowOutfitModal(true)}
-              >
-                <Text style={styles.viewButtonText}>View outfit</Text>
-              </TouchableOpacity>
+              <View style={styles.plannedActions}>
+                <TouchableOpacity
+                  style={styles.viewButton}
+                  onPress={() =>setShowOutfitModal(true)}
+                >
+                  <Text style={styles.viewButtonText}>View outfit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.viewButton}
+                  onPress={handleAddOutfit}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.viewButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <TouchableOpacity
                 style={styles.planButton}
@@ -698,6 +732,7 @@ const styles = StyleSheet.create({
   },
   planWeekSubOutline: {
     color: colors.inkMuted,
+    opacity: 1,
   },
   planWeekWebNoteText: {
     fontFamily: fonts.sans,
@@ -732,7 +767,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
   },
   planWeekSub: {
-    color: 'rgba(253, 251, 250, 0.7)',
+    fontFamily: fonts.sans,
+    color: colors.bone,
+    opacity: 0.7,
     fontSize: 12,
     marginTop: 4,
   },
@@ -753,6 +790,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
   occasionChipText: {
+    fontFamily: fonts.sansMedium,
     fontSize: 13,
     color: colors.ink,
   },
@@ -766,7 +804,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
+  // Rounded like a card so the selected border follows the tile, not a
+  // square box around a rounded image.
   pickerItem: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
     width: 92,
     height: 92,
     backgroundColor: colors.paper,
@@ -791,11 +833,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  pickerCheckText: {
-    color: colors.bone,
-    fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
   },
   actionButtonDisabled: {
     opacity: 0.4,
@@ -853,6 +890,10 @@ const styles = StyleSheet.create({
   viewButtonText: {
     color: colors.ink,
     fontFamily: fonts.sansSemiBold,
+  },
+  plannedActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
   planButton: {
     borderRadius: radius.full,
@@ -924,6 +965,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   upcomingDay: {
+    fontFamily: fonts.sansMedium,
     fontSize: 12,
     color: colors.inkMuted,
     textTransform: 'uppercase',
@@ -931,6 +973,7 @@ const styles = StyleSheet.create({
   upcomingDateNumber: {
     fontSize: 24,
     fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
   },
   upcomingInfo: {
     flex: 1,
@@ -938,9 +981,11 @@ const styles = StyleSheet.create({
   upcomingOccasion: {
     fontSize: 16,
     fontFamily: fonts.sansSemiBold,
+    color: colors.ink,
     marginBottom: 4,
   },
   upcomingItems: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
@@ -960,8 +1005,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.bone,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
     maxHeight: '80%',
   },
   modalHeader: {
@@ -975,10 +1020,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: fonts.sansSemiBold,
-  },
-  closeButton: {
-    fontSize: 24,
-    color: colors.inkMuted,
+    color: colors.ink,
   },
   occasionBadge: {
     borderRadius: radius.full,
@@ -1028,6 +1070,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   notesText: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     lineHeight: 20,
@@ -1058,5 +1101,10 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: colors.ink,
+  },
+  // Edit and Delete size to their labels so "Mark as worn" keeps the room.
+  secondaryAction: {
+    flex: 0,
+    paddingHorizontal: 20,
   },
 });

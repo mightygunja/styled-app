@@ -63,8 +63,9 @@ export function findSimilarOwnedItems(
     wornCount?: number;
   }>
 ): OwnedItemMatch[] {
-  const targetColor = classification.color.toLowerCase();
-  const targetSub = classification.subcategory.toLowerCase();
+  // The model's JSON isn't schema-checked, so either field can be missing.
+  const targetColor = (classification.color || '').toLowerCase();
+  const targetSub = (classification.subcategory || '').toLowerCase();
 
   const matches = closetItems
     .filter(item => {

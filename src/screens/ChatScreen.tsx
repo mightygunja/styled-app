@@ -10,8 +10,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,6 +40,9 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  // 'error' = the load threw; 'notFound' = the id isn't one of the user's
+  // conversations. Either way the composer is hidden and a retry is offered.
+  const [loadState, setLoadState] = useState<'ok' | 'error' | 'notFound'>('ok');
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -54,6 +59,7 @@ export default function ChatScreen() {
   const loadChat = async () => {
     try {
       setLoading(true);
+      setLoadState('ok');
       const [convs, msgs] = await Promise.all([
         messagingService.getConversations(getCurrentUserId()),
         messagingService.getMessages(conversationId),
@@ -68,11 +74,14 @@ export default function ChatScreen() {
           const profile = await userProfileService.getUserProfile(otherUserId);
           setOtherUser(profile);
         }
+      } else {
+        setLoadState('notFound');
       }
 
       setMessages(msgs);
     } catch (error) {
       console.error('Error loading chat:', error);
+      setLoadState('error');
       showToast('Failed to load messages', 'error');
     } finally {
       setLoading(false);
@@ -105,6 +114,14 @@ export default function ChatScreen() {
     }
   };
 
+  // Long-press on your own bubble asks first - deletion can't be undone.
+  const confirmDeleteMessage = (messageId: string) => {
+    Alert.alert('Delete message?', 'This removes it for both of you.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => handleDeleteMessage(messageId) },
+    ]);
+  };
+
   const handleDeleteMessage = async (messageId: string) => {
     try {
       await messagingService.deleteMessage(messageId, getCurrentUserId());
@@ -135,7 +152,8 @@ export default function ChatScreen() {
         <View style={[styles.messageRow, isOwnMessage && styles.ownMessageRow]}>
           <TouchableOpacity
             style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}
-            onLongPress={() =>isOwnMessage && handleDeleteMessage(message.id)}
+            onLongPress={() =>isOwnMessage && confirmDeleteMessage(message.id)}
+            accessibilityHint={isOwnMessage ? 'Long-press to delete' : undefined}
           >
             <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
               {message.content}
@@ -152,6 +170,47 @@ export default function ChatScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.ink} />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // No empty "User" chat with a live composer when the load failed or the
+  // conversation isn't one of ours.
+  if (loadState !== 'ok') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.headerBar}>
+          <BackButton />
+        </View>
+        <View style={styles.errorBox}>
+          <Text style={styles.emptyText}>
+            {loadState === 'notFound' ? 'Conversation not found' : "Couldn't load this chat"}
+          </Text>
+          <Text style={styles.emptySubtext}>
+            {loadState === 'notFound'
+              ? 'It may have been removed, or the link is wrong.'
+              : 'Check your connection and try again.'}
+          </Text>
+          <View style={styles.errorActions}>
+            {loadState === 'error' && (
+              <TouchableOpacity style={styles.errorPrimary} onPress={loadChat}>
+                <Text style={styles.errorPrimaryText}>Retry</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.errorSecondary}
+              onPress={() => navigation.navigate('Messages')}
+            >
+              <Text style={styles.errorSecondaryText}>Back to messages</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
       </SafeAreaView>
     );
   }
@@ -190,7 +249,7 @@ export default function ChatScreen() {
               <Text style={styles.headerMeta}>@{otherUser.username}</Text>
             )}
           </View>
-          <Text style={styles.chevron}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
         </TouchableOpacity>
 
         {/* Messages */}
@@ -306,9 +365,42 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     marginTop: 2,
   },
-  chevron: {
-    fontSize: 20,
-    color: colors.inkFaint,
+  errorBox: {
+    margin: 20,
+    padding: 20,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hair,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 16,
+  },
+  errorPrimary: {
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  errorPrimaryText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.white,
+  },
+  errorSecondary: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  errorSecondaryText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    color: colors.ink,
   },
   messagesContainer: {
     flex: 1,

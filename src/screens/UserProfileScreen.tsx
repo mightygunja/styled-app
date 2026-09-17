@@ -120,7 +120,14 @@ export default function UserProfileScreen() {
         await userProfileService.followUser(getCurrentUserId(), userId);
         setIsFollowing(true);
       }
-      loadProfile();
+      // Refresh the follower counts in place - a full loadProfile() swapped
+      // the whole screen for a spinner on every tap.
+      userProfileService
+        .getUserProfile(userId)
+        .then(fresh => {
+          if (fresh) setProfile(fresh);
+        })
+        .catch(() => {});
     } catch (error) {
       showToast('Action failed', 'error');
     }

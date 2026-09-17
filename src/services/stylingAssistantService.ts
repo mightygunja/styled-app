@@ -69,6 +69,9 @@ export interface ChatMessage {
   /** The look is composed of shop products, not closet items: taps open
    *  Product Detail and the save action becomes "Shop this look". */
   fromShop?: boolean;
+  /** Local-only error reply (the AI call failed). Never persisted and never
+   *  sent back to the model as history; the screen offers a retry. */
+  failed?: boolean;
   timestamp: string;
 }
 
@@ -191,8 +194,14 @@ class StylingAssistantService {
     message: string,
     closetItems: Item[],
     localHistory: ChatMessage[],
-    context?: StylingContext
+    context?: StylingContext,
+    options?: { skipSaveUserMessage?: boolean }
   ): Promise<{ userMessage: ChatMessage; assistantMessage: ChatMessage }> {
+    // A retry re-asks a question whose first attempt already saved it.
+    const saveUserMessage = () =>
+      options?.skipSaveUserMessage
+        ? Promise.resolve()
+        : chatService.addMessage(userId, 'user', message, 'text').then(() => undefined);
     const now = new Date();
     const userMessage: ChatMessage = {
       id: `local-${Date.now()}-u`,
@@ -214,9 +223,7 @@ class StylingAssistantService {
     if (coreCount < 3 && isOutfitSeeking(message, context?.occasion)) {
       const starter = await this.buildStarterLookMessage(userId, message, context, closetItems.length);
       if (starter) {
-        chatService
-          .addMessage(userId, 'user', message, 'text')
-          .catch(error => console.error('Error persisting user message:', error));
+        saveUserMessage().catch(error => console.error('Error persisting user message:', error));
         // Persisted as text: product ids don't survive a history reload the
         // way closet ids do, and a stale product grid would be worse than
         // the sentence alone. The persisted copy also drops the "tap any
@@ -233,7 +240,7 @@ class StylingAssistantService {
       }
     }
 
-    const historyForModel = localHistory.slice(-6).map(m => ({
+    const historyForModel = localHistory.filter(m => !m.failed).slice(-6).map(m => ({
       role: m.role,
       content: m.content,
     }));
@@ -367,19 +374,30 @@ class StylingAssistantService {
         console.error('Error calling chatWithStylist:', error);
         return null;
       }),
-      chatService.addMessage(userId, 'user', message, 'text').catch(error => {
+      saveUserMessage().catch(error => {
         console.error('Error persisting user message:', error);
       }),
     ]);
 
-    let replyText = "I'm having trouble connecting right now. Please try again in a moment.";
-    let itemIds: string[] = [];
-    if (aiResult) {
-      const data = aiResult.data as { success: boolean; reply: string; itemIds: string[] };
-      replyText = data.reply;
-      itemIds = data.itemIds || [];
-      replyText = stripItemIdsFromReply(replyText, itemIds);
+    // A failed call is shown locally only - persisting it would litter the
+    // saved history and feed the error line back to the model next time.
+    if (!aiResult) {
+      return {
+        userMessage,
+        assistantMessage: {
+          id: `local-${Date.now()}-err`,
+          role: 'assistant',
+          type: 'text',
+          content: "I'm having trouble connecting right now. Please try again in a moment.",
+          failed: true,
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
+
+    const data = aiResult.data as { success: boolean; reply: string; itemIds: string[] };
+    const itemIds: string[] = data.itemIds || [];
+    const replyText = stripItemIdsFromReply(data.reply, itemIds);
 
     const referencedItems = itemIds
       .map(id => closetItems.find(item => item.id === id))

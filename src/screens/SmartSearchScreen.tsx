@@ -11,7 +11,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
+import Button from '../components/Button';
 import Chip from '../components/Chip';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,6 +43,7 @@ export default function SmartSearchScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [discoverySections, setDiscoverySections] = useState<DiscoverySection[]>([]);
+  const [discoveryState, setDiscoveryState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [selectedCategory, setSelectedCategory] = useState<SearchCategory>('all');
   const [sortBy, setSortBy] = useState<SortBy>('relevance');
   const { toast, showToast, hideToast } = useToast();
@@ -80,12 +83,18 @@ export default function SmartSearchScreen() {
 
   const loadDiscovery = async () => {
     try {
+      setDiscoveryState('loading');
       const sections = await smartSearchService.getDiscoverySections(getCurrentUserId());
       setDiscoverySections(sections);
+      setDiscoveryState('ready');
     } catch (error) {
       console.error('Error loading discovery:', error);
+      setDiscoveryState('error');
     }
   };
+
+  // Headings over empty rows say nothing; only sections with items are shown.
+  const visibleSections = discoverySections.filter(section => section.items.length > 0);
 
   const loadSuggestions = async (query: string) => {
     try {
@@ -163,7 +172,15 @@ export default function SmartSearchScreen() {
       accessibilityLabel={`Open ${result.title}`}
       onPress={() => openResult(result)}
     >
-      <Image source={{ uri: result.imageUrl }} style={styles.resultImage} />
+      {result.imageUrl ? (
+        <Image source={{ uri: result.imageUrl }} style={styles.resultImage} />
+      ) : (
+        // Style guides and some closet items have no image - a typographic
+        // tile rather than a blank grey box.
+        <View style={[styles.resultImage, styles.imagePlaceholder]}>
+          <Text style={styles.imagePlaceholderText} numberOfLines={3}>{result.title}</Text>
+        </View>
+      )}
       <View style={styles.resultInfo}>
         <Text style={styles.resultTitle} numberOfLines={2}>
           {result.title}
@@ -209,7 +226,13 @@ export default function SmartSearchScreen() {
               accessibilityLabel={`Open ${item.title}`}
               onPress={() => openResult(item)}
             >
-              <Image source={{ uri: item.imageUrl }} style={styles.discoveryImage} />
+              {item.imageUrl ? (
+                <Image source={{ uri: item.imageUrl }} style={styles.discoveryImage} />
+              ) : (
+                <View style={[styles.discoveryImage, styles.imagePlaceholder]}>
+                  <Ionicons name="camera-outline" size={22} color={colors.inkFaint} />
+                </View>
+              )}
               <Text style={styles.discoveryTitle} numberOfLines={2}>
                 {item.title}
               </Text>
@@ -244,7 +267,7 @@ export default function SmartSearchScreen() {
         <View style={styles.searchBar}>
                     <TextInput
             style={styles.searchInput}
-            placeholder="Search items, styles, looks..."
+            placeholder="Search items, styles, people..."
             placeholderTextColor={colors.inkFaint}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -252,8 +275,12 @@ export default function SmartSearchScreen() {
             returnKeyType="search"
           />
           {searchQuery.length >0 && (
-            <TouchableOpacity onPress={() =>setSearchQuery('')}>
-              <Text style={styles.clearIcon}>✕</Text>
+            <TouchableOpacity
+              onPress={() =>setSearchQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search text"
+            >
+              <Ionicons name="close" size={18} color={colors.inkFaint} />
             </TouchableOpacity>
           )}
         </View>
@@ -364,10 +391,36 @@ export default function SmartSearchScreen() {
         )}
 
         {/* Discovery */}
-        {!searching && results.length === 0 && (
-          <View style={styles.discoveryContainer}>
-            {discoverySections.map(renderDiscoverySection)}
-          </View>
+        {!searching && results.length === 0 && discoveryState === 'error' && (
+          <TouchableOpacity
+            style={styles.emptyState}
+            onPress={loadDiscovery}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyText}>Couldn't load your closet</Text>
+            <Text style={styles.emptySubtext}>Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
+        {!searching && results.length === 0 && discoveryState === 'ready' && (
+          visibleSections.length > 0 ? (
+            <View style={styles.discoveryContainer}>
+              {visibleSections.map(renderDiscoverySection)}
+            </View>
+          ) : searchQuery.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Your closet is empty</Text>
+              <Text style={styles.emptySubtext}>
+                Add a few pieces and they'll show up here to search and rediscover.
+              </Text>
+              <Button
+                title="Add an item"
+                variant="primary"
+                onPress={() => navigation.navigate('AddClosetItem')}
+                style={styles.emptyButton}
+              />
+            </View>
+          ) : null
         )}
 
         <View style={{ height: 40 }} />
@@ -451,23 +504,19 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     paddingVertical: 12,
   },
-  clearIcon: {
-    fontSize: 16,
-    color: colors.inkFaint,
-    fontFamily: fonts.sansSemiBold,
-  },
   searchButton: {
     borderRadius: radius.full,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.rust,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   searchButtonText: {
-    color: colors.bone,
+    color: colors.white,
     fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },
@@ -494,9 +543,6 @@ const styles = StyleSheet.create({
   categoryChipActive: {
     backgroundColor: colors.ink,
     borderColor: colors.ink,
-  },
-  categoryEmoji: {
-    fontSize: 16,
   },
   categoryText: {
     fontSize: 14,
@@ -531,6 +577,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
   },
   resultCount: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
   },
@@ -540,6 +587,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -567,10 +615,12 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     flex: 1,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
   },
   suggestionCategory: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
   },
@@ -583,6 +633,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   resultCard: {
+    borderRadius: radius.md,
     width: GRID_ITEM_SIZE,
     backgroundColor: colors.bone,
     borderWidth: 1,
@@ -595,6 +646,18 @@ const styles = StyleSheet.create({
     height: GRID_ITEM_SIZE,
     backgroundColor: colors.paper,
   },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  imagePlaceholderText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 16,
+    lineHeight: 21,
+    color: colors.tobacco,
+    textAlign: 'center',
+  },
   resultInfo: {
     padding: 12,
   },
@@ -605,6 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   resultSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
     marginBottom: 8,
@@ -615,31 +679,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultType: {
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.paper,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   resultTypeText: {
-    fontSize: 12,
+    fontFamily: fonts.sansMedium,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: colors.inkMuted,
   },
   emptyState: {
     padding: 60,
     alignItems: 'center',
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   emptyText: {
     fontFamily: fonts.serif,
     fontSize: 20,
     color: colors.ink,
+    textAlign: 'center',
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
     textAlign: 'center',
+    marginTop: 6,
+  },
+  emptyButton: {
+    marginTop: 20,
   },
   discoveryContainer: {
     paddingTop: 20,
@@ -660,6 +729,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   discoverySectionSubtitle: {
+    fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.inkMuted,
     marginTop: 2,

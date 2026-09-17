@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -281,7 +282,7 @@ export default function EditReviewScreen() {
                   {edit.price.toFixed(0)}
                 </Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </TouchableOpacity>
           ))
         )}
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   backLink: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   content: { padding: spacing.page, paddingBottom: 60 },
   eyebrow: { ...textType.eyebrow, marginBottom: 12 },
-  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
   brief: { ...textType.pullQuote, color: colors.inkMuted, marginTop: 12 },
   helper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginTop: spacing.lg },
@@ -347,5 +348,4 @@ const styles = StyleSheet.create({
   rowInfo: { flex: 1 },
   rowTitle: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.ink },
   rowMeta: { ...textType.meta, fontSize: 12, marginTop: 3 },
-  chevron: { fontSize: 22, color: colors.inkFaint },
 });

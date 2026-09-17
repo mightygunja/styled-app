@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { readImageAsBase64 } from '../utils/imageData';
@@ -58,7 +59,7 @@ export default function InStoreCheckScreen() {
       const base64Image = `data:image/jpeg;base64,${base64}`;
       const checkResult = await storeCheckAPI.analyze(base64Image, userId, profile);
       setResult(checkResult);
-      setOwnedMatches(findSimilarOwnedItems(checkResult.classification, closetResponse.data));
+      setOwnedMatches(findSimilarOwnedItems(checkResult.classification, closetResponse.data || []));
 
       // Project what this would actually cost per wear, from how this user
       // treats the items they already own in the same category.
@@ -249,11 +250,11 @@ export default function InStoreCheckScreen() {
 }
 
 function VerdictRow({ label, detail }: { label: string; detail: VerdictDetail }) {
-  const icon = detail.matches === true ? '✓' : detail.matches === false ? '✕' : '?';
+  const icon = detail.matches === true ? 'checkmark' : detail.matches === false ? 'close' : 'help';
   const iconColor = detail.matches === true ? colors.camel : detail.matches === false ? colors.tobacco : colors.inkFaint;
   return (
     <View style={styles.verdictRow}>
-      <Text style={[styles.verdictIcon, { color: iconColor }]}>{icon}</Text>
+      <Ionicons name={icon} size={16} color={iconColor} style={styles.verdictIcon} />
       <View style={styles.verdictTextWrap}>
         <Text style={styles.verdictRowLabel}>{label}</Text>
         <Text style={styles.verdictRowReasoning}>
@@ -301,6 +302,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   verdictBadge: {
+    borderRadius: radius.full,
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -344,8 +346,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   verdictIcon: {
-    fontSize: 16,
-    fontFamily: fonts.sansSemiBold,
     width: 24,
   },
   verdictTextWrap: {

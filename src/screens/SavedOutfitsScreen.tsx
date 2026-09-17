@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -70,6 +71,15 @@ export default function SavedOutfitsScreen() {
       load();
     }, [load])
   );
+
+  // REMOVE sits right beside the title, so a stray tap must not hard-delete.
+  // Alert.alert is polyfilled on web (utils/webAlert).
+  const confirmDelete = (outfit: SavedOutfit) => {
+    Alert.alert('Remove this look?', `"${outfit.name}" will be deleted from your saved looks.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => handleDelete(outfit) },
+    ]);
+  };
 
   const handleDelete = async (outfit: SavedOutfit) => {
     try {
@@ -146,7 +156,7 @@ export default function SavedOutfitsScreen() {
                   <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel={`Remove ${outfit.name}`}
-                    onPress={() => handleDelete(outfit)}
+                    onPress={() => confirmDelete(outfit)}
                   >
                     <Text style={styles.remove}>REMOVE</Text>
                   </TouchableOpacity>

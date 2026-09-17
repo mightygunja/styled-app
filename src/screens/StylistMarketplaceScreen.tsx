@@ -177,8 +177,8 @@ export default function StylistMarketplaceScreen() {
         <Text style={styles.eyebrow}>STYLISTS</Text>
         <Text style={styles.title}>Find your stylist</Text>
         <Text style={styles.subtitle}>
-          Every stylist here was reviewed by a person before they appeared. Book a session, or
-          ask one to build an Edit from the clothes you already own.
+          Every stylist here was reviewed by a person before they appeared. Open a profile to
+          book a session.
         </Text>
 
         <TextInput

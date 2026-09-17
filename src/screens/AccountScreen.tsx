@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -197,14 +198,14 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>Style profile quiz</Text>
               <Text style={styles.prefSubtitle}>RETAKE · QUARTERLY</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('EditProfile')}>
             <View>
               <Text style={styles.prefTitle}>Edit profile</Text>
               <Text style={styles.prefSubtitle}>NAME · PHOTO · BIO</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           {/* Payment methods removed with the paywall. 33 Trends charges nobody,
               so a screen collecting card details had nothing to charge them
@@ -218,7 +219,7 @@ export default function AccountScreen() {
                   that saved a bit nothing read. */}
               <Text style={styles.prefSubtitle}>SOCIAL FEED</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
         </View>
 
@@ -235,14 +236,14 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>Find a stylist</Text>
               <Text style={styles.prefSubtitle}>BROWSE · SPECIALTIES · RATES</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Edits')}>
             <View>
               <Text style={styles.prefTitle}>Your Edits</Text>
               <Text style={styles.prefSubtitle}>LOOKS BUILT FROM YOUR OWN CLOSET</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.prefRow, isStylist && styles.prefRowLast]}
@@ -252,7 +253,7 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>Your sessions</Text>
               <Text style={styles.prefSubtitle}>UPCOMING · PAST</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
 
           {/* Offered only to people who aren't already stylists. Without this a
@@ -270,7 +271,7 @@ export default function AccountScreen() {
                   {applicationStatus === 'pending' ? 'WITH OUR TEAM' : 'APPLY TO JOIN THE MARKETPLACE'}
                 </Text>
               </View>
-              <Text style={styles.prefArrow}>›</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </TouchableOpacity>
           )}
         </View>
@@ -287,7 +288,7 @@ export default function AccountScreen() {
                   <Text style={styles.prefTitle}>Admin</Text>
                   <Text style={styles.prefSubtitle}>REVENUE · STYLIST APPLICATIONS</Text>
                 </View>
-                <Text style={styles.prefArrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </TouchableOpacity>
             </View>
           </>
@@ -300,7 +301,7 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>Shop your matches</Text>
               <Text style={styles.prefSubtitle}>MATCHED TO YOUR PROFILE</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.prefRow, !(marketplaceStats && marketplaceStats.clicks > 0) && styles.prefRowLast]}
@@ -310,7 +311,7 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>Saved items</Text>
               <Text style={styles.prefSubtitle}>YOUR WISHLIST</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           {marketplaceStats && marketplaceStats.clicks > 0 && (
             <View style={[styles.prefRow, styles.prefRowLast]}>
@@ -337,7 +338,7 @@ export default function AccountScreen() {
                   <Text style={styles.prefTitle}>Dashboard</Text>
                   <Text style={styles.prefSubtitle}>EARNINGS · BOOKINGS · REVIEWS</Text>
                 </View>
-                <Text style={styles.prefArrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('StylistAvailability')}>
@@ -345,7 +346,7 @@ export default function AccountScreen() {
                   <Text style={styles.prefTitle}>Your availability</Text>
                   <Text style={styles.prefSubtitle}>WHEN CLIENTS CAN BOOK YOU</Text>
                 </View>
-                <Text style={styles.prefArrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={() => navigation.navigate('EditReview')}>
@@ -353,7 +354,7 @@ export default function AccountScreen() {
                   <Text style={styles.prefTitle}>Edits to build</Text>
                   <Text style={styles.prefSubtitle}>REQUESTS FROM YOUR CLIENTS</Text>
                 </View>
-                <Text style={styles.prefArrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </TouchableOpacity>
             </View>
           </>
@@ -370,28 +371,28 @@ export default function AccountScreen() {
               <Text style={styles.prefTitle}>About 33 Trends</Text>
               <Text style={styles.prefSubtitle}>WHO WE ARE · HOW WE EARN</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Privacy')}>
             <View>
               <Text style={styles.prefTitle}>Privacy policy</Text>
               <Text style={styles.prefSubtitle}>WHAT WE COLLECT AND WHY</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('Terms')}>
             <View>
               <Text style={styles.prefTitle}>Terms of use</Text>
               <Text style={styles.prefSubtitle}>THE AGREEMENT · AFFILIATE DISCLOSURE</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.prefRow, styles.prefRowLast]} onPress={handleContactSupport}>
             <View>
               <Text style={styles.prefTitle}>Contact support</Text>
               <Text style={styles.prefSubtitle}>{SUPPORT_EMAIL.toUpperCase()}</Text>
             </View>
-            <Text style={styles.prefArrow}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </TouchableOpacity>
         </View>
 
@@ -477,71 +478,24 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
     color: colors.camel,
   },
-  currentBadge: {
-    borderRadius: radius.full,
-    backgroundColor: colors.camel,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  currentBadgeText: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 9,
-    letterSpacing: 1.2,
-    color: colors.ink,
-  },
   planPrice: {
     fontFamily: fonts.serif,
     fontSize: 32,
     color: colors.bone,
     marginTop: 12,
   },
-  planPriceUnit: {
-    fontFamily: fonts.sans,
-    fontSize: 14,
-    color: colors.bone,
-  },
   planDescription: {
     fontFamily: fonts.sans,
     fontSize: 13,
-    color: 'rgba(253,251,250,0.75)',
+    color: colors.bone,
+    opacity: 0.75,
     marginTop: 8,
     lineHeight: 19,
-  },
-  upgradeButton: {
-    marginTop: 18,
-    borderColor: 'rgba(253,251,250,0.3)',
-    alignSelf: 'flex-start',
   },
   sectionLabel: {
     ...textType.eyebrow,
     marginTop: 28,
     marginBottom: 12,
-  },
-  tiersCard: {
-    borderWidth: 1,
-    borderColor: colors.hair,
-  },
-  tierRow: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hair,
-  },
-  tierRowLast: {
-    borderBottomWidth: 0,
-  },
-  tierName: {
-    fontFamily: fonts.serif,
-    fontSize: 18,
-    color: colors.ink,
-  },
-  tierPrice: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.inkMuted,
-  },
-  tierFeatures: {
-    ...textType.meta,
-    marginTop: 4,
   },
   prefsCard: {
     borderTopWidth: 1,
@@ -569,10 +523,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.inkFaint,
     marginTop: 2,
-  },
-  prefArrow: {
-    fontSize: 20,
-    color: colors.inkFaint,
   },
   signOutButton: {
     marginTop: 32,

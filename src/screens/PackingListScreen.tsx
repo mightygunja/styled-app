@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, DateData } from 'react-native-calendars';
+import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
@@ -46,13 +47,14 @@ const ROLE_SECTIONS: Array<{ role: PackingRole; label: string }> = [
   { role: 'accessory', label: 'ACCESSORIES' },
 ];
 
-const CONDITION_GLYPH: Record<string, string> = {
-  sunny: '☀',
-  cloudy: '☁',
-  rainy: '☂',
-  snowy: '❄',
-  cold: '❄',
-  hot: '☀',
+// Ionicons, not the ☀ ☁ ☂ ❄ characters - iOS draws those as colour emoji.
+const CONDITION_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  sunny: 'sunny-outline',
+  cloudy: 'cloud-outline',
+  rainy: 'rainy-outline',
+  snowy: 'snow-outline',
+  cold: 'snow-outline',
+  hot: 'sunny-outline',
 };
 
 function formatShortDate(iso: string): string {
@@ -229,7 +231,9 @@ export default function PackingListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <BackButton />
+        {/* From a result, Back returns to the trip form and saved trips
+            rather than leaving the screen. */}
+        <BackButton onPress={screenState === 'result' ? resetToForm : undefined} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -455,7 +459,12 @@ function PackingResult({ list }: { list: PackingList }) {
         {list.forecast.map(day => (
           <View key={day.date} style={styles.forecastDay}>
             <Text style={styles.forecastDate}>{formatShortDate(day.date)}</Text>
-            <Text style={styles.forecastGlyph}>{CONDITION_GLYPH[day.condition] || '☁'}</Text>
+            <Ionicons
+              name={CONDITION_ICON[day.condition] || 'cloud-outline'}
+              size={20}
+              color={colors.tobacco}
+              style={styles.forecastGlyph}
+            />
             <Text style={styles.forecastTemp}>
               {day.high}° / {day.low}°
             </Text>
@@ -625,7 +634,7 @@ const styles = StyleSheet.create({
     minWidth: 84,
   },
   forecastDate: { ...textType.meta, fontSize: 11 },
-  forecastGlyph: { fontSize: 20, marginVertical: 6, color: colors.tobacco },
+  forecastGlyph: { marginVertical: 6 },
   forecastTemp: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink },
   forecastEstimated: { ...textType.meta, fontSize: 10, marginTop: 2, color: colors.inkFaint },
 

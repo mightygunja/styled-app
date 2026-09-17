@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { readImageAsBase64 } from '../utils/imageData';
@@ -137,6 +138,7 @@ export default function BodyAnalysisScreen() {
   const [photoEstimate, setPhotoEstimate] = useState<PhotoBodyEstimate | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [fitCheck, setFitCheck] = useState<{ matchCount: number; sampleItems: string[]; gapCategories: string[] } | null>(null);
+  const [fitCheckFailed, setFitCheckFailed] = useState(false);
   const [applying, setApplying] = useState(false);
 
   // The saved wardrobe focus decides which question set and classifier to
@@ -160,6 +162,8 @@ export default function BodyAnalysisScreen() {
   const questions = isMens ? MENS_QUESTIONS : WOMENS_QUESTIONS;
 
   const runWardrobeFitCheck = async (type: BodyType) => {
+    setFitCheck(null);
+    setFitCheckFailed(false);
     try {
       const response = await closetAPI.getItems(getCurrentUserId());
       const { matches, gapCategories } = wardrobeFitCheck(type, response.data);
@@ -167,13 +171,16 @@ export default function BodyAnalysisScreen() {
         .slice(0, 3)
         .map((m: any) => {
           const item = response.data.find((i: any) => i.id === m.itemId);
-          return item ? `${item.color} ${item.subcategory || item.category}` : null;
+          // Colour is optional on closet items - never print 'undefined'
+          return item ? [item.color, item.subcategory || item.category].filter(Boolean).join(' ') : null;
         })
         .filter((s: string | null): s is string => !!s);
       setFitCheck({ matchCount: matches.length, sampleItems, gapCategories });
     } catch (error) {
       console.error('Error running wardrobe fit check:', error);
-      // Non-critical - the rest of the results screen still works without it
+      // Non-critical - the rest of the results screen still works without it,
+      // but say so instead of leaving the section spinning.
+      setFitCheckFailed(true);
     }
   };
 
@@ -291,7 +298,7 @@ export default function BodyAnalysisScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.optionText}>{opt.label}</Text>
-                  <Text style={styles.optionChevron}>→</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.camel} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -390,6 +397,8 @@ export default function BodyAnalysisScreen() {
                   </Text>
                 </View>
               )
+            ) : fitCheckFailed ? (
+              <Text style={styles.fitCheckGap}>Couldn't check your closet right now.</Text>
             ) : (
               <ActivityIndicator size="small" color={colors.inkMuted} style={{ marginTop: 8 }} />
             )}
@@ -476,10 +485,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
-  optionChevron: {
-    color: colors.camel,
-    fontSize: 16,
-  },
   analyzingBox: {
     paddingVertical: 80,
     alignItems: 'center',
@@ -490,7 +495,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   photoCard: {
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     marginTop: spacing.section,
     backgroundColor: colors.paper,
     padding: 16,
@@ -534,14 +539,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.section,
   },
   chipHighlight: {
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.sand,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   chipDownplay: {
-    borderRadius: radius.md,
-    backgroundColor: colors.hair,
+    borderRadius: radius.full,
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: colors.hair,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

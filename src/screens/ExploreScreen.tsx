@@ -123,7 +123,7 @@ export default function ExploreScreen() {
             {product.name}
           </Text>
           <Text style={styles.productMeta}>
-            {[product.brand, product.price ? `$${product.price}` : null]
+            {[product.brand, product.price ? `$${product.price.toFixed(0)}` : null]
               .filter(Boolean)
               .join('  ·  ')}
           </Text>
@@ -180,12 +180,11 @@ export default function ExploreScreen() {
               can't yet tell you what a piece would add to your wardrobe. Everything below is
               matched to your style profile only.
             </Text>
-            <TouchableOpacity
-              style={styles.summaryAction}
+            <Button
+              title="Add to closet"
               onPress={() => navigation.navigate('AddClosetItem')}
-            >
-              <Text style={styles.summaryActionText}>Add to closet</Text>
-            </TouchableOpacity>
+              style={styles.summaryAction}
+            />
           </View>
         )}
 
@@ -343,7 +342,7 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
   eyebrow: { ...textType.eyebrow, marginBottom: 12 },
-  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
 
   noticeBox: {
@@ -359,15 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },
   summaryLabel: { ...textType.eyebrow, marginBottom: 10 },
   summaryText: { ...textType.body, color: colors.ink, lineHeight: 22 },
-  summaryAction: {
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-    marginTop: spacing.md,
-    backgroundColor: colors.ink,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 12,
-  },
-  summaryActionText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.white },
+  summaryAction: { alignSelf: 'flex-start', marginTop: spacing.md },
 
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 10 },
   sectionNote: { ...textType.meta, fontSize: 12, lineHeight: 18, marginBottom: spacing.md },

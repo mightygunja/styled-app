@@ -597,9 +597,22 @@ export const reviewsService = {
       helpful: 0,
       createdAt: Timestamp.now(),
     };
-    const docRef = await addDoc(collection(db, 'reviews'), reviewData);
+    // One review per user per session: a deterministic id makes a second
+    // submit (double tap, second device) land on the same doc, which the
+    // rules refuse to overwrite. Reviews without a session keep auto-ids.
+    let reviewId: string;
+    if (sessionId) {
+      reviewId = `${sessionId}_${userId}`;
+      const ref = doc(db, 'reviews', reviewId);
+      if ((await getDoc(ref)).exists()) {
+        throw new Error('You have already reviewed this session');
+      }
+      await setDoc(ref, reviewData);
+    } else {
+      reviewId = (await addDoc(collection(db, 'reviews'), reviewData)).id;
+    }
     return {
-      id: docRef.id,
+      id: reviewId,
       ...reviewData,
       createdAt: reviewData.createdAt.toDate().toISOString(),
     } as StylistReview;
@@ -640,6 +653,19 @@ export const reviewsService = {
       ...data,
       createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
     } as StylistReview;
+  },
+
+  // Has this user reviewed this session? Checks the deterministic id first;
+  // reviews written before the id scheme are found by query.
+  hasReviewedSession: async (sessionId: string, userId: string): Promise<boolean> => {
+    if ((await getDoc(doc(db, 'reviews', `${sessionId}_${userId}`))).exists()) return true;
+    const q = query(
+      collection(db, 'reviews'),
+      where('sessionId', '==', sessionId),
+      where('userId', '==', userId),
+      limit(1)
+    );
+    return !(await getDocs(q)).empty;
   },
 
   markHelpful: async (reviewId: string): Promise<void> => {

@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   // Selected cards fill with ink, so the text has to invert or it disappears.
   sessionTypeLabelActive: { color: colors.bone },
   sessionTypeDuration: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted, marginTop: 4 },
-  sessionTypeDurationActive: { color: 'rgba(253, 251, 250, 0.7)' },
+  sessionTypeDurationActive: { color: colors.bone, opacity: 0.7 },
 
   noSlotsText: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, lineHeight: 19, marginBottom: 12 },
 

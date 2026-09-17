@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
 import { RootStackParamList } from '../navigation/types';
@@ -33,6 +34,7 @@ export default function SimilarItemsScreen() {
 
   const renderItem = ({ item }: { item: Match }) => {
     const closetItem = item.item;
+    const thumbUri = closetItem.thumbnailUrl || closetItem.imageUrl;
     // Never an invented reason: the returned facets, else the returned score,
     // else nothing.
     const reason = item.reasons?.length
@@ -49,11 +51,15 @@ export default function SimilarItemsScreen() {
           navigation.navigate('ClosetItemDetail' as any, { closetItemId: closetItem.id })
         }
       >
-        <Image
-          source={{ uri: closetItem.thumbnailUrl || closetItem.imageUrl }}
-          style={styles.thumb}
-          resizeMode="cover"
-        />
+        {thumbUri ? (
+          <Image source={{ uri: thumbUri }} style={styles.thumb} resizeMode="cover" />
+        ) : (
+          // Receipt-imported items have no photo yet - same placeholder as the closet grid.
+          <View style={[styles.thumb, styles.thumbPlaceholder]}>
+            <Ionicons name="camera-outline" size={20} color={colors.inkFaint} />
+            <Text style={styles.thumbPlaceholderText}>Add photo</Text>
+          </View>
+        )}
         <View style={styles.rowText}>
           {/* The reason leads. Ordering without a stated basis is the thing
               that made this feature feel arbitrary. */}
@@ -132,6 +138,14 @@ const styles = StyleSheet.create({
   },
   thumb: {
     borderRadius: radius.sm, width: 76, height: 96, backgroundColor: colors.paper },
+  thumbPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.hair,
+    borderStyle: 'dashed',
+  },
+  thumbPlaceholderText: { fontFamily: fonts.sansMedium, fontSize: 10, color: colors.inkFaint, marginTop: 4 },
   rowText: { flex: 1, marginLeft: 14 },
   reason: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.tobacco },
   itemName: {

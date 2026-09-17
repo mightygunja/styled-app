@@ -28,7 +28,7 @@ import {
 } from '../services/receiptForwardingService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type ScreenState = 'intro' | 'parsing' | 'review' | 'importing';
+type ScreenState = 'intro' | 'parsing' | 'review' | 'importing' | 'done';
 
 // react-native-web's Share rejects outright where the Web Share API is
 // missing (most desktop browsers), so those browsers copy instead.
@@ -51,22 +51,33 @@ export default function ReceiptImportScreen() {
   const [forwardingAddress, setForwardingAddress] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingReceiptImport[]>([]);
   const [addressCopied, setAddressCopied] = useState(false);
+  // Without this a failed mint left "Setting up your address…" on screen forever.
+  const [addressError, setAddressError] = useState(false);
+  const [importedCount, setImportedCount] = useState(0);
 
   useEffect(() => {
     loadForwarding();
   }, []);
 
+  // The address and the pending list resolve independently, so a failed
+  // pending query never hides a perfectly good address (and vice versa).
   const loadForwarding = async () => {
-    try {
-      const userId = getCurrentUserId();
-      const [address, staged] = await Promise.all([
-        receiptForwardingService.getOrCreateAddress(userId),
-        receiptForwardingService.getPending(userId),
-      ]);
-      setForwardingAddress(address);
-      setPending(staged);
-    } catch (error) {
-      console.error('Error loading receipt forwarding:', error);
+    const userId = getCurrentUserId();
+    setAddressError(false);
+    const [address, staged] = await Promise.allSettled([
+      receiptForwardingService.getOrCreateAddress(userId),
+      receiptForwardingService.getPending(userId),
+    ]);
+    if (address.status === 'fulfilled') {
+      setForwardingAddress(address.value);
+    } else {
+      console.error('Error setting up forwarding address:', address.reason);
+      setAddressError(true);
+    }
+    if (staged.status === 'fulfilled') {
+      setPending(staged.value);
+    } else {
+      console.error('Error loading pending receipt imports:', staged.reason);
     }
   };
 
@@ -194,11 +205,9 @@ export default function ReceiptImportScreen() {
         )
       );
 
-      Alert.alert(
-        'Added to your closet',
-        `${chosen.length} item${chosen.length === 1 ? '' : 's'} imported. Tap an item in your closet to add its photo — outfit building needs one.`,
-        [{ text: 'Done', onPress: () => navigation.goBack() }]
-      );
+      // An in-screen confirmation, so leaving never depends on an alert button.
+      setImportedCount(chosen.length);
+      setScreenState('done');
     } catch (error: any) {
       console.error('Error importing receipt items:', error);
       Alert.alert('Import failed', error?.message || 'Please try again.');
@@ -268,6 +277,11 @@ export default function ReceiptImportScreen() {
                   {addressCopied ? 'Copied' : WEB_WITHOUT_SHARE ? 'Tap to copy' : 'Tap to share'}
                 </Text>
               </TouchableOpacity>
+            ) : addressError ? (
+              <TouchableOpacity onPress={loadForwarding} accessibilityRole="button">
+                <Text style={styles.forwardHelper}>Couldn't set up your address.</Text>
+                <Text style={styles.retryLink}>Try again</Text>
+              </TouchableOpacity>
             ) : (
               <Text style={styles.forwardHelper}>Setting up your address…</Text>
             )}
@@ -286,6 +300,24 @@ export default function ReceiptImportScreen() {
             <ActivityIndicator size="large" color={colors.ink} />
             <Text style={styles.busyText}>Adding to your closet…</Text>
           </View>
+        )}
+
+        {screenState === 'done' && (
+          <>
+            <Text style={styles.eyebrow}>ADDED TO YOUR CLOSET</Text>
+            <Text style={styles.title}>
+              {importedCount} item{importedCount === 1 ? '' : 's'} imported
+            </Text>
+            <Text style={styles.subtitle}>
+              Tap an item in your closet to add its photo — outfit building needs one.
+            </Text>
+            <Button
+              title="Back to closet"
+              onPress={() => navigation.goBack()}
+              fullWidth
+              style={{ marginTop: spacing.lg }}
+            />
+          </>
         )}
 
         {screenState === 'review' && receipt && (
@@ -357,6 +389,7 @@ const styles = StyleSheet.create({
   busyBox: { paddingVertical: 80, alignItems: 'center' },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
   forwardHelper: { ...textType.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 },
+  retryLink: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.rust, marginBottom: 12 },
   addressBox: {
     borderRadius: radius.md, backgroundColor: colors.paper, padding: spacing.md },
   addressText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },

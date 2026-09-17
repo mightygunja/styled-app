@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { readImageAsBase64 } from '../utils/imageData';
 import { useNavigation } from '@react-navigation/native';
 import { getCurrentUserId, closetAPI } from '../services/api';
@@ -204,7 +205,12 @@ export default function AddClosetItemScreen() {
                 onPress={() =>setColor(col.id)}
               >
                 {color === col.id && (
-                  <Text style={styles.colorCheckmark}>✓</Text>
+                  <Ionicons
+                    name="checkmark"
+                    size={24}
+                    color={col.hex === colors.white ? colors.ink : colors.white}
+                    style={styles.colorCheckmark}
+                  />
                 )}
               </TouchableOpacity>
             ))}
@@ -314,6 +320,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   cancelButton: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -338,8 +345,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
   },
+  // Stays rust while saving - a near-invisible grey reads as a broken control.
   saveButtonDisabled: {
-    color: colors.hair,
+    opacity: 0.5,
   },
   imageSection: {
     padding: 20,
@@ -354,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   changeImageButton: {
-    borderRadius: radius.sm,
+    borderRadius: radius.full,
     position: 'absolute',
     bottom: 16,
     left: 16,
@@ -379,17 +387,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
-  imagePlaceholderEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   imagePlaceholderText: {
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
     marginBottom: 8,
     textAlign: 'center',
   },
   imagePlaceholderSubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkFaint,
     textAlign: 'center',
@@ -427,10 +433,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
     borderColor: colors.ink,
   },
-  optionEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
   optionLabel: {
     fontSize: 12,
     fontFamily: fonts.sansSemiBold,
@@ -462,9 +464,6 @@ const styles = StyleSheet.create({
     borderWidth: 4,
   },
   colorCheckmark: {
-    fontSize: 24,
-    color: colors.white,
-    fontFamily: fonts.sansSemiBold,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -475,6 +474,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hair,
     padding: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.ink,
   },
@@ -488,6 +488,7 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     marginTop: 16,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },

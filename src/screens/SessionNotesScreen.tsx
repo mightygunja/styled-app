@@ -12,6 +12,8 @@ import {
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import BackButton from '../components/BackButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -47,6 +49,9 @@ export default function SessionNotesScreen() {
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<NoteCategory>('observation');
+  // Shown inside the sheet - the screen's Toast sits underneath the Modal.
+  const [addError, setAddError] = useState<string | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
   const { toast, showToast, hideToast } = useToast();
   // Which side of the session is looking. The stylist opens this same screen
   // from their dashboard; their notes used to be saved as the client's, so
@@ -89,12 +94,11 @@ export default function SessionNotesScreen() {
   };
 
   const handleAddNote = async () => {
-    if (!newNoteContent.trim()) {
-      showToast('Please enter note content', 'error');
-      return;
-    }
+    if (!newNoteContent.trim() || savingNote) return;
 
     try {
+      setAddError(null);
+      setSavingNote(true);
       const note = await sessionNotesService.addNote(
         sessionId,
         newNoteContent,
@@ -108,8 +112,15 @@ export default function SessionNotesScreen() {
       showToast('Note added successfully', 'success');
     } catch (error) {
       console.error('Error adding note:', error);
-      showToast('Failed to add note', 'error');
+      setAddError("Couldn't save this note. Try again.");
+    } finally {
+      setSavingNote(false);
     }
+  };
+
+  const closeAddNote = () => {
+    setShowAddNote(false);
+    setAddError(null);
   };
 
   const handleDeleteNote = async (noteId: string) => {
@@ -163,8 +174,8 @@ export default function SessionNotesScreen() {
           </Text>
         </View>
         {note.createdBy === viewerRole && (
-          <TouchableOpacity onPress={() =>handleDeleteNote(note.id)}>
-            <Text style={styles.deleteButton}>✕</Text>
+          <TouchableOpacity onPress={() =>handleDeleteNote(note.id)} accessibilityLabel="Delete note">
+            <Ionicons name="close" size={18} color={colors.inkFaint} />
           </TouchableOpacity>
         )}
       </View>
@@ -195,9 +206,7 @@ export default function SessionNotesScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() =>navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
+        <BackButton />
         <Text style={styles.title}>Session Notes</Text>
         <TouchableOpacity onPress={handleExportNotes}>
           <Text style={styles.exportButton}>Export</Text>
@@ -218,8 +227,8 @@ export default function SessionNotesScreen() {
       </ScrollView>
 
       {/* Add Note Button */}
-      <TouchableOpacity style={styles.fab} onPress={() =>setShowAddNote(true)}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() =>setShowAddNote(true)} accessibilityLabel="Add note">
+        <Ionicons name="add" size={30} color={colors.white} />
       </TouchableOpacity>
 
       {/* Add Note Modal */}
@@ -227,16 +236,24 @@ export default function SessionNotesScreen() {
         visible={showAddNote}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() =>setShowAddNote(false)}
+        onRequestClose={closeAddNote}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() =>setShowAddNote(false)}>
-              <Text style={styles.modalClose}>✕</Text>
+            <TouchableOpacity onPress={closeAddNote} accessibilityLabel="Close">
+              <Ionicons name="close" size={24} color={colors.inkMuted} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Note</Text>
-            <TouchableOpacity onPress={handleAddNote}>
-              <Text style={styles.modalSave}>Save</Text>
+            <TouchableOpacity
+              style={[styles.modalSaveButton, (!newNoteContent.trim() || savingNote) && styles.modalSaveDisabled]}
+              onPress={handleAddNote}
+              disabled={!newNoteContent.trim() || savingNote}
+            >
+              {savingNote ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Text style={styles.modalSave}>Save</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -262,12 +279,14 @@ export default function SessionNotesScreen() {
             <TextInput
               style={styles.noteInput}
               placeholder="Enter your note..."
+              placeholderTextColor={colors.inkFaint}
               value={newNoteContent}
               onChangeText={setNewNoteContent}
               multiline
               numberOfLines={6}
               textAlignVertical="top"
             />
+            {!!addError && <Text style={styles.addError}>{addError}</Text>}
           </View>
         </SafeAreaView>
       </Modal>
@@ -285,7 +304,7 @@ export default function SessionNotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   loadingContainer: {
     flex: 1,
@@ -294,6 +313,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+    fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.inkMuted,
   },
@@ -304,10 +324,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
-  },
-  backButton: {
-    fontSize: 16,
-    color: colors.inkMuted,
   },
   title: {
     fontSize: 18,
@@ -352,11 +368,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSemiBold,
     color: colors.inkMuted,
   },
-  deleteButton: {
-    fontSize: 18,
-    color: colors.inkFaint,
-  },
   noteContent: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     lineHeight: 22,
@@ -368,20 +381,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noteAuthor: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkMuted,
   },
   noteDate: {
+    fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.inkFaint,
   },
   emptyState: {
     padding: 60,
     alignItems: 'center',
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
@@ -390,6 +401,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtext: {
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.inkMuted,
   },
@@ -409,14 +421,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  fabText: {
-    fontSize: 32,
-    color: colors.white,
-    fontFamily: fonts.sans,
-  },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bone,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -426,19 +433,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
-  modalClose: {
-    fontSize: 24,
-    color: colors.inkMuted,
-  },
   modalTitle: {
     fontSize: 18,
     fontFamily: fonts.sansSemiBold,
     color: colors.ink,
   },
+  modalSaveButton: {
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  // Disabled stays rust at reduced opacity - never a grey fill.
+  modalSaveDisabled: {
+    opacity: 0.4,
+  },
   modalSave: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: fonts.sansSemiBold,
-    color: colors.ink,
+    color: colors.white,
+  },
+  addError: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.rust,
+    marginTop: 12,
   },
   modalContent: {
     flex: 1,
@@ -483,6 +504,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.paper,
     padding: 16,
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.ink,
     borderWidth: 1,

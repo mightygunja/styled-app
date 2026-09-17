@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BackButton from '../components/BackButton';
@@ -227,8 +228,13 @@ export default function EditsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request an Edit</Text>
-              <TouchableOpacity onPress={() => setShowRequest(false)}>
-                <Text style={styles.closeButton}>✕</Text>
+              <TouchableOpacity
+                onPress={() => setShowRequest(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Ionicons name="close" size={24} color={colors.inkMuted} />
               </TouchableOpacity>
             </View>
 
@@ -328,7 +334,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.page, paddingTop: spacing.sm },
   content: { padding: spacing.page, paddingBottom: 60 },
   eyebrow: { ...textType.eyebrow, marginBottom: 12 },
-  title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
+  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12, marginBottom: spacing.lg },
   busyBox: { paddingVertical: 80, alignItems: 'center' },
 
@@ -358,7 +364,13 @@ const styles = StyleSheet.create({
   statusTextReady: { color: colors.white },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.bone, maxHeight: '88%', paddingTop: spacing.lg },
+  modalContent: {
+    backgroundColor: colors.bone,
+    maxHeight: '88%',
+    paddingTop: spacing.lg,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,7 +380,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
   shareConsent: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 18, color: colors.inkMuted, marginTop: spacing.md },
-  closeButton: { fontSize: 20, color: colors.inkMuted },
   modalScroll: { paddingHorizontal: spacing.page },
   modalLabel: { ...textType.eyebrow, marginTop: spacing.lg, marginBottom: 10 },
 
