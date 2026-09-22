@@ -183,10 +183,14 @@ function rakutenDeeplink(product: Product): string | null {
  * function. Verify one live link per merchant when you add it (the Awin
  * merchants were each checked end-to-end this way).
  *
- * Targets: Quince (8 catalogue rows already) and Lulus, both applied for
- * 2026-09-04. Inert until IMPACT_PARTNER_ID is filled in.
+ * Account: the Gunja Consulting, Inc. publisher account (live 2026-09-21),
+ * partner id read off the approved Shopify link
+ * https://shopify.pxf.io/c/7822043/1061744/13624. Shopify is deliberately NOT
+ * in IMPACT_MERCHANTS: it pays for referring store owners, sells nothing in
+ * the catalogue, so no product should ever route to it. Links only change for
+ * brands added below. Targets: Quince (8 catalogue rows already) and Lulus.
  */
-const IMPACT_PARTNER_ID = '';
+const IMPACT_PARTNER_ID = '7822043';
 const IMPACT_MERCHANTS: Record<string, { host: string; adId: string; campaignId: string }> = {
   // Quince: { host: 'quince.pxf.io', adId: '<adId>', campaignId: '<campaignId>' },
   // Lulus:  { host: '<brand>.pxf.io', adId: '<adId>', campaignId: '<campaignId>' },
