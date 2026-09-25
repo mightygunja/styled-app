@@ -251,6 +251,9 @@ export default function LoginScreen() {
       <View style={styles.guideLinks}>
         <Text style={styles.guideLinksLabel}>STYLE GUIDES</Text>
         <View style={styles.guideLinkRow}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Trending' as any)}>
+            <Text style={styles.guideLink}>What’s in style now</Text>
+          </TouchableOpacity>
           {GUIDES.map(guide => (
             <TouchableOpacity
               key={guide.route}

@@ -52,6 +52,7 @@ function publicRoutes() {
     { path: 'terms' },
     { path: 'login' },
     { path: 'signup' },
+    { path: 'trending' },
     ...guides,
   ];
 }
@@ -60,13 +61,18 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
   '.ttf': 'font/ttf', '.otf': 'font/otf', '.woff': 'font/woff', '.woff2': 'font/woff2' };
 
-/** Same routing as Vercel: real files first, everything else is the shell. */
+/**
+ * Serves the PLAIN shell for every page (app.html when a merge has already
+ * run in this dist, else the fresh index.html) plus the static assets, so a
+ * snapshot always captures what the app renders, never a previous snapshot.
+ */
 function serveDist() {
+  const shell = fs.existsSync(path.join(dist, 'app.html')) ? path.join(dist, 'app.html') : path.join(dist, 'index.html');
   return new Promise(resolve => {
     const server = http.createServer((req, res) => {
       const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
       let file = path.join(dist, urlPath);
-      if (!urlPath.includes('.') || !fs.existsSync(file)) file = path.join(dist, 'index.html');
+      if (!urlPath.includes('.') || !fs.existsSync(file) || !fs.statSync(file).isFile()) file = shell;
       const ext = path.extname(file).toLowerCase();
       res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
       fs.createReadStream(file).on('error', () => { res.statusCode = 404; res.end(); }).pipe(res);
@@ -98,14 +104,25 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     try {
-      await page.goto(`http://localhost:${PORT}/${route.path}`, { waitUntil: 'networkidle' });
+      // Not `networkidle`: a logged-out page still opens a Firestore stream
+      // that never goes quiet. Wait for real content, then for it to stop
+      // changing, which covers async loads like the trend page.
+      await page.goto(`http://localhost:${PORT}/${route.path}`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => (document.getElementById('root')?.innerText || '').length > 200, null, { timeout: 30000 });
+      let previous = -1;
+      for (let i = 0; i < 40; i++) {
+        await page.waitForTimeout(500);
+        const length = await page.evaluate(() => (document.getElementById('root')?.innerText || '').length);
+        if (length === previous) break;
+        previous = length;
+      }
       await page.evaluate(() => document.fonts?.ready);
       await page.waitForTimeout(500);
       const snap = await page.evaluate(() => {
         const css = [];
         for (const sheet of Array.from(document.styleSheets)) {
-          if (sheet.ownerNode?.id === 'expo-reset') continue; // already in the shell
+          const id = sheet.ownerNode?.id;
+          if (id === 'expo-reset' || id === 'prerender-css') continue; // already in the shell / a previous merge
           try { for (const rule of Array.from(sheet.cssRules)) css.push(rule.cssText); } catch { /* cross-origin */ }
         }
         const meta = name => document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') || '';

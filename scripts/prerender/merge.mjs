@@ -76,10 +76,15 @@ function fillRoot(html, snap) {
 
 function main() {
   const shellPath = path.join(dist, 'index.html');
-  if (!fs.existsSync(shellPath)) { console.warn('prerender: no dist/index.html, nothing to do'); return; }
-  const shell = fs.readFileSync(shellPath, 'utf8');
+  const appPath = path.join(dist, 'app.html');
+  // The plain shell: a fresh export's index.html, or - when this dist was
+  // merged already (a local re-run) - the app.html kept from that merge.
+  const isPlain = file => fs.existsSync(file) && /<div id="root"><\/div>/.test(fs.readFileSync(file, 'utf8'));
+  const source = isPlain(shellPath) ? shellPath : isPlain(appPath) ? appPath : null;
+  if (!source) { console.warn('prerender: no plain shell in dist/, nothing to do'); return; }
+  const shell = fs.readFileSync(source, 'utf8');
   // The untouched shell keeps serving every non-public URL (vercel.json catch-all).
-  fs.writeFileSync(path.join(dist, 'app.html'), shell);
+  fs.writeFileSync(appPath, shell);
 
   const files = fs.existsSync(snapDir) ? fs.readdirSync(snapDir).filter(f => f.endsWith('.json')) : [];
   if (files.length === 0) { console.warn('prerender: no snapshots found; shipping the plain shell'); return; }

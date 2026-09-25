@@ -19,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../contexts/AuthContext';
+import PublicPieces, { resolvePieces } from '../components/PublicPieces';
+import { GUIDE_PIECES } from '../data/guidePieces';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 export interface GuideMeta {
@@ -170,6 +172,9 @@ function GuidePage({
   const { user, isNewUser } = useAuth();
 
   const others = GUIDES.filter(g => g.route !== route);
+  // The guide's own rail of catalogue pieces (data/guidePieces.ts): the one
+  // place on the open web where the app's shop links live.
+  const pieces = GUIDE_PIECES[route];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -189,6 +194,15 @@ function GuidePage({
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.intro}>{intro}</Text>
         {children}
+
+        {pieces && (
+          <PublicPieces
+            title={pieces.title}
+            note={pieces.note}
+            women={resolvePieces(pieces.women)}
+            men={resolvePieces(pieces.men)}
+          />
+        )}
 
         {/* The pitch, after the substance - the advice above works without
             the app; the app just does it automatically. */}
@@ -212,6 +226,14 @@ function GuidePage({
 
         <View style={styles.moreSection}>
           <Text style={styles.moreLabel}>MORE GUIDES</Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.moreRow}
+            onPress={() => navigation.navigate('Trending')}
+          >
+            <Text style={styles.moreTitle}>What’s in style right now: the trend report</Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.camel} />
+          </TouchableOpacity>
           {others.map(g => (
             <TouchableOpacity
               key={g.route}

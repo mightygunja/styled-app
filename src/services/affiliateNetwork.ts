@@ -328,25 +328,48 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
  * first 3 sales, but tag-on-search-link works from day one, which is the
  * entire point of starting here.
  */
+/**
+ * The outbound link under the Amazon provider, as plain string work: a
+ * merchant deeplink when one of the networks carries the retailer, else a
+ * department-qualified Amazon search. Synchronous so the public pages can
+ * render it as a real <a href> that a crawler or a network reviewer sees
+ * without running the app (see components/PublicPieces).
+ */
+function amazonOutboundUrl(product: Product): string {
+  // Best monetization first: a merchant deeplink lands the user on the
+  // actual retailer at the retailer's commission rate.
+  const deeplink = merchantDeeplink(product);
+  if (deeplink) return deeplink;
+
+  // The department qualifier keeps Amazon's results in the right aisle - a
+  // search for a men's oxford shirt without it comes back mixed.
+  const dept =
+    product.department === 'men' ? "men's " : product.department === 'women' ? "women's " : '';
+  const phrase = `${product.brand} ${product.name}`.trim();
+  // A name that already says whose aisle it is ("Women's Linen Blazer")
+  // needs no second qualifier.
+  const alreadyQualified = /\b(wo)?men'?s\b/i.test(phrase);
+  const query = encodeURIComponent(`${alreadyQualified ? '' : dept}${phrase}`.trim());
+  const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
+  return `https://www.amazon.com/s?k=${query}${tag}`;
+}
+
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
   async wrapLink(product: Product): Promise<string> {
-    // Best monetization first: a merchant deeplink lands the user on the
-    // actual retailer at the retailer's commission rate.
-    const deeplink = merchantDeeplink(product);
-    if (deeplink) return deeplink;
-
-    // The department qualifier keeps Amazon's results in the right aisle - a
-    // search for a men's oxford shirt without it comes back mixed.
-    const dept =
-      product.department === 'men' ? "men's " : product.department === 'women' ? "women's " : '';
-    const phrase = `${product.brand} ${product.name}`.trim();
-    // A name that already says whose aisle it is ("Women's Linen Blazer")
-    // needs no second qualifier.
-    const alreadyQualified = /\b(wo)?men'?s\b/i.test(phrase);
-    const query = encodeURIComponent(`${alreadyQualified ? '' : dept}${phrase}`.trim());
-    const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
-    return `https://www.amazon.com/s?k=${query}${tag}`;
+    return amazonOutboundUrl(product);
   }
+}
+
+/**
+ * A shop link that can be written into static HTML: only the providers whose
+ * wrapping is local string work qualify. The server-wrapped networks
+ * (Sovrn, Skimlinks) resolve at tap time and get null here, so a public page
+ * shows the piece without a link rather than a link that lies.
+ */
+export function staticShopUrl(product: Product): string | null {
+  const provider = effectiveProvider();
+  if (provider === 'amazon' || provider === 'starter') return amazonOutboundUrl(product);
+  return null;
 }
 
 const wrapAffiliateLinkFn = httpsCallable(functions, 'wrapAffiliateLink');
