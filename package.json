@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "prerender": "node scripts/prerender/snapshot.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/instrument-sans": "^0.4.2",
@@ -54,6 +55,7 @@
     "@types/react": "~19.1.0",
     "autoprefixer": "^10.4.22",
     "babel-preset-expo": "~54.0.10",
+    "playwright-core": "^1.63.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
     "typescript": "~5.9.2"
