@@ -52,7 +52,9 @@ function publicRoutes() {
     { path: 'terms' },
     { path: 'login' },
     { path: 'signup' },
-    { path: 'trending' },
+    // The trend page loads its report asynchronously; wait for a rail, not
+    // just for text, or the snapshot catches the loading state.
+    { path: 'trending', waitFor: 'PIECES THAT CARRY IT' },
     ...guides,
   ];
 }
@@ -109,11 +111,20 @@ async function main() {
       // changing, which covers async loads like the trend page.
       await page.goto(`http://localhost:${PORT}/${route.path}`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => (document.getElementById('root')?.innerText || '').length > 200, null, { timeout: 30000 });
+      if (route.waitFor) {
+        await page.waitForFunction(
+          marker => (document.getElementById('root')?.innerText || '').includes(marker),
+          route.waitFor,
+          { timeout: 45000 }
+        );
+      }
+      // Stable for three consecutive half-second samples before capture.
       let previous = -1;
-      for (let i = 0; i < 40; i++) {
+      let stable = 0;
+      for (let i = 0; i < 60 && stable < 3; i++) {
         await page.waitForTimeout(500);
         const length = await page.evaluate(() => (document.getElementById('root')?.innerText || '').length);
-        if (length === previous) break;
+        stable = length === previous ? stable + 1 : 0;
         previous = length;
       }
       await page.evaluate(() => document.fonts?.ready);
