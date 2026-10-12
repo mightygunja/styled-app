@@ -40,8 +40,8 @@ const HOW_STEPS = [
   },
   {
     n: '02',
-    title: 'Never "nothing to wear"',
-    line: 'A look every morning for the day you actually have — work, weekend, weather — from clothes you own.',
+    title: 'What’s moving, worn as you',
+    line: 'A look every morning from clothes you own — and the trends moving through fashion’s capitals, weighed for your city, with the way in from your closet.',
   },
   {
     n: '03',
