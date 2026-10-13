@@ -286,15 +286,8 @@ export default function ShopScreen() {
     }
   }, [wardrobeFocus, category]);
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <BackButton />
-        <TouchableOpacity style={styles.wishlistButton} onPress={() => navigation.navigate('Wishlist')}>
-          <Text style={styles.wishlistButtonText}>SAVED</Text>
-        </TouchableOpacity>
-      </View>
-
+  const listHeader = (
+    <View>
       <View style={styles.titleBlock}>
         <Text style={styles.eyebrow}>SHOP</Text>
         <Text style={styles.title}>Shop your matches</Text>
@@ -421,16 +414,31 @@ export default function ShopScreen() {
           />
         ))}
       </ScrollView>
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <BackButton />
+        <TouchableOpacity style={styles.wishlistButton} onPress={() => navigation.navigate('Wishlist')}>
+          <Text style={styles.wishlistButtonText}>SAVED</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Everything above the grid scrolls WITH it. As a fixed block this
+          header (title, disclosure, search, two filter rows) filled an
+          iPhone 14 screen and left the products a sliver at the bottom -
+          TestFlight feedback: "I can't view the items to shop for". */}
       {loading ? (
-        <View style={styles.loadingBox}>
+        <ScrollView>{listHeader}<View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.ink} />
-        </View>
+        </View></ScrollView>
       ) : failed ? (
-        <View style={styles.emptyBox}>
+        <ScrollView>{listHeader}<View style={styles.emptyBox}>
           <Text style={styles.emptyText}>We couldn't load the shop.</Text>
           <Button title="Try again" onPress={load} style={{ marginTop: spacing.md }} />
-        </View>
+        </View></ScrollView>
       ) : (
         <FlatList
           // numColumns can't change on a mounted list; the key remounts it
@@ -439,6 +447,8 @@ export default function ShopScreen() {
           data={padToColumns(visibleProducts as any[], gridColumns)}
           keyExtractor={(m: any) => m.product?.id ?? m.id}
           numColumns={gridColumns}
+          ListHeaderComponent={listHeader}
+          keyboardShouldPersistTaps="handled"
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContent}
           removeClippedSubviews
