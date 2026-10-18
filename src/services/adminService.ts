@@ -14,6 +14,40 @@ import { functions } from '../config/firebase';
 const getAdminStatusFn = httpsCallable(functions, 'getAdminStatus');
 const getAffiliateAnalyticsFn = httpsCallable(functions, 'getAffiliateAnalytics');
 const recordAffiliateRevenueFn = httpsCallable(functions, 'recordAffiliateRevenue');
+const getMemberActivityFn = httpsCallable(functions, 'getMemberActivity');
+
+export interface MemberActivity {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  provider: string;
+  disabled: boolean;
+  createdAt: number | null;
+  lastSignInAt: number | null;
+  /** Moves whenever a signed-in app refreshes its token - "last opened". */
+  lastRefreshAt: number | null;
+  /** Written by the client on every session (presenceService). */
+  lastActiveAt: number | null;
+  lastPlatform: string | null;
+  lastAppVersion: string | null;
+  surveyDone: boolean;
+  wardrobeFocus: string | null;
+  counts: Record<'closetItems' | 'outfits' | 'wishlistItems' | 'affiliateClicks' | 'posts', number | null>;
+}
+
+export interface MemberActivityReport {
+  generatedAt: number;
+  summary: {
+    total: number;
+    newLast7Days: number;
+    newLast30Days: number;
+    activeLast7Days: number;
+    returned: number;
+    withCloset: number;
+    surveyDone: number;
+  };
+  members: MemberActivity[];
+}
 
 export interface SurfaceStats {
   surface: string;
@@ -85,4 +119,10 @@ export async function recordAffiliateRevenue(input: {
   await recordAffiliateRevenueFn({ ...input, net: input.gross - input.returns });
 }
 
-export const adminService = { isAdmin, getAffiliateAnalytics, recordAffiliateRevenue };
+/** Every account with what it has done. Admin only; the server re-checks. */
+export async function getMemberActivity(): Promise<MemberActivityReport> {
+  const result = await getMemberActivityFn({});
+  return (result.data as any).data as MemberActivityReport;
+}
+
+export const adminService = { isAdmin, getAffiliateAnalytics, recordAffiliateRevenue, memberActivity: getMemberActivity };

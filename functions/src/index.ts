@@ -3462,6 +3462,100 @@ function requireAdmin(context: functions.https.CallableContext): string {
   return uid;
 }
 
+/**
+ * Member activity, for the Admin > Members page.
+ *
+ * Answers "who signed up and what did they do" without anyone opening the
+ * Firebase console: every account from Auth, joined to per-user counts in the
+ * collections that record activity and to the presence fields the client
+ * writes on users/{uid} (lastActiveAt, lastPlatform, lastAppVersion).
+ *
+ * Counts use aggregation queries, so cost is one read per user per
+ * collection, not one per document. A collection that cannot be counted
+ * (missing index, rules change) reports null rather than failing the page.
+ * Auth's lastRefreshTime is included because it moves whenever a signed-in
+ * app refreshes its token - a better "last opened" signal than
+ * lastSignInTime, which only moves on a fresh sign-in.
+ */
+export const getMemberActivity = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
+  .https.onCall(async (_data, context) => {
+    requireAdmin(context);
+
+    const users: admin.auth.UserRecord[] = [];
+    let pageToken: string | undefined;
+    do {
+      const page = await admin.auth().listUsers(1000, pageToken);
+      users.push(...page.users);
+      pageToken = page.pageToken;
+    } while (pageToken);
+
+    const COUNTED = ['closetItems', 'outfits', 'wishlistItems', 'affiliateClicks', 'posts'] as const;
+    const countFor = async (collection: string, uid: string): Promise<number | null> => {
+      try {
+        const snap = await db.collection(collection).where('userId', '==', uid).count().get();
+        return snap.data().count;
+      } catch {
+        return null;
+      }
+    };
+    const toMs = (value: any): number | null => {
+      if (!value) return null;
+      if (typeof value.toMillis === 'function') return value.toMillis();
+      const ms = new Date(value).getTime();
+      return Number.isFinite(ms) ? ms : null;
+    };
+
+    const members: any[] = [];
+    // Ten at a time keeps the parallel query count modest for a 1000-user list.
+    for (let i = 0; i < users.length; i += 10) {
+      const batch = users.slice(i, i + 10);
+      const rows = await Promise.all(
+        batch.map(async user => {
+          const [userDoc, ...counts] = await Promise.all([
+            db.collection('users').doc(user.uid).get().then(d => d.data() || {}).catch(() => ({} as any)),
+            ...COUNTED.map(c => countFor(c, user.uid)),
+          ]);
+          const styleProfile = userDoc.styleProfile || userDoc.styleDNA || null;
+          return {
+            uid: user.uid,
+            email: user.email || null,
+            displayName: user.displayName || null,
+            provider: user.providerData[0]?.providerId || 'password',
+            disabled: user.disabled,
+            createdAt: toMs(user.metadata.creationTime),
+            lastSignInAt: toMs(user.metadata.lastSignInTime),
+            lastRefreshAt: toMs(user.metadata.lastRefreshTime),
+            lastActiveAt: toMs(userDoc.lastActiveAt),
+            lastPlatform: userDoc.lastPlatform || null,
+            lastAppVersion: userDoc.lastAppVersion || null,
+            surveyDone: !!styleProfile,
+            wardrobeFocus: styleProfile?.wardrobeFocus || null,
+            counts: Object.fromEntries(COUNTED.map((c, idx) => [c, counts[idx]])),
+          };
+        })
+      );
+      members.push(...rows);
+    }
+    members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const lastSeen = (m: any) => Math.max(m.lastActiveAt || 0, m.lastRefreshAt || 0, m.lastSignInAt || 0);
+    const summary = {
+      total: members.length,
+      newLast7Days: members.filter(m => m.createdAt && now - m.createdAt < 7 * day).length,
+      newLast30Days: members.filter(m => m.createdAt && now - m.createdAt < 30 * day).length,
+      activeLast7Days: members.filter(m => now - lastSeen(m) < 7 * day).length,
+      // Came back at least an hour after creating the account.
+      returned: members.filter(m => m.createdAt && lastSeen(m) - m.createdAt > 60 * 60 * 1000).length,
+      withCloset: members.filter(m => (m.counts.closetItems || 0) > 0).length,
+      surveyDone: members.filter(m => m.surveyDone).length,
+    };
+
+    return { success: true, data: { generatedAt: now, summary, members } };
+  });
+
 export const listStylistApplications = functions
   .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
   .https.onCall(async (data, context) => {

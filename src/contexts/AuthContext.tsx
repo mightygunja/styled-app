@@ -22,6 +22,7 @@ import {
 } from 'firebase/auth';
 import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
+import { recordSession } from '../services/presenceService';
 import { authErrorMessage, appleErrorMessage } from '../utils/authErrors';
 
 interface AuthContextType {
@@ -149,6 +150,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      // One presence write per session, so Admin > Members can tell a
+      // returning member from one who signed up and left.
+      if (user) recordSession(user.uid);
     });
 
     return unsubscribe;

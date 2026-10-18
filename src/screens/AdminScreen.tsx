@@ -32,6 +32,12 @@ interface AdminEntry {
 
 const ENTRIES: AdminEntry[] = [
   {
+    eyebrow: 'PEOPLE',
+    label: 'Members',
+    detail: 'Every account: when they joined, when they were last in, and what they have done - closet, outfits, saves, shop taps.',
+    route: 'AdminMembers',
+  },
+  {
     eyebrow: 'EDITORIAL',
     label: 'Trend desk',
     detail: 'Draft the trend report with AI, review it, and publish what users see everywhere.',

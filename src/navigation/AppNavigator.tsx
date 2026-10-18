@@ -50,6 +50,7 @@ const StylistAvailabilityScreen = lazyScreen(() => import('../screens/StylistAva
 const StylistApplicationScreen = lazyScreen(() => import('../screens/StylistApplicationScreen'));
 const StylistApplicationsAdminScreen = lazyScreen(() => import('../screens/StylistApplicationsAdminScreen'));
 const AdminScreen = lazyScreen(() => import('../screens/AdminScreen'));
+const AdminMembersScreen = lazyScreen(() => import('../screens/AdminMembersScreen'));
 const AffiliateAnalyticsScreen = lazyScreen(() => import('../screens/AffiliateAnalyticsScreen'));
 const TrendDeskAdminScreen = lazyScreen(() => import('../screens/TrendDeskAdminScreen'));
 const SmartOutfitBuilderScreen = lazyScreen(() => import('../screens/SmartOutfitBuilderScreen'));
@@ -365,6 +366,7 @@ const linking = {
       Account: 'account',
       Admin: 'admin',
       AffiliateAnalytics: 'admin/affiliate',
+      AdminMembers: 'admin/members',
       StylistApplicationsAdmin: 'admin/stylists',
       TrendDeskAdmin: 'admin/trends',
       StylistApplication: 'apply',
@@ -411,6 +413,7 @@ const ROUTE_TITLES: Record<string, string> = {
   StylistApplicationsAdmin: 'Stylist applications',
   Admin: 'Admin',
   AffiliateAnalytics: 'Affiliate analytics',
+  AdminMembers: 'Members',
   TrendDeskAdmin: 'Trend desk',
   ClosetAnalytics: 'Closet analytics',
   StylistMarketplace: 'Stylists',
@@ -629,6 +632,7 @@ export default function AppNavigator() {
             <Stack.Screen name="StylistApplicationsAdmin" component={StylistApplicationsAdminScreen} />
             <Stack.Screen name="Admin" component={AdminScreen} />
             <Stack.Screen name="AffiliateAnalytics" component={AffiliateAnalyticsScreen} />
+            <Stack.Screen name="AdminMembers" component={AdminMembersScreen} />
             <Stack.Screen name="TrendDeskAdmin" component={TrendDeskAdminScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />
