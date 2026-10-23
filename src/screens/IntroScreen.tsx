@@ -25,6 +25,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
 import Button from '../components/Button';
+import PublicFooter from '../components/PublicFooter';
+import SiteLink from '../components/SiteLink';
 import { RootStackParamList } from '../navigation/types';
 import { SEED_TRENDS } from '../data/seedTrends';
 import { colors, fonts, radius, spacing, type as textType } from '../theme/designSystem';
@@ -130,16 +132,10 @@ export default function IntroScreen() {
             <Text style={styles.sampleBold}>If you own none of it: </Text>
             {SAMPLE_TREND.entryPiece}.
           </Text>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.inlineLink}
-            onPress={() => navigation.navigate('Trending')}
-          >
-            <Text style={styles.inlineLinkText}>
-              See all {facts.trends} trends across {facts.cities} cities
-            </Text>
+          <View style={styles.inlineLink}>
+            <SiteLink screen="Trending" style={styles.inlineLinkText}>See all {facts.trends} trends across {facts.cities} cities</SiteLink>
             <Ionicons name="arrow-forward" size={14} color={colors.rust} />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.sampleCard}>
@@ -184,10 +180,10 @@ export default function IntroScreen() {
             them. Nothing is used for advertising, nothing is sold, and deleting your account
             deletes the photos with it.
           </Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.inlineLink} onPress={() => navigation.navigate('Privacy')}>
-            <Text style={styles.inlineLinkText}>Read the privacy policy</Text>
+          <View style={styles.inlineLink}>
+            <SiteLink screen="Privacy" style={styles.inlineLinkText}>Read the privacy policy</SiteLink>
             <Ionicons name="arrow-forward" size={14} color={colors.rust} />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.answer}>
@@ -200,10 +196,10 @@ export default function IntroScreen() {
             main suggestion rail only carries pieces that unlock at least one. We would rather
             you bought one right thing a season than ten wrong ones.
           </Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.inlineLink} onPress={() => navigation.navigate('Terms')}>
-            <Text style={styles.inlineLinkText}>Read the affiliate disclosure</Text>
+          <View style={styles.inlineLink}>
+            <SiteLink screen="Terms" style={styles.inlineLinkText}>Read the affiliate disclosure</SiteLink>
             <Ionicons name="arrow-forward" size={14} color={colors.rust} />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.answer}>
@@ -212,11 +208,12 @@ export default function IntroScreen() {
             33 Trends is built by Gunja Consulting, Inc. in Chicago. It is new: the people using it
             today are early members, and we would rather earn the testimonials than invent them.
           </Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.inlineLink} onPress={() => navigation.navigate('About')}>
-            <Text style={styles.inlineLinkText}>About 33 Trends</Text>
+          <View style={styles.inlineLink}>
+            <SiteLink screen="About" style={styles.inlineLinkText}>About 33 Trends</SiteLink>
             <Ionicons name="arrow-forward" size={14} color={colors.rust} />
-          </TouchableOpacity>
+          </View>
         </View>
+        <PublicFooter />
       </ScrollView>
 
       <View style={styles.footer}>

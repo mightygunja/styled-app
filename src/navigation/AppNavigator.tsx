@@ -106,8 +106,9 @@ import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { AboutScreen, PrivacyScreen, TermsScreen } from '../screens/PublicPagesScreens';
 import TrendsPublicScreen from '../screens/TrendsPublicScreen';
+import PressScreen from '../screens/PressScreen';
+import { GUIDES } from '../data/guides';
 import {
-  GUIDES,
   GuideCapsuleScreen,
   GuideNothingToWearScreen,
   GuideCostPerWearScreen,
@@ -244,6 +245,7 @@ const PUBLIC_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Privacy', component: PrivacyScreen, title: 'Privacy' },
   { name: 'Terms', component: TermsScreen, title: 'Terms' },
   { name: 'Trending', component: TrendsPublicScreen, title: 'What’s in style now' },
+  { name: 'Press', component: PressScreen, title: 'Press' },
   { name: 'GuideCapsule', component: GuideCapsuleScreen, title: 'How to Build a Capsule Wardrobe' },
   { name: 'GuideNothingToWear', component: GuideNothingToWearScreen, title: 'Full Closet, Nothing to Wear? The Fix' },
   { name: 'GuideCostPerWear', component: GuideCostPerWearScreen, title: 'Cost Per Wear, Explained' },
@@ -305,6 +307,7 @@ const linking = {
       Terms: 'terms',
       // The public trend page; /trends stays the signed-in report.
       Trending: 'trending',
+      Press: 'press',
       ...Object.fromEntries(GUIDES.map(g => [g.route, g.path])),
       Shop: 'shop',
       ProductDetail: 'product/:productId',
@@ -446,6 +449,7 @@ const ROUTE_TITLES: Record<string, string> = {
   SmartSearch: 'Search',
   TrendInsights: 'Trends',
   Trending: 'What’s in style now',
+  Press: 'Press',
   ClosetOrganization: 'Closet organization',
   Sustainability: 'Sustainability',
   CarbonCalculator: 'Carbon calculator',
@@ -492,6 +496,11 @@ const ROUTE_SEO: Record<string, { path: string; description: string }> = {
     path: '/terms',
     description:
       'The 33 Trends terms of service, including the affiliate disclosure and your rights over your own content.',
+  },
+  Press: {
+    path: '/press',
+    description:
+      'Press kit for 33 Trends: a one-paragraph description, the facts, brand files and a contact for interviews and early access.',
   },
   Trending: {
     path: '/trending',

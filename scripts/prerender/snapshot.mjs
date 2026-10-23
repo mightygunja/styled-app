@@ -39,12 +39,12 @@ const PORT = 4173;
 
 /** Pages that exist logged-out. Guides are read from the one list that drives them. */
 function publicRoutes() {
-  const src = fs.readFileSync(path.join(root, 'src/screens/GuideScreens.tsx'), 'utf8');
+  const src = fs.readFileSync(path.join(root, 'src/data/guides.ts'), 'utf8');
   const list = src.slice(src.indexOf('export const GUIDES'), src.indexOf('];', src.indexOf('export const GUIDES')));
   const guides = [];
   const re = /path:\s*'([^']+)',\s*label:\s*'[^']*',\s*title:\s*'([^']+)'/g;
   for (const m of list.matchAll(re)) guides.push({ path: m[1], title: m[2] });
-  if (guides.length === 0) throw new Error('No guides parsed from GuideScreens.tsx - the regex needs updating.');
+  if (guides.length === 0) throw new Error('No guides parsed from src/data/guides.ts - the regex needs updating.');
   return [
     { path: '' },
     { path: 'about' },
@@ -52,6 +52,7 @@ function publicRoutes() {
     { path: 'terms' },
     { path: 'login' },
     { path: 'signup' },
+    { path: 'press' },
     // The trend page loads its report asynchronously; wait for a rail, not
     // just for text, or the snapshot catches the loading state.
     { path: 'trending', waitFor: 'PIECES THAT CARRY IT' },

@@ -19,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
 import BackButton from '../components/BackButton';
 import PublicPieces, { FocusToggle, PublicFocus } from '../components/PublicPieces';
+import PublicFooter from '../components/PublicFooter';
+import SiteLink from '../components/SiteLink';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublishedTrends } from '../services/trendService';
 import { piecesForTrend } from '../services/trendLooks';
@@ -133,15 +135,10 @@ export default function TrendsPublicScreen() {
               Photograph your closet and the report tells you which trends you can wear tonight from
               what is hanging there, and the single piece that would unlock the rest. Free — every feature.
             </Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              style={styles.ctaButton}
-              onPress={() => navigation.navigate('Signup')}
-            >
-              <Text style={styles.ctaButtonText}>Create a free account</Text>
-            </TouchableOpacity>
+            <SiteLink screen="Signup" style={styles.ctaLink}>Create a free account</SiteLink>
           </View>
         )}
+        <PublicFooter />
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,4 +201,16 @@ const styles = StyleSheet.create({
   ctaLine: { ...textType.body, fontSize: 13, lineHeight: 20, color: colors.inkMuted, marginTop: 8, marginBottom: spacing.md },
   ctaButton: { borderRadius: radius.full, backgroundColor: colors.rust, paddingVertical: 15, alignItems: 'center' },
   ctaButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 0.4, color: colors.white },
+  ctaLink: {
+    alignSelf: 'stretch',
+    textAlign: 'center',
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingVertical: 15,
+    fontFamily: fonts.sansMedium,
+    fontSize: 14,
+    letterSpacing: 0.4,
+    color: colors.white,
+    overflow: 'hidden',
+  },
 });

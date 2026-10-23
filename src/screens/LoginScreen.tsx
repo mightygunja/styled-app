@@ -25,7 +25,8 @@ import BrandWordmark from '../components/BrandWordmark';
 import Button from '../components/Button';
 import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
-import { GUIDES } from './GuideScreens';
+import { GUIDES } from '../data/guides';
+import SiteLink from '../components/SiteLink';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -251,32 +252,22 @@ export default function LoginScreen() {
       <View style={styles.guideLinks}>
         <Text style={styles.guideLinksLabel}>STYLE GUIDES</Text>
         <View style={styles.guideLinkRow}>
-          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Trending' as any)}>
-            <Text style={styles.guideLink}>What’s in style now</Text>
-          </TouchableOpacity>
+          <SiteLink screen="Trending" style={styles.guideLink}>What’s in style now</SiteLink>
           {GUIDES.map(guide => (
-            <TouchableOpacity
-              key={guide.route}
-              accessibilityRole="button"
-              onPress={() => navigation.navigate(guide.route as any)}
-            >
-              <Text style={styles.guideLink}>{guide.label}</Text>
-            </TouchableOpacity>
+            <SiteLink key={guide.route} screen={guide.route} style={styles.guideLink}>
+              {guide.label}
+            </SiteLink>
           ))}
         </View>
       </View>
       <View style={styles.legalLinks}>
-        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('About')}>
-          <Text style={styles.legalLink}>ABOUT</Text>
-        </TouchableOpacity>
+        <SiteLink screen="About" style={styles.legalLink}>ABOUT</SiteLink>
         <Text style={styles.legalDot}>·</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Privacy')}>
-          <Text style={styles.legalLink}>PRIVACY</Text>
-        </TouchableOpacity>
+        <SiteLink screen="Press" style={styles.legalLink}>PRESS</SiteLink>
         <Text style={styles.legalDot}>·</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Terms')}>
-          <Text style={styles.legalLink}>TERMS</Text>
-        </TouchableOpacity>
+        <SiteLink screen="Privacy" style={styles.legalLink}>PRIVACY</SiteLink>
+        <Text style={styles.legalDot}>·</Text>
+        <SiteLink screen="Terms" style={styles.legalLink}>TERMS</SiteLink>
       </View>
       <Text style={styles.legalCopy}>
         © 2026 33 Trends · support@thirtythreetrends.com

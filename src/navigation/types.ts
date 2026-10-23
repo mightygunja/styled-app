@@ -113,6 +113,7 @@ export type RootStackParamList = {
   Privacy: undefined;
   Terms: undefined;
   Trending: undefined;
+  Press: undefined;
   GuideCapsule: undefined;
   GuideNothingToWear: undefined;
   GuideCostPerWear: undefined;

@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import BrandWordmark from '../components/BrandWordmark';
 import BackButton from '../components/BackButton';
+import PublicFooter from '../components/PublicFooter';
 import { colors, fonts, type as textType, spacing } from '../theme/designSystem';
 
 const CONTACT_EMAIL = 'support@thirtythreetrends.com';
@@ -75,6 +76,7 @@ function PublicPage({
             </Text>
           </Text>
         </View>
+        <PublicFooter />
       </ScrollView>
     </SafeAreaView>
   );
