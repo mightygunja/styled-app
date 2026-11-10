@@ -41,6 +41,10 @@ import {
   sortProducts,
 } from '../models/product';
 import { MOCK_CATALOG, BALANCED_CATALOG } from '../data/mockProductCatalog';
+import { amazonSearchPhrase, amazonSearchUrl } from './amazonSearch';
+
+// Trend surfaces import the phrase search from here, as they always have.
+export { amazonSearchUrl };
 
 /**
  * 'both' runs Sovrn and Rakuten together and merges the results, which is what
@@ -93,17 +97,6 @@ function effectiveProvider(): MarketplaceProvider {
   if (usesEbay && Platform.OS !== 'web' && !EBAY_APPROVED_FOR_MOBILE_APPS) return 'amazon';
   return MARKETPLACE_PROVIDER;
 }
-
-/**
- * The Amazon Associates tracking tag, e.g. 'thirtythree-20'.
- * Get one at affiliate-program.amazon.com (instant at signup). Empty tag =
- * links still work as plain Amazon searches, they just don't earn yet.
- *
- * Amazon requires the disclosure "As an Amazon Associate we earn from
- * qualifying purchases" wherever its links appear - curatedCatalogNotice()
- * below carries it, and the Shop/Explore screens render it.
- */
-const AMAZON_ASSOCIATE_TAG = 'thirtythreetr-20';
 
 /**
  * Awin: the boutique-merchant layer. Awin monetizes per-merchant deeplinks -
@@ -341,17 +334,9 @@ function amazonOutboundUrl(product: Product): string {
   const deeplink = merchantDeeplink(product);
   if (deeplink) return deeplink;
 
-  // The department qualifier keeps Amazon's results in the right aisle - a
-  // search for a men's oxford shirt without it comes back mixed.
-  const dept =
-    product.department === 'men' ? "men's " : product.department === 'women' ? "women's " : '';
-  const phrase = `${product.brand} ${product.name}`.trim();
-  // A name that already says whose aisle it is ("Women's Linen Blazer")
-  // needs no second qualifier.
-  const alreadyQualified = /\b(wo)?men'?s\b/i.test(phrase);
-  const query = encodeURIComponent(`${alreadyQualified ? '' : dept}${phrase}`.trim());
-  const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
-  return `https://www.amazon.com/s?k=${query}${tag}`;
+  // Department, colour and (when Amazon stocks it) brand, so the search is
+  // for the piece the card shows - see amazonSearch.ts.
+  return amazonSearchUrl(amazonSearchPhrase(product));
 }
 
 class AmazonAssociatesAdapter extends MockCatalogAdapter {
@@ -800,18 +785,6 @@ export function getActiveAdapter(): AffiliateNetworkAdapter {
 
 export function isMockProvider(): boolean {
   return MARKETPLACE_PROVIDER === 'mock';
-}
-
-/**
- * A tagged Amazon search for an arbitrary phrase - the bridge over the
- * bootstrap gap: until Amazon's Product API unlocks (3 qualifying sales),
- * the app cannot pull Amazon's catalogue in, but it can always send the
- * user out to exactly what they're looking for, monetized. Used by trend
- * surfaces to search the gap phrase ("camel wide-leg trousers") directly.
- */
-export function amazonSearchUrl(query: string): string {
-  const tag = AMAZON_ASSOCIATE_TAG ? `&tag=${encodeURIComponent(AMAZON_ASSOCIATE_TAG)}` : '';
-  return `https://www.amazon.com/s?k=${encodeURIComponent(query.trim())}${tag}`;
 }
 
 /**
