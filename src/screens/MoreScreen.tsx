@@ -65,7 +65,7 @@ const SECTIONS: MoreSection[] = [
   {
     label: 'SUSTAINABILITY',
     items: [
-      { label: 'Sustainability score', subtitle: 'YOUR WARDROBE IMPACT', icon: 'leaf-outline', route: 'Sustainability' },
+      { label: 'Longevity score', subtitle: 'WEARS, REPAIRS, IMPACT', icon: 'leaf-outline', route: 'Sustainability' },
       { label: 'Carbon calculator', subtitle: 'ESTIMATED CO2 FOOTPRINT', icon: 'earth-outline', route: 'CarbonCalculator' },
       { label: 'Resale', subtitle: "SELL WHAT YOU DON'T WEAR", icon: 'pricetag-outline', route: 'Resale' },
     ],

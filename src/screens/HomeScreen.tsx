@@ -291,6 +291,8 @@ export default function HomeScreen() {
         pattern: item.pattern,
         fabricTexture: item.fabricTexture,
         fitType: item.fitType,
+        // Lets a piece chosen on the revive list lead today's outfits.
+        reviveUntil: item.reviveUntil,
       }));
 
       // Everything the shell needs is now in hand - greeting, weather line,

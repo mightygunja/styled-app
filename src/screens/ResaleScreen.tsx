@@ -10,12 +10,26 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 import { closetAPI, getCurrentUserId } from '../services/api';
+import { recordPassedOn } from '../services/garmentCareService';
+
+/**
+ * Where a prepared listing can be posted. None of these marketplaces offers
+ * a way for another app to post on a seller's behalf, so this opens their
+ * own sell page and the listing above is pasted in. Each page was opened and
+ * confirmed on 2026-11-10.
+ */
+const SELL_PAGES: { name: string; url: string }[] = [
+  { name: 'Poshmark', url: 'https://poshmark.com/sell' },
+  { name: 'eBay', url: 'https://www.ebay.com/sl/sell' },
+  { name: 'Depop', url: 'https://www.depop.com/sell/' },
+];
 import {
   resaleService,
   rankResaleCandidates,
@@ -98,6 +112,32 @@ export default function ResaleScreen() {
       }
       Alert.alert("Couldn't share that", 'Select the listing text above and copy it instead.');
     }
+  };
+
+  const openSellPage = (url: string) =>
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Couldn't open that", 'Open the marketplace yourself and paste the listing in.')
+    );
+
+  // The end of the loop: the piece went to someone who will wear it. It
+  // leaves the closet and counts toward the longevity score's "passed on".
+  const handleSold = (candidate: ResaleCandidate) => {
+    Alert.alert('Sold it?', 'This removes it from your closet and counts it as passed on.', [
+      { text: 'Not yet', style: 'cancel' },
+      {
+        text: 'Sold',
+        onPress: async () => {
+          try {
+            await closetAPI.deleteItem(candidate.itemId);
+            await recordPassedOn('sold');
+            setCandidates(prev => prev.filter(c => c.itemId !== candidate.itemId));
+          } catch (error) {
+            console.error('Error removing a sold item:', error);
+            Alert.alert("Couldn't remove it", 'Please try again.');
+          }
+        },
+      },
+    ]);
   };
 
   const totalDormant = dormantValue(candidates);
@@ -213,6 +253,25 @@ export default function ResaleScreen() {
                         fullWidth
                         style={{ marginTop: spacing.md }}
                       />
+
+                      {/* We prepare the listing; posting it is the seller's
+                          tap on the marketplace itself. */}
+                      <View style={styles.sellRow}>
+                        <Text style={styles.sellLabel}>Then post it on</Text>
+                        {SELL_PAGES.map(page => (
+                          <TouchableOpacity
+                            key={page.name}
+                            onPress={() => openSellPage(page.url)}
+                            accessibilityRole="link"
+                            accessibilityLabel={`Open ${page.name}'s sell page`}
+                          >
+                            <Text style={styles.sellLink}>{page.name} →</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <TouchableOpacity onPress={() => handleSold(candidate)} accessibilityRole="button">
+                        <Text style={styles.soldLink}>Sold it — remove from my closet</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : (
                     <Button
@@ -246,6 +305,10 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 34, color: colors.ink },
   subtitle: { ...textType.body, color: colors.inkMuted, marginTop: 12 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: 12 },
+  sellRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.md },
+  sellLabel: { ...textType.meta, fontSize: 12 },
+  sellLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco, paddingVertical: 6 },
+  soldLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted, paddingVertical: 10 },
 
   loadingBox: { paddingVertical: 80, alignItems: 'center' },
   emptyBox: {

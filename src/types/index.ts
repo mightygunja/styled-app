@@ -41,6 +41,8 @@ export interface Item {
   pattern?: string;
   fabricTexture?: string;
   fitType?: string;
+  /** ISO date until which the piece is on the revive list's "wear it this week" (see garmentLife). */
+  reviveUntil?: string;
 }
 
 export type ItemCategory = 

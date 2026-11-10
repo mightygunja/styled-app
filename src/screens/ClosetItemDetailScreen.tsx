@@ -10,6 +10,7 @@ import { closetAPI, getCurrentUserId, ClosetItem } from '../services/api';
 import { uploadImageToFirebase } from '../services/firebaseStorage';
 import { readImageAsBase64 } from '../utils/imageData';
 import PhotoUploadModal from '../components/PhotoUploadModal';
+import GarmentLifeCard from '../components/GarmentLifeCard';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -574,22 +575,13 @@ export default function ClosetItemDetailScreen() {
           </View>
         )}
 
-        {/* Usage Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Usage</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Times Worn:</Text>
-            <Text style={styles.infoValue}>{item.wornCount}</Text>
-          </View>
-          {item.lastWornDate && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Last Worn:</Text>
-              <Text style={styles.infoValue}>
-                {new Date(item.lastWornDate).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Life: wears, age, cost per wear, fixes - and the way to a repair.
+            Replaces the two-row Usage block. */}
+        <GarmentLifeCard
+          item={item as any}
+          notify={showToast}
+          onChanged={updates => setItem(prev => (prev ? ({ ...prev, ...updates } as ClosetItem) : prev))}
+        />
 
         {/* Notes */}
         {item.notes && (

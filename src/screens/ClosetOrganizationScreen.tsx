@@ -32,6 +32,15 @@ import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors as ds, fonts, radius } from '../theme/designSystem';
+import { garmentCareService, PassedOnKind } from '../services/garmentCareService';
+import { ReviveCandidate, reviveQueue } from '../services/garmentLife';
+
+/** Where a piece went when it left the closet. Only these three count as passed on. */
+const LET_GO_CHOICES: { kind: PassedOnKind; label: string }[] = [
+  { kind: 'sold', label: 'Sold it' },
+  { kind: 'swapped', label: 'Gave or swapped it' },
+  { kind: 'donated', label: 'Donated it' },
+];
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3;
@@ -52,6 +61,13 @@ export default function ClosetOrganizationScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [organizationPlan, setOrganizationPlan] = useState<OrganizationPlan | null>(null);
   const [declutterSuggestions, setDeclutterSuggestions] = useState<DeclutterSuggestion[]>([]);
+  // Pieces that have gone quiet (garmentLife.reviveQueue). The old "not worn
+  // recently" declutter suggestions were this list with only an exit; the
+  // first thing offered now is a way back into rotation.
+  const [revive, setRevive] = useState<ReviveCandidate<any>[]>([]);
+  // The card currently asking "where is it going?", and the one mid-write.
+  const [lettingGoId, setLettingGoId] = useState<string | null>(null);
+  const [reviveBusyId, setReviveBusyId] = useState<string | null>(null);
   const [capsuleWardrobe, setCapsuleWardrobe] = useState<CapsuleWardrobe | null>(null);
   const [tips, setTips] = useState<OrganizationTip[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<OrganizationMethod>('category');
@@ -116,9 +132,13 @@ export default function ClosetOrganizationScreen() {
       );
       setOrganizationPlan(plan);
 
-      // Get declutter suggestions
+      // Quiet pieces go to the revive list; what is left for review here is
+      // duplicates only, so nothing is listed twice.
+      setRevive(reviveQueue(response.data as any[]));
       const suggestions = await closetOrganizationService.getDeclutterSuggestions(closetItems);
-      setDeclutterSuggestions(suggestions.filter(s => !keptIds.has(s.item.id)));
+      setDeclutterSuggestions(
+        suggestions.filter(s => s.reason === 'duplicate' && !keptIds.has(s.item.id))
+      );
 
       // Get capsule wardrobe, personalized with color/body/style profile data when available
       let profileContext: CapsuleProfileContext | undefined;
@@ -203,6 +223,143 @@ export default function ClosetOrganizationScreen() {
           },
         },
       ]
+    );
+  };
+
+  const reviveName = (item: any): string =>
+    [item.color, item.subcategory || item.category].filter(Boolean).join(' ') || 'Item';
+
+  // "Wear it this week": a flag on the item that the daily outfit engine
+  // reads for seven days, or until the piece is worn.
+  const handleReviveThisWeek = async (candidate: ReviveCandidate<any>) => {
+    setReviveBusyId(candidate.item.id);
+    try {
+      const reviveUntil = await garmentCareService.reviveThisWeek(candidate.item.id);
+      setRevive(prev =>
+        prev.map(c =>
+          c.item.id === candidate.item.id ? { ...c, reviving: true, item: { ...c.item, reviveUntil } } : c
+        )
+      );
+      showToast('On this week\'s list. It leads your outfits when it suits the day.', 'success');
+    } catch (error) {
+      console.error('Error reviving item:', error);
+      showToast('Could not save that', 'error');
+    } finally {
+      setReviveBusyId(null);
+    }
+  };
+
+  const handleReviveKeep = async (candidate: ReviveCandidate<any>) => {
+    setReviveBusyId(candidate.item.id);
+    try {
+      await closetAPI.update(candidate.item.id, { declutterKeep: true });
+      setRevive(prev => prev.filter(c => c.item.id !== candidate.item.id));
+      showToast('Kept. It will not be suggested again.', 'success');
+    } catch (error) {
+      console.error('Error keeping item:', error);
+      showToast('Could not save that decision', 'error');
+    } finally {
+      setReviveBusyId(null);
+    }
+  };
+
+  // Choosing where it went is the confirmation: the card asks first, and only
+  // a named destination removes the piece.
+  const handleLetGo = async (candidate: ReviveCandidate<any>, kind: PassedOnKind) => {
+    setReviveBusyId(candidate.item.id);
+    try {
+      await closetAPI.deleteItem(candidate.item.id);
+      await garmentCareService.recordPassedOn(kind);
+      setRevive(prev => prev.filter(c => c.item.id !== candidate.item.id));
+      setItems(prev => prev.filter(i => i.id !== candidate.item.id));
+      setDeclutterSuggestions(prev => prev.filter(s => s.item.id !== candidate.item.id));
+      setLettingGoId(null);
+      showToast('Removed from your closet, and counted as passed on', 'success');
+    } catch (error) {
+      console.error('Error removing item:', error);
+      showToast('Could not remove the item', 'error');
+    } finally {
+      setReviveBusyId(null);
+    }
+  };
+
+  const renderReviveCard = (candidate: ReviveCandidate<any>) => {
+    const { item } = candidate;
+    const busy = reviveBusyId === item.id;
+    const lettingGo = lettingGoId === item.id;
+    return (
+      <View key={item.id} style={styles.declutterCard}>
+        <Image source={{ uri: item.imageUrl }} style={styles.declutterImage} />
+        <View style={styles.declutterContent}>
+          <Text style={styles.declutterName}>{reviveName(item)}</Text>
+          <Text style={styles.declutterExplanation}>
+            {candidate.line}
+            {candidate.outOfSeason ? '. Out of season now, so no nudge.' : ''}
+          </Text>
+
+          {candidate.reviving ? (
+            <Text style={styles.reviveOn}>On this week's list</Text>
+          ) : lettingGo ? (
+            <>
+              <Text style={styles.reviveAsk}>Where is it going?</Text>
+              <View style={styles.reviveChoices}>
+                {LET_GO_CHOICES.map(choice => (
+                  <TouchableOpacity
+                    key={choice.kind}
+                    style={styles.reviveChoice}
+                    disabled={busy}
+                    onPress={() => handleLetGo(candidate, choice.kind)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.declutterActionText}>{choice.label}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.reviveChoice}
+                  onPress={() => setLettingGoId(null)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.declutterActionText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              {!candidate.outOfSeason && (
+                <TouchableOpacity
+                  style={[styles.declutterActionButton, styles.declutterActionButtonPrimary, styles.reviveMain]}
+                  disabled={busy}
+                  onPress={() => handleReviveThisWeek(candidate)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Wear the ${reviveName(item)} this week`}
+                >
+                  <Text style={[styles.declutterActionText, styles.declutterActionTextPrimary]}>
+                    Wear it this week
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <View style={styles.declutterActions}>
+                <TouchableOpacity
+                  style={styles.declutterActionButton}
+                  disabled={busy}
+                  onPress={() => handleReviveKeep(candidate)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.declutterActionText}>Keep</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.declutterActionButton}
+                  disabled={busy}
+                  onPress={() => setLettingGoId(item.id)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.declutterActionText}>Let it go</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      </View>
     );
   };
 
@@ -369,8 +526,8 @@ export default function ClosetOrganizationScreen() {
           <Text style={styles.statLabel}>Total Items</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{declutterSuggestions.length}</Text>
-          <Text style={styles.statLabel}>To Review</Text>
+          <Text style={styles.statValue}>{revive.length}</Text>
+          <Text style={styles.statLabel}>Gone Quiet</Text>
         </View>
         <View style={styles.stat}>
           {/* Was an "Est. Time" of items x 2 minutes - a constant with no
@@ -393,7 +550,7 @@ export default function ClosetOrganizationScreen() {
           style={[styles.tab, selectedTab === 'declutter' && styles.tabActive]}
           onPress={() =>setSelectedTab('declutter')}
         >
-          <Text style={[styles.tabText, selectedTab === 'declutter' && styles.tabTextActive]}>Declutter
+          <Text style={[styles.tabText, selectedTab === 'declutter' && styles.tabTextActive]}>Revive
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -451,19 +608,38 @@ export default function ClosetOrganizationScreen() {
         {/* Declutter Tab */}
         {selectedTab === 'declutter' && (
           <View style={styles.declutterContainer}>
-            <Text style={styles.declutterTitle}>Declutter Suggestions</Text>
+            <Text style={styles.declutterTitle}>Revive</Text>
             <Text style={styles.declutterSubtitle}>
-              {declutterSuggestions.length === 0
-                ? 'Nothing to review'
-                : `${declutterSuggestions.length} ${declutterSuggestions.length === 1 ? 'item' : 'items'} to review`}
+              {revive.length === 0
+                ? 'Nothing has gone quiet'
+                : `${revive.length} ${revive.length === 1 ? 'piece has' : 'pieces have'} gone quiet. Pick one to wear this week before deciding it has to go.`}
             </Text>
-            {declutterSuggestions.length === 0 && (
+            {revive.length === 0 && (
               <Text style={styles.stateText}>
-                Nothing in your closet looks unused or duplicated right now. Suggestions appear
-                here as wear history builds up.
+                Everything you own has been worn lately, or is too new to judge. Pieces show up
+                here after two months unworn, or six months since their last wear.
               </Text>
             )}
-            {declutterSuggestions.map(renderDeclutterSuggestion)}
+            {revive.map(renderReviveCard)}
+
+            {declutterSuggestions.length > 0 && (
+              <>
+                <Text style={[styles.declutterTitle, styles.reviveSecondTitle]}>Near-duplicates</Text>
+                <Text style={styles.declutterSubtitle}>
+                  Same category and colour. Worth a look, not a verdict.
+                </Text>
+                {declutterSuggestions.map(renderDeclutterSuggestion)}
+              </>
+            )}
+
+            {revive.length > 0 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Resale')}
+                accessibilityRole="button"
+              >
+                <Text style={styles.reviveLink}>See what these could sell for →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -916,6 +1092,19 @@ const styles = StyleSheet.create({
   declutterActionTextPrimary: {
     color: ds.white,
   },
+  reviveMain: { flex: 0, marginBottom: 8 },
+  reviveOn: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: ds.tobacco },
+  reviveAsk: { fontFamily: fonts.sansMedium, fontSize: 13, color: ds.ink, marginBottom: 8 },
+  reviveChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  reviveChoice: {
+    borderRadius: radius.full,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: ds.hair,
+  },
+  reviveSecondTitle: { marginTop: 12 },
+  reviveLink: { fontFamily: fonts.sansMedium, fontSize: 14, color: ds.tobacco, paddingVertical: 12 },
   capsuleContainer: {
     padding: 20,
   },

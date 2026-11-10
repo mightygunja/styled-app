@@ -31,6 +31,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import { Item } from '../types';
 import { colorsWork } from './outfitUnlock';
+import { isReviving, reviveBonus } from './garmentLife';
 import { WeatherCondition } from './recommendationEngine';
 
 export type OccasionKey =
@@ -375,6 +376,10 @@ function itemScore(
   else score += 2;
   score -= Math.min(6, (item.wornCount || 0) * 0.4);
 
+  // "Wear it this week" from the revive list: a chosen piece outranks
+  // ordinary rotation for seven days, but never fit (see garmentLife).
+  score += reviveBonus(item);
+
   // A small seeded jitter so the same closet does not produce the identical
   // ordering every single day. Small enough that it never outranks fit.
   score += hash(item.id, seed) * 4;
@@ -711,7 +716,12 @@ interface SlotCache {
  *  which outfits can exist without changing any id. */
 function closetSignature(items: Item[]): string {
   let h = 2166136261 >>> 0;
-  for (const key of items.map(i => `${i.id}|${(i.category || '').toLowerCase()}`).sort()) {
+  // A piece put on the revive list changes what the pools should hold, so
+  // it is part of the signature - otherwise today's cached outfits would
+  // ignore the nudge until the next time slot.
+  for (const key of items
+    .map(i => `${i.id}|${(i.category || '').toLowerCase()}${isReviving(i) ? '|revive' : ''}`)
+    .sort()) {
     for (let i = 0; i < key.length; i++) {
       h = Math.imul(h ^ key.charCodeAt(i), 16777619) >>> 0;
     }

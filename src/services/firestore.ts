@@ -64,7 +64,7 @@ export const closetService = {
     const docRef = doc(db, 'closetItems', itemId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) throw new Error('Item not found');
-    return { id: docSnap.id, ...docSnap.data() } as ClosetItem;
+    return { id: docSnap.id, ...closetDates(docSnap.data()) } as ClosetItem;
   },
 
   // Create closet item

@@ -2948,6 +2948,97 @@ export const saveTrendSeedPieces = functions
     return { success: true, data: { seedPieces: kept } };
   });
 
+// ==================== GARMENT CARE ====================
+
+/**
+ * The issues the closet's care guide covers (src/data/careGuide.ts). The
+ * photo check may answer with one of these ids or with "none" / "unclear" -
+ * never with a free-text diagnosis the app has no fix written for.
+ */
+const CARE_ISSUE_IDS = ['pilling', 'button', 'hem', 'seam', 'hole', 'stain', 'zip', 'sole', 'fit'];
+
+/**
+ * Looks at a photo of something wrong with a garment and says which of the
+ * care guide's issues it most resembles, with how sure it is.
+ *
+ * A reading, not a verdict: the app shows it as "looks like ... (fairly
+ * sure)" beside chips that overrule it, and it never says whether or how
+ * well the piece can be repaired - a photo cannot know that.
+ */
+export const diagnoseGarmentIssue = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in to check a photo.');
+      }
+      const imageUrl = String(data?.imageUrl || '');
+      // Only photos this app's own uploader stored - not an arbitrary URL.
+      if (!/^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/styled-866b7[^/]*\/o\//.test(imageUrl)) {
+        throw new functions.https.HttpsError('invalid-argument', 'A photo uploaded from the app is required.');
+      }
+      const category = String(data?.category || '').toLowerCase().slice(0, 20);
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Someone photographed a problem with a piece of clothing${category ? ` (their ${category})` : ''} so they can find out how to fix it. Say what the photo most looks like - describe only what is visible.
+
+Choose ONE issue:
+- "pilling": small fibre bobbles on a knit or brushed fabric
+- "button": a button loose, hanging or missing
+- "hem": a hem that has dropped or come unstitched
+- "seam": stitching come apart along a seam, the cloth itself intact
+- "hole": a hole, tear, snag or worn-through patch in the cloth itself
+- "stain": a mark, stain or discolouration
+- "zip": a zip that is broken, split or missing its pull
+- "sole": a shoe's sole or heel worn down or coming away
+- "fit": nothing damaged - the photo shows a piece that is too long, too loose or too tight
+- "none": the piece looks fine in this photo
+- "unclear": you cannot tell from this photo (blurred, too dark, too far away, or not clothing)
+
+Rules:
+- confidence: "high" only when the issue is plainly visible; "medium" when it is likely; "low" when you are guessing.
+- seen: one plain sentence saying what you can see and where on the garment. No advice, and nothing about whether it can be repaired or how well - you cannot know that from a photo.
+- If two issues are visible, choose the one that would stop the piece being worn.
+
+Return ONLY valid JSON: { "issue": "", "confidence": "", "seen": "" }`,
+              },
+              { type: 'image_url', image_url: { url: imageUrl, detail: 'high' } },
+            ],
+          },
+        ],
+        max_tokens: 200,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const seen = JSON.parse(content);
+
+      const issue = CARE_ISSUE_IDS.includes(seen.issue) ? String(seen.issue) : null;
+      const confidence = ['high', 'medium', 'low'].includes(seen.confidence) ? String(seen.confidence) : 'low';
+      return {
+        success: true,
+        data: {
+          issue,
+          // "none" and "unclear" carry no issue, so there is nothing to be sure of.
+          confidence: issue ? confidence : 'low',
+          seen: String(seen.seen || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error reading garment issue:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
 // ==================== EBAY PARTNER NETWORK ====================
 
 /**

@@ -32,6 +32,8 @@ import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
+import { getPassedOnCount } from '../services/garmentCareService';
+import { LongevityScore, longevityScore } from '../services/garmentLife';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type Tab = 'overview' | 'impact' | 'actions';
@@ -60,6 +62,11 @@ export default function SustainabilityScreen() {
   // The grade is built mostly from wear counts, so with no wears logged it
   // would be an automatic "F" that says nothing about the wardrobe.
   const [hasWearHistory, setHasWearHistory] = useState(false);
+  // The headline number: how long things last in this closet, counted from
+  // wears, age, fixes and pieces passed on - always shown with those counts.
+  const [longevity, setLongevity] = useState<LongevityScore | null>(null);
+  // How each count turns into points: there for anyone who asks, closed otherwise.
+  const [showHow, setShowHow] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -95,6 +102,8 @@ export default function SustainabilityScreen() {
       }));
 
       setHasWearHistory(items.some(item => (item.wornCount || 0) > 0));
+      // From the raw documents: the care log and dates live there, not on Item.
+      setLongevity(longevityScore(response.data || [], { passedOn: await getPassedOnCount() }));
       setAnalysis(await sustainabilityService.analyzeWardrobe(items));
     } catch (error) {
       console.error('Error loading sustainability analysis:', error);
@@ -120,11 +129,11 @@ export default function SustainabilityScreen() {
         </View>
         <View style={styles.stat}>
           <Text style={styles.statValue}>{a.sustainableItems}</Text>
-          <Text style={styles.statLabel}>SCORING WELL</Text>
+          <Text style={styles.statLabel}>WELL WORN</Text>
         </View>
         <View style={styles.stat}>
           <Text style={styles.statValue}>{a.totalItems - a.sustainableItems}</Text>
-          <Text style={styles.statLabel}>ROOM TO IMPROVE</Text>
+          <Text style={styles.statLabel}>LIGHTLY WORN</Text>
         </View>
       </View>
 
@@ -245,9 +254,10 @@ export default function SustainabilityScreen() {
         }
       >
         <Text style={styles.eyebrow}>SUSTAINABILITY</Text>
-        <Text style={styles.title}>Your wardrobe impact</Text>
+        <Text style={styles.title}>How long your clothes last</Text>
         <Text style={styles.subtitle}>
-          What your closet cost to make, and what would change it.
+          How much wear your closet gets, what you mend and keep — and, under Impact, an estimate
+          of what it cost to make.
         </Text>
 
         {loading ? (
@@ -283,27 +293,57 @@ export default function SustainabilityScreen() {
                 palette carries no semantic green, and a red-to-green scale
                 would be the only place in the app using colour to mean good
                 or bad. */}
-            {hasWearHistory ? (
+            {longevity && (
               <View style={styles.gradeBox}>
-                <Text style={styles.gradeLabel}>WEAR GRADE</Text>
-                <Text style={styles.gradeValue}>{analysis.grade}</Text>
-                <Text style={styles.gradeScore}>
-                  {analysis.averageScore.toFixed(0)} out of 100 ·{' '}
-                  {analysis.sustainablePercentage.toFixed(0)}% of items score well
-                </Text>
-                <Text style={styles.gradeScore}>
-                  Scored on how often you wear each piece, plus its fabric where we could identify
-                  it. It is not a rating of the brands you own.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.gradeBox}>
-                <Text style={styles.gradeLabel}>WEAR GRADE</Text>
-                <Text style={styles.emptyTitle}>No grade yet</Text>
-                <Text style={styles.gradeScore}>
-                  The grade is built from how often you wear what you own, and no wears are logged
-                  yet. Mark an item as worn from its page in your closet and it appears here.
-                </Text>
+                <Text style={styles.gradeLabel}>LONGEVITY SCORE</Text>
+                {longevity.score !== null ? (
+                  <Text style={styles.gradeValue}>
+                    {longevity.score}
+                    <Text style={styles.gradeOutOf}> / 100</Text>
+                  </Text>
+                ) : (
+                  <Text style={styles.emptyTitle}>No score yet</Text>
+                )}
+                <Text style={styles.gradeScore}>{longevity.headline}</Text>
+
+                {/* Never the number alone: the five counts it is made of, each
+                    with what was counted. It is a measure of use, not of the
+                    brands you own or the planet. */}
+                {hasWearHistory &&
+                  longevity.inputs.map(input => (
+                    <View key={input.key} style={styles.inputRow}>
+                      <View style={styles.inputHeader}>
+                        <Text style={styles.inputLabel}>{input.label}</Text>
+                        <Text style={styles.inputValue}>{input.value}</Text>
+                      </View>
+                      {input.measured && (
+                        <View style={styles.bar}>
+                          <View
+                            style={[styles.barFill, { width: `${Math.round((input.points / input.max) * 100)}%` }]}
+                          />
+                        </View>
+                      )}
+                      {showHow && <Text style={styles.inputHow}>{input.how}</Text>}
+                    </View>
+                  ))}
+
+                <View style={styles.gradeLinks}>
+                  {hasWearHistory && (
+                    <TouchableOpacity
+                      onPress={() => setShowHow(current => !current)}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: showHow }}
+                    >
+                      <Text style={styles.gradeLink}>{showHow ? 'Hide how it is counted' : 'How it is counted'}</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('ClosetOrganization')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.gradeLink}>See what has gone quiet →</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -348,6 +388,14 @@ const styles = StyleSheet.create({
   gradeLabel: { ...textType.eyebrow, marginBottom: 8 },
   gradeValue: { fontFamily: fonts.serif, fontSize: 56, lineHeight: 60, color: colors.ink },
   gradeScore: { ...textType.meta, marginTop: 6 },
+  gradeOutOf: { fontFamily: fonts.sans, fontSize: 16, color: colors.inkMuted },
+  gradeLinks: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 20 },
+  gradeLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco, marginTop: spacing.md },
+  inputRow: { marginTop: spacing.md },
+  inputHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
+  inputLabel: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.ink },
+  inputValue: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted },
+  inputHow: { ...textType.meta, fontSize: 12, lineHeight: 17, marginTop: 6 },
 
   tabs: {
     flexDirection: 'row',

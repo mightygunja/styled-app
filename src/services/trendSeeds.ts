@@ -178,6 +178,16 @@ export function seedProductById(productId: string): Product | null {
 
 // ---- Anchor searches: a trend is always shoppable, seeded or not. ----
 
+/**
+ * Anchor words that describe a piece without being one. They stay in the
+ * trend (they are how pieces are matched) and are left out of the searches.
+ */
+const NOT_A_PIECE = new Set([
+  'ankara', 'boho', 'burgundy', 'cashmere', 'crochet', 'embroidered', 'fringe', 'handloom', 'linen',
+  'longline', 'merino', 'organza', 'oxblood', 'pointed', 'prairie', 'printed', 'raffia', 'slouchy',
+  'suede', 'wide-leg', 'zip-up', 'oversized', 'cropped', 'tailored', 'sheer', 'quilted', 'pleated',
+]);
+
 export interface TrendAnchorSearch {
   /** What the chip says: "men's suede bomber". */
   label: string;
@@ -206,8 +216,9 @@ export function trendAnchorSearches(
     if (accessories[i]) ordered.push(accessories[i]);
   }
   for (const anchor of ordered) {
-    // A one-word cut or fabric ("linen", "wide-leg") is not a thing to buy.
-    if (anchor.length < 4 || seen.has(anchor)) continue;
+    // A one-word cut, fabric or colour ("linen", "pointed", "oxblood") matches
+    // pieces well but is not a thing to search for.
+    if (anchor.length < 4 || seen.has(anchor) || NOT_A_PIECE.has(anchor)) continue;
     // Skip an anchor a longer one already covers ("suede" under "suede jacket").
     if (ordered.some(other => other !== anchor && other.includes(anchor) && other.length > anchor.length)) continue;
     seen.add(anchor);
