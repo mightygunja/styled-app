@@ -641,11 +641,110 @@ export function normalizeLifestyleWeights(
     return DEFAULT_PERSONAL_STYLE_PROFILE.lifestyleWeights;
   }
 
+  // Already a whole split (the builder's 5% steps): leave the values exactly
+  // as they are rather than dividing by a sum that is 1 give or take a float.
+  if (Math.abs(sum - 1) < 1e-9) {
+    return { work: weights.work, casual: weights.casual, social: weights.social, travel: weights.travel };
+  }
+
   return {
     work: weights.work / sum,
     casual: weights.casual / sum,
     social: weights.social / sum,
     travel: weights.travel / sum,
+  };
+}
+
+// ==================== LIFESTYLE SPLIT (whole percentages) ====================
+
+export type LifestyleKey = keyof PersonalStyleProfile['lifestyleWeights'];
+
+/** The split, in whole percent. Always multiples of LIFESTYLE_STEP that sum to 100. */
+export type LifestyleSplit = Record<LifestyleKey, number>;
+
+export const LIFESTYLE_KEYS: readonly LifestyleKey[] = ['work', 'casual', 'social', 'travel'];
+export const LIFESTYLE_STEP = 5;
+
+/**
+ * Shares `units` whole steps across `sizes` in proportion to them, by largest
+ * remainder: everyone gets the floor of their exact share, and the steps left
+ * over go to the largest fractional parts (earlier entries win a tie). All
+ * sizes zero means there is no proportion to follow, so the split is even.
+ */
+function apportion(sizes: number[], units: number): number[] {
+  const total = sizes.reduce((sum, s) => sum + s, 0);
+  const exact = sizes.map(s => (total > 0 ? (s * units) / total : units / sizes.length));
+  const out = exact.map(Math.floor);
+  let left = units - out.reduce((sum, u) => sum + u, 0);
+  const order = exact
+    .map((e, index) => ({ index, remainder: e - Math.floor(e) }))
+    .sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (let i = 0; left > 0; i = (i + 1) % order.length, left--) {
+    out[order[i].index] += 1;
+  }
+  return out;
+}
+
+/**
+ * Snaps any saved weights to a whole split: multiples of 5 that sum to
+ * exactly 100, as close to the saved proportions as that allows. Weights that
+ * are missing, negative or all zero fall back to the default split.
+ */
+export function snapLifestyleSplit(
+  weights: Partial<PersonalStyleProfile['lifestyleWeights']> | null | undefined
+): LifestyleSplit {
+  const clean = LIFESTYLE_KEYS.map(key => {
+    const value = Number(weights?.[key]);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  });
+  const sizes = clean.some(v => v > 0)
+    ? clean
+    : LIFESTYLE_KEYS.map(key => DEFAULT_PERSONAL_STYLE_PROFILE.lifestyleWeights[key]);
+  const units = apportion(sizes, 100 / LIFESTYLE_STEP);
+  const split = {} as LifestyleSplit;
+  LIFESTYLE_KEYS.forEach((key, i) => {
+    split[key] = units[i] * LIFESTYLE_STEP;
+  });
+  return split;
+}
+
+/**
+ * Moves one share up or down a step and rebalances the other three so the
+ * split still sums to exactly 100: the difference is taken from (or given to)
+ * the others in proportion to their current sizes, by largest remainder, so
+ * every share stays a multiple of 5 and none goes below 0.
+ *
+ * Returns null when the change cannot be made - the share is already at 0 or
+ * 100, so the others have nothing left to give or take. `split` must already
+ * be whole (see snapLifestyleSplit).
+ */
+export function adjustLifestyleSplit(
+  split: LifestyleSplit,
+  key: LifestyleKey,
+  direction: 1 | -1
+): LifestyleSplit | null {
+  const next = split[key] + direction * LIFESTYLE_STEP;
+  if (next < 0 || next > 100) return null;
+
+  const others = LIFESTYLE_KEYS.filter(k => k !== key);
+  const units = apportion(
+    others.map(k => split[k]),
+    (100 - next) / LIFESTYLE_STEP
+  );
+  const out = { ...split, [key]: next };
+  others.forEach((k, i) => {
+    out[k] = units[i] * LIFESTYLE_STEP;
+  });
+  return out;
+}
+
+/** The stored shape (fractions of 1) for a whole split. */
+export function lifestyleWeightsFromSplit(split: LifestyleSplit): PersonalStyleProfile['lifestyleWeights'] {
+  return {
+    work: split.work / 100,
+    casual: split.casual / 100,
+    social: split.social / 100,
+    travel: split.travel / 100,
   };
 }
 

@@ -42,6 +42,8 @@ import {
 } from './localeProfile';
 import { shopperSignals, trendAdventurousness } from './shopperSignals';
 import { piecesForTrend } from './trendLooks';
+import { canonicalArchetype } from './archetypeMatch';
+import { profileSignature } from './profileEvents';
 
 const personalizeTrendReportFn = httpsCallable(functions, 'personalizeTrendReport');
 
@@ -151,8 +153,10 @@ function adjacencyScore(trend: FashionTrend, profile?: ProfileMatchContext): num
 
   let score = 0.3;
 
-  const archetypes = (profile.styleArchetypes || []).map(a => a.toLowerCase());
-  if (archetypes.length && trend.archetypes.some(a => archetypes.includes(a.toLowerCase()))) {
+  // Both sides go through the shared vocabulary's name forms, so a desk trend
+  // filed under "boho" still meets a profile that says "bohemian".
+  const archetypes = (profile.styleArchetypes || []).map(canonicalArchetype);
+  if (archetypes.length && trend.archetypes.some(a => archetypes.includes(canonicalArchetype(a)))) {
     score += 0.4;
   }
 
@@ -424,7 +428,11 @@ export async function personalizeRemixes(
   // yesterday's womenswear "worth adding" lines for a day.
   // The place is part of the signature too: a Marrakesh report and a Paris
   // report must not share a day's cached notes.
-  const sig = `${reportSignature(top.map(r => r.trend.id), closetItems)}:${profile?.wardrobeFocus ?? 'all'}:${(locale?.city || locale?.country || '').toLowerCase()}`;
+  // And the rest of the profile the model was briefed with - archetypes,
+  // avoid rules, colour season (profileSignature covers the department too):
+  // notes written for "bohemian" are not served to the same closet a day
+  // after it became "romantic".
+  const sig = `${reportSignature(top.map(r => r.trend.id), closetItems)}:${profileSignature(profile)}:${(locale?.city || locale?.country || '').toLowerCase()}`;
 
   try {
     const raw = await AsyncStorage.getItem(REPORT_CACHE_KEY);

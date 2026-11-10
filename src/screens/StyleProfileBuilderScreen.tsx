@@ -20,6 +20,11 @@ import {
   STYLE_ARCHETYPES,
   DEFAULT_PERSONAL_STYLE_PROFILE,
   normalizeLifestyleWeights,
+  snapLifestyleSplit,
+  adjustLifestyleSplit,
+  lifestyleWeightsFromSplit,
+  LIFESTYLE_KEYS,
+  LifestyleKey,
   WardrobeFocus,
   WOMENS_BODY_TYPES,
   MENS_BODY_TYPES,
@@ -94,7 +99,12 @@ export default function StyleProfileBuilderScreen() {
       setLoadError(false);
       const existing = await styleProfileService.getStyleProfile(getCurrentUserId());
       if (existing) {
-        setStyleProfile(existing);
+        // Snapped once on the way in: a split saved before the shares were
+        // tied together (or by hand) may not sum to 100 or sit on 5% steps.
+        setStyleProfile({
+          ...existing,
+          lifestyleWeights: lifestyleWeightsFromSplit(snapLifestyleSplit(existing.lifestyleWeights)),
+        });
         setHasExisting(true);
       }
     } catch (error) {
@@ -109,11 +119,15 @@ export default function StyleProfileBuilderScreen() {
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  const updateLifestyleWeight = (key: keyof PersonalStyleProfile['lifestyleWeights'], value: number) => {
-    const newWeights = { ...styleProfile.lifestyleWeights, [key]: value };
-    setStyleProfile({
-      ...styleProfile,
-      lifestyleWeights: newWeights,
+  // The four shares are one split: they always sum to exactly 100, in 5%
+  // steps. Moving one rebalances the other three (adjustLifestyleSplit), and
+  // a move the others cannot absorb is refused - its button is disabled.
+  const lifestyleSplit = snapLifestyleSplit(styleProfile.lifestyleWeights);
+
+  const stepLifestyleWeight = (key: LifestyleKey, direction: 1 | -1) => {
+    setStyleProfile(prev => {
+      const next = adjustLifestyleSplit(snapLifestyleSplit(prev.lifestyleWeights), key, direction);
+      return next ? { ...prev, lifestyleWeights: lifestyleWeightsFromSplit(next) } : prev;
     });
   };
 
@@ -204,10 +218,11 @@ export default function StyleProfileBuilderScreen() {
   const handleSave = async () => {
     // Never write over a profile that could not be read.
     if (loadError) return;
-    // Normalize lifestyle weights before saving
+    // The split is already whole (see lifestyleSplit); normalising stays as a
+    // safety net so nothing that does not sum to 1 can ever be written.
     const normalizedProfile: PersonalStyleProfile = {
       ...styleProfile,
-      lifestyleWeights: normalizeLifestyleWeights(styleProfile.lifestyleWeights),
+      lifestyleWeights: normalizeLifestyleWeights(lifestyleWeightsFromSplit(lifestyleSplit)),
     };
     // A Body & Fit result from the other department goes with the change, as
     // in the survey. Deleted, not set to undefined - Firestore rejects undefined.
@@ -273,41 +288,54 @@ export default function StyleProfileBuilderScreen() {
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>How do you split your wardrobe?</Text>
       <Text style={styles.stepSubtitle}>
-        Adjust the sliders to show how you divide your clothing needs
+        Show how your clothing needs divide across your week
       </Text>
 
-      {/* Each control moves one share on its own, so the total can drift from
-          100%. Say so; the split is scaled to 100% on save (and in the review). */}
       <Text style={styles.fitHint}>
-        Total: {Math.round(Object.values(styleProfile.lifestyleWeights).reduce((sum, v) => sum + v, 0) * 100)}%
-        {' '}— saved scaled to 100%.
+        These always add up to 100% — raising one lowers the others.
       </Text>
 
-      {Object.entries(styleProfile.lifestyleWeights).map(([key, value]) => (
-        <View key={key} style={styles.sliderContainer}>
-          <View style={styles.sliderHeader}>
-            <Text style={styles.sliderLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
-            <Text style={styles.sliderValue}>{Math.round(value * 100)}%</Text>
+      {LIFESTYLE_KEYS.map(key => {
+        const value = lifestyleSplit[key];
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        const canLower = adjustLifestyleSplit(lifestyleSplit, key, -1) !== null;
+        const canRaise = adjustLifestyleSplit(lifestyleSplit, key, 1) !== null;
+        return (
+          <View key={key} style={styles.sliderContainer}>
+            <View style={styles.sliderHeader}>
+              <Text style={styles.sliderLabel}>{label}</Text>
+              <Text style={styles.sliderValue}>{value}%</Text>
+            </View>
+            <View style={styles.sliderTrack}>
+              <View style={[styles.sliderFill, { width: `${value}%` }]} />
+            </View>
+            <View style={styles.sliderButtons}>
+              <TouchableOpacity
+                style={[styles.sliderButton, !canLower && styles.sliderButtonDisabled]}
+                onPress={() => stepLifestyleWeight(key, -1)}
+                disabled={!canLower}
+                accessibilityRole="button"
+                accessibilityLabel={`Lower ${label} by 5%`}
+                accessibilityState={{ disabled: !canLower }}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+              >
+                <Ionicons name="remove" size={18} color={ds.rust} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sliderButton, !canRaise && styles.sliderButtonDisabled]}
+                onPress={() => stepLifestyleWeight(key, 1)}
+                disabled={!canRaise}
+                accessibilityRole="button"
+                accessibilityLabel={`Raise ${label} by 5%`}
+                accessibilityState={{ disabled: !canRaise }}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+              >
+                <Ionicons name="add" size={18} color={ds.rust} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.sliderTrack}>
-            <View style={[styles.sliderFill, { width: `${value * 100}%` }]} />
-          </View>
-          <View style={styles.sliderButtons}>
-            <TouchableOpacity
-              style={styles.sliderButton}
-              onPress={() => updateLifestyleWeight(key as keyof PersonalStyleProfile['lifestyleWeights'], Math.max(0, value - 0.05))}
-            >
-              <Text style={styles.sliderButtonText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sliderButton}
-              onPress={() => updateLifestyleWeight(key as keyof PersonalStyleProfile['lifestyleWeights'], Math.min(1, value + 0.05))}
-            >
-              <Text style={styles.sliderButtonText}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 
@@ -639,10 +667,10 @@ export default function StyleProfileBuilderScreen() {
 
       <View style={styles.reviewSection}>
         <Text style={styles.reviewLabel}>Lifestyle Split</Text>
-        {/* The normalised split - exactly what handleSave writes. */}
-        {Object.entries(normalizeLifestyleWeights(styleProfile.lifestyleWeights)).map(([key, value]) => (
+        {/* The same whole split the lifestyle step shows - exactly what handleSave writes. */}
+        {LIFESTYLE_KEYS.map(key => (
           <Text key={key} style={styles.reviewText}>
-            {key.charAt(0).toUpperCase() + key.slice(1)}: {Math.round(value * 100)}%
+            {key.charAt(0).toUpperCase() + key.slice(1)}: {lifestyleSplit[key]}%
           </Text>
         ))}
       </View>
@@ -943,19 +971,21 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
+  // Rust outline + rust glyph: these are the controls on the page, so they
+  // wear the action colour. Disabled keeps the same colours at low opacity -
+  // visibly switched off, never grey-on-grey.
   sliderButton: {
     borderRadius: radius.full,
     paddingHorizontal: 18,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: ds.hair,
+    borderColor: ds.rust,
     backgroundColor: ds.card,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sliderButtonText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 14,
-    color: ds.ink,
-    lineHeight: 18,
+  sliderButtonDisabled: {
+    opacity: 0.3,
   },
 
   // ---- Archetypes ----

@@ -46,13 +46,13 @@ export const GUIDE_PIECES: Record<string, GuidePieceSet> = {
   GuideColorSeasons: {
     title: 'One piece in a colour to test against your face',
     note: 'A knit or scarf next to the face is where a palette shows fastest - try the colour before committing a whole outfit to it.',
-    women: ['t017', 't009', 't003', 'a003', 't012', 'a027'],
-    men: ['mt006', 'mt004', 'mt007', 'ma008', 'mt014'],
+    women: ['t017', 't012', 't008', 'a003', 't009', 'a018'],
+    men: ['mt006', 'mt004', 'mt020', 'ma008', 'mt014'],
   },
   GuideBodyTypes: {
     title: 'Pieces that set a proportion, not hide one',
     note: 'Each of these moves the line the guide talks about - the waist, the leg, the shoulder - which is all body-type dressing is.',
-    women: ['b005', 'd009', 'b009', 'a058', 't024', 's019'],
+    women: ['b005', 'd009', 'b023', 'a031', 't032', 's019'],
     men: ['mb003', 'mb007', 'mo001', 'ma001', 'ms004'],
   },
   GuideWardrobeGaps: {
@@ -64,26 +64,26 @@ export const GUIDE_PIECES: Record<string, GuidePieceSet> = {
   GuideWeddingGuest: {
     title: 'What holds up from ceremony to hour seven',
     note: 'Dress codes from the guide, in pieces: something that photographs, shoes you can dance in, and a bag that carries the checklist.',
-    women: ['d008', 'd018', 'd009', 's038', 's019', 'a035'],
+    women: ['d008', 'd018', 'd009', 's021', 's019', 'a035'],
     men: ['mb013', 'mo001', 'mt002', 'ma003', 'ms005'],
   },
   GuideWorkWardrobe: {
     title: 'The 3×5+2 formula, in pieces',
     note: 'Three bottoms, five tops, two layers is the guide’s formula; these are the kind of pieces it is built from.',
-    women: ['o016', 'b002', 't021', 'd019', 's020', 'a066'],
-    men: ['mo001', 'mb007', 'mt002', 'mt007', 'ms004', 'ma005'],
+    women: ['o016', 'b002', 't021', 'd002', 's020', 'a066'],
+    men: ['mo001', 'mb007', 'mt002', 'mt004', 'ms004', 'ma005'],
   },
   GuideSustainable: {
     title: 'Made to pass the 30-wears test',
     note: 'Natural fibres and repairable construction - the two things that decide whether a piece is still around in three years.',
-    women: ['t006', 'b020', 'd024', 't049', 's011', 'a029'],
-    men: ['t006', 'mb010', 'mt027', 's011', 's025'],
+    women: ['t006', 'b020', 'd003', 't049', 's011', 'd024'],
+    men: ['t002', 'mb010', 'mt027', 's011', 's025'],
   },
   GuideWhatsInStyle: {
     title: 'What the stages look like on a rail',
     note: 'Pieces from trends the report currently has at rising or peak - wide legs, burgundy, suede - so the stages in the guide are not abstract.',
-    women: ['b005', 'a007', 'o009', 's006', 'b021', 't016'],
-    men: ['mb003', 'mo004', 'ms013', 'mo009', 'mt021'],
+    women: ['b005', 'a007', 'o009', 's006', 'b021', 't001'],
+    men: ['mb003', 'mo004', 'ms013', 'mo009', 'mt006'],
   },
   GuideWearTrends: {
     title: 'One trend piece, the rest your own',
@@ -94,19 +94,19 @@ export const GUIDE_PIECES: Record<string, GuidePieceSet> = {
   GuideTrendBudget: {
     title: 'The one-piece rule, at the low end of the price range',
     note: 'A trend colour or texture from a high-street label, so if it fades next year nothing of consequence was spent.',
-    women: ['o011', 'b015', 'a027', 't017', 's006'],
-    men: ['mt006', 'ma017', 'mb010', 'ms002', 'mt004'],
+    women: ['t017', 'b015', 'a057', 'o030', 's006'],
+    men: ['mt006', 'a057', 'mb010', 'ms002', 'mt004'],
   },
   GuideCityStyle: {
     title: 'What local dressing looks like as pieces',
-    note: 'A block-print kurta, a linen kaftan, a Scandinavian raincoat: the same weather answered three ways, which is the point of the guide.',
-    women: ['t080', 'd031', 's053', 'o035', 'a059'],
-    men: ['mt025', 'mb017', 'ms017', 'o035', 'ma014'],
+    note: 'An embroidered kurta, a kaftan, a Scandinavian raincoat: the same weather answered three ways, which is the point of the guide.',
+    women: ['t080', 'd032', 's051', 'o035', 'a011'],
+    men: ['mt025', 'mb010', 's051', 'o035', 'a064'],
   },
   GuideFabric: {
     title: 'One piece per fabric the guide covers',
     note: 'Cashmere, linen, silk, wool, leather, suede - the way each one moves and wears is the reason it is here.',
-    women: ['t029', 't019', 't001', 'o001', 'b032', 's015'],
-    men: ['mt004', 'mt027', 'mt006', 'mo008', 'ms003', 'ma008'],
+    women: ['t029', 't019', 't035', 'o001', 'b032', 's015'],
+    men: ['mt004', 'mt027', 'mt006', 'mo008', 'ms009', 'ma008'],
   },
 };

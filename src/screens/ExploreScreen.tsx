@@ -38,6 +38,7 @@ import {
 import { curatedCatalogNotice } from '../services/affiliateNetwork';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { shopperSignals } from '../services/shopperSignals';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -77,6 +78,11 @@ export default function ExploreScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Explore loads once, so a profile saved since then (new archetypes, a
+  // different department) left every section ranked for the old one. Rebuilt
+  // in place on the next focus - no spinner, and nothing when it is unchanged.
+  useProfileRevisionReload(load);
 
   const handleRefresh = async () => {
     setRefreshing(true);

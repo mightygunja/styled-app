@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { getCurrentUserId } from '../services/api';
 import { userProfileService } from '../services/userProfileService';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,11 +77,17 @@ export default function MoreScreen() {
   const { user } = useAuth();
   const [menswearOnly, setMenswearOnly] = useState(false);
 
-  useEffect(() => {
+  const loadDepartment = useCallback(() => {
     buildProfileMatchContext(getCurrentUserId())
       .then(profile => setMenswearOnly(profile?.wardrobeFocus === 'mens'))
       .catch(() => undefined);
   }, []);
+  useEffect(() => {
+    loadDepartment();
+  }, [loadDepartment]);
+  // This tab stays mounted, so a department changed in the profile builder
+  // has to be re-read when the profile is saved.
+  useProfileRevisionReload(loadDepartment);
 
   // Edit profile saves to the userProfiles doc, which this card never read -
   // so an edited name or photo did not appear here. Re-read on focus, since a

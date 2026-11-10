@@ -26,6 +26,7 @@ import Button from '../components/Button';
 import BackButton from '../components/BackButton';
 import Chip from '../components/Chip';
 import { useToast } from '../hooks/useToast';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 // Ionicons in place of the ☀ ☁ ☂ ❄ characters, which iOS draws as colour emoji.
@@ -74,6 +75,12 @@ export default function SmartRecommendationsScreen() {
       loadRecommendations();
     }
   }, [selectedOccasion, weatherLoaded]);
+
+  // The wearable pool is cut by the profile's avoid rules, read once per load.
+  // A profile saved since then rebuilds the outfits on the next focus.
+  useProfileRevisionReload(() => {
+    if (weatherLoaded) loadRecommendations();
+  });
 
   /**
    * Same engine as Home's Dress Me Today. The old recommendationEngine fed

@@ -33,6 +33,7 @@ import {
   HOME_OCCASIONS,
 } from '../services/dailyOutfitService';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { profileSignature } from '../services/profileEvents';
 import { discoveryService } from '../services/discoveryService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import { trendRemixService, TrendRemix } from '../services/trendRemixService';
@@ -46,6 +47,7 @@ import Button from '../components/Button';
 import BrandWordmark from '../components/BrandWordmark';
 import { fadeIn } from '../utils/animations';
 import { useToast } from '../hooks/useToast';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
@@ -440,8 +442,12 @@ export default function HomeScreen() {
       setStarterMode(false);
       setStarterItems([]);
 
+      // The slot cache is per profile as well as per closet, so looks and
+      // copy made for the old archetypes are not served after an edit.
+      const profileKey = profileSignature(matchContext);
       const loaded = await dailyOutfitService.loadOutfitPools(wearable, {
         weather: weatherContext,
+        profileSignature: profileKey,
       });
       poolsRef.current = loaded;
       showOccasion(occasionValue, wearable);
@@ -462,6 +468,7 @@ export default function HomeScreen() {
               weather: weatherContext,
               archetypes: matchContext?.styleArchetypes,
               avoidRules,
+              profileSignature: profileKey,
               trendLines,
             })
           )
@@ -502,6 +509,15 @@ export default function HomeScreen() {
     setSwapTargetId(null);
     loadDressMeToday(occasion);
   };
+
+  // Home loads once and stays mounted as a tab, so a profile saved in the
+  // builder (new archetypes, avoid rules, department) left the looks, the
+  // starter rail and the trend rail built for the old one. Rebuilt on the next
+  // focus - and only when the profile actually changed. The department prompt
+  // above saves and reloads by itself, so its own write is not answered twice.
+  useProfileRevisionReload(() => {
+    if (!savingFocus) handleRefresh();
+  });
 
   // Synchronous. No await, no network - the pools for every tab were built on
   // load, so this is a lookup and a setState.

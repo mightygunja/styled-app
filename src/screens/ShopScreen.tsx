@@ -38,6 +38,7 @@ import { getCurrentWeather } from '../services/weatherService';
 import { getPublishedTrends } from '../services/trendService';
 import { FashionTrend, trendTextMatch, TrendMatchKind } from '../models/fashionTrend';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
   { value: 'match', label: 'Best match' },
@@ -212,6 +213,11 @@ export default function ShopScreen() {
       if (failedRef.current) loadRef.current();
     }, [])
   );
+  // The other case: the style profile was saved while this grid sat behind
+  // the builder. Its ranking was built from the old archetypes, palette and
+  // avoid rules, so it is rebuilt - and only then; an unchanged profile keeps
+  // the grid and the scroll position exactly as above.
+  useProfileRevisionReload(() => loadRef.current());
 
   // Resolve the trend focus whenever a trend surface navigates here (or the
   // params clear). Kept in an effect rather than the load path so tapping a

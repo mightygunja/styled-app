@@ -9,6 +9,7 @@
 
 import { ClosetItem } from '../models/closetItem';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
+import { matchArchetype } from './archetypeMatch';
 
 export interface ClosetHealthScore {
   overall: number; // 0-100
@@ -36,12 +37,11 @@ export function calculateClosetHealth(
   const versatility = Math.min(100, (closet.length * 3)); // Rough estimate
 
   // Style alignment: How many items match user's style archetypes
-  const matchingItems = closet.filter(item => {
-    const itemTags = item.tags || [];
-    return styleProfile.styleArchetypes.some(archetype =>
-      itemTags.some(tag => tag.toLowerCase().includes(archetype.toLowerCase()))
-    );
-  });
+  // Through the shared vocabulary, so an item tagged "boho" or "minimalist"
+  // counts for a bohemian or minimal profile.
+  const matchingItems = closet.filter(
+    item => matchArchetype(styleProfile.styleArchetypes, (item.tags || []).join(' ')) !== null
+  );
   const styleAlignment = closet.length > 0 
     ? Math.round((matchingItems.length / closet.length) * 100)
     : 0;

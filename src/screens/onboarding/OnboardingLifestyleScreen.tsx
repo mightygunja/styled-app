@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { normalizeLifestyleWeights } from '../../models/personalStyleProfile';
+import { snapLifestyleSplit, lifestyleWeightsFromSplit } from '../../models/personalStyleProfile';
 
 import { radius } from '../../theme/designSystem';
 type NavigationProp = NativeStackNavigationProp<OnboardingStackParamList, 'OnboardingLifestyle'>;
@@ -101,8 +101,9 @@ export default function OnboardingLifestyleScreen() {
         travel: selectedCategories.has('travel') ? equalWeight : 0,
       };
       
-      // Normalize to ensure sum is exactly 1.0
-      updateLifestyleWeights(normalizeLifestyleWeights(weights));
+      // Snap to whole 5% shares that sum to exactly 100 (three picks would
+      // otherwise be 33.3% each, which the profile builder shows as 99%).
+      updateLifestyleWeights(lifestyleWeightsFromSplit(snapLifestyleSplit(weights)));
     }
 
     // Navigate to next step

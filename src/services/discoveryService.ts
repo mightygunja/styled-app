@@ -449,7 +449,7 @@ export async function buildStarterPools(
   // knowing who it is dressing. Until the department question is answered
   // (Home asks it in this exact state), dress the starter looks from
   // cross-department pieces only — their photography is neutral by contract
-  // (see UNISEX_IMAGE_POOLS in mockProductCatalog).
+  // (see UNISEX_IDS and VERIFIED_PHOTOS in mockProductCatalog).
   const safeRanked =
     profile?.wardrobeFocus
       ? ranked

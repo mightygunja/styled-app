@@ -6,6 +6,7 @@
  */
 
 import { Item } from '../types';
+import { matchArchetype } from './archetypeMatch';
 
 /**
  * Optional style-profile signals used to make capsule selection personal
@@ -497,8 +498,8 @@ class ClosetOrganizationService {
       if (profile.bodyMatchKeywords?.some(kw => haystack.includes(kw.toLowerCase()))) {
         score += 20; // cut/silhouette suits their body & fit type
       }
-      if (profile.styleArchetypes?.some(a => haystack.includes(a.toLowerCase()))) {
-        score += 15; // matches their style archetypes
+      if (matchArchetype(profile.styleArchetypes, haystack)) {
+        score += 15; // matches their style archetypes (shared vocabulary: "boho" reads bohemian)
       }
     }
 

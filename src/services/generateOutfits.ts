@@ -7,6 +7,7 @@
 
 import { ClosetItem, ClothingCategory, Season, getCurrentSeason, hasFormalityMatch, hasColorHarmony, canLayer, isSeasonallyAppropriate } from '../models/closetItem';
 import { PersonalStyleProfile, DEFAULT_PERSONAL_STYLE_PROFILE } from '../models/personalStyleProfile';
+import { matchArchetype } from './archetypeMatch';
 
 /**
  * Represents a complete outfit suggestion
@@ -91,9 +92,8 @@ function calculateItemScore(item: ClosetItem, styleProfile: PersonalStyleProfile
 
   // Boost score if item matches style archetypes
   const itemDescriptors = [...(item.tags || []), ...item.silhouettes];
-  const matchesArchetype = styleProfile.styleArchetypes.some(archetype =>
-    itemDescriptors.some(desc => desc.toLowerCase().includes(archetype.toLowerCase()))
-  );
+  const matchesArchetype =
+    matchArchetype(styleProfile.styleArchetypes, itemDescriptors.join(' ')) !== null;
   if (matchesArchetype) score += 20;
 
   // Boost score if item is in color comfort zone

@@ -25,6 +25,7 @@ import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 
 const ITEM_SIZE = 64;
@@ -65,6 +66,13 @@ export default function StylingAssistantScreen() {
     getCurrentWeather().then(setWeather);
     styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => setStyleProfile(null));
   }, []);
+
+  // The chat tab stays mounted. A profile saved elsewhere is re-read on the
+  // next focus so the stylist is briefed with the current archetypes, not
+  // the ones from when the tab first opened. A failed re-read keeps the old one.
+  useProfileRevisionReload(() => {
+    styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => undefined);
+  });
 
   const loadData = async () => {
     try {

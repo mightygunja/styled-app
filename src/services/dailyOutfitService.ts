@@ -695,6 +695,11 @@ interface SlotCache {
    *  screen would keep serving outfits computed from the old, smaller closet.
    *  Optional because caches written before this field must read as stale. */
   closet?: string;
+  /** profileSignature() of the profile the pools and copy were made for. The
+   *  wearable pool is cut by its avoid rules and the copy is written to its
+   *  archetypes, so a changed profile is a different cache - without this an
+   *  edited profile kept the old wording until the slot rolled over. */
+  profile?: string;
   /** Item ids per outfit, per occasion. Ids only - garments are re-read from
    *  the live closet so a renamed or deleted item cannot go stale in cache. */
   pools: Partial<Record<OccasionKey, string[][]>>;
@@ -872,19 +877,26 @@ export interface OutfitPools {
  */
 export async function loadOutfitPools(
   items: Item[],
-  options: { weather?: BuildOptions['weather']; seed?: number }
+  options: {
+    weather?: BuildOptions['weather'];
+    seed?: number;
+    /** profileSignature() of the profile these looks are for. */
+    profileSignature?: string;
+  }
 ): Promise<OutfitPools> {
   const slot = options.seed ?? slotSeed();
   const byId = new Map(items.map(i => [i.id, i]));
   const signature = closetSignature(items);
+  const profile = options.profileSignature ?? '';
   const cached = await readCache(slot);
 
   // Rehydrate cached pools from the live closet. Ids are cached, garments are
   // not, so a deleted item drops its outfit rather than rendering a gap. The
   // signature gate covers the opposite direction: garments added since the
   // pools were built rehydrate cleanly yet were never candidates, so the cache
-  // must be treated as describing a different closet.
-  if (cached?.pools && cached.closet === signature) {
+  // must be treated as describing a different closet. Same for the profile:
+  // a cache made for other archetypes or avoid rules is someone else's.
+  if (cached?.pools && cached.closet === signature && (cached.profile ?? '') === profile) {
     const rehydrated = {} as Record<OccasionKey, OutfitCandidate[]>;
     let usable = true;
 
@@ -924,7 +936,7 @@ export async function loadOutfitPools(
   // Cached copy is not carried over: it was written for the outfits the old
   // pools held, position by position, and those positions now hold different
   // clothes. Deterministic titles cover until rankOccasion refills it.
-  await writeCache({ slot, closet: signature, pools: idsOnly, copy: {} });
+  await writeCache({ slot, closet: signature, profile, pools: idsOnly, copy: {} });
   // Remember what went on screen so tomorrow's build rotates away from it.
   recordShown(pools).catch(() => undefined);
 
@@ -1016,6 +1028,8 @@ export async function rankOccasion(
     weather?: BuildOptions['weather'];
     archetypes?: string[];
     avoidRules?: string[];
+    /** The same profileSignature() the pools were loaded with. */
+    profileSignature?: string;
     /**
      * Compact lines describing current trends the user's own closet can
      * already carry (from trendRemixService.wearableTrendLines), so the
@@ -1069,8 +1083,11 @@ export async function rankOccasion(
         `Works for ${OCCASIONS[occasion].label}.`,
     }));
 
+    // Copy written for one profile is never filed under another: if the
+    // profile was saved while the model was thinking, the cache now belongs
+    // to the new one and this answer is simply not kept.
     const existing = await readCache(context.slot);
-    if (existing) {
+    if (existing && (existing.profile ?? '') === (context.profileSignature ?? '')) {
       await writeCache({
         ...existing,
         copy: { ...(existing.copy ?? {}), [occasion]: copy },

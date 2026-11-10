@@ -27,6 +27,7 @@ import { behaviouralAdjustment, ShopperSignals } from './shopperSignals';
 import { Season } from '../types';
 import { WeatherCondition } from './recommendationEngine';
 import { FashionTrend, trendTextMatch } from '../models/fashionTrend';
+import { matchArchetype, archetypeEvidence } from './archetypeMatch';
 
 /**
  * Everything that makes a ranking change over time rather than only when the
@@ -241,13 +242,24 @@ export function scoreProduct(
   }
 
   // ---- Style archetype, named ----
-  const archetype = profile?.styleArchetypes?.find(a => haystack.includes(a.toLowerCase()));
-  if (archetype) {
-    score += 15;
+  // A first-class signal: how someone describes their style has to move the
+  // page as much as a hole in their wardrobe does, or changing it changes
+  // nothing they can see. Matched through the shared vocabulary ("boho" reads
+  // bohemian), and the words that matched are quoted so the claim is checkable.
+  // 24 rather than the gap's 20 because a merely neutral, in-season piece
+  // collects 22 (14 + 8) and must not outrank one that is actually their
+  // style; 30 when two or more distinct words agree. scripts/auditArchetypes.ts
+  // holds these numbers to account.
+  const styleMatch = matchArchetype(profile?.styleArchetypes, haystack);
+  if (styleMatch) {
+    score += styleMatch.hits.length >= 2 ? 30 : 24;
+    const evidence = archetypeEvidence(styleMatch);
     signals.push({
       kind: 'style',
-      text: `Reads ${archetype}, which is how you've described your style`,
-      strength: 'moderate',
+      text: evidence.length
+        ? `Reads ${styleMatch.archetype} — ${evidence.join(', ')} — which is how you describe your style`
+        : `Reads ${styleMatch.archetype}, which is how you describe your style`,
+      strength: 'strong',
     });
   }
 

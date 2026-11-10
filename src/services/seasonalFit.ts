@@ -63,7 +63,11 @@ export function inferSeasons(product: Product): Season[] {
     .toLowerCase();
 
   const matched = (Object.keys(SEASON_KEYWORDS) as Season[]).filter(season =>
-    SEASON_KEYWORDS[season].some(kw => haystack.includes(kw))
+    SEASON_KEYWORDS[season].some(kw =>
+      // "rain" must start a word: as a bare substring it sits inside
+      // "trainer", which made every trainer a spring-only shoe.
+      kw === 'rain' ? /rain/.test(haystack) : haystack.includes(kw)
+    )
   );
 
   // Nothing matched means the garment reads as year-round, which is the

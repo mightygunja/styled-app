@@ -74,7 +74,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Treat burgundy like a neutral: one deep-red piece against grey, camel, denim or cream. Head-to-toe is the advanced move; a bag, a loafer or a scarf is the entry.',
     entryPiece: 'a burgundy bag or loafer worn against neutrals you already own',
-    pieces: ['t017', 's006', 'a007', 'mt006', 'ms001', 'ma003', 'a027', 's020'],
+    pieces: ['t017', 'a007', 'o012', 'mt006', 'mo009', 'a034'],
   }),
   seed({
     id: 'seed-suede-texture',
@@ -95,7 +95,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Let one suede piece be the texture in the outfit and keep everything else matte and simple - suede next to denim or plain knit reads expensive; suede next to shine reads costume. A suede belt or bag is the low-commitment version.',
     entryPiece: 'a suede piece in tan or chocolate - jacket if you want impact, belt or bag if you want a toe in',
-    pieces: ['o009', 's015', 'a005', 'mo004', 'ms003', 'a057', 'b014'],
+    pieces: ['o009', 's015', 'a005', 'mo004', 'ms009', 'a057', 's005', 'a006', 'mo003', 's033'],
   }),
   seed({
     id: 'seed-boho-redux',
@@ -116,7 +116,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'One flowing piece per outfit, grounded by something structured - a flowing maxi with a fitted knit, a western belt and a sharp boot, never everything soft at once.',
     entryPiece: 'a flowing maxi skirt in cream or rust, or a western belt over what you already own',
-    pieces: ['b016', 's028', 'a017', 't033', 'a006', 'o010', 's016', 'a024'],
+    pieces: ['b016', 't033', 'a006', 's016', 'd004', 'd010', 'd005'],
   }),
   seed({
     id: 'seed-preppy-remix',
@@ -137,7 +137,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'The trick is one scale shift: an oversized knit over a pleated skirt, or a boxy polo tucked into precise trousers. Loafers with visible socks finish it in either department.',
     entryPiece: 'penny loafers, or a cable knit in navy or cream',
-    pieces: ['t008', 's006', 'a030', 'b010', 'mt009', 'ms002', 'a015', 't010'],
+    pieces: ['t012', 'b011', 's006', 'a015', 't008', 'mt008', 'mt020', 'ms002', 's008', 'mt005'],
   }),
   seed({
     id: 'seed-barn-jacket',
@@ -158,7 +158,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       "Wear it against something it shouldn't go with: a barn jacket over tailored trousers or a slip skirt is the look; over hiking gear it's just a coat. A Chelsea boot and a wool scarf keep it city, not farm.",
     entryPiece: 'a waxed or canvas field jacket in olive or tan',
-    pieces: ['o006', 's035', 'a026', 'o005', 'mo003', 'ms009', 'ma004', 'ma016'],
+    pieces: ['o005', 'o008', 's001', 'ms010', 'ms009', 'ma008'],
   }),
   seed({
     id: 'seed-sheer-layering',
@@ -171,15 +171,15 @@ export const SEED_TRENDS: FashionTrend[] = [
     stage: 'emerging',
     season: 'fall',
     year: 2026,
-    keyGarments: ['sheer top', 'mesh top', 'sheer knit', 'organza', 'chiffon blouse', 'sheer overlay'],
-    keyAccessories: ['mesh flats', 'mesh mary janes', 'knit tights', 'fitted tank'],
+    keyGarments: ['sheer top', 'mesh top', 'sheer knit', 'organza', 'chiffon blouse', 'sheer overlay', 'sheer blouse', 'lace blouse', 'lace sleeve'],
+    keyAccessories: ['mesh flats', 'mesh mary janes', 'knit tights', 'fitted tank', 'slingback'],
     keyColors: ['black', 'chocolate', 'cream'],
     silhouettes: ['sheer', 'layered'],
     archetypes: ['edgy', 'romantic'],
     stylingNote:
       'A sheer layer goes over something deliberate - a fitted tank or simple slip - in the same colour family. Tonal keeps it elegant; contrast makes it loud. Mesh flats are the same idea on the foot.',
     entryPiece: 'a sheer knit in black or chocolate over a tank you already own',
-    pieces: ['t014', 's055', 'a029', 't016', 'mt021', 't026', 's023'],
+    pieces: ['t001', 't062', 't026', 'd021', 's020', 's019'],
   }),
   seed({
     id: 'seed-athletic-heritage',
@@ -200,7 +200,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'One sport piece against two non-sport pieces: a track jacket over a shirt and trousers still works; a full tracksuit now reads five years ago. The retro trainer is the piece that survives.',
     entryPiece: 'a slim retro trainer in a colour your closet already leans on',
-    pieces: ['t027', 's009', 'a015', 'o024', 'ms007', 'a010', 'b030'],
+    pieces: ['o024', 's009', 'b030', 'a015', 's011'],
   }),
 
   // ---- Shoe- and accessory-led directions ----
@@ -223,7 +223,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Let the shoe be the small, deliberate detail under something with volume - a wide trouser, a midi, a long coat. Sheer socks or a fine ribbed sock make it current; bare with a mini makes it 2012. The menswear reading is the soft loafer or driving shoe worn with tailoring.',
     entryPiece: 'a pair of ballet flats or Mary Janes in black or burgundy',
-    pieces: ['s022', 'a030', 's032', 's055', 'ms002', 's023', 's007'],
+    pieces: ['s022', 's032', 's007', 's005', 'ms002', 'ms013', 's008'],
   }),
   seed({
     id: 'seed-big-soft-bag',
@@ -244,7 +244,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'The bag is the volume, so the outfit stays lean: a slouchy shoulder bag over a fitted knit and straight trousers. Chocolate or tan over black reads newer. In menswear the same shift is the soft leather messenger or tote over the backpack.',
     entryPiece: 'a soft leather or suede shoulder bag in chocolate or tan',
-    pieces: ['a060', 'a001', 'ma006', 'a005', 'ma016', 'a033', 'a008'],
+    pieces: ['a060', 'a001', 'a005', 'a033', 'a008'],
   }),
   seed({
     id: 'seed-belted-waist',
@@ -265,7 +265,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Belt the thing that is not meant to be belted - an oversized blazer, a shirt dress, a long cardigan - and keep the buckle plain unless the whole outfit is plain. For denim and chinos, a braided or suede belt in tan updates jeans you already own.',
     entryPiece: 'a wide leather belt in brown or tan',
-    pieces: ['a058', 'o015', 'a016', 'ma001', 'a057', 'ma011', 'd002', 'a017'],
+    pieces: ['a031', 'o015', 'a016', 'ma001', 'a057', 'd002', 'a067', 'o014'],
   }),
   seed({
     id: 'seed-scarf-styling',
@@ -286,7 +286,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'One scarf, one place: knotted small at the neck over a plain knit, tied over the hair with sunglasses, or looped on a bag strap. A printed scarf against a solid outfit is the whole idea; a printed scarf on a printed dress is a fight. In menswear it is the silk knit tie or the neckerchief under a jacket.',
     entryPiece: 'a printed silk scarf worn at the neck or over the hair',
-    pieces: ['a003', 'a063', 'ma003', 'a018', 'a040', 'ma008'],
+    pieces: ['a003', 'a018', 'a040', 'ma003', 'ma008'],
   }),
 
   // ---- Where the world outside the northern capitals is right now ----
@@ -309,7 +309,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Buy the set and wear it apart as often as together: the linen shirt over a tank with denim, the trousers with a knit in the evening. Tonal sand-on-ecru looks expensive; white-on-white looks like a spa. A leather sandal or espadrille and a straw hat finish it; a sneaker makes it a city outfit.',
     entryPiece: 'a linen shirt in sand or white, long-sleeved',
-    pieces: ['t083', 's052', 'a064', 'b059', 'mt027', 'ms018', 'ma014', 'mb017', 'd003', 'o043', 'mo015', 'a059'],
+    pieces: ['t049', 'b059', 's028', 'a064', 'mt027', 'mb010', 'd003', 't040', 's027', 'mt011', 't082', 'a011'],
   }),
   seed({
     id: 'seed-long-fluid-layer',
@@ -330,7 +330,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'The length is the point, so nothing else should be long: a floor-length duster over slim or wide trousers and a fitted top, a kaftan dress belted or left to move, a maxi shirt dress open over a co-ord. A mule or loafer and one structured bag keep it sharp. The menswear version is the long overshirt or unlined duster over wide trousers.',
     entryPiece: 'a long-sleeve maxi shirt dress in black or ecru',
-    pieces: ['d033', 's024', 'a066', 'd031', 'o044', 'a063', 'o033', 'd032', 'a068'],
+    pieces: ['d033', 's024', 'a066', 'o044', 'd032', 'a068', 'a040', 'd001'],
   }),
   seed({
     id: 'seed-craft-you-can-see',
@@ -351,7 +351,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'One made-by-hand piece against clean basics - a babouche with tailored trousers, a block-print kurta over jeans, a raffia bag with a plain linen dress. Two crafts at once reads souvenir; one reads collected. Silver over gold for this direction.',
     entryPiece: 'leather babouche slippers, or a woven raffia bag',
-    pieces: ['t080', 's051', 'a059', 'mt025', 'ms017', 'a031', 'd032', 's053', 't034', 's054', 'a062', 'a024'],
+    pieces: ['t080', 's051', 'a011', 'mt025', 'd032', 't034', 't058'],
   }),
   seed({
     id: 'seed-print-worn-like-tailoring',
@@ -372,7 +372,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Let the print be the one loud thing: a print shirt buttoned up over plain trousers, a print dress with a neutral loafer or sandal, and gold - hoops, a chain - as the only other statement. Ground it with black, white or tan, never with a second print.',
     entryPiece: 'a bold-print shirt worn over plain trousers you already own',
-    pieces: ['t081', 's007', 'a065', 'mt026', 'ms002', 'a068', 'd034', 'a021', 'a035'],
+    pieces: ['d034', 'a065', 's007', 'a021', 'a068', 'a035', 'a003', 'ms002'],
   }),
   seed({
     id: 'seed-quiet-luxury-still',
@@ -393,6 +393,6 @@ export const SEED_TRENDS: FashionTrend[] = [
     stylingNote:
       'Three tones, never more: camel, cream and grey, or navy, chocolate and ecru. Fabric does the talking - cashmere, fine wool, real leather - so the cuts stay simple. One good bag and a plain watch; anything with a visible logo breaks it.',
     entryPiece: 'a cashmere crewneck in grey or camel',
-    pieces: ['t029', 's005', 'a001', 'mt004', 'ma005', 'ma007', 'o001', 'mo002', 'o022', 'a040'],
+    pieces: ['t029', 's005', 'a001', 'mt004', 'ma005', 'o001', 'mo002', 'o022', 'a025', 't003', 'mo011'],
   }),
 ];

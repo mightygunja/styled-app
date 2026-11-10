@@ -22,6 +22,7 @@ import { collection, getDocs, query, where, orderBy, limit as fsLimit } from 'fi
 import { db, functions } from '../config/firebase';
 import { Post } from './socialFeedService';
 import { ProfileMatchContext } from './profileMatchContext';
+import { matchArchetype } from './archetypeMatch';
 
 const curateExploreCollectionsFn = httpsCallable(functions, 'curateExploreCollections');
 
@@ -136,7 +137,9 @@ export function rankForYou(
       let score = 10;
       let reason = 'New to you';
 
-      const archetype = profile?.styleArchetypes?.find(a => haystack.includes(a.toLowerCase()));
+      // Shared vocabulary, whole words: a caption tagged #boho reads bohemian,
+      // and "classical" does not read classic.
+      const archetype = matchArchetype(profile?.styleArchetypes, haystack)?.archetype;
       if (archetype) {
         score += 30;
         reason = `Reads ${archetype}, like your profile`;

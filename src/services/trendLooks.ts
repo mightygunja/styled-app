@@ -65,7 +65,10 @@ export function trendPieceScore(trend: FashionTrend, product: Product): number {
   const colorHit = !!color && trend.keyColors.some(k => color.includes(k) || k.includes(color));
   const archetypeHit = (product.styleTags ?? []).some(tag => trend.archetypes.includes(tag));
   const score = (anchorHit ? 3 : 0) + (silhouetteHit ? 1 : 0) + (colorHit ? 1 : 0) + (archetypeHit ? 1 : 0);
-  return score >= 3 ? score : 0;
+  // A piece qualifies only by carrying one of the trend's own garments or
+  // accessories. Silhouette + colour + archetype used to add up to a pass on
+  // their own, which put a navy linen shirt on the barn-jacket rail.
+  return anchorHit ? score : 0;
 }
 
 const byId = new Map(BALANCED_CATALOG.map(p => [p.id, p]));

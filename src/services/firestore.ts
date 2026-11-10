@@ -20,6 +20,7 @@ import { db } from '../config/firebase';
 import { ClosetItem, Look, TrendPalette, Stylist, StylingSession, StylistReview, SessionType } from '../types';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Product } from '../models/product';
+import { bumpProfileRevision } from './profileEvents';
 
 // ==================== CLOSET ITEMS ====================
 
@@ -330,6 +331,9 @@ export const styleProfileService = {
         updatedAt: Timestamp.now(),
       });
     }
+    // Only reached when the write succeeded. Every screen that ranks against
+    // the profile reloads on its next focus (see profileEvents.ts).
+    bumpProfileRevision();
   },
 };
 
