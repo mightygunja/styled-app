@@ -19,6 +19,8 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { RootStackParamList } from '../navigation/types';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
+import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
+import { wordFitsFocus } from '../services/departmentFit';
 import { styleEditService, StyleEdit, coverageStats } from '../services/styleEditService';
 import { ItemCategory } from '../types';
 
@@ -35,6 +37,11 @@ const BAG_CATEGORIES = ['bag', 'bags', 'handbag', 'handbags'];
 export default function EditDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditDetailRouteProp>();
+  // A drafted gap is model text: one that names the other department's
+  // piece (a dress for a menswear account) is not shown.
+  const wardrobeFocus = useWardrobeFocus();
+  const gapFits = (gap: { category: string; description: string }) =>
+    wordFitsFocus(`${gap.category} ${gap.description}`, wardrobeFocus);
   const { editId } = route.params;
 
   const [edit, setEdit] = useState<StyleEdit | null>(null);
@@ -208,14 +215,14 @@ export default function EditDetailScreen() {
           </View>
         ))}
 
-        {edit.gaps.length > 0 && (
+        {edit.gaps.filter(gapFits).length > 0 && (
           <>
             <Text style={styles.sectionLabel}>WHAT WOULD OPEN THIS UP</Text>
             <Text style={styles.gapsIntro}>
               Kept separate from the looks on purpose — an Edit is about what you own. These are
               the only genuine holes your stylist found.
             </Text>
-            {edit.gaps.map((gap, i) => (
+            {edit.gaps.filter(gapFits).map((gap, i) => (
               <TouchableOpacity
                 key={`${gap.category}-${i}`}
                 style={styles.gapRow}

@@ -37,6 +37,8 @@ import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
 import { getPublishedTrends } from '../services/trendService';
 import { allSeedProducts, isSeedOf, trendAnchorSearches } from '../services/trendSeeds';
+import { trendsForFocus } from '../services/trendLooks';
+import { womenswearContentVisible } from '../services/departmentFit';
 import { FashionTrend, trendTextMatch, TrendMatchKind } from '../models/fashionTrend';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
@@ -102,7 +104,9 @@ export default function ShopScreen() {
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [sort, setSort] = useState<ProductSort>('match');
   const [products, setProducts] = useState<MatchedProduct[]>([]);
-  const [wardrobeFocus, setWardrobeFocus] = useState<'womens' | 'mens' | 'all'>('all');
+  // Undefined until the profile says otherwise: an account that has not
+  // chosen is shown cross-department pieces only, never a mixed rack.
+  const [wardrobeFocus, setWardrobeFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
   const [allTrends, setAllTrends] = useState<FashionTrend[]>([]);
   // "Shopping the trend" focus, set when a trend surface sent the user here.
   // Filters and orders the grid to pieces that actually carry the trend.
@@ -119,7 +123,7 @@ export default function ShopScreen() {
       // the extra fields harmlessly.
       const profile = await buildProfileMatchContext(userId);
       if (seq !== requestSeq.current) return;
-      setWardrobeFocus(profile?.wardrobeFocus ?? 'all');
+      setWardrobeFocus(profile?.wardrobeFocus);
 
       const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
@@ -168,7 +172,10 @@ export default function ShopScreen() {
         seasons: item.seasons,
         style: item.style,
       }));
-      setAllTrends(publishedTrends);
+      // Only trends that belong to this account's department: they drive
+      // the trend badges on cards and can be opened as a trend focus.
+      const trendsForUser = trendsForFocus(publishedTrends, profile?.wardrobeFocus);
+      setAllTrends(trendsForUser);
       // Pieces seeded for a published trend join the pool, so picking that
       // trend shows the pieces chosen for it. They honour the same filters
       // the catalogue search just applied; seeds are new goods at list price,
@@ -177,7 +184,7 @@ export default function ShopScreen() {
       const seeded =
         secondhandOnly || onSaleOnly
           ? []
-          : allSeedProducts(publishedTrends).filter(
+          : allSeedProducts(trendsForUser).filter(
               p =>
                 (category === 'all' || p.category === category) &&
                 (!needle || `${p.name} ${p.subcategory || ''} ${p.color || ''}`.toLowerCase().includes(needle))
@@ -185,7 +192,7 @@ export default function ShopScreen() {
       const ranked = scoreAndRankProducts([...searchResult.products, ...seeded], profile, closetItems, {
         signals,
         weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
-        trends: publishedTrends,
+        trends: trendsForUser,
       });
 
       // Only the first screenful counts as seen. Recording the whole result set
@@ -298,9 +305,11 @@ export default function ShopScreen() {
   // rather than explain it.
   const categoryFilters = useMemo(
     () =>
-      wardrobeFocus === 'mens'
-        ? CATEGORY_FILTERS.filter(f => f.value !== 'dresses')
-        : CATEGORY_FILTERS,
+      // Dresses are womenswear: the chip is offered to womenswear and "a bit
+      // of both" only, so it can never open an empty grid.
+      womenswearContentVisible(wardrobeFocus)
+        ? CATEGORY_FILTERS
+        : CATEGORY_FILTERS.filter(f => f.value !== 'dresses'),
     [wardrobeFocus]
   );
 
@@ -308,10 +317,10 @@ export default function ShopScreen() {
   // profile loaded, snap back to All so the user isn't stuck on a filter
   // whose chip no longer exists.
   useEffect(() => {
-    if (wardrobeFocus === 'mens' && category === 'dresses') {
+    if (!loading && !womenswearContentVisible(wardrobeFocus) && category === 'dresses') {
       setCategory('all');
     }
-  }, [wardrobeFocus, category]);
+  }, [wardrobeFocus, category, loading]);
 
   const listHeader = (
     <View>
@@ -323,6 +332,24 @@ export default function ShopScreen() {
         </Text>
         {!!curatedCatalogNotice() && (
           <Text style={styles.devNotice}>{curatedCatalogNotice()}</Text>
+        )}
+
+        {/* An account that has not said whose wardrobe it is sees only
+            pieces that are for everyone. Say so, and offer the one tap that
+            opens the rest - never a mixed rack in the meantime. */}
+        {!loading && wardrobeFocus === undefined && (
+          <TouchableOpacity
+            style={styles.focusNote}
+            onPress={() => navigation.navigate('StyleProfileBuilder')}
+            accessibilityRole="button"
+            accessibilityLabel="Choose womenswear or menswear in your style profile"
+          >
+            <Text style={styles.focusNoteText}>
+              Showing pieces for everyone. Tell us whether you wear womenswear, menswear or both to
+              see the full shop.
+            </Text>
+            <Text style={styles.focusNoteLink}>Choose in your style profile →</Text>
+          </TouchableOpacity>
         )}
 
         {/* Trend focus: the user tapped "Find the piece" on a specific trend,
@@ -641,6 +668,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   trendFocusClear: { ...textType.eyebrow, fontSize: 10, color: colors.tobacco, paddingVertical: 4 },
+  focusNote: {
+    borderRadius: radius.md,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.paper,
+  },
+  focusNoteText: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.ink },
+  focusNoteLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco, marginTop: 6 },
   anchorSearches: { marginTop: 12 },
   anchorSearchesLabel: { ...textType.eyebrow, fontSize: 9, color: colors.tobacco },
   anchorChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

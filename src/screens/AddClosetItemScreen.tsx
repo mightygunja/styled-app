@@ -20,6 +20,8 @@ import { getCurrentUserId, closetAPI } from '../services/api';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Button from '../components/Button';
+import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
+import { categoryOffered } from '../services/departmentFit';
 import { colors, radius, fonts } from '../theme/designSystem';
 
 const CATEGORIES = [
@@ -49,6 +51,7 @@ const COLORS = [
 
 export default function AddClosetItemScreen() {
   const navigation = useNavigation();
+  const wardrobeFocus = useWardrobeFocus();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [category, setCategory] = useState<string>('');
   const [color, setColor] = useState<string>('');
@@ -169,7 +172,7 @@ export default function AddClosetItemScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Category (AI will detect if not selected)</Text>
           <View style={styles.optionsGrid}>
-            {CATEGORIES.map((cat) => (
+            {CATEGORIES.filter(cat => categoryOffered(cat.id, wardrobeFocus)).map((cat) => (
               <TouchableOpacity
                 key={cat.id}
                 style={[

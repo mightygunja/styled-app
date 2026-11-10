@@ -421,12 +421,18 @@ const MENS_SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
  * menswear profile still sees the Carhartt chore coat and the Salomons.
  */
 const UNISEX_IDS = new Set([
-  'a009', 'a013', 'a015', 'a016', 'a020', 'a025', 'a032', 'a033', 'a034', 'a042', 'a057', 'a061', 'a064', 'a067', 'a051', 'a055',
-  'b029', 'b030', 'b035', 'b041',
-  'o003', 'o005', 'o025', 'o034', 'o035',
-  's002', 's004', 's009', 's011', 's012', 's017', 's018', 's025', 's051',
+  // 2026-11-10 department sweep (every photo viewed against whose screen it
+  // appears on). A cross-department photo shows the piece alone, or a person
+  // with nothing that reads as either gender. Moved out: a009 (a top-handle
+  // handbag) and s012 (a woman tying her shoe) are womenswear; s052 (platform
+  // boots) is womenswear; a032, b041 and o005 (a man's hand and build in
+  // frame) are menswear - see MENS_IDS.
+  'a013', 'a015', 'a016', 'a020', 'a025', 'a033', 'a034', 'a042', 'a057', 'a061', 'a064', 'a067', 'a051', 'a055',
+  'b029', 'b030', 'b035',
+  'o003', 'o025', 'o034', 'o035',
+  's002', 's004', 's009', 's011', 's017', 's018', 's025', 's051',
   't002', 't004', 't041', 't053', 't060',
-  'a070', 's052', 's053', 's054', 's055',
+  'a070', 's053', 's054', 's055',
 ]);
 
 /**
@@ -943,7 +949,7 @@ const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
  * Rows without the 'm' prefix whose verified photo is a man wearing the
  * piece - a card must never show a male model in a womenswear rack.
  */
-const MENS_IDS = new Set(['b026', 'b042']);
+const MENS_IDS = new Set(['b026', 'b042', 'a032', 'b041', 'o005', 't011']);
 
 /** Department by id convention: 'm'-prefixed rows (and MENS_IDS) are menswear, UNISEX_IDS pass every focus, everything else is womenswear. */
 function departmentOf(id: string): 'women' | 'men' | 'unisex' {

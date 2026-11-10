@@ -135,6 +135,8 @@ async function buildProfilePayload(userId: string) {
     bodyRecommendedSilhouettes: profile.bodyAnalysis?.recommendedSilhouettes,
     styleArchetypes: profile.styleArchetypes,
     avoidRules: profile.avoidRules,
+    // Keeps every suggested piece ("gaps") in the account's department.
+    wardrobeFocus: profile.wardrobeFocus,
   };
 }
 

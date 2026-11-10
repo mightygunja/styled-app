@@ -22,6 +22,7 @@
 import { FashionTrend, TrendSeedPiece } from '../models/fashionTrend';
 import { Product } from '../models/product';
 import { amazonSearchPhrase, amazonSearchUrl } from './amazonSearch';
+import { searchQualifier, wordFitsFocus } from './departmentFit';
 
 export const SEED_CATEGORIES: TrendSeedPiece['category'][] = [
   'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags',
@@ -204,7 +205,7 @@ export function trendAnchorSearches(
   focus: 'womens' | 'mens' | 'all' | undefined,
   limit: number = 6
 ): TrendAnchorSearch[] {
-  const qualifier = focus === 'mens' ? "men's " : focus === 'womens' ? "women's " : '';
+  const qualifier = searchQualifier(focus);
   const seen = new Set<string>();
   const out: TrendAnchorSearch[] = [];
   // Garments and accessories alternate, so six chips still read as a look.
@@ -219,6 +220,8 @@ export function trendAnchorSearches(
     // A one-word cut, fabric or colour ("linen", "pointed", "oxblood") matches
     // pieces well but is not a thing to search for.
     if (anchor.length < 4 || seen.has(anchor) || NOT_A_PIECE.has(anchor)) continue;
+    // "men's pleated skirt" is not a search anyone asked for.
+    if (!wordFitsFocus(anchor, focus)) continue;
     // Skip an anchor a longer one already covers ("suede" under "suede jacket").
     if (ordered.some(other => other !== anchor && other.includes(anchor) && other.length > anchor.length)) continue;
     seen.add(anchor);

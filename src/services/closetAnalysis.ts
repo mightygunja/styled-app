@@ -158,7 +158,8 @@ export function getSparseClosetSuggestions(closet: ClosetItem[]): string[] {
   }
 
   if (!analysis.categories.includes('bottoms')) {
-    suggestions.push("Add pants or a skirt to expand your options");
+    // Department-neutral: this copy has no profile to read a wardrobe choice from.
+    suggestions.push("Add a pair of trousers or jeans to expand your options");
   }
 
   if (!analysis.categories.includes('shoes')) {

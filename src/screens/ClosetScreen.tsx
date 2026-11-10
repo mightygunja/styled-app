@@ -10,6 +10,8 @@ import ClosetStats from '../components/ClosetStats';
 import { fadeIn } from '../utils/animations';
 import { ClosetGridSkeleton } from '../components/ClosetItemSkeleton';
 import { tourRef } from '../tour/Tour';
+import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
+import { categoryOffered } from '../services/departmentFit';
 import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
@@ -93,6 +95,7 @@ export default function ClosetScreen() {
     fetchClosetItems();
   };
 
+  const wardrobeFocus = useWardrobeFocus();
   const handleAddItem = () =>navigation.navigate('AddClosetItem');
   const handleItemPress = (item: ClosetItem) =>navigation.navigate('ClosetItemDetail', { closetItemId: item.id });
 
@@ -226,7 +229,9 @@ export default function ClosetScreen() {
         style={styles.categoryScroll}
         contentContainerStyle={styles.categoryContainer}
       >
-        {CATEGORIES.map(category => (
+        {CATEGORIES.filter(category =>
+          categoryOffered(category.id, wardrobeFocus, items.some(item => item.category === 'dresses'))
+        ).map(category => (
           <TouchableOpacity
             key={category.id}
             style={[styles.categoryTab, selectedCategory === category.id && styles.categoryTabActive]}

@@ -41,7 +41,7 @@ import {
   typicalTemperatureF,
 } from './localeProfile';
 import { shopperSignals, trendAdventurousness } from './shopperSignals';
-import { piecesForTrend } from './trendLooks';
+import { piecesForTrend, trendFitsFocus, trendForFocus } from './trendLooks';
 import { canonicalArchetype } from './archetypeMatch';
 import { profileSignature } from './profileEvents';
 
@@ -277,9 +277,19 @@ export function buildRemixes(
   const adventurousness = trendAdventurousness(signals);
   const dismissals = signals.trendDismissals || {};
 
+  // Home's remix card, the Trend Report and the stylist chat are all built
+  // from this list, so the department rule is applied once, here: a trend
+  // that belongs to the other department is not shown, and each trend's
+  // summary, styling note and "way in" are worded for this one (see
+  // trendFitsFocus / trendForFocus).
+  const focus = profile?.wardrobeFocus;
+
   return trends
     .filter(t => t.stage !== 'fading' || adventurousness < 0.4)
     .filter(t => (dismissals[t.id] || 0) < 2)
+    .filter(t => trendFitsFocus(t, focus))
+    .map(t => trendForFocus(t, focus))
+    .filter(t => t.summary.trim().length > 0)
     .map(trend => {
       const { anchors, supporting } = trendCoverage(trend, closetItems);
       const wearableToday = anchors.length > 0;
@@ -296,7 +306,7 @@ export function buildRemixes(
           supporting: supporting.slice(0, 4),
           wearableToday,
           adjacency: adjacencyScore(trend, profile),
-          gapLine: wearableToday ? null : `One piece away: ${trend.entryPiece}.`,
+          gapLine: wearableToday || !trend.entryPiece ? null : `One piece away: ${trend.entryPiece}.`,
           challengesAvoidRule: trendAvoidRuleConflict(trend, profile?.avoidRules),
           localeNote: local.note,
           localAdaptation: local.adaptation,

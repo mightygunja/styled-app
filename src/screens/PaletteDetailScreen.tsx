@@ -9,6 +9,7 @@ import { TrendPalette, Look } from '../types';
 import { paletteAPI, lookAPI, getCurrentUserId } from '../services/api';
 import LookCard from '../components/LookCard';
 import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { womenswearContentVisible } from '../services/departmentFit';
 import { colors, fonts, radius, type as textType } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -72,7 +73,8 @@ export default function PaletteDetailScreen() {
       setPalette(paletteResponse.data);
 
       const context = await buildProfileMatchContext(getCurrentUserId()).catch(() => undefined);
-      if (context?.wardrobeFocus === 'mens') {
+      // The looks are womenswear: shown only to womenswear or "a bit of both".
+      if (!womenswearContentVisible(context?.wardrobeFocus)) {
         setHideLooks(true);
         setLooks([]);
         return;

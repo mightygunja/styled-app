@@ -78,6 +78,11 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-suede-texture',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'Texture is the new logo: suede jackets, boots, bags and belts in tan and chocolate carry an outfit without a print in sight. It went from runway to everywhere in a season.',
+    },
     name: 'The suede moment',
     summary:
       'Texture is the new logo: suede jackets, skirts, bags and belts in tan and chocolate carry an outfit without a print in sight. It went from runway to everywhere in a season.',
@@ -120,6 +125,13 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-preppy-remix',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'Seoul and Tokyo are re-cutting the collegiate wardrobe - rugby stripes, cricket knits, pleated trousers and loafers with socks - oversized on top, precise below.',
+      stylingNote:
+        'The trick is one scale shift: an oversized knit over precise trousers, or a boxy polo tucked into a pleated pair. Loafers with visible socks finish it.',
+    },
     name: 'New prep',
     summary:
       'Seoul and Tokyo are re-cutting the collegiate wardrobe - rugby stripes, cricket knits, pleated skirts and loafers with socks - oversized on top, precise below.',
@@ -141,6 +153,11 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-barn-jacket',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      stylingNote:
+        "Wear it against something it shouldn't go with: a barn jacket over tailored trousers and a knit tie is the look; over hiking gear it's just a coat. A Chelsea boot and a wool scarf keep it city, not farm.",
+    },
     name: 'The barn jacket',
     summary:
       'Waxed cotton and corduroy-collar field jackets replaced the puffer as the default cool outer layer - London first, now everywhere the temperature drops.',
@@ -206,6 +223,15 @@ export const SEED_TRENDS: FashionTrend[] = [
   // ---- Shoe- and accessory-led directions ----
   seed({
     id: 'seed-flat-shoe-dressed-up',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'The soft, flat shoe has replaced the hard dress shoe as the default with tailoring from Paris to Seoul - loafers and driving shoes worn with socks, under wide trousers, with the suit that used to want an oxford.',
+      stylingNote:
+        'Let the shoe be the small, deliberate detail under something with volume - a wide trouser, a long coat. A fine ribbed sock makes it current; an unlined suede loafer keeps tailoring from looking stiff.',
+      entryPiece:
+        'a soft suede loafer or driving shoe in tan or chocolate',
+    },
     name: 'The flat shoe, dressed up',
     summary:
       'Ballet flats, Mary Janes and mesh flats have replaced the heel as the default day shoe from Paris to Seoul - worn with socks, under wide trousers, with the dress that used to want a heel.',
@@ -248,6 +274,13 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-belted-waist',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'After years of nothing at the waist, the belt is the accessory again: wide leather belts on tailored trousers, western buckles on denim, a slim belt threaded through wide trousers - one belt doing the work of an outfit.',
+      stylingNote:
+        'Let the belt be the one deliberate detail: a braided or suede belt in tan updates jeans and chinos you already own. Keep the buckle plain unless the whole outfit is plain.',
+    },
     name: 'The belt is back',
     summary:
       'After years of nothing at the waist, the belt is the accessory again: wide leather belts over blazers and dresses, western buckles on denim, a slim belt threaded through wide trousers - one belt doing the work of an outfit.',
@@ -269,6 +302,15 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-scarf-styling',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'A silk scarf at the neck, a knit tie, a neckerchief under a jacket - the smallest piece in the wardrobe doing the most. Paris started it, and Istanbul and Dubai never stopped.',
+      stylingNote:
+        'One scarf, one place: knotted small at the neck over a plain knit, or tucked under a jacket collar. A printed scarf against a solid outfit is the whole idea. The silk knit tie is the tailored version.',
+      entryPiece:
+        'a silk knit tie, or a printed neckerchief under a jacket',
+    },
     name: 'The scarf as the outfit',
     summary:
       'Silk scarves tied at the neck, over the hair, on the bag handle - the smallest piece in the wardrobe doing the most. Paris started it, Istanbul and Dubai never stopped, and modest and fashion dressing meet exactly here.',
@@ -292,6 +334,11 @@ export const SEED_TRENDS: FashionTrend[] = [
   // ---- Where the world outside the northern capitals is right now ----
   seed({
     id: 'seed-linen-heat-dressing',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'From Marrakesh to Mumbai to Sydney, the hot-city uniform is a linen co-ord: shirt and wide trouser in the same sand or ecru, sleeves long against the sun, with a leather sandal and a straw hat. It is what tailoring becomes at 35°.',
+    },
     name: 'Linen, head to toe',
     summary:
       'From Marrakesh to Mumbai to Sydney, the hot-city uniform is a linen co-ord: shirt and wide trouser or long skirt in the same sand or ecru, sleeves long against the sun, with a flat sandal and a straw hat. It is what tailoring becomes at 35°.',
@@ -334,6 +381,11 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-craft-you-can-see',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      stylingNote:
+        'One made-by-hand piece against clean basics - a babouche with tailored trousers, a block-print kurta over jeans, an embroidered shirt with plain linen trousers. Two crafts at once reads souvenir; one reads collected. Silver over gold for this direction.',
+    },
     name: 'Craft you can see',
     summary:
       'Hand-work is the luxury signal now: embroidery, block print, woven leather, raffia, beading, the babouche and the huarache. Marrakesh, Mexico City, Jaipur and Lagos never stopped making it; Paris and New York are buying it.',
@@ -355,6 +407,13 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-print-worn-like-tailoring',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    mens: {
+      summary:
+        'Bold wax and Ankara prints cut into sharp pieces - a print shirt with plain trousers, a printed overshirt over a white tee - and finished with one gold chain. Lagos and Accra lead; London, Paris and New York have picked it up on the street.',
+      stylingNote:
+        'Let the print be the one loud thing: a print shirt buttoned up over plain trousers with a neutral loafer or sandal, and a gold chain as the only other statement. Ground it with black, white or tan, never with a second print.',
+    },
     name: 'Print, worn like tailoring',
     summary:
       'Bold wax and Ankara prints cut into sharp pieces - a print shirt with plain trousers, a print midi with a neutral shoe - and finished with big gold jewellery. Lagos and Accra lead; London, Paris and New York have picked it up on the street.',

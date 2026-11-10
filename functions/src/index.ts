@@ -282,6 +282,24 @@ interface StoreCheckProfileContext {
   bodyRecommendedSilhouettes?: string[];
   styleArchetypes?: string[];
   avoidRules?: string[];
+  /** 'womens' | 'mens' | 'all' - which department every suggestion must stay in. */
+  wardrobeFocus?: string;
+}
+
+/**
+ * The line every stylist prompt carries about whose clothes it is writing
+ * about. The Edit, the packing list and the week plan can each name a piece
+ * to buy ("gaps"); without this they could tell a menswear account it is
+ * missing a dress.
+ */
+function departmentLine(wardrobeFocus?: string): string | null {
+  if (wardrobeFocus === 'mens') {
+    return 'They dress in MENSWEAR. Every outfit note and every gap must be menswear - never suggest a dress, skirt, blouse, heels, a handbag or any other womenswear piece, and never use the "dresses" category.';
+  }
+  if (wardrobeFocus === 'womens') {
+    return 'They dress in WOMENSWEAR. Keep every outfit note and every gap in womenswear - never suggest a menswear piece.';
+  }
+  return null;
 }
 
 export const analyzeStoreItem = functions
@@ -4650,6 +4668,8 @@ export const draftStyleEdit = functions
       if (styleProfile?.avoidRules?.length) {
         profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')}. Respect this by default; cross it only when a genuinely current trend gives a real reason, stated plainly.`);
       }
+      const departmentRule = departmentLine(styleProfile?.wardrobeFocus);
+      if (departmentRule) profileLines.push(departmentRule);
 
       const closetLines = closetItems
         .map(i =>
@@ -4901,6 +4921,8 @@ export const generatePackingList = functions
       if (styleProfile?.avoidRules?.length) {
         profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')}. Respect this by default; cross it only when a genuinely current trend gives a real reason, stated plainly.`);
       }
+      const departmentRule = departmentLine(styleProfile?.wardrobeFocus);
+      if (departmentRule) profileLines.push(departmentRule);
 
       const closetLines = closetItems
         .map(i =>
@@ -5054,6 +5076,8 @@ export const planOutfitsForSchedule = functions
       if (styleProfile?.bodyType) profileLines.push(`Body/fit type: ${styleProfile.bodyType}.`);
       if (styleProfile?.styleArchetypes?.length) profileLines.push(`Style archetypes: ${styleProfile.styleArchetypes.join(', ')}.`);
       if (styleProfile?.avoidRules?.length) profileLines.push(`They usually avoid: ${styleProfile.avoidRules.join(', ')} - respect this by default, and cross it only with a reason stated plainly.`);
+      const departmentRule = departmentLine((styleProfile as any)?.wardrobeFocus);
+      if (departmentRule) profileLines.push(departmentRule);
 
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',

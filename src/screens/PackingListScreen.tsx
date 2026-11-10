@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
+import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
+import { wordFitsFocus } from '../services/departmentFit';
 import { getCurrentUserId } from '../services/api';
 import { packingListService } from '../services/packingListService';
 import {
@@ -418,6 +420,10 @@ export default function PackingListScreen() {
 }
 
 function PackingResult({ list }: { list: PackingList }) {
+  // A suggested purchase is model text: one that names the other
+  // department's piece (a sundress for a menswear account) is not shown.
+  const wardrobeFocus = useWardrobeFocus();
+  const gaps = list.gaps.filter(gap => wordFitsFocus(`${gap.category} ${gap.description}`, wardrobeFocus));
   const range = forecastRange(list.forecast);
   const estimated = hasEstimatedDays(list.forecast);
   const itemsById = useMemo(() => new Map(list.items.map(i => [i.itemId, i])), [list.items]);
@@ -513,13 +519,13 @@ function PackingResult({ list }: { list: PackingList }) {
         </>
       )}
 
-      {list.gaps.length > 0 && (
+      {gaps.length > 0 && (
         <>
           <Text style={styles.sectionLabel}>WORTH PICKING UP</Text>
           <Text style={styles.gapsIntro}>
             Everything above is already yours. These are the only genuine holes for this trip.
           </Text>
-          {list.gaps.map((gap, i) => (
+          {gaps.map((gap, i) => (
             <View key={`${gap.category}-${i}`} style={styles.gapRow}>
               <Text style={styles.gapTitle}>{gap.description}</Text>
               <Text style={styles.gapWhy}>{gap.whyNeeded}</Text>

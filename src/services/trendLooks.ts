@@ -27,6 +27,7 @@ import { Product } from '../models/product';
 import { BALANCED_CATALOG } from '../data/mockProductCatalog';
 import { isLocalStaple, LocaleProfile } from './localeProfile';
 import { seedProducts } from './trendSeeds';
+import { departmentVisible, otherFocus, wordFitsFocus } from './departmentFit';
 
 export type WardrobeFocus = 'womens' | 'mens' | 'all' | undefined;
 
@@ -48,10 +49,7 @@ export function isBagProduct(product: Pick<Product, 'category' | 'subcategory' |
 }
 
 export function inDepartment(product: Product, focus: WardrobeFocus): boolean {
-  if (!focus || focus === 'all') return true;
-  const department = product.department;
-  if (!department || department === 'unisex') return true;
-  return focus === 'womens' ? department === 'women' : department === 'men';
+  return departmentVisible(product.department, focus);
 }
 
 function productText(product: Product): string {
@@ -150,4 +148,139 @@ export function piecesForTrend(
   return picks.length >= 2 ? picks : [];
 }
 
-export const trendLooks = { piecesForTrend, trendPieceScore, slotOf, isBagProduct, inDepartment };
+function anchorsOf(trend: FashionTrend): string[] {
+  return [...trend.keyGarments, ...(trend.keyAccessories || [])].map(w => w.toLowerCase().trim()).filter(Boolean);
+}
+
+/**
+ * Whether a trend belongs in front of this wardrobe focus at all.
+ *
+ * "Boho, sharpened" is maxi skirts and peasant blouses; "Sheer layering" is
+ * sheer blouses and slingbacks. Showing either to a menswear account - with
+ * a "find the piece" button under it - is womenswear on a man's screen, in
+ * words instead of photos. A trend is held back from a department when:
+ *   - every piece it names belongs to the other department, or
+ *   - its garments are all the other department's and the catalogue cannot
+ *     show a single piece of it in this one, or
+ *   - the catalogue can illustrate it for the other department only.
+ * 'all' sees every trend. An account that has not chosen sees only the
+ * trends that fit both departments.
+ */
+export function trendFitsFocus(
+  trend: FashionTrend,
+  focus: WardrobeFocus,
+  options: { catalog?: Product[] } = {}
+): boolean {
+  if (focus === 'all') return true;
+  // Not answered yet: only trends that belong to both departments. A trend
+  // that is one department's alone is exactly what must not be guessed at.
+  if (focus === undefined) {
+    return trendFitsFocus(trend, 'womens', options) && trendFitsFocus(trend, 'mens', options);
+  }
+  const other = otherFocus(focus);
+  if (!other) return true;
+
+  const anchors = anchorsOf(trend);
+  if (anchors.length > 0 && !anchors.some(a => wordFitsFocus(a, focus))) return false;
+
+  const mine = piecesForTrend(trend, focus, { limit: 5, catalog: options.catalog });
+  const garments = trend.keyGarments.map(g => g.toLowerCase());
+  if (garments.length > 0 && !garments.some(g => wordFitsFocus(g, focus)) && mine.length === 0) return false;
+
+  const theirs = piecesForTrend(trend, other, { limit: 5, catalog: options.catalog });
+  if (mine.length === 0 && theirs.length > 0) return false;
+
+  // A trend about garments has to show a garment. If the only pieces this
+  // department gets are the shoes (three loafers under "The long, fluid
+  // layer") while the other department gets the garments, it is the other
+  // department's trend.
+  const hasGarment = (rail: Product[]) => rail.some(p => slotOf(p) === 'garment');
+  if (garments.length > 0 && !hasGarment(mine) && hasGarment(theirs)) return false;
+
+  return true;
+}
+
+/**
+ * Prose with every sentence that names the other department's garments
+ * removed. Sentences are kept whole - nothing is rewritten - so what is left
+ * always reads as it was written.
+ */
+export function proseForFocus(text: string, focus: WardrobeFocus): string {
+  if (!text || focus === 'all') return text || '';
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .filter(sentence => wordFitsFocus(sentence, focus))
+    .join(' ')
+    .trim();
+}
+
+/**
+ * A trend as this wardrobe focus should read it: its own menswear wording
+ * where it has some, otherwise the default text minus any sentence about
+ * the other department's pieces, and a way in that fits.
+ */
+export function trendForFocus(trend: FashionTrend, focus: WardrobeFocus): FashionTrend {
+  if (focus === 'all') return trend;
+  const own = focus === 'mens' ? trend.mens : undefined;
+  const summary = own?.summary ?? proseForFocus(trend.summary, focus);
+  const stylingNote = own?.stylingNote ?? proseForFocus(trend.stylingNote, focus);
+  const entryPiece = own?.entryPiece ?? entryPieceFor(trend, focus);
+  if (summary === trend.summary && stylingNote === trend.stylingNote && entryPiece === trend.entryPiece) return trend;
+  return { ...trend, summary, stylingNote, entryPiece };
+}
+
+/**
+ * The trends this wardrobe focus should see, in their original order, each
+ * worded for it.
+ */
+export function trendsForFocus(trends: FashionTrend[], focus: WardrobeFocus): FashionTrend[] {
+  return trends
+    .filter(trend => trendFitsFocus(trend, focus))
+    .map(trend => trendForFocus(trend, focus))
+    // A trend that cannot be described without naming the other department's
+    // pieces has nothing left to say to this reader - it is held back rather
+    // than shown as a bare title. (This is mostly an account that has not
+    // chosen a department yet; it sees the full report once it has.)
+    .filter(trend => trend.summary.trim().length > 0);
+}
+
+/**
+ * The "lowest-commitment way in", worded for this wardrobe focus.
+ *
+ * A trend's entry piece is written once, and several name a womenswear
+ * piece ("a pair of ballet flats or Mary Janes"). For a focus it does not
+ * fit, this keeps the half of the sentence that does ("..., or a western
+ * belt over what you already own"), else names the first piece the trend's
+ * own rail shows in that department ("penny loafers"), else a fitting
+ * anchor. Empty when nothing fits - callers then show no suggestion at all
+ * rather than the wrong one.
+ */
+export function entryPieceFor(trend: FashionTrend, focus: WardrobeFocus): string {
+  const entry = (trend.entryPiece || '').trim();
+  if (!entry || wordFitsFocus(entry, focus)) return entry;
+
+  const halves = entry.split(/,\s+or\s+/).map(part => part.trim()).filter(Boolean);
+  if (halves.length > 1) {
+    const fitting = halves.find(part => wordFitsFocus(part, focus));
+    if (fitting) return fitting;
+  }
+
+  const rail = piecesForTrend(trend, focus, { limit: 4 });
+  const own = rail.find(p => p.department && p.department !== 'unisex') ?? rail[0];
+  if (own && wordFitsFocus(own.name, focus)) return own.name.toLowerCase();
+
+  return anchorsOf(trend).find(a => a.includes(' ') && wordFitsFocus(a, focus)) ?? '';
+}
+
+export const trendLooks = {
+  piecesForTrend,
+  trendPieceScore,
+  slotOf,
+  isBagProduct,
+  inDepartment,
+  trendFitsFocus,
+  trendsForFocus,
+  trendForFocus,
+  proseForFocus,
+  entryPieceFor,
+};

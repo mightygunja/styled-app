@@ -28,6 +28,7 @@ import { Season } from '../types';
 import { WeatherCondition } from './recommendationEngine';
 import { FashionTrend, trendTextMatch } from '../models/fashionTrend';
 import { matchArchetype, archetypeEvidence } from './archetypeMatch';
+import { departmentVisible } from './departmentFit';
 
 /**
  * Everything that makes a ranking change over time rather than only when the
@@ -478,11 +479,10 @@ export function departmentAllowed(
   product: Product,
   profile: ProfileMatchContext | undefined
 ): boolean {
-  const focus = profile?.wardrobeFocus;
-  if (!focus || focus === 'all') return true;
-  const department = product.department;
-  if (!department || department === 'unisex') return true;
-  return focus === 'womens' ? department === 'women' : department === 'men';
+  // One rule for every surface (see departmentFit.ts). A profile with no
+  // wardrobe choice - or none at all - sees cross-department pieces only;
+  // it used to see everything, which put menswear on a woman's screen.
+  return departmentVisible(product.department, profile?.wardrobeFocus);
 }
 
 export function scoreAndRankProducts(

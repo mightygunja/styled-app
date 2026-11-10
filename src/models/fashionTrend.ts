@@ -109,6 +109,15 @@ export interface FashionTrend {
    * platform, without an app release. See services/trendSeeds.ts.
    */
   seedPieces?: TrendSeedPiece[];
+  /**
+   * The same trend, worded for a menswear reader. A trend is written once
+   * and several read through womenswear ("suede jackets, skirts, bags...");
+   * where that is so, these replace the summary, the styling note and the
+   * way in for a menswear account. Absent fields fall back to the default
+   * text with any sentence naming a womenswear-only piece removed (see
+   * trendForFocus in services/trendLooks.ts).
+   */
+  mens?: { summary?: string; stylingNote?: string; entryPiece?: string };
   status: TrendStatus;
   source: 'editorial' | 'ai-draft';
   createdAt: string;

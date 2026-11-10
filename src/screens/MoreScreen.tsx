@@ -12,6 +12,7 @@ import { getCurrentUserId } from '../services/api';
 import { userProfileService } from '../services/userProfileService';
 import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
 import { tourRef, useTour } from '../tour/Tour';
+import { womenswearContentVisible } from '../services/departmentFit';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -96,11 +97,13 @@ export default function MoreScreen() {
     return () => timers.forEach(clearTimeout);
   }, [onTrendsStep, scrollToStyleSection]);
   const { user } = useAuth();
-  const [menswearOnly, setMenswearOnly] = useState(false);
+  // True until the profile says womenswear or "a bit of both": an account
+  // that has not chosen is not shown a womenswear rack either.
+  const [menswearOnly, setMenswearOnly] = useState(true);
 
   const loadDepartment = useCallback(() => {
     buildProfileMatchContext(getCurrentUserId())
-      .then(profile => setMenswearOnly(profile?.wardrobeFocus === 'mens'))
+      .then(profile => setMenswearOnly(!womenswearContentVisible(profile?.wardrobeFocus)))
       .catch(() => undefined);
   }, []);
   useEffect(() => {

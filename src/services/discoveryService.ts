@@ -25,7 +25,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import { Item, Season } from '../types';
 import { Product, MatchedProduct } from '../models/product';
-import { isBagProduct } from './trendLooks';
+import { isBagProduct, trendsForFocus } from './trendLooks';
 import { getActiveAdapter } from './affiliateNetwork';
 import { buildProfileMatchContext, ProfileMatchContext } from './profileMatchContext';
 import { scoreAndRankProducts } from './marketplaceMatchingService';
@@ -355,7 +355,7 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
   const userId = getCurrentUserId();
   const profile = await buildProfileMatchContext(userId);
 
-  const [closetResponse, signals, weather, trends] = await Promise.all([
+  const [closetResponse, signals, weather, publishedTrends] = await Promise.all([
     closetAPI.getItems(userId),
     shopperSignals.load(),
     // Weather sharpens seasonality but must never block the page.
@@ -363,6 +363,10 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
     // Same rule for the trend registry: it enriches, it never blocks.
     getPublishedTrends().catch(() => [] as FashionTrend[]),
   ]);
+
+  // Trends that belong to the other department never reach this surface -
+  // not as a badge, not as the stretch pick, not in the edit's prompt.
+  const trends = trendsForFocus(publishedTrends, profile?.wardrobeFocus);
 
   const closetItems: Item[] = (closetResponse.data || []).map((item: any) => ({
     id: item.id,

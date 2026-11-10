@@ -193,7 +193,10 @@ check(allSeedProducts([seededTrend, twin]).length === 5, 'the same photo seeded 
 // ---- 5. Every trend is shoppable the moment it is published ----
 console.log('# Anchor searches');
 const searches = trendAnchorSearches(deskTrend(), 'mens');
-check(searches.length === 3, `an unseeded trend offers its key pieces as searches (got ${searches.length})`);
+// The trend names balloon pants, a bubble skirt and a split-toe flat: a
+// menswear shopper is offered the one that is not womenswear.
+check(searches.length === 1 && searches[0].label === "men's balloon pants", `a menswear shopper is offered only the pieces that are not womenswear (got ${searches.map(x => x.label).join(' | ')})`);
+check(trendAnchorSearches(deskTrend(), 'womens').length === 3, 'a womenswear shopper is offered all three');
 searches.forEach(search => {
   const url = new URL(search.url);
   check(search.label.startsWith("men's "), `"${search.label}" is qualified for a menswear shopper`);
@@ -203,8 +206,8 @@ check(trendAnchorSearches(deskTrend(), 'all').every(s => !/men's/.test(s.label))
 check(
   trendAnchorSearches({ keyGarments: ['suede', 'suede jacket', 'suede jacket'], keyAccessories: ["women's suede boot"] }, 'mens')
     .map(s => s.label)
-    .join(' | ') === "women's suede boot | men's suede jacket",
-  'a bare fabric word and a repeat are skipped; an anchor that names its own department is left alone'
+    .join(' | ') === "men's suede jacket",
+  'a bare fabric word and a repeat are skipped; an anchor that names the other department is not offered'
 );
 SEED_TRENDS.forEach(trend =>
   check(trendAnchorSearches(trend, 'womens').length > 0, `"${trend.name}" has at least one key piece to search for`)

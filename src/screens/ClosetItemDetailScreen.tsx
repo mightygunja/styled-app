@@ -11,6 +11,8 @@ import { uploadImageToFirebase } from '../services/firebaseStorage';
 import { readImageAsBase64 } from '../utils/imageData';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import GarmentLifeCard from '../components/GarmentLifeCard';
+import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
+import { categoryOffered } from '../services/departmentFit';
 import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -52,6 +54,7 @@ export default function ClosetItemDetailScreen() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  const wardrobeFocus = useWardrobeFocus();
 
   // In-place edit. The AI tags category and colour, and receipt imports land
   // with colour "unknown" - before this the only correction was deleting the
@@ -369,7 +372,9 @@ export default function ClosetItemDetailScreen() {
 
             <Text style={styles.editLabel}>Category</Text>
             <View style={styles.tagsContainer}>
-              {EDIT_CATEGORIES.map(cat => {
+              {EDIT_CATEGORIES.filter(cat =>
+                categoryOffered(cat.id, wardrobeFocus, item.category === 'dresses')
+              ).map(cat => {
                 const selected = draftCategory === cat.id;
                 return (
                   <TouchableOpacity
