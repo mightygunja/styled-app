@@ -11,7 +11,7 @@
  * and it has to be able to say why every time.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -51,10 +51,23 @@ export default function ExploreScreen() {
   const [failed, setFailed] = useState(false);
   const [stretchDismissed, setStretchDismissed] = useState(false);
 
+  // Each load gets a number, so an Edit that arrives for a load the screen
+  // has already replaced is dropped rather than pasted over the new page.
+  const loadSeq = useRef(0);
+
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     try {
       setFailed(false);
-      const result = await discoveryService.loadDiscovery();
+      // The page shows as soon as its numbers are ready; the AI-written Edit
+      // slots in at the top when it lands a few seconds later.
+      const result = await discoveryService.loadDiscovery({
+        onEdit: edit => {
+          if (seq !== loadSeq.current || !edit) return;
+          setData(current => (current ? { ...current, edit } : current));
+        },
+      });
+      if (seq !== loadSeq.current) return;
       setData(result);
       // What the user will actually scroll past on this screen, so Explore's
       // tap-through can be compared against Shop's rather than just its

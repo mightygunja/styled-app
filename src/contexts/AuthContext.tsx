@@ -23,6 +23,7 @@ import {
 import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
 import { recordSession } from '../services/presenceService';
+import { invalidateUserDataCaches } from '../services/firestore';
 import { authErrorMessage, appleErrorMessage } from '../utils/authErrors';
 
 interface AuthContextType {
@@ -148,6 +149,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // A different account (or none) must never be served the last one's
+      // closet or profile from the session caches.
+      invalidateUserDataCaches();
       setUser(user);
       setLoading(false);
       // One presence write per session, so Admin > Members can tell a

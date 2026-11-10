@@ -337,6 +337,25 @@ export function buildRemixes(
  * or an unreachable locale function simply means weather-only or fully
  * taste-driven ranking.
  */
+const LOCALE_STYLE_WAIT_MS = 700;
+
+/** Resolves with the promise's value, or undefined if it takes longer than `ms`. */
+function withinOrUndefined<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve(undefined), ms);
+    promise.then(
+      value => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(undefined);
+      }
+    );
+  });
+}
+
 export async function loadTrendRemixes(
   closetItems: Item[],
   profile?: ProfileMatchContext,
@@ -344,8 +363,17 @@ export async function loadTrendRemixes(
 ): Promise<TrendRemix[]> {
   const [trends, localeStyle] = await Promise.all([
     getPublishedTrends(),
+    // The city's style scene is cached on the device for a week, so this is
+    // normally instant. The first time for a city it is an AI call on a
+    // function that may be cold - several seconds for one input to a ranking
+    // that already has the deterministic locale profile below. Give it a
+    // moment; if it has not answered, rank without it. The call keeps
+    // running and its answer is cached for the next open.
     locale?.city && !locale.localeStyle
-      ? getLocaleStyle(locale.city, locale.region, locale.country).catch(() => undefined)
+      ? withinOrUndefined(
+          getLocaleStyle(locale.city, locale.region, locale.country).catch(() => undefined),
+          LOCALE_STYLE_WAIT_MS
+        )
       : Promise.resolve(locale?.localeStyle),
     // Warm the signals cache so per-trend dismissals and adventurousness are
     // read from storage, not an empty default, whichever screen calls first.

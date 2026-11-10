@@ -2,7 +2,7 @@
 import './src/utils/webAlert';
 import React, { useEffect } from 'react';
 import { View, Platform } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import GestureRoot from './src/components/GestureRoot';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -62,12 +62,12 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureRoot style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
           <AppNavigator />
         </AuthProvider>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+    </GestureRoot>
   );
 }

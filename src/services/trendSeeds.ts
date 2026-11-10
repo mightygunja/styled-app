@@ -41,7 +41,8 @@ export function seedPhotoId(input: string): string | null {
 }
 
 export function seedPhotoUrl(photoId: string, width: number = 600): string {
-  return `https://images.unsplash.com/photo-${photoId}?w=${width}`;
+  // Same parameters as the catalogue's photos (see STOCK_PHOTO_PARAMS there).
+  return `https://images.unsplash.com/photo-${photoId}?w=${width}&q=70&auto=format`;
 }
 
 function anchorsOf(trend: Pick<FashionTrend, 'keyGarments' | 'keyAccessories'>): string[] {

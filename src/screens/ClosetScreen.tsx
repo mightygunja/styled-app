@@ -10,6 +10,7 @@ import ClosetStats from '../components/ClosetStats';
 import { fadeIn } from '../utils/animations';
 import { ClosetGridSkeleton } from '../components/ClosetItemSkeleton';
 import { tourRef } from '../tour/Tour';
+import { invalidateUserDataCaches } from '../services/firestore';
 import { useWardrobeFocus } from '../hooks/useWardrobeFocus';
 import { categoryOffered } from '../services/departmentFit';
 import { colors, radius, fonts, type as textType } from '../theme/designSystem';
@@ -87,6 +88,8 @@ export default function ClosetScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    // Pulling to refresh asks for what is on the server now, not the shared copy.
+    invalidateUserDataCaches();
     fetchClosetItems();
   };
 

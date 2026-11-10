@@ -351,7 +351,16 @@ async function curateEdit(
   }
 }
 
-export async function loadDiscovery(): Promise<DiscoveryData> {
+/**
+ * `onEdit`: the Edit at the top of the page is written by an AI call that
+ * takes seconds, and the page used to wait for it before showing anything -
+ * including the unlock arithmetic that needs no AI at all. With `onEdit` the
+ * page data returns as soon as it is computed (edit: null) and the Edit is
+ * handed over when it arrives. Without it the behaviour is unchanged.
+ */
+export async function loadDiscovery(
+  options: { onEdit?: (edit: StyleEdit | null) => void } = {}
+): Promise<DiscoveryData> {
   const userId = getCurrentUserId();
   const profile = await buildProfileMatchContext(userId);
 
@@ -412,6 +421,11 @@ export async function loadDiscovery(): Promise<DiscoveryData> {
 
   const productsById = new Map(matched.map(m => [m.product.id, m]));
   const stretch = pickStretch(matched, trends, signals, weather?.temperature);
+  if (options.onEdit) {
+    const deliver = options.onEdit;
+    curateEdit(matched, summary, profile, trends).then(deliver, () => deliver(null));
+    return { summary, unlocks, matched, fillsGap, stretch, edit: null, productsById };
+  }
   const edit = await curateEdit(matched, summary, profile, trends);
 
   return { summary, unlocks, matched, fillsGap, stretch, edit, productsById };

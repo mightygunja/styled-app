@@ -275,8 +275,8 @@ function paginate(products: Product[], filters: ProductSearchFilters): ProductSe
 
 class MockCatalogAdapter implements AffiliateNetworkAdapter {
   async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
-    // Simulated network latency so loading states are exercised realistically.
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // (A simulated 300ms of "network latency" used to sit here. The catalogue
+    // is in memory; every Shop, Explore and starter-look load paid it.)
     // BALANCED_CATALOG, not MOCK_CATALOG: pagination truncates, and the raw
     // catalogue is grouped by category, so a page of the raw order is all
     // tops - which starved the outfit engine of bottoms and blanked the
@@ -286,7 +286,6 @@ class MockCatalogAdapter implements AffiliateNetworkAdapter {
   }
 
   async getById(productId: string): Promise<Product | null> {
-    await new Promise(resolve => setTimeout(resolve, 150));
     return MOCK_CATALOG.find(p => p.id === productId) || null;
   }
 

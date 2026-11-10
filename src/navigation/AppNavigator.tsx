@@ -15,7 +15,36 @@ import { RootStackParamList, MainTabParamList } from './types';
  * Must stay module-scope: a component identity created during render would
  * remount the screen on every parent render.
  */
+// Every lazily-loaded screen's loader, so they can be fetched ahead of need.
+const screenLoaders: Array<() => Promise<unknown>> = [];
+let screensPreloaded = false;
+
+/**
+ * Loads the code for every lazy screen in the background, one at a time, a
+ * couple of seconds after the signed-in app is on screen.
+ *
+ * Each screen is its own chunk on the web, fetched the first time it is
+ * opened - so the first visit to Shop, the Trend Report, a closet item and
+ * so on showed a blank page for the length of a network request. Fetching
+ * them while the user is reading Home means the code is already there when
+ * they tap. Sequential and spaced out so it never competes with the screen
+ * they are actually using; a failed fetch is simply retried on demand.
+ */
+function preloadScreens(): void {
+  if (screensPreloaded) return;
+  screensPreloaded = true;
+  let index = 0;
+  const next = () => {
+    const loader = screenLoaders[index++];
+    if (!loader) return;
+    const again = () => setTimeout(next, 120);
+    loader().then(again, again);
+  };
+  setTimeout(next, 2500);
+}
+
 function lazyScreen(loader: () => Promise<{ default: React.ComponentType<any> }>) {
+  screenLoaders.push(loader);
   const Lazy = React.lazy(loader);
   return function LazyScreen(props: any) {
     return (
@@ -206,6 +235,10 @@ function ContentFrame({ maxWidth, children }: { maxWidth: number; children: Reac
 
 function MainTabs() {
   const isDesktop = useIsDesktopWeb();
+  // The signed-in app is up: start fetching the other screens' code.
+  React.useEffect(() => {
+    preloadScreens();
+  }, []);
   return (
     <Tab.Navigator
       screenOptions={{

@@ -130,7 +130,7 @@ const products = seedProducts(seededTrend);
 check(products.length === 5, `the off-trend seed (a wool scarf) is not shown (got ${products.length} products)`);
 products.forEach(product => {
   check(isSeedProductId(product.id) && isSeedOf(seededTrend, product.id), `${product.id} is recognisable as this trend's seed`);
-  check(/^https:\/\/images\.unsplash\.com\/photo-[0-9a-f-]+\?w=600$/.test(product.imageUrl), `${product.name}: image is an Unsplash photo`);
+  check(/^https:\/\/images\.unsplash\.com\/photo-[0-9a-f-]+\?w=600&q=70&auto=format$/.test(product.imageUrl), `${product.name}: image is an Unsplash photo`);
   const url = new URL(product.sourceUrl);
   const k = url.searchParams.get('k') || '';
   check(url.origin === 'https://www.amazon.com' && url.pathname === '/s', `${product.name}: link is an Amazon search`);

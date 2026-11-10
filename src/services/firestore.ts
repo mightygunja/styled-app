@@ -17,6 +17,7 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { createSessionCache } from './sessionCache';
 import { ClosetItem, Look, TrendPalette, Stylist, StylingSession, StylistReview, SessionType } from '../types';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Product } from '../models/product';
@@ -47,20 +48,60 @@ function closetDates(data: any): any {
   };
 }
 
+/**
+ * Session cache for the closet.
+ *
+ * Twenty-nine screens and services read the whole closet, and each one used
+ * to run its own Firestore query - Home, then Closet, then Shop meant three
+ * identical round trips inside a minute, and every screen waited on one
+ * before it could draw. The closet is now read once and shared:
+ *
+ *   - concurrent readers join the same in-flight query;
+ *   - a result is reused for CLOSET_TTL_MS;
+ *   - every write that goes through this service drops it, so a piece added,
+ *     edited, worn or removed is never served stale.
+ *
+ * Every write to `closetItems` in the app goes through this service (the
+ * Cloud Functions only read it), which is what makes the invalidation
+ * complete. The TTL covers the one thing it cannot see: a change made on
+ * another device. Callers get fresh copies of each item, so nothing a screen
+ * does to its list can leak into another screen's.
+ *
+ * The mechanics live in sessionCache.ts.
+ */
+const CLOSET_TTL_MS = 5 * 60 * 1000;
+const closetCache = createSessionCache<ClosetItem[]>({
+  ttlMs: CLOSET_TTL_MS,
+  copy: items => items.map(item => ({ ...item })),
+});
+
+/** Drops the cached closet. Called on every closet write, on pull-to-refresh and on sign-out. */
+export function invalidateClosetCache(): void {
+  closetCache.invalidate();
+}
+
 export const closetService = {
-  // Get all closet items for a user
-  getAll: async (userId: string) => {
-    const q = query(
-      collection(db, 'closetItems'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...closetDates(doc.data()) } as ClosetItem));
+  // Get all closet items for a user (shared across screens - see the cache above)
+  getAll: async (userId: string, options: { fresh?: boolean } = {}) => {
+    if (options.fresh) invalidateClosetCache();
+    return closetCache.get(userId, async () => {
+      const q = query(
+        collection(db, 'closetItems'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...closetDates(doc.data()) } as ClosetItem));
+    });
   },
 
-  // Get single closet item
+  // Get single closet item. Served from the shared closet when it is there,
+  // so opening a piece from the grid needs no round trip at all.
   getById: async (itemId: string) => {
+    for (const items of closetCache.values()) {
+      const found = items.find(item => item.id === itemId);
+      if (found) return found;
+    }
     const docRef = doc(db, 'closetItems', itemId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) throw new Error('Item not found');
@@ -77,6 +118,7 @@ export const closetService = {
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
+    invalidateClosetCache();
     return { id: docRef.id, ...itemData } as ClosetItem;
   },
 
@@ -87,11 +129,13 @@ export const closetService = {
       ...updates,
       updatedAt: Timestamp.now(),
     });
+    invalidateClosetCache();
   },
 
   // Delete closet item
   delete: async (itemId: string) => {
     await deleteDoc(doc(db, 'closetItems', itemId));
+    invalidateClosetCache();
   },
 
   // Mark item as worn
@@ -102,6 +146,7 @@ export const closetService = {
       lastWornDate: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
+    invalidateClosetCache();
   },
 
   // Get closet stats
@@ -304,16 +349,45 @@ export const shopMyClosetService = {
 
 // ==================== USER PROFILE / STYLE PROFILE ====================
 
+/**
+ * Session cache for the style profile - read by twenty-five screens and
+ * services, each of which used to fetch the user document itself. Same shape
+ * as the closet cache: concurrent readers share one read, the result is
+ * reused for a few minutes, and saving the profile drops it. A failed read
+ * is never cached (it rejects, as before), so callers that fall back on
+ * failure behave exactly as they did.
+ */
+const PROFILE_TTL_MS = 5 * 60 * 1000;
+const profileCache = createSessionCache<PersonalStyleProfile | null>({
+  ttlMs: PROFILE_TTL_MS,
+  copy: profile => (profile ? (JSON.parse(JSON.stringify(profile)) as PersonalStyleProfile) : null),
+});
+
+/**
+ * Drops everything cached for the signed-in user. A pull-to-refresh is the
+ * user asking for the truth, and a change of account must never see the
+ * last account's data.
+ */
+export function invalidateUserDataCaches(): void {
+  invalidateClosetCache();
+  invalidateStyleProfileCache();
+}
+
+/** Drops the cached style profile. Called when it is saved and on sign-out. */
+export function invalidateStyleProfileCache(): void {
+  profileCache.invalidate();
+}
+
 export const styleProfileService = {
   // Get a user's saved Style Profile (null if never saved). Reads the legacy
   // `styleDNA` field as a fallback so profiles saved before the rename still load.
-  getStyleProfile: async (userId: string): Promise<PersonalStyleProfile | null> => {
-    const docRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    const data = docSnap.data();
-    return (data.styleProfile as PersonalStyleProfile) || (data.styleDNA as PersonalStyleProfile) || null;
-  },
+  getStyleProfile: async (userId: string): Promise<PersonalStyleProfile | null> =>
+    profileCache.get(userId, async () => {
+      const docSnap = await getDoc(doc(db, 'users', userId));
+      if (!docSnap.exists()) return null;
+      const data = docSnap.data();
+      return (data.styleProfile as PersonalStyleProfile) || (data.styleDNA as PersonalStyleProfile) || null;
+    }),
 
   // Save/overwrite a user's Style Profile
   saveStyleProfile: async (userId: string, styleProfile: PersonalStyleProfile): Promise<void> => {
@@ -332,7 +406,9 @@ export const styleProfileService = {
       });
     }
     // Only reached when the write succeeded. Every screen that ranks against
-    // the profile reloads on its next focus (see profileEvents.ts).
+    // the profile reloads on its next focus (see profileEvents.ts) - and must
+    // read the new profile when it does.
+    invalidateStyleProfileCache();
     bumpProfileRevision();
   },
 };

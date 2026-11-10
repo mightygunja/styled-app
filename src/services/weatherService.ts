@@ -10,6 +10,7 @@
  *   actually going rather than where they are now
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { WeatherCondition } from './recommendationEngine';
 import { getStyleLocation } from './styleLocationService';
@@ -58,9 +59,14 @@ async function getDeviceCoords(): Promise<Coords | null> {
     }
     if (!granted) return null;
 
-    const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    // A position the device already has is as good as a new fix for "what
+    // is the weather here" and returns at once; a fresh fix can take seconds.
+    const known = await Location.getLastKnownPositionAsync({ maxAge: 60 * 60 * 1000 }).catch(() => null);
+    const position =
+      known ??
+      (await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }));
     const { latitude, longitude } = position.coords;
 
     let city: string | undefined;
@@ -112,6 +118,85 @@ async function getIpCoords(): Promise<Coords | null> {
  * scoring, rather than presenting an invented 72°-and-sunny as fact.
  */
 export async function getCurrentWeather(): Promise<CurrentWeather | null> {
+  // Which place is being asked about: the chosen style location, or the
+  // device. A reading is only ever reused for the place it was taken in.
+  const override = await getStyleLocation().catch(() => null);
+  const key = override ? `at:${override.latitude.toFixed(2)},${override.longitude.toFixed(2)}` : 'device';
+
+  const cached = (memory && memory.key === key ? memory : null) ?? (await readStored(key));
+  const age = cached ? Date.now() - cached.at : Infinity;
+  if (cached && age < WEATHER_FRESH_MS) return { ...cached.weather };
+  if (cached && age < WEATHER_USABLE_MS) {
+    // Recent enough to dress by: answer now, and take a new reading in the
+    // background so the next screen has it.
+    refresh(key).catch(() => undefined);
+    return { ...cached.weather };
+  }
+  return refresh(key);
+}
+
+/**
+ * How long a reading is served without looking again, and how long an older
+ * one is still shown while a new one is fetched. Weather is the slowest thing
+ * the main screens wait for - a location fix, sometimes a permission prompt,
+ * then a forecast request - and Home, Shop, Explore, the Trend Report and the
+ * stylist chat each asked for it from scratch every time they opened.
+ */
+const WEATHER_FRESH_MS = 15 * 60 * 1000;
+const WEATHER_USABLE_MS = 3 * 60 * 60 * 1000;
+const WEATHER_STORAGE_KEY = 'weather:last:v1';
+
+interface StoredWeather {
+  key: string;
+  at: number;
+  weather: CurrentWeather;
+}
+let memory: StoredWeather | null = null;
+const inFlight = new Map<string, Promise<CurrentWeather | null>>();
+
+async function readStored(key: string): Promise<StoredWeather | null> {
+  try {
+    const raw = await AsyncStorage.getItem(WEATHER_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as StoredWeather) : null;
+    if (
+      !parsed ||
+      parsed.key !== key ||
+      typeof parsed.at !== 'number' ||
+      typeof parsed.weather?.temperature !== 'number' ||
+      !parsed.weather?.condition
+    ) {
+      return null;
+    }
+    memory = parsed;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Takes a new reading for `key`; concurrent callers share the one request. */
+function refresh(key: string): Promise<CurrentWeather | null> {
+  let pending = inFlight.get(key);
+  if (!pending) {
+    pending = fetchCurrentWeather().then(weather => {
+      // Only a real reading is kept. A failed lookup is not cached, so the
+      // next screen simply tries again - as it always did.
+      if (weather) {
+        memory = { key, at: Date.now(), weather };
+        AsyncStorage.setItem(WEATHER_STORAGE_KEY, JSON.stringify(memory)).catch(() => undefined);
+      }
+      return weather;
+    });
+    inFlight.set(key, pending);
+    const settle = () => {
+      if (inFlight.get(key) === pending) inFlight.delete(key);
+    };
+    pending.then(settle, settle);
+  }
+  return pending.then(weather => (weather ? { ...weather } : null));
+}
+
+async function fetchCurrentWeather(): Promise<CurrentWeather | null> {
   try {
     // A user-chosen style location (travelling, or the device guessed
     // wrong) wins over the device: every surface then dresses for that

@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { outfitsService, styleProfileService } from '../services/firestore';
+import { outfitsService, styleProfileService, invalidateUserDataCaches } from '../services/firestore';
 import { WardrobeFocus } from '../models/personalStyleProfile';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
 import { getStyleVoice } from '../services/styleVoice';
@@ -507,6 +507,8 @@ export default function HomeScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    // Pulling to refresh asks for what is on the server now, not the shared copy.
+    invalidateUserDataCaches();
     // A refresh rebuilds the pools; edits belonged to the outgoing looks.
     setLookOverrides({});
     setSwapTargetId(null);
