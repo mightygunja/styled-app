@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { colors, fonts, type as textType } from '../theme/designSystem';
 import { userSettingsService, UserSettings, DEFAULT_USER_SETTINGS } from '../services/userSettingsService';
 import { getCurrentUserId } from '../services/api';
+import { useTour } from '../tour/Tour';
 
 /**
  * Only settings the app actually reads live here. This screen used to carry
@@ -20,6 +21,8 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [loading, setLoading] = useState(true);
   const { toast, showToast, hideToast } = useToast();
+  // The first-run walkthrough, on request.
+  const tour = useTour();
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +79,20 @@ export default function SettingsScreen() {
         <Text style={styles.sectionNote}>
           When this is on, your feed keeps posts from people you follow and your own.
         </Text>
+
+        <Text style={styles.sectionLabel}>GETTING AROUND</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={[styles.row, styles.rowLast]}
+            onPress={tour.start}
+            accessibilityRole="button"
+            accessibilityLabel="Take the tour of the app"
+          >
+            <Text style={styles.rowLabel}>Take the tour</Text>
+            <Text style={styles.rowAction}>Start →</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.sectionNote}>A one-minute walk through the main parts of the app.</Text>
       </ScrollView>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
@@ -105,5 +122,6 @@ const styles = StyleSheet.create({
   },
   rowLast: { borderBottomWidth: 0 },
   rowLabel: { fontFamily: fonts.sans, fontSize: 15, color: colors.ink },
+  rowAction: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.tobacco },
   sectionNote: { ...textType.meta, marginTop: 8 },
 });

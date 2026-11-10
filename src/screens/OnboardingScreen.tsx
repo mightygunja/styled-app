@@ -35,6 +35,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
+import { markTourPending } from '../tour/Tour';
 import { getCurrentUserId } from '../services/api';
 import { styleProfileService } from '../services/firestore';
 import {
@@ -246,6 +247,8 @@ export default function OnboardingScreen() {
       if (presentedAsRoute) {
         navigation.goBack();
       } else if (isNewUser) {
+        // First run only: the walkthrough opens once the tabs are on screen.
+        await markTourPending(user?.uid);
         clearIsNewUser();
       } else {
         // Web edge case: an existing user cold-loads /survey, so this screen

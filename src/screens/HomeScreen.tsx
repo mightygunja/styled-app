@@ -41,6 +41,7 @@ import { getPublishedTrends } from '../services/trendService';
 import { FashionTrend, itemMatchesTrend } from '../models/fashionTrend';
 import { shopperSignals } from '../services/shopperSignals';
 import TrendRemixCard from '../components/TrendRemixCard';
+import { TourTarget, tourRef } from '../tour/Tour';
 import Toast from '../components/Toast';
 import Chip from '../components/Chip';
 import Button from '../components/Button';
@@ -897,6 +898,7 @@ export default function HomeScreen() {
           <BrandWordmark variant="header" />
           <View style={styles.headerRightRow}>
             <TouchableOpacity
+              ref={tourRef('home.shop')}
               style={styles.menuButton}
               onPress={() => navigation.navigate('Shop')}
               accessibilityRole="button"
@@ -934,6 +936,7 @@ export default function HomeScreen() {
                 {isDesktop && (
                   <>
                     <TouchableOpacity
+                      ref={tourRef('home.shop')}
                       style={styles.menuButton}
                       onPress={() => navigation.navigate('Shop')}
                       accessibilityRole="button"
@@ -1031,6 +1034,9 @@ export default function HomeScreen() {
             </View>
           )}
 
+          {/* One block the walkthrough can put a ring around; it adds no
+              spacing of its own. */}
+          <TourTarget id="home.occasions">
           <Text style={styles.sectionLabel}>DRESSING FOR</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow} contentContainerStyle={styles.chipRowContent}>
             {OCCASION_OPTIONS.map(opt => (
@@ -1043,6 +1049,7 @@ export default function HomeScreen() {
               />
             ))}
           </ScrollView>
+          </TourTarget>
 
           <View style={styles.dressRow}>
             <Text style={styles.sectionLabel}>DRESS ME TODAY</Text>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View, ActivityIndicator, Platform } from 'react-native';
+import { TourNavigator, TourOverlay, TourProvider } from '../tour/Tour';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -379,6 +380,15 @@ const linking = {
 
 const navigationRef = createNavigationContainerRef();
 
+// What the first-run walkthrough needs from navigation (see src/tour/Tour.tsx).
+const tourNavigator: TourNavigator = {
+  isReady: () => navigationRef.isReady(),
+  routeNames: () => (navigationRef.isReady() ? ((navigationRef.getRootState() as any)?.routeNames ?? []) : []),
+  navigate: (name, params) => {
+    if (navigationRef.isReady()) (navigationRef as any).navigate(name, params);
+  },
+};
+
 /**
  * Browser tab / history titles for routes that set no options.title. A route
  * missing here reads plain "33 Trends" rather than its code name.
@@ -559,6 +569,11 @@ export default function AppNavigator() {
   }
 
   return (
+    // The walkthrough's provider wraps the navigator so any screen can mark a
+    // control as highlightable; its overlay is drawn after the navigator so
+    // it sits above every screen and the tab bar.
+    <TourProvider uid={user?.uid ?? null} ready={!!user && !isNewUser} navigator={tourNavigator}>
+    <View style={{ flex: 1 }}>
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
@@ -703,5 +718,8 @@ export default function AppNavigator() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    <TourOverlay />
+    </View>
+    </TourProvider>
   );
 }

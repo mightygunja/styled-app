@@ -5,6 +5,8 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, fonts, radius, shadow } from '../theme/designSystem';
 import { useIsDesktopWeb } from '../theme/responsive';
 import BrandWordmark from '../components/BrandWordmark';
+import { tourRef } from '../tour/Tour';
+import type { TourTargetId } from '../tour/tourSteps';
 
 // iOS-style floating pill nav. Solid card background (not a native blur view)
 // so it can't silently fail to render on a device/build where a blur native
@@ -53,6 +55,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: Botto
               return (
                 <TouchableOpacity
                   key={route.key}
+                  ref={tourRef(`tab.${route.name}` as TourTargetId)}
                   accessibilityRole="button"
                   accessibilityState={isFocused ? { selected: true } : {}}
                   accessibilityLabel={String(label)}
@@ -94,6 +97,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: Botto
             return (
               <TouchableOpacity
                 key={route.key}
+                ref={tourRef(`tab.${route.name}` as TourTargetId)}
                 accessibilityRole="button"
                 accessibilityState={isFocused ? { selected: true } : {}}
                 accessibilityLabel={String(label)}

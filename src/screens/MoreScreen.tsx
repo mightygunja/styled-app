@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { buildProfileMatchContext } from '../services/profileMatchContext';
 import { getCurrentUserId } from '../services/api';
 import { userProfileService } from '../services/userProfileService';
 import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
+import { tourRef, useTour } from '../tour/Tour';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -74,6 +75,26 @@ const SECTIONS: MoreSection[] = [
 
 export default function MoreScreen() {
   const navigation = useNavigation<NavigationProp>();
+  // The Trend Report sits in the second section, below the fold on a phone.
+  // When the walkthrough reaches it, bring that section to the top so the
+  // row it is about to highlight is on screen.
+  const scrollRef = useRef<ScrollView>(null);
+  const styleSectionY = useRef(0);
+  const onTrendsStep = useTour().step?.id === 'trends';
+  const onTrendsStepRef = useRef(onTrendsStep);
+  onTrendsStepRef.current = onTrendsStep;
+  const scrollToStyleSection = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, styleSectionY.current - 12), animated: false });
+  }, []);
+  // This tab is usually being mounted for the first time at that very
+  // moment, before its sections have been laid out - so scroll now, again
+  // once layout has settled, and from the section's own onLayout below.
+  useEffect(() => {
+    if (!onTrendsStep) return;
+    scrollToStyleSection();
+    const timers = [150, 500, 1000].map(delay => setTimeout(scrollToStyleSection, delay));
+    return () => timers.forEach(clearTimeout);
+  }, [onTrendsStep, scrollToStyleSection]);
   const { user } = useAuth();
   const [menswearOnly, setMenswearOnly] = useState(false);
 
@@ -111,7 +132,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>MORE</Text>
         <Text style={styles.title}>Everything else</Text>
 
@@ -147,12 +168,23 @@ export default function MoreScreen() {
             item => !(menswearOnly && (item.route === 'Recommendations' || item.route === 'Favorites'))
           ),
         })).map(section => (
-          <View key={section.label}>
+          <View
+            key={section.label}
+            onLayout={
+              section.label === 'STYLE'
+                ? event => {
+                    styleSectionY.current = event.nativeEvent.layout.y;
+                    if (onTrendsStepRef.current) scrollToStyleSection();
+                  }
+                : undefined
+            }
+          >
             <Text style={styles.sectionLabel}>{section.label}</Text>
             <View style={styles.card}>
               {section.items.map((item, i) => (
                 <TouchableOpacity
                   key={item.route}
+                  ref={item.route === 'TrendInsights' ? tourRef('more.trends') : undefined}
                   style={[styles.row, i === section.items.length - 1 && styles.rowLast]}
                   onPress={() => navigation.navigate(item.route as any)}
                 >

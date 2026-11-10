@@ -9,6 +9,7 @@ import { getCurrentUserId, closetAPI } from '../services/api';
 import ClosetStats from '../components/ClosetStats';
 import { fadeIn } from '../utils/animations';
 import { ClosetGridSkeleton } from '../components/ClosetItemSkeleton';
+import { tourRef } from '../tour/Tour';
 import { colors, radius, fonts, type as textType } from '../theme/designSystem';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 
@@ -146,7 +147,12 @@ export default function ClosetScreen() {
               <Text style={styles.titleAccent}>{loadError && items.length === 0 ? '–' : items.length}</Text> pieces
             </Text>
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.8}>
+          <TouchableOpacity
+            ref={tourRef('closet.add')}
+            style={styles.addButton}
+            onPress={handleAddItem}
+            activeOpacity={0.8}
+          >
             <Text style={styles.addButtonText}>+ ADD</Text>
           </TouchableOpacity>
         </View>
