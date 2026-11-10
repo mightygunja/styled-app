@@ -2753,6 +2753,201 @@ export const archiveTrend = functions
     return { success: true };
   });
 
+// ---- Trend seeds: pieces that arrive with a trend ----
+
+/**
+ * A trend published this morning could only be illustrated by pieces already
+ * inside the app bundle. Seeds are pieces attached to the trend document
+ * itself (`seedPieces`), so every client shows them the moment the trend is
+ * read. The rule is the catalogue's own: the photo comes first, someone
+ * looks at it, and the words are written from what it shows.
+ *
+ * describeTrendPiece does the looking (and only proposes); the editor sees
+ * photo and words side by side on the Trend Desk and saveTrendSeedPieces
+ * keeps what they confirm. The client mirrors every check in
+ * src/services/trendSeeds.ts.
+ */
+const SEED_CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
+const SEED_DEPARTMENTS = ['women', 'men', 'unisex'];
+const MAX_SEED_PIECES = 12;
+const SEED_PHOTO_ID = /^\d{10,16}-[0-9a-f]{8,16}$/;
+const SEED_PHOTO_URL = /^https:\/\/images\.unsplash\.com\/photo-(\d{10,16}-[0-9a-f]{8,16})(?:[?/#]|$)/;
+
+/** The Unsplash photo id in an image address - seeds never hold a free URL. */
+function seedPhotoId(input: unknown): string | null {
+  const text = String(input || '').trim();
+  if (SEED_PHOTO_ID.test(text)) return text;
+  return SEED_PHOTO_URL.exec(text)?.[1] ?? null;
+}
+
+function trendAnchors(trend: any): string[] {
+  return [
+    ...(Array.isArray(trend?.keyGarments) ? trend.keyGarments : []),
+    ...(Array.isArray(trend?.keyAccessories) ? trend.keyAccessories : []),
+  ]
+    .map((w: any) => String(w || '').toLowerCase().trim())
+    .filter(Boolean);
+}
+
+/** A seed must carry one of its trend's own anchors, or it does not correspond to the trend. */
+function seedCarriesTrend(trend: any, piece: { name: string; subcategory: string; styleTags: string[] }): boolean {
+  const text = [piece.name, piece.subcategory, ...piece.styleTags].join(' ').toLowerCase();
+  return trendAnchors(trend).some(anchor => text.includes(anchor));
+}
+
+const newSeedId = (): string => Math.random().toString(36).slice(2, 10);
+
+function cleanSeedPiece(raw: any): any | null {
+  const tidy = (value: any, max: number) =>
+    typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '';
+  const photoId = seedPhotoId(raw?.photoId);
+  const name = tidy(raw?.name, 60);
+  if (!photoId || !name) return null;
+  if (!SEED_CATEGORIES.includes(raw?.category) || !SEED_DEPARTMENTS.includes(raw?.department)) return null;
+  const price = Number(raw?.price);
+  return {
+    id: tidy(raw?.id, 24).replace(/[^a-zA-Z0-9]/g, '') || newSeedId(),
+    name,
+    color: tidy(raw?.color, 30).toLowerCase(),
+    category: raw.category,
+    subcategory: tidy(raw?.subcategory, 40).toLowerCase(),
+    department: raw.department,
+    photoId,
+    styleTags: (Array.isArray(raw?.styleTags) ? raw.styleTags : [])
+      .map((t: any) => tidy(t, 24).toLowerCase())
+      .filter(Boolean)
+      .slice(0, 5),
+    price: Number.isFinite(price) && price > 0 ? Math.round(price) : 0,
+    addedAt: tidy(raw?.addedAt, 40) || new Date().toISOString(),
+  };
+}
+
+/**
+ * Looks at one photo offered as a seed for a trend and writes the piece from
+ * it. Proposes only - nothing is stored until the editor confirms.
+ */
+export const describeTrendPiece = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      requireAdmin(context);
+
+      const trendId = String(data?.trendId || '');
+      const photoId = seedPhotoId(data?.photo);
+      const wanted = SEED_DEPARTMENTS.includes(data?.department) ? String(data.department) : 'unisex';
+      if (!trendId) throw new functions.https.HttpsError('invalid-argument', 'trendId is required');
+      if (!photoId) {
+        throw new functions.https.HttpsError(
+          'invalid-argument',
+          'Paste the image address of an Unsplash photo (it starts with https://images.unsplash.com/photo-).'
+        );
+      }
+      const snap = await db.collection('trends').doc(trendId).get();
+      if (!snap.exists) throw new functions.https.HttpsError('not-found', 'That trend no longer exists.');
+      const trend = snap.data() || {};
+      const anchors = trendAnchors(trend);
+      const rail = wanted === 'unisex' ? "women's and men's rails" : `${wanted}'s rail`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `You are checking one photo before it becomes a shop card under a fashion trend. Describe ONLY what the photo shows. Do not bend the description to fit the trend - if the photo does not show one of the trend's pieces, say so.
+
+The trend: "${String(trend.name || '')}" - ${String(trend.summary || '')}
+Its key pieces (the only anchors that count): ${anchors.join(', ') || '(none)'}
+The editor wants it on the ${rail}.
+
+Decide:
+- piece: the single garment, shoe, bag or accessory the photo is clearly about.
+- anchor: which ONE of the key pieces above the photo genuinely shows, copied exactly, or "" if none. Be strict: a plain white shirt is not a "linen shirt" unless the cloth is visibly linen; a boot is not a "loafer".
+- usable: true only if ALL hold - one piece is clearly the subject; anchor is not ""; the photo is clean enough for a shop card (in focus, the piece visible, not worn-out or dirty, nothing revealing, no large brand logo or slogan text); and it suits the rail the editor asked for (a piece shown on a woman or cut for women is not for the men's rail, and the reverse; a product shot with nobody wearing it can be unisex only if the piece itself is).
+- name: 2-5 words in Title Case, as a shop card would name it, written from the photo (e.g. "Suede Fringe Jacket"). No brand names.
+- color: the piece's own colour in 1-3 lowercase words, as seen.
+- category: one of ${SEED_CATEGORIES.join(' | ')}.
+- subcategory: a lowercase retail phrase for the piece that CONTAINS the anchor when anchor is not "".
+- department: "women", "men" or "unisex" - what the photo actually supports.
+- styleTags: exactly 3 lowercase style words true of this piece (e.g. "bohemian", "tailored", "relaxed", "minimal", "sporty", "romantic", "edgy", "classic", "polished", or a fabric/cut word).
+- price: a typical mid-market US price in whole dollars for this kind of piece.
+- reason: one plain sentence for the editor - why it is usable, or exactly what rules it out.
+
+Return ONLY valid JSON:
+{ "usable": true, "anchor": "", "name": "", "color": "", "category": "", "subcategory": "", "department": "", "styleTags": [], "price": 0, "reason": "" }`,
+              },
+              {
+                type: 'image_url',
+                image_url: { url: `https://images.unsplash.com/photo-${photoId}?w=800`, detail: 'high' },
+              },
+            ],
+          },
+        ],
+        max_tokens: 400,
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const seen = JSON.parse(content);
+
+      const piece = cleanSeedPiece({ ...seen, photoId, id: newSeedId() });
+      let usable = !!seen.usable && !!piece;
+      let reason = String(seen.reason || '').trim();
+      // The model's word is not enough: the written piece itself must carry
+      // an anchor, and it may not be placed on a rail the photo rules out.
+      if (usable && piece && !seedCarriesTrend(trend, piece)) {
+        usable = false;
+        reason = `The photo shows ${piece.name.toLowerCase()}, which is not one of this trend's key pieces (${anchors.join(', ')}).`;
+      }
+      if (usable && piece && wanted !== 'unisex' && piece.department !== 'unisex' && piece.department !== wanted) {
+        usable = false;
+        reason = `The photo reads as ${piece.department}'s, so it cannot go on the ${wanted}'s rail.`;
+      }
+      // The editor's rail choice narrows a unisex reading, never widens it.
+      if (usable && piece && wanted !== 'unisex') piece.department = wanted;
+      return { success: true, data: { usable, reason, piece } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error describing trend piece:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+/** Replaces the seeded pieces on a trend with the set the editor confirmed. */
+export const saveTrendSeedPieces = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    requireAdmin(context);
+
+    const trendId = String(data?.trendId || '');
+    if (!trendId || isSeedId(trendId)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Pieces can be seeded on desk trends only.');
+    }
+    const ref = db.collection('trends').doc(trendId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new functions.https.HttpsError('not-found', 'That trend no longer exists.');
+    const trend = snap.data() || {};
+
+    const photos = new Set<string>();
+    const ids = new Set<string>();
+    const kept: any[] = [];
+    for (const raw of Array.isArray(data?.pieces) ? data.pieces : []) {
+      const piece = cleanSeedPiece(raw);
+      // One card per photo, every piece anchored to this trend.
+      if (!piece || photos.has(piece.photoId) || !seedCarriesTrend(trend, piece)) continue;
+      while (ids.has(piece.id)) piece.id = newSeedId();
+      ids.add(piece.id);
+      photos.add(piece.photoId);
+      kept.push(piece);
+      if (kept.length >= MAX_SEED_PIECES) break;
+    }
+    await ref.update({ seedPieces: kept, seedPiecesUpdatedAt: new Date().toISOString() });
+    return { success: true, data: { seedPieces: kept } };
+  });
+
 // ==================== EBAY PARTNER NETWORK ====================
 
 /**

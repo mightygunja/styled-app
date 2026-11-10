@@ -25,7 +25,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { FashionTrend } from '../models/fashionTrend';
+import TrendSeedPanel from '../components/TrendSeedPanel';
+import { FashionTrend, TrendSeedPiece } from '../models/fashionTrend';
 import { trendService } from '../services/trendService';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
@@ -102,6 +103,13 @@ export default function TrendDeskAdminScreen() {
     }
   };
 
+  // A save on the seed panel returns the set the server kept; the row takes
+  // it in place so the rail preview above it is rebuilt without a reload.
+  const handleSeedsChanged = (trendId: string, pieces: TrendSeedPiece[]) =>
+    setTrends(current =>
+      current.map(t => (t.id === trendId ? { ...t, seedPieces: pieces.length ? pieces : undefined } : t))
+    );
+
   const retry = () => {
     setLoading(true);
     load();
@@ -170,7 +178,9 @@ export default function TrendDeskAdminScreen() {
           local style scene, so publish broadly and let the ranking localize. The EDITORIAL rows
           are the curated seed set shipped inside the app (global, accessory-complete, with
           hand-checked pieces); they merge with what you publish here, and you can retire or
-          restore any of them.
+          restore any of them. Open "Pieces users see" on any row to check what picking that
+          trend shows — and, for a trend drafted here, to seed pieces for it before or after
+          you publish.
         </Text>
 
         <TouchableOpacity
@@ -225,6 +235,10 @@ export default function TrendDeskAdminScreen() {
                 {trend.keyColors.length ? ` · Colours: ${trend.keyColors.join(', ')}` : ''}
               </Text>
               <Text style={styles.rowDetail}>How to wear: {trend.stylingNote}</Text>
+
+              {/* What picking this trend shows a user, and - for desk trends -
+                  the form that seeds pieces for it. */}
+              <TrendSeedPanel trend={trend} onSeedsChanged={handleSeedsChanged} notify={showToast} />
 
               {/* Every archived row can come back. This used to be limited to
                   editorial rows, so an AI-drafted trend retired by mistake had

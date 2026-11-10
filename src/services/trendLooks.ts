@@ -2,9 +2,11 @@
  * The pieces that illustrate a trend - "here is what this actually looks
  * like", as a whole look: a garment, the shoe, the bag or belt or jewellery.
  *
- * Two sources, in order:
+ * Three sources, in order:
+ *   0. Pieces seeded for this very trend on the desk (`seedPieces`, see
+ *      trendSeeds.ts). They were chosen for it, so they open the rail.
  *   1. The trend's hand-checked `pieces` (editorial seeds, and desk trends
- *      that inherited them). These are the spot-on answer and always lead.
+ *      that inherited them). These are the spot-on answer and lead the rest.
  *   2. Keyword scoring over the catalogue, for desk trends with no curated
  *      pieces and to fill remaining slots. A keyGarments / keyAccessories
  *      hit anchors (3); silhouette, colour and archetype each add 1; only
@@ -24,6 +26,7 @@ import { FashionTrend } from '../models/fashionTrend';
 import { Product } from '../models/product';
 import { BALANCED_CATALOG } from '../data/mockProductCatalog';
 import { isLocalStaple, LocaleProfile } from './localeProfile';
+import { seedProducts } from './trendSeeds';
 
 export type WardrobeFocus = 'womens' | 'mens' | 'all' | undefined;
 
@@ -87,9 +90,10 @@ export function piecesForTrend(
   const catalog = options.catalog ?? BALANCED_CATALOG;
   const lookup = options.catalog ? new Map(options.catalog.map(p => [p.id, p])) : byId;
 
-  const curated: Product[] = (trend.pieces ?? [])
-    .map(id => lookup.get(id.startsWith('p-') ? id : `p-${id}`))
-    .filter((p): p is Product => !!p && inDepartment(p, focus));
+  const curated: Product[] = [
+    ...seedProducts(trend),
+    ...(trend.pieces ?? []).map(id => lookup.get(id.startsWith('p-') ? id : `p-${id}`)),
+  ].filter((p): p is Product => !!p && inDepartment(p, focus));
 
   const scored = catalog
     .filter(p => inDepartment(p, focus) && !curated.includes(p))

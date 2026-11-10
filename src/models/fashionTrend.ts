@@ -30,6 +30,30 @@ export type TrendReach = 'local' | 'regional' | 'global';
 
 export type TrendStatus = 'draft' | 'published' | 'archived';
 
+/**
+ * One piece seeded for a trend: a photo the editor looked at, and the words
+ * written from that photo. Same rule as the bundled catalogue - the photo
+ * comes first and the name and colour describe it, never the reverse.
+ */
+export interface TrendSeedPiece {
+  /** Short id, unique within the trend. */
+  id: string;
+  /** What the photo shows, as a shop card would name it: "Suede Fringe Jacket". */
+  name: string;
+  color: string;
+  category: 'tops' | 'bottoms' | 'dresses' | 'outerwear' | 'shoes' | 'accessories' | 'bags';
+  /** Lowercase retail phrase. Carries one of the trend's own anchors. */
+  subcategory: string;
+  /** Whose rail it may appear on. A women's rail never shows a 'men' piece and vice versa. */
+  department: 'women' | 'men' | 'unisex';
+  /** Unsplash photo id ("1650338524059-f0ae486cfa66") - never a free URL. */
+  photoId: string;
+  styleTags: string[];
+  /** A typical price for this kind of piece, in USD. */
+  price: number;
+  addedAt?: string;
+}
+
 export interface FashionTrend {
   id: string;
   /** Short editorial name, e.g. "Wide-leg tailoring". */
@@ -79,6 +103,12 @@ export interface FashionTrend {
    * keyword scoring. Ordered garment first, then shoes, then bag/accessory.
    */
   pieces?: string[];
+  /**
+   * Pieces seeded FOR this trend on the Trend Desk and stored on the trend
+   * itself, so a trend published today can be illustrated today - on every
+   * platform, without an app release. See services/trendSeeds.ts.
+   */
+  seedPieces?: TrendSeedPiece[];
   status: TrendStatus;
   source: 'editorial' | 'ai-draft';
   createdAt: string;

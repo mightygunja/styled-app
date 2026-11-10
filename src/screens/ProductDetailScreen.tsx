@@ -31,6 +31,7 @@ import {
   WearForecast,
 } from '../services/costPerWearForecast';
 import { shopperSignals } from '../services/shopperSignals';
+import { resolveSeedProduct } from '../services/trendService';
 import { scoreProduct, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { wishlistService, affiliateClicksService } from '../services/firestore';
 import { closetAPI, getCurrentUserId } from '../services/api';
@@ -72,7 +73,10 @@ export default function ProductDetailScreen() {
       // saved) instead of being reported as gone.
       let savedReadFailed = false;
       const [liveProduct, profile, closetResponse, saved] = await Promise.all([
-        getActiveAdapter().getById(productId),
+        // A trend's seeded pieces live on the trend, not in the catalogue.
+        getActiveAdapter()
+          .getById(productId)
+          .then(found => found ?? resolveSeedProduct(productId)),
         buildProfileMatchContext(userId),
         closetAPI.getItems(userId).catch(error => {
           console.error('Error loading closet for product:', error);

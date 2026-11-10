@@ -23,7 +23,9 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../config/firebase';
-import { FashionTrend } from '../models/fashionTrend';
+import { FashionTrend, TrendSeedPiece } from '../models/fashionTrend';
+import { Product } from '../models/product';
+import { isSeedProductId, normalizeSeedPieces, registerTrendSeeds, seedProductById } from './trendSeeds';
 import { SEED_TRENDS } from '../data/seedTrends';
 import { mergeTrends } from './trendMerge';
 
@@ -33,6 +35,8 @@ const draftTrendReportFn = httpsCallable(functions, 'draftTrendReport');
 const listTrendDeskFn = httpsCallable(functions, 'listTrendDesk');
 const publishTrendFn = httpsCallable(functions, 'publishTrend');
 const archiveTrendFn = httpsCallable(functions, 'archiveTrend');
+const describeTrendPieceFn = httpsCallable(functions, 'describeTrendPiece');
+const saveTrendSeedPiecesFn = httpsCallable(functions, 'saveTrendSeedPieces');
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_TRENDS = 12;
@@ -58,6 +62,10 @@ function normalize(id: string, data: any): FashionTrend {
     regions: Array.isArray(data.regions) ? data.regions.map(String).filter(Boolean) : undefined,
     reach: ['local', 'regional', 'global'].includes(data.reach) ? data.reach : undefined,
     pieces: Array.isArray(data.pieces) ? data.pieces.map(String).filter(Boolean) : undefined,
+    seedPieces: (() => {
+      const seeded = normalizeSeedPieces(data.seedPieces);
+      return seeded.length ? seeded : undefined;
+    })(),
     status: data.status || 'published',
     source: data.source || 'editorial',
     createdAt: String(data.createdAt || ''),
@@ -108,8 +116,23 @@ export async function getPublishedTrends(): Promise<FashionTrend[]> {
     SEED_TRENDS.filter(seed => !retired.has(seed.id))
   );
 
+  // Seeds become openable products the moment the pool is read.
+  registerTrendSeeds(trends);
   cache = { at: Date.now(), trends };
   return trends;
+}
+
+/**
+ * A seeded trend piece by its product id. The registry is filled whenever
+ * the pool is read; a cold open straight onto a product (a shared link, a
+ * reload) reads the pool first. Null for anything that is not a live seed.
+ */
+export async function resolveSeedProduct(productId: string): Promise<Product | null> {
+  if (!isSeedProductId(productId)) return null;
+  const known = seedProductById(productId);
+  if (known) return known;
+  await getPublishedTrends().catch(() => []);
+  return seedProductById(productId);
 }
 
 /** Drops the session cache, so the next read sees a fresh publish. */
@@ -158,7 +181,41 @@ export async function archiveTrend(trendId: string, name?: string): Promise<void
   invalidateTrendCache();
 }
 
+/** What the model read off a photo offered as a seed - a proposal, nothing is saved. */
+export interface TrendPieceProposal {
+  /** False when the photo should not be used; `reason` says why. */
+  usable: boolean;
+  reason: string;
+  piece: TrendSeedPiece | null;
+}
+
+/**
+ * Asks the desk to LOOK at a photo and write the piece from it: what it is,
+ * its colour, whose rail it belongs on, and whether it genuinely carries the
+ * trend. The editor sees photo and words side by side before anything is kept.
+ */
+export async function describeTrendPiece(
+  trendId: string,
+  photo: string,
+  department: TrendSeedPiece['department']
+): Promise<TrendPieceProposal> {
+  const result = await describeTrendPieceFn({ trendId, photo, department });
+  const payload = (result.data as any)?.data || {};
+  const piece = normalizeSeedPieces(payload.piece ? [payload.piece] : [])[0] ?? null;
+  return { usable: !!payload.usable && !!piece, reason: String(payload.reason || ''), piece };
+}
+
+/** Replaces a trend's seeded pieces. Returns what the server kept. */
+export async function saveTrendSeedPieces(trendId: string, pieces: TrendSeedPiece[]): Promise<TrendSeedPiece[]> {
+  const result = await saveTrendSeedPiecesFn({ trendId, pieces });
+  invalidateTrendCache();
+  return normalizeSeedPieces((result.data as any)?.data?.seedPieces);
+}
+
 export const trendService = {
+  resolveSeedProduct,
+  describeTrendPiece,
+  saveTrendSeedPieces,
   getPublishedTrends,
   mergeTrends,
   invalidateTrendCache,

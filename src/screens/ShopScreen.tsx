@@ -36,6 +36,7 @@ import { shopperSignals } from '../services/shopperSignals';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
 import { getPublishedTrends } from '../services/trendService';
+import { allSeedProducts, isSeedOf, trendAnchorSearches } from '../services/trendSeeds';
 import { FashionTrend, trendTextMatch, TrendMatchKind } from '../models/fashionTrend';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
@@ -168,7 +169,20 @@ export default function ShopScreen() {
         style: item.style,
       }));
       setAllTrends(publishedTrends);
-      const ranked = scoreAndRankProducts(searchResult.products, profile, closetItems, {
+      // Pieces seeded for a published trend join the pool, so picking that
+      // trend shows the pieces chosen for it. They honour the same filters
+      // the catalogue search just applied; seeds are new goods at list price,
+      // so the sale and secondhand filters exclude them.
+      const needle = debouncedQuery.trim().toLowerCase();
+      const seeded =
+        secondhandOnly || onSaleOnly
+          ? []
+          : allSeedProducts(publishedTrends).filter(
+              p =>
+                (category === 'all' || p.category === category) &&
+                (!needle || `${p.name} ${p.subcategory || ''} ${p.color || ''}`.toLowerCase().includes(needle))
+            );
+      const ranked = scoreAndRankProducts([...searchResult.products, ...seeded], profile, closetItems, {
         signals,
         weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
         trends: publishedTrends,
@@ -257,15 +271,22 @@ export default function ShopScreen() {
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
-        const kind = trendTextMatch(focusTrend, haystack, m.product.color);
+        // Seeded for this very trend: it belongs here by the editor's hand.
+        const ownSeed = isSeedOf(focusTrend, m.product.id);
+        const kind = ownSeed ? 'garment' : trendTextMatch(focusTrend, haystack, m.product.color);
         if (!kind) return null;
         const fillsGap = gapTokens.length > 0 && gapTokens.some(t => haystack.includes(t));
-        return { m, order: fillsGap ? 0 : kindOrder[kind] };
+        return { m, order: fillsGap ? 0 : ownSeed ? 0.5 : kindOrder[kind] };
       })
       .filter((x): x is { m: MatchedProduct; order: number } => x !== null)
       .sort((a, b) => a.order - b.order || b.m.matchScore - a.m.matchScore)
       .map(x => x.m);
   }, [products, focusTrend, route.params?.trendGap]);
+
+  const focusAnchorSearches = useMemo(
+    () => (focusTrend ? trendAnchorSearches(focusTrend, wardrobeFocus) : []),
+    [focusTrend, wardrobeFocus]
+  );
 
   const visibleProducts = useMemo(
     () => (matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered),
@@ -334,6 +355,31 @@ export default function ShopScreen() {
                     Search Amazon for “{route.params.trendGap}” →
                   </Text>
                 </TouchableOpacity>
+              )}
+              {/* The trend's own key pieces, each one search away. A trend
+                  published this morning is shoppable before the catalogue
+                  or the desk has a single piece for it. */}
+              {focusAnchorSearches.length > 0 && (
+                <View style={styles.anchorSearches}>
+                  <Text style={styles.anchorSearchesLabel}>ITS KEY PIECES ON AMAZON</Text>
+                  <View style={styles.anchorChips}>
+                    {focusAnchorSearches.map(search => (
+                      <TouchableOpacity
+                        key={search.label}
+                        style={styles.anchorChip}
+                        accessibilityRole="link"
+                        accessibilityLabel={`Search Amazon for ${search.label}`}
+                        onPress={() =>
+                          Linking.openURL(search.url).catch(() =>
+                            Alert.alert('Could not open Amazon', 'Please try again in a moment.')
+                          )
+                        }
+                      >
+                        <Text style={styles.anchorChipText}>{search.label} →</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               )}
             </View>
             <TouchableOpacity
@@ -465,7 +511,7 @@ export default function ShopScreen() {
             <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>
                 {focusTrend
-                  ? `Nothing in the catalogue carries "${focusTrend.name}" right now — clear the trend to browse everything.`
+                  ? `No pieces here carry "${focusTrend.name}" yet — its key pieces are one tap away on Amazon above, or clear the trend to browse everything.`
                   : 'No matches for this filter yet.'}
               </Text>
             </View>
@@ -595,6 +641,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   trendFocusClear: { ...textType.eyebrow, fontSize: 10, color: colors.tobacco, paddingVertical: 4 },
+  anchorSearches: { marginTop: 12 },
+  anchorSearchesLabel: { ...textType.eyebrow, fontSize: 9, color: colors.tobacco },
+  anchorChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  anchorChip: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    backgroundColor: colors.bone,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  anchorChipText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.ink },
   trendFocusSearch: {
     fontFamily: fonts.sansMedium,
     fontSize: 13,
