@@ -35,6 +35,7 @@ const draftTrendReportFn = httpsCallable(functions, 'draftTrendReport');
 const listTrendDeskFn = httpsCallable(functions, 'listTrendDesk');
 const publishTrendFn = httpsCallable(functions, 'publishTrend');
 const archiveTrendFn = httpsCallable(functions, 'archiveTrend');
+const refreshTrendListFn = httpsCallable(functions, 'refreshTrendListCall');
 const describeTrendPieceFn = httpsCallable(functions, 'describeTrendPiece');
 const saveTrendSeedPiecesFn = httpsCallable(functions, 'saveTrendSeedPieces');
 
@@ -169,6 +170,17 @@ export async function draftTrendReport(): Promise<number> {
   return Number((result.data as any)?.data?.drafted) || 0;
 }
 
+/**
+ * Runs the weekly list refresh now: generates a fresh set, publishes the
+ * trends the app can illustrate, retires the oldest auto-published ones.
+ */
+export async function refreshTrendList(): Promise<{ published: number; retired: number }> {
+  const result = await refreshTrendListFn({});
+  invalidateTrendCache();
+  const data = (result.data as any)?.data || {};
+  return { published: Number(data.published) || 0, retired: Number(data.retired) || 0 };
+}
+
 /** Human sign-off: a draft goes live for every user. */
 export async function publishTrend(trendId: string, name?: string): Promise<void> {
   await publishTrendFn({ trendId, name });
@@ -221,6 +233,7 @@ export const trendService = {
   invalidateTrendCache,
   listTrendDesk,
   draftTrendReport,
+  refreshTrendList,
   publishTrend,
   archiveTrend,
 };

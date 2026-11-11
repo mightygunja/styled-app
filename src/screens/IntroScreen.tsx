@@ -164,9 +164,10 @@ export default function IntroScreen() {
             An editorial trend desk follows runway, street style and what is selling in fashion's
             capitals - from Copenhagen and Milan to Seoul, Lagos and Marrakesh. Each trend is
             written up with the cities it is strongest in, its stage (emerging, rising, at its
-            peak, fading), the pieces that carry it and how to wear it. Reports are drafted with AI
-            tools and reviewed by an editor before they are published; nothing reaches you
-            unreviewed. The app then weighs each trend for where you live, so a Marrakesh reader
+            peak, fading), the pieces that carry it and how to wear it. The core set is written by an
+            editor. Each week it is joined by a list drafted with AI tools, which is published
+            only where we can show the trend in real, photographed pieces; an editor can retire
+            any entry. The app then weighs each trend for where you live, so a Marrakesh reader
             and a Copenhagen reader see the same season differently.
           </Text>
         </View>

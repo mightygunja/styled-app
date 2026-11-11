@@ -33,7 +33,7 @@ import {
   wordFitsFocus,
 } from '../src/services/departmentFit';
 import { departmentAllowed, scoreAndRankProducts } from '../src/services/marketplaceMatchingService';
-import { piecesForTrend, trendFitsFocus, trendsForFocus } from '../src/services/trendLooks';
+import { piecesForTrend, trendFitsFocus, trendForFocus, trendsForFocus } from '../src/services/trendLooks';
 import { allSeedProducts, normalizeSeedPieces, trendAnchorSearches } from '../src/services/trendSeeds';
 
 let failures = 0;
@@ -179,10 +179,14 @@ const pool = [desk, womensOnlyDesk, ...SEED_TRENDS];
 check(!trendFitsFocus(womensOnlyDesk, 'mens'), 'a trend made only of womenswear pieces is not shown to menswear');
 check(trendFitsFocus(womensOnlyDesk, 'womens'), '...and is shown to womenswear');
 check(trendFitsFocus(desk, 'mens') && trendFitsFocus(desk, 'womens'), 'a trend with pieces for both is shown to both');
-const deskForMen = trendsForFocus([desk], 'mens')[0];
+// Worded directly: this made-up trend has no photographed pieces, so the list (which now drops
+// trends it cannot illustrate) would hold it back before its wording could be checked.
+const deskForMen = trendForFocus(desk, 'mens');
 check(deskForMen.entryPiece === 'balloon trousers in olive', `the way in keeps the half that fits ("${deskForMen.entryPiece}")`);
 check(deskForMen.summary === 'Balloon shapes from the waist down.' && deskForMen.stylingNote === 'Keep the top half narrow.', `sentences about the other department's pieces are dropped whole ("${deskForMen.summary}" / "${deskForMen.stylingNote}")`);
-['Boho, sharpened', 'Sheer layering', 'The long, fluid layer'].forEach(name => {
+// (The long, fluid layer left this list on 2026-11-11: menswear now has its own pieces for it -
+// djellabas and long robes - and its own wording.)
+['Boho, sharpened', 'Sheer layering'].forEach(name => {
   const trend = SEED_TRENDS.find(t => t.name === name)!;
   check(!trendFitsFocus(trend, 'mens') && trendFitsFocus(trend, 'womens'), `"${name}" is womenswear: shown to womens, not to mens`);
 });

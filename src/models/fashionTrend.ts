@@ -119,7 +119,8 @@ export interface FashionTrend {
    */
   mens?: { summary?: string; stylingNote?: string; entryPiece?: string };
   status: TrendStatus;
-  source: 'editorial' | 'ai-draft';
+  /** 'ai-auto' = written and published by the weekly generator, with no editor in between. */
+  source: 'editorial' | 'ai-draft' | 'ai-auto';
   createdAt: string;
   publishedAt?: string;
 }

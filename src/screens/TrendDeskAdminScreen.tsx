@@ -89,6 +89,26 @@ export default function TrendDeskAdminScreen() {
     }
   };
 
+  // The weekly refresh, on demand: writes AND publishes, so it asks first.
+  const handleRefresh = async () => {
+    setDrafting(true);
+    try {
+      const result = await trendService.refreshTrendList();
+      showToast(
+        result.published
+          ? `Published ${result.published} new trends, retired ${result.retired}`
+          : 'Nothing publishable came back — the list is unchanged',
+        result.published ? 'success' : 'error'
+      );
+      await load();
+    } catch (error) {
+      console.error('Error refreshing the trend list:', error);
+      showToast('Refresh failed — the list is unchanged', 'error');
+    } finally {
+      setDrafting(false);
+    }
+  };
+
   const handlePublish = async (trend: FashionTrend) => {
     setBusyId(trend.id);
     try {
@@ -193,6 +213,24 @@ export default function TrendDeskAdminScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* The list also refreshes itself every Monday. This runs that same
+            job now: it publishes straight to users, so it is a separate,
+            plainly worded button rather than part of "Draft". */}
+        <TouchableOpacity
+          style={[styles.draftButton, styles.refreshButton, drafting && styles.draftButtonBusy]}
+          disabled={drafting}
+          onPress={handleRefresh}
+          accessibilityLabel="Generate and publish this week's trend list now"
+        >
+          <Text style={[styles.draftButtonText, styles.refreshButtonText]}>
+            Generate and publish this week's list now
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.refreshNote}>
+          Runs by itself every Monday. Only trends the app can show in photographed pieces are
+          published; they are marked AUTO below and retire after eight weeks. Retire any of them here.
+        </Text>
+
         {loading ? (
           <View style={styles.busyBox}>
             <ActivityIndicator size="large" color={colors.ink} />
@@ -218,6 +256,9 @@ export default function TrendDeskAdminScreen() {
                 >
                   {trend.status.toUpperCase()}
                 </Text>
+                {trend.source === 'ai-auto' && (
+                  <Text style={[styles.statusPill, styles.statusEditorial]}>AUTO</Text>
+                )}
                 {trend.source === 'editorial' && (
                   <Text style={[styles.statusPill, styles.statusEditorial]}>EDITORIAL</Text>
                 )}
@@ -313,6 +354,9 @@ const styles = StyleSheet.create({
   },
   draftButtonBusy: { opacity: 0.6 },
   draftButtonText: { fontFamily: fonts.sansMedium, fontSize: 14, color: colors.bone },
+  refreshButton: { marginTop: 10, backgroundColor: colors.bone, borderWidth: 1, borderColor: colors.rust },
+  refreshButtonText: { color: colors.rust },
+  refreshNote: { ...textType.body, fontSize: 12, lineHeight: 18, color: colors.inkMuted, marginTop: 8 },
 
   emptyBox: {
     borderRadius: radius.md, marginTop: spacing.lg, backgroundColor: colors.paper, padding: spacing.lg },

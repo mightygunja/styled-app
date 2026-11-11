@@ -53,23 +53,37 @@ export function inDepartment(product: Product, focus: WardrobeFocus): boolean {
 }
 
 function productText(product: Product): string {
-  return [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])].join(' ').toLowerCase();
+  // Fields are kept apart: joined by a space, "Pink Dress Shirt" + "dress
+  // shirt" read as "...shirt dress..." and put a man's shirt on the
+  // shirt-dress rail.
+  return [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])].join(' | ').toLowerCase();
 }
 
 /** Keyword score of a catalogue piece against a trend; 0 when it does not qualify. */
 export function trendPieceScore(trend: FashionTrend, product: Product): number {
   const text = productText(product);
   const color = (product.color ?? '').toLowerCase();
-  const anchorHit =
-    trend.keyGarments.some(g => text.includes(g)) || (trend.keyAccessories || []).some(a => text.includes(a));
-  const silhouetteHit = trend.silhouettes.some(s => text.includes(s));
-  const colorHit = !!color && trend.keyColors.some(k => color.includes(k) || k.includes(color));
-  const archetypeHit = (product.styleTags ?? []).some(tag => trend.archetypes.includes(tag));
-  const score = (anchorHit ? 3 : 0) + (silhouetteHit ? 1 : 0) + (colorHit ? 1 : 0) + (archetypeHit ? 1 : 0);
+  const hits = anchorsOf(trend).filter(anchor => text.includes(anchor));
   // A piece qualifies only by carrying one of the trend's own garments or
   // accessories. Silhouette + colour + archetype used to add up to a pass on
   // their own, which put a navy linen shirt on the barn-jacket rail.
-  return anchorHit ? score : 0;
+  if (hits.length === 0) return 0;
+  const silhouetteHit = trend.silhouettes.some(s => text.includes(s));
+  const colorHit = !!color && trend.keyColors.some(k => color.includes(k) || k.includes(color));
+  const archetypeHit = (product.styleTags ?? []).some(tag => trend.archetypes.includes(tag));
+  // How squarely it sits in the trend: a piece named by one of the trend's
+  // exact phrases ("ankara print dress") outranks one that only shares a
+  // general word with it ("loafer"), and one that carries several of its
+  // anchors outranks one that carries a single one.
+  const specific = hits.some(anchor => anchor.includes(' ')) ? 1 : 0;
+  const breadth = Math.min(2, new Set(hits).size - 1);
+  return 3 + specific + breadth + (silhouetteHit ? 1 : 0) + (colorHit ? 1 : 0) + (archetypeHit ? 1 : 0);
+}
+
+/** The noun a piece is - "loafers", "tote", "scarf" - so a rail is not six of one thing. */
+function kindOf(product: Product): string {
+  const words = product.name.toLowerCase().split(/\s+/);
+  return words[words.length - 1] || product.category;
 }
 
 const byId = new Map(BALANCED_CATALOG.map(p => [p.id, p]));
@@ -88,10 +102,15 @@ export function piecesForTrend(
   const catalog = options.catalog ?? BALANCED_CATALOG;
   const lookup = options.catalog ? new Map(options.catalog.map(p => [p.id, p])) : byId;
 
-  const curated: Product[] = [
-    ...seedProducts(trend),
-    ...(trend.pieces ?? []).map(id => lookup.get(id.startsWith('p-') ? id : `p-${id}`)),
-  ].filter((p): p is Product => !!p && inDepartment(p, focus));
+  const seeded = seedProducts(trend).filter(p => inDepartment(p, focus));
+  // The hand-ordered pieces open the rail but do not fill it: beyond the
+  // first few, the trend's other anchored pieces get their turn, so a longer
+  // rail shows the breadth of the trend rather than one editor's shortlist.
+  const handPicked = (trend.pieces ?? [])
+    .map(id => lookup.get(id.startsWith('p-') ? id : `p-${id}`))
+    .filter((p): p is Product => !!p && inDepartment(p, focus))
+    .slice(0, Math.max(4, Math.ceil(limit * 0.5)));
+  const curated: Product[] = [...seeded, ...handPicked];
 
   const scored = catalog
     .filter(p => inDepartment(p, focus) && !curated.includes(p))
@@ -134,14 +153,25 @@ export function piecesForTrend(
     if (candidate) take(candidate);
   });
 
-  // Then distinct categories, then anything that qualifies.
-  const usedCategories = new Set(picks.map(p => p.category));
-  for (const requireNewCategory of [true, false]) {
+  // Then the best of the rest, kept in proportion. A trend about garments
+  // shows mostly garments: its shoes and finishing pieces are each held to
+  // about a third of the rail, and no more than two of the same thing (two
+  // loafers, not six). A shoe- or bag-led trend has no garments to protect,
+  // so only the sameness rule applies. If that leaves room, the rules relax.
+  const garmentLed = trend.keyGarments.length > 0;
+  const slotCap = Math.max(2, Math.ceil(limit * 0.3));
+  const kindCap = garmentLed ? 2 : 3;
+  for (const strict of [true, false]) {
     for (const product of scored) {
       if (picks.length >= limit) break;
-      if (requireNewCategory && usedCategories.has(product.category)) continue;
+      if (strict) {
+        const slot = slotOf(product);
+        if (garmentLed && slot !== 'garment' && picks.filter(p => slotOf(p) === slot).length >= slotCap) continue;
+        if (slot !== 'garment' || !garmentLed) {
+          if (picks.filter(p => kindOf(p) === kindOf(product)).length >= kindCap) continue;
+        }
+      }
       take(product);
-      usedCategories.add(product.category);
     }
   }
 
@@ -200,6 +230,22 @@ export function trendFitsFocus(
   return true;
 }
 
+/** How many photographed pieces a trend needs before it is shown to anyone. */
+export const MIN_ILLUSTRATED_PIECES = 3;
+
+/**
+ * Whether the app can actually show this trend to this reader: at least
+ * three photographed, shoppable pieces in their department. An account that
+ * has not chosen a department is judged against the whole catalogue (what
+ * it then sees is cut to cross-department pieces by the rail itself).
+ */
+export function trendIllustrated(trend: FashionTrend, focus: WardrobeFocus, options: { catalog?: Product[] } = {}): boolean {
+  return (
+    piecesForTrend(trend, focus ?? 'all', { limit: MIN_ILLUSTRATED_PIECES, catalog: options.catalog }).length >=
+    MIN_ILLUSTRATED_PIECES
+  );
+}
+
 /**
  * Prose with every sentence that names the other department's garments
  * removed. Sentences are kept whole - nothing is rewritten - so what is left
@@ -236,6 +282,7 @@ export function trendForFocus(trend: FashionTrend, focus: WardrobeFocus): Fashio
 export function trendsForFocus(trends: FashionTrend[], focus: WardrobeFocus): FashionTrend[] {
   return trends
     .filter(trend => trendFitsFocus(trend, focus))
+    .filter(trend => trendIllustrated(trend, focus))
     .map(trend => trendForFocus(trend, focus))
     // A trend that cannot be described without naming the other department's
     // pieces has nothing left to say to this reader - it is held back rather
@@ -279,6 +326,7 @@ export const trendLooks = {
   isBagProduct,
   inDepartment,
   trendFitsFocus,
+  trendIllustrated,
   trendsForFocus,
   trendForFocus,
   proseForFocus,

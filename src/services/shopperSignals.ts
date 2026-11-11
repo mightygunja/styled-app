@@ -22,6 +22,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from '../models/product';
+import { advancePath, evidenceLevel, PathEvidence, PathState } from './trendPath';
 
 const STORAGE_KEY = '@styled_shopper_signals';
 
@@ -54,6 +55,11 @@ export interface ShopperSignals {
    */
   trendTaps: Record<string, number>;
   trendDismissals: Record<string, number>;
+  /**
+   * Where this person is on the trend path (trendPath.ts): the step, and
+   * when it last moved. Absent until the first reading.
+   */
+  trendPath?: PathState;
 }
 
 export const EMPTY_SIGNALS: ShopperSignals = {
@@ -179,6 +185,21 @@ export const shopperSignals = {
     scheduleWrite();
   },
 
+  /**
+   * Moves the stored trend-path step toward what behaviour supports - by at
+   * most one step, and at most once a week (advancePath). Returns the step
+   * in force. `trendsWorn` is how many published trends the closet carries.
+   */
+  async advanceTrendPath(trendsWorn: number): Promise<PathState> {
+    const signals = await read();
+    const next = advancePath(signals.trendPath, evidenceLevel(pathEvidence(signals, trendsWorn)), Date.now());
+    if (next !== signals.trendPath) {
+      signals.trendPath = next;
+      scheduleWrite();
+    }
+    return next;
+  },
+
   /** An explicit "not my thing" on a trend. Stronger than ignoring it. */
   async recordTrendDismiss(trendId: string): Promise<void> {
     const signals = await read();
@@ -264,6 +285,23 @@ export function trendAdventurousness(signals: ShopperSignals): number {
   const taps = Object.values(signals.trendTaps || {}).reduce((a, b) => a + b, 0);
   const dismissals = Object.values(signals.trendDismissals || {}).reduce((a, b) => a + b, 0);
   return Math.max(0.15, Math.min(1, 0.5 + taps * 0.06 - dismissals * 0.08));
+}
+
+/** What the trend path reads off the stored signals. */
+export function pathEvidence(signals: ShopperSignals, trendsWorn: number): PathEvidence {
+  const sum = (map?: Record<string, number>) => Object.values(map || {}).reduce((a, b) => a + b, 0);
+  return { trendTaps: sum(signals.trendTaps), trendDismissals: sum(signals.trendDismissals), trendsWorn };
+}
+
+/**
+ * The step in force: the stored one, or - before the first stored reading -
+ * what the evidence supports, capped exactly as a first reading would be.
+ */
+export function currentPathLevel(signals: ShopperSignals, trendsWorn: number): number {
+  return (
+    signals.trendPath?.level ??
+    advancePath(undefined, evidenceLevel(pathEvidence(signals, trendsWorn)), 0).level
+  );
 }
 
 /** Median price of products the user has actually tapped, once there are enough. */

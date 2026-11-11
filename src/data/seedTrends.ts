@@ -360,6 +360,15 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-long-fluid-layer',
+    // Worded for a menswear reader - the default text reads through womenswear.
+    // Menswear carries this trend in its own pieces: the djellaba and the long robe.
+    mens: {
+      summary:
+        'The long line, cut sharp: djellabas, long robes and unlined dusters worn over trousers are the everyday silhouette in Dubai, Istanbul and Marrakesh - and London and Paris have adopted it for the drama.',
+      stylingNote:
+        'The length is the point, so nothing else should be long: a djellaba or a long overshirt over slim or wide trousers, in one colour from collar to hem. A loafer or a leather slipper and one structured bag keep it sharp.',
+      entryPiece: 'a plain or striped djellaba, or a long overshirt worn open over wide trousers',
+    },
     name: 'The long, fluid layer',
     summary:
       'Kaftan cuts, maxi shirt dresses and open dusters worn over trousers: the long line of modest dressing, cut sharp, is now how Dubai, Istanbul and Marrakesh dress - and London and Paris have adopted the silhouette for the drama of it.',
@@ -369,7 +378,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     stage: 'rising',
     season: 'fall',
     year: 2026,
-    keyGarments: ['kaftan', 'maxi shirt dress', 'duster', 'maxi dress', 'long-sleeve maxi', 'abaya', 'tunic', 'longline', 'maxi skirt'],
+    keyGarments: ['kaftan', 'maxi shirt dress', 'duster', 'maxi dress', 'long-sleeve maxi', 'abaya', 'tunic', 'longline', 'maxi skirt', 'djellaba', 'longline robe'],
     keyAccessories: ['mule', 'loafer', 'structured bag', 'top-handle bag', 'headscarf', 'gold chain', 'gold jewellery'],
     keyColors: ['black', 'ecru', 'sand', 'chocolate', 'olive'],
     silhouettes: ['longline', 'flowing', 'oversized', 'wide-leg'],

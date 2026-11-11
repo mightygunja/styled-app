@@ -40,9 +40,9 @@ import {
   localWearLine,
   typicalTemperatureF,
 } from './localeProfile';
-import { shopperSignals, trendAdventurousness } from './shopperSignals';
-import { piecesForTrend, trendFitsFocus, trendForFocus } from './trendLooks';
-import { canonicalArchetype } from './archetypeMatch';
+import { shopperSignals, trendAdventurousness, currentPathLevel } from './shopperSignals';
+import { trendFitsFocus, trendForFocus, trendIllustrated, WardrobeFocus } from './trendLooks';
+import { profileMatch, pathWeight, nextStep, stepFor, NextStep, PathStep } from './trendPath';
 import { profileSignature } from './profileEvents';
 
 const personalizeTrendReportFn = httpsCallable(functions, 'personalizeTrendReport');
@@ -91,8 +91,13 @@ export interface TrendRemix {
   supporting: Item[];
   /** True when at least one anchor exists - the trend is wearable today. */
   wearableToday: boolean;
-  /** How close this trend sits to the user's stated taste, 0..1. */
+  /**
+   * How squarely this trend sits in the user's taste and closet today, 0..1
+   * (trendPath.profileMatch).
+   */
   adjacency: number;
+  /** Why it matches, in true sentences, strongest first. Empty when nothing personal applies. */
+  matchReasons: string[];
   /** "One piece away" line when the closet can't anchor it yet. */
   gapLine: string | null;
   /**
@@ -143,33 +148,8 @@ export interface TrendPersonalization {
   gapNote: string | null;
 }
 
-/**
- * How near a trend sits to this user's declared taste. Not a gate - the
- * point of the trend layer is reaching *beyond* the profile - but it decides
- * order: reachable stretches before far ones.
- */
-function adjacencyScore(trend: FashionTrend, profile?: ProfileMatchContext): number {
-  if (!profile) return 0.5;
-
-  let score = 0.3;
-
-  // Both sides go through the shared vocabulary's name forms, so a desk trend
-  // filed under "boho" still meets a profile that says "bohemian".
-  const archetypes = (profile.styleArchetypes || []).map(canonicalArchetype);
-  if (archetypes.length && trend.archetypes.some(a => archetypes.includes(canonicalArchetype(a)))) {
-    score += 0.4;
-  }
-
-  const palette = (profile.recommendedColors || []).map(c => c.toLowerCase());
-  if (
-    palette.length &&
-    trend.keyColors.some(k => palette.some(p => p.includes(k) || k.includes(p)))
-  ) {
-    score += 0.3;
-  }
-
-  return Math.min(1, score);
-}
+/** A profile that could not be read carries no taste - match as if there were none. */
+const tasteOf = (profile?: ProfileMatchContext) => (profile && !profile.profileReadFailed ? profile : undefined);
 
 /**
  * How well a trend fits the *place*, and the honest lines explaining it.
@@ -283,42 +263,54 @@ export function buildRemixes(
   // summary, styling note and "way in" are worded for this one (see
   // trendFitsFocus / trendForFocus).
   const focus = profile?.wardrobeFocus;
+  const taste = tasteOf(profile);
 
-  return trends
+  const entries = trends
     .filter(t => t.stage !== 'fading' || adventurousness < 0.4)
     .filter(t => (dismissals[t.id] || 0) < 2)
     .filter(t => trendFitsFocus(t, focus))
+    // A trend the app cannot show in photographed, shoppable pieces for this
+    // reader is not shown at all. It used to stay in the report, demoted: a
+    // title and a paragraph with nothing under it (desk drafts written in
+    // words no product uses - "laser-cut shirt").
+    .filter(t => trendIllustrated(t, focus))
     .map(t => trendForFocus(t, focus))
     .filter(t => t.summary.trim().length > 0)
     .map(trend => {
       const { anchors, supporting } = trendCoverage(trend, closetItems);
       const wearableToday = anchors.length > 0;
       const local = localeFit(trend, locale);
-      // A trend the catalogue cannot illustrate with two real pieces is
-      // usually a desk draft written in words no product uses ("laser-cut
-      // shirt"). It stays in the report - the editor published it - but it
-      // does not outrank trends the app can actually show and shop.
-      const illustrated = piecesForTrend(trend, 'all', { limit: 3 }).length >= 2;
+      const crosses = trendAvoidRuleConflict(trend, profile?.avoidRules);
+      const match = profileMatch(trend, taste, { owned: anchors.length, supporting: supporting.length }, crosses);
       return {
         remix: {
           trend,
           anchors: anchors.slice(0, 4),
           supporting: supporting.slice(0, 4),
           wearableToday,
-          adjacency: adjacencyScore(trend, profile),
+          adjacency: match.score,
+          matchReasons: match.reasons,
           gapLine: wearableToday || !trend.entryPiece ? null : `One piece away: ${trend.entryPiece}.`,
-          challengesAvoidRule: trendAvoidRuleConflict(trend, profile?.avoidRules),
+          challengesAvoidRule: crosses,
           localeNote: local.note,
           localAdaptation: local.adaptation,
           localWear: local.wear,
           introduced: local.introduced,
         } as TrendRemix,
-        localeMultiplier: local.multiplier * (illustrated ? 1 : 0.8),
+        localeMultiplier: local.multiplier,
       };
-    })
+    });
+
+  // Where this person is on the trend path decides how far from their own
+  // taste the ranking reaches (trendPath.ts). The step is the stored one; a
+  // first read is worked out from what they own and have done.
+  const level = currentPathLevel(signals, entries.filter(e => e.remix.wearableToday).length);
+
+  return entries
     .sort((a, b) => {
       const weight = (e: { remix: TrendRemix; localeMultiplier: number }) =>
         stageWeight(e.remix.trend.stage, adventurousness) *
+        pathWeight(level, e.remix.adjacency, e.remix.trend.stage) *
         (0.55 + 0.45 * e.remix.adjacency) *
         (e.remix.wearableToday ? 1.35 : 1) *
         (e.remix.challengesAvoidRule ? 0.35 + 0.4 * adventurousness : 1) *
@@ -329,6 +321,22 @@ export function buildRemixes(
       return weight(b) - weight(a);
     })
     .map(e => e.remix);
+}
+
+export interface TrendPathView {
+  step: PathStep;
+  /** The one thing to try next, or null when there is nothing honest to offer. */
+  next: NextStep | null;
+}
+
+/**
+ * Where this person is on the trend path and what to try next, from an
+ * already-ranked remix list. `ownedNames` keeps a piece they have out of
+ * the suggestion.
+ */
+export function trendPathView(remixes: TrendRemix[], focus: WardrobeFocus, ownedNames: string[] = []): TrendPathView {
+  const level = currentPathLevel(shopperSignals.current(), remixes.filter(r => r.wearableToday).length);
+  return { step: stepFor(level), next: nextStep(remixes, level, focus, { ownedNames }) };
 }
 
 /**
@@ -389,6 +397,14 @@ export async function loadTrendRemixes(
           latitude: locale.latitude,
         })
       : undefined);
+  // Move the stored step before ranking with it: at most one step, at most
+  // once a week, by what this person owns and has done (trendPath.ts).
+  const focus = profile?.wardrobeFocus;
+  const worn = trends.filter(
+    t => trendFitsFocus(t, focus) && trendIllustrated(t, focus) && trendCoverage(t, closetItems).anchors.length > 0
+  ).length;
+  await shopperSignals.advanceTrendPath(worn).catch(() => undefined);
+
   return buildRemixes(
     trends,
     closetItems,
@@ -561,6 +577,7 @@ export function wearableTrendLines(remixes: TrendRemix[], limit: number = 3): st
 }
 
 export const trendRemixService = {
+  trendPathView,
   buildRemixes,
   loadTrendRemixes,
   personalizeRemixes,

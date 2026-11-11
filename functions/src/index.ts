@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
 import OpenAI, { toFile } from 'openai';
+import { TREND_VOCABULARY } from './trendVocabulary';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -2579,27 +2580,60 @@ function currentTrendSeason(date: Date = new Date()): string {
 }
 
 /**
- * Drafts a fresh trend report with the model. Writes drafts only - the
- * editor publishes each one individually from the Trend Desk screen.
+ * The pieces a generated trend may name: exactly the ones the app has
+ * photographed (functions/src/trendVocabulary.ts, generated from the
+ * catalogue by scripts/buildTrendVocabulary.ts). This is what makes a
+ * machine-written trend arrive illustrated: it cannot be written in words
+ * no product carries.
  */
-export const draftTrendReport = functions
-  .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
-  .https.onCall(async (data, context) => {
-    try {
-      requireAdmin(context);
+const TREND_VOCAB = new Map(TREND_VOCABULARY.map(v => [v.term, v]));
+const TREND_PIECE_LIST = (['garment', 'shoes', 'finish'] as const)
+  .map(
+    slot =>
+      `${slot === 'garment' ? 'GARMENTS' : slot === 'shoes' ? 'SHOES' : 'BAGS, BELTS, SCARVES, HATS, JEWELLERY'}: ${TREND_VOCABULARY.filter(
+        v => v.slot === slot
+      )
+        .map(v => v.term)
+        .join(', ')}`
+  )
+  .join('\n');
 
-      const season = currentTrendSeason();
-      const year = new Date().getFullYear();
+/** A trend needs this many named pieces, and this many photographed ones behind them. */
+const MIN_TREND_PIECES_NAMED = 3;
+const MIN_TREND_PIECES_SHOWN = 6;
 
-      // Existing names, so a redraft extends the desk instead of repeating it.
-      const existingSnap = await db
-        .collection('trends')
-        .where('status', 'in', ['draft', 'published'])
-        .get();
-      const existingNames = existingSnap.docs
-        .map(d => String(d.data().name || ''))
-        .filter(Boolean);
+/**
+ * Keeps only pieces the app can show, and only trends it can illustrate for
+ * at least one department. `coverage` records how many photographed pieces
+ * stand behind the trend for a womenswear and a menswear reader.
+ */
+export function illustratedTrendsOnly(drafts: any[]): any[] {
+  return drafts
+    .map(t => {
+      const named: string[] = [...new Set([...(t.keyGarments || []), ...(t.keyAccessories || [])])].filter(w =>
+        TREND_VOCAB.has(w)
+      );
+      const count = (key: 'women' | 'men') => named.reduce((n, w) => n + TREND_VOCAB.get(w)![key], 0);
+      return {
+        ...t,
+        keyGarments: named.filter(w => TREND_VOCAB.get(w)!.slot === 'garment'),
+        keyAccessories: named.filter(w => TREND_VOCAB.get(w)!.slot !== 'garment'),
+        coverage: { women: count('women'), men: count('men') },
+      };
+    })
+    .filter(
+      t =>
+        t.keyGarments.length + t.keyAccessories.length >= MIN_TREND_PIECES_NAMED &&
+        Math.max(t.coverage.women, t.coverage.men) >= MIN_TREND_PIECES_SHOWN
+    );
+}
 
+/**
+ * Writes a trend report with the model and returns only the trends the app
+ * can illustrate, none of them repeating a name already on the desk.
+ * Nothing is saved here - the caller decides between draft and published.
+ */
+async function draftTrends(existingNames: string[], season: string, year: number, count: number): Promise<any[]> {
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -2608,7 +2642,7 @@ export const draftTrendReport = functions
             content: `You are the trend editor of 33 Trends, a personal styling app. Draft this cycle's trend report: the directions genuinely moving in fashion right now (${season} ${year}), for a human editor to review before anything is published.
 
 ${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
-Draft 6 trends. For each:
+Draft ${count} trends. For each:
 - Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage. Never invent a garment that does not exist at retail ("3D-printed jacket", "laser-cut shirt") - every key piece must be something a person can buy this week.
 - The app is global. At least 2 of the 6 must be strongest OUTSIDE Europe/North America/East Asia (Marrakesh, Dubai, Lagos, Mumbai, São Paulo, Mexico City, Sydney, Istanbul) and describe how people there actually dress now - not a Western trend relocated. For every trend, say where else it reads naturally (regions) and how far it has travelled (reach).
 - A trend is never only clothes. keyAccessories must name the shoe, bag, belt, jewellery, scarf, hat or eyewear that carries it - the accessory is usually the cheapest way in.
@@ -2626,12 +2660,16 @@ Draft 6 trends. For each:
 - stylingNote: 1-2 sentences of genuinely useful how-to-wear-it advice with a normal wardrobe. Specific, not generic. Never use "flattering", "must-have", "elevate" or "effortless".
 - entryPiece: the single lowest-commitment way in, as a short phrase.
 - name: 2-4 words, editorial, no emoji.
+- keyGarments and keyAccessories must be copied EXACTLY, character for character, from THE PIECES WE CAN SHOW below. They are the only pieces the app has photographed and can link to, so a trend named in any other words would reach the reader with nothing under it. Use at least three of them per trend, and prefer the specific phrase ("suede trucker jacket") over the general one ("leather jacket"). A direction you cannot express in at least three of these pieces is not for this report - choose another.
+
+THE PIECES WE CAN SHOW
+${TREND_PIECE_LIST}
 
 Return ONLY valid JSON:
 { "trends": [{ "name": "", "summary": "", "region": "", "regions": [], "reach": "", "stage": "", "keyGarments": [], "keyAccessories": [], "keyColors": [], "silhouettes": [], "archetypes": [], "stylingNote": "", "entryPiece": "" }] }`,
           },
         ],
-        max_tokens: 2500,
+        max_tokens: 3200,
         response_format: { type: 'json_object' },
       });
 
@@ -2672,6 +2710,34 @@ Return ONLY valid JSON:
         // A trend the matchers cannot see is not a trend the app can use.
         .filter((t: any) => t.keyGarments.length > 0 || t.keyAccessories.length > 0 || t.silhouettes.length > 0);
 
+      const taken = new Set(existingNames.map(n => n.trim().toLowerCase()));
+      return illustratedTrendsOnly(drafts).filter(t => !taken.has(t.name.toLowerCase()));
+}
+
+/**
+ * Drafts a fresh trend report with the model. Writes drafts only - the
+ * editor publishes each one individually from the Trend Desk screen.
+ */
+export const draftTrendReport = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 120, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      requireAdmin(context);
+
+      const season = currentTrendSeason();
+      const year = new Date().getFullYear();
+
+      // Existing names, so a redraft extends the desk instead of repeating it.
+      const existingSnap = await db
+        .collection('trends')
+        .where('status', 'in', ['draft', 'published'])
+        .get();
+      const existingNames = existingSnap.docs
+        .map(d => String(d.data().name || ''))
+        .filter(Boolean);
+
+      const drafts = await draftTrends(existingNames, season, year, 6);
+
       if (drafts.length === 0) {
         throw new functions.https.HttpsError('internal', 'The draft produced no usable trends.');
       }
@@ -2685,6 +2751,89 @@ Return ONLY valid JSON:
     } catch (error: any) {
       if (error instanceof functions.https.HttpsError) throw error;
       console.error('Error drafting trend report:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+// ---- The auto-generated trend list ----
+
+/**
+ * The trend list writes itself once a week.
+ *
+ * Every Monday the generator drafts a fresh set, keeps the trends the app
+ * can illustrate with photographed pieces (illustratedTrendsOnly), and
+ * publishes them directly - marked `source: 'ai-auto'` so the Trend Desk
+ * shows which entries no person wrote. The list stays current by turnover:
+ * an auto-published trend is retired after eight weeks, and the list never
+ * holds more than MAX_AUTO_TRENDS of them. Trends an editor drafted and
+ * published by hand, and the editorial seeds shipped in the app, are never
+ * touched. The editor can still retire any of these from the desk.
+ *
+ * If the generator returns nothing usable, nothing changes: the current
+ * list stands rather than being emptied.
+ */
+const MAX_AUTO_TRENDS = 10;
+const AUTO_TREND_LIFETIME_MS = 8 * 7 * 24 * 60 * 60 * 1000;
+
+async function refreshTrendListNow(): Promise<{ published: number; retired: number }> {
+  const season = currentTrendSeason();
+  const now = new Date();
+  const snapshot = await db.collection('trends').where('status', 'in', ['draft', 'published']).get();
+  const existingNames = snapshot.docs.map(d => String(d.data().name || '')).filter(Boolean);
+
+  const fresh = await draftTrends(existingNames, season, now.getFullYear(), 6);
+  if (fresh.length === 0) return { published: 0, retired: 0 };
+
+  const live = snapshot.docs
+    .filter(d => d.data().source === 'ai-auto' && d.data().status === 'published')
+    .sort((a, b) => String(b.data().publishedAt || '').localeCompare(String(a.data().publishedAt || '')));
+  const room = Math.max(0, MAX_AUTO_TRENDS - fresh.length);
+
+  const batch = db.batch();
+  let retired = 0;
+  live.forEach((doc, index) => {
+    const age = now.getTime() - Date.parse(String(doc.data().publishedAt || doc.data().createdAt || now.toISOString()));
+    if (index >= room || age > AUTO_TREND_LIFETIME_MS) {
+      batch.update(doc.ref, { status: 'archived', archivedAt: now.toISOString() });
+      retired += 1;
+    }
+  });
+  fresh.forEach(trend =>
+    batch.set(db.collection('trends').doc(), {
+      ...trend,
+      status: 'published',
+      source: 'ai-auto',
+      publishedAt: now.toISOString(),
+    })
+  );
+  await batch.commit();
+  return { published: fresh.length, retired };
+}
+
+/** The weekly run. */
+export const refreshTrendList = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 180 })
+  .pubsub.schedule('every monday 06:00')
+  .timeZone('America/Chicago')
+  .onRun(async () => {
+    try {
+      const result = await refreshTrendListNow();
+      console.log(`Trend list: ${result.published} published, ${result.retired} retired`);
+    } catch (error) {
+      // A failed week leaves last week's list in place.
+      console.error('Trend list refresh failed:', error);
+    }
+  });
+
+/** The same run, on demand from the Trend Desk. */
+export const refreshTrendListCall = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 180, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    try {
+      return { success: true, data: await refreshTrendListNow() };
+    } catch (error: any) {
+      console.error('Error refreshing the trend list:', error);
       throw new functions.https.HttpsError('internal', error.message);
     }
   });

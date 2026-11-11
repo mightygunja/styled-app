@@ -94,8 +94,8 @@ export default function TrendsPublicScreen() {
           <Text style={styles.intro}>The report could not be loaded. Try again in a moment.</Text>
         ) : (
           trends.map(trend => {
-            const women = piecesForTrend(trend, 'womens', { limit: 4 });
-            const men = piecesForTrend(trend, 'mens', { limit: 4 });
+            const women = piecesForTrend(trend, 'womens', { limit: 8 });
+            const men = piecesForTrend(trend, 'mens', { limit: 8 });
             return (
               <View key={trend.id} style={styles.trend}>
                 <Text style={styles.stage}>

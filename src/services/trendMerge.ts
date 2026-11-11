@@ -20,7 +20,7 @@ function anchoringPieces(desk: FashionTrend, pieces: string[]): string[] {
   return pieces.filter(id => {
     const product = catalogById.get(`p-${id}`);
     if (!product) return false;
-    const haystack = [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])].join(' ');
+    const haystack = [product.name, product.subcategory, product.category, ...(product.styleTags ?? [])].join(' | ');
     return trendTextMatch(desk, haystack, product.color) === 'garment';
   });
 }

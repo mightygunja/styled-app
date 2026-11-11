@@ -69,7 +69,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /** How many trends the report shows. The pool is larger; the rest ranks below the fold of attention. */
 const MAX_REPORT = 14;
-const RAIL_LIMIT = 5;
+const RAIL_LIMIT = 10;
 
 export default function TrendInsightsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -302,6 +302,14 @@ export default function TrendInsightsScreen() {
     return byTrend;
   }, [remixes, focus, localeProfile]);
 
+  // Where this person is on the trend path, and the one piece to try next
+  // (trendPath.ts). Worked out from the ranked list on screen, so the card
+  // and the report below it always agree.
+  const path = useMemo(
+    () => (remixes.length > 0 ? trendRemixService.trendPathView(remixes, focus) : null),
+    [remixes, focus]
+  );
+
   const anchorLine = (remix: TrendRemix): string =>
     `Wear it today: your ${remix.anchors.slice(0, 3).map(anchorDisplayLabel).join(', ')}.`;
 
@@ -318,6 +326,43 @@ export default function TrendInsightsScreen() {
         <Text style={styles.eyebrow}>THE TREND REPORT</Text>
         <Text style={styles.title}>What's moving right now</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
+
+        {/* The trend path: where they are, what that means for what they are
+            shown, and the single next piece - sized to their step. */}
+        {path && (
+          <View style={styles.pathCard}>
+            <Text style={styles.pathEyebrow}>YOUR TREND PATH · STEP {path.step.level} OF 5</Text>
+            <View style={styles.pathDots}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <View key={n} style={[styles.pathDot, n <= path.step.level && styles.pathDotOn]} />
+              ))}
+            </View>
+            <Text style={styles.pathName}>{path.step.name}</Text>
+            <Text style={styles.pathLine}>{path.step.line}</Text>
+            {path.next && (
+              <TouchableOpacity
+                style={styles.pathNext}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`Your next step: ${path.next.piece.name}, from ${path.next.trend.name}`}
+                onPress={() => {
+                  shopperSignals.recordTrendTap(path.next!.trend.id).catch(() => {});
+                  navigation.navigate('ProductDetail', { productId: path.next!.piece.id, surface: 'shop' });
+                }}
+              >
+                <Image source={{ uri: path.next.piece.imageUrl }} style={styles.pathNextImage} resizeMode="cover" />
+                <View style={styles.pathNextText}>
+                  <Text style={styles.pathNextLabel}>YOUR NEXT STEP · {path.next.trend.name.toUpperCase()}</Text>
+                  <Text style={styles.pathNextName}>{path.next.piece.name}</Text>
+                  <Text style={styles.pathNextWhy}>{path.next.why}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.pathPace}>
+              Your step moves with what you open and own - one step a week at most, in either direction.
+            </Text>
+          </View>
+        )}
 
         {/* Where the app is dressing this person for. Changing it here changes
             it everywhere - Home's looks, the Shop's ranking, the stylist. */}
@@ -441,6 +486,12 @@ export default function TrendInsightsScreen() {
                 {!!remix.localeNote && <Text style={styles.localeNote}>{remix.localeNote}</Text>}
                 <Text style={styles.trendName}>{trend.name}</Text>
                 <Text style={styles.trendSummary}>{trend.summary}</Text>
+                {remix.matchReasons?.length > 0 && (
+                  <Text style={styles.matchLine}>
+                    <Text style={styles.matchLabel}>FOR YOU  </Text>
+                    {remix.matchReasons.slice(0, 2).join(' · ')}
+                  </Text>
+                )}
 
                 {!!remix.challengesAvoidRule && (
                   <Text style={styles.challengeLine}>
@@ -647,6 +698,36 @@ const styles = StyleSheet.create({
   trendTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   rank: { fontFamily: fonts.serifItalic, fontSize: 16, color: colors.camel },
   trendMeta: { ...textType.eyebrow, fontSize: 9, flex: 1 },
+  pathCard: {
+    marginTop: 18,
+    padding: 16,
+    borderRadius: radius.md,
+    backgroundColor: colors.paper,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.rust,
+  },
+  pathEyebrow: { ...textType.eyebrow, fontSize: 9, color: colors.rust },
+  pathDots: { flexDirection: 'row', gap: 6, marginTop: 10 },
+  pathDot: { flex: 1, height: 3, borderRadius: radius.full, backgroundColor: colors.hair },
+  pathDotOn: { backgroundColor: colors.rust },
+  pathName: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 26, color: colors.ink, marginTop: 12 },
+  pathLine: { ...textType.body, fontSize: 13, lineHeight: 19, color: colors.inkMuted, marginTop: 4 },
+  pathNext: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 14,
+    padding: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.bone,
+  },
+  pathNextImage: { width: 72, height: 90, borderRadius: radius.sm, backgroundColor: colors.paper },
+  pathNextText: { flex: 1, justifyContent: 'center' },
+  pathNextLabel: { ...textType.eyebrow, fontSize: 9, color: colors.camel },
+  pathNextName: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 22, color: colors.ink, marginTop: 4 },
+  pathNextWhy: { ...textType.body, fontSize: 12, lineHeight: 17, color: colors.inkMuted, marginTop: 3 },
+  pathPace: { ...textType.body, fontSize: 11, lineHeight: 16, color: colors.inkFaint, marginTop: 12 },
+  matchLine: { ...textType.body, fontSize: 12, lineHeight: 18, color: colors.ink, marginTop: 8 },
+  matchLabel: { ...textType.eyebrow, fontSize: 9, color: colors.rust },
   localeNote: {
     fontFamily: fonts.sansMedium,
     fontSize: 11,
