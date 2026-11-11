@@ -31,6 +31,7 @@
  */
 
 import { Platform } from 'react-native';
+import { acceptListing, departmentsFor, ListingDepartment, RawEbayListing } from './ebayListing';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import {
@@ -78,7 +79,11 @@ type MarketplaceProvider =
   | 'rakuten'
   | 'skimlinks'
   | 'both';
-const MARKETPLACE_PROVIDER: MarketplaceProvider = 'amazon';
+// 'starter' since 2026-11-11: the curated picks plus LIVE eBay listings on
+// the website. Until the eBay keys are in functions/.env the eBay half
+// answers "not set up" once and is then left alone (see ebayStatus), so the
+// site behaves exactly as it did under 'amazon'.
+const MARKETPLACE_PROVIDER: MarketplaceProvider = 'starter';
 
 /**
  * eBay Partner Network classes mobile apps as a "Special Business Model" that
@@ -459,28 +464,107 @@ class SkimlinksAdapter implements AffiliateNetworkAdapter {
 const searchEbayProductsFn = httpsCallable(functions, 'searchEbayProducts');
 
 /**
- * eBay Partner Network over the Browse API.
+ * Whether live eBay listings are actually arriving. 'unknown' until the
+ * first search answers; 'off' while the function reports it is not set up
+ * (or keeps failing), during which it is not called at all - so a page is
+ * never held up waiting on a feed that is not there, and nothing on screen
+ * claims live listings that are not being shown.
+ */
+type EbayStatus = 'unknown' | 'live' | 'off';
+let ebayStatus: EbayStatus = 'unknown';
+let ebayRetryAt = 0;
+const EBAY_TIMEOUT_MS = 4500;
+/** Until eBay has answered once, wait less: an unconfigured feed must not cost a visitor seconds. */
+const EBAY_FIRST_TIMEOUT_MS = 2500;
+const EBAY_RETRY_KEY = 'ebay:retryAt';
+
+// "Not answering" is remembered in the browser, so a visitor pays for
+// finding that out at most once per retry window, not once per page load.
+// (eBay is web-only, so plain localStorage is enough; guarded for the app.)
+try {
+  const stored = typeof localStorage !== 'undefined' ? Number(localStorage.getItem(EBAY_RETRY_KEY)) : 0;
+  if (stored > Date.now()) {
+    ebayStatus = 'off';
+    ebayRetryAt = stored;
+  }
+} catch {
+  /* no storage: the session-only memory below still applies */
+}
+
+function rememberEbayOff(until: number) {
+  ebayStatus = 'off';
+  ebayRetryAt = until;
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(EBAY_RETRY_KEY, String(until));
+  } catch {
+    /* session-only */
+  }
+}
+const EBAY_RETRY_UNCONFIGURED_MS = 30 * 60 * 1000;
+const EBAY_RETRY_FAILED_MS = 2 * 60 * 1000;
+
+/** True once a search has returned live eBay listings this session. */
+export function ebayIsLive(): boolean {
+  return ebayStatus === 'live';
+}
+
+/**
+ * eBay Partner Network over the Browse API - live listings, per department.
  *
- * The Cloud Function holds the developer keys and the EPN campaign id; with
- * the campaign id in the request context, eBay returns item URLs that are
- * already affiliatized - so wrapLink is a pass-through, and re-wrapping
- * would break attribution.
+ * The Cloud Function holds the developer keys and the EPN campaign id and
+ * returns each listing with eBay's own category path. Every listing then
+ * goes through acceptListing (ebayListing.ts), which is where the
+ * department rule is enforced: a listing is shown only when eBay files it
+ * under the department that was searched AND its title agrees. An account
+ * that has not chosen a department gets no live listings at all.
+ *
+ * Links come back already carrying the affiliate tracking, so wrapLink is a
+ * pass-through; re-wrapping would break attribution.
  */
 class EbayPartnerNetworkAdapter implements AffiliateNetworkAdapter {
+  private async searchDepartment(filters: ProductSearchFilters, department: ListingDepartment): Promise<Product[]> {
+    const { wardrobeFocus, ...rest } = filters;
+    const call = searchEbayProductsFn({ ...rest, department });
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('eBay search timed out')),
+        ebayStatus === 'live' ? EBAY_TIMEOUT_MS : EBAY_FIRST_TIMEOUT_MS
+      )
+    );
+    const result = await Promise.race([call, timeout]);
+    const listings = (((result as any).data || {}).products || []) as RawEbayListing[];
+    return listings
+      .map(listing => acceptListing(listing, department, { category: filters.category }))
+      .filter((product): product is Product => product !== null);
+  }
+
   async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
-    const result = await searchEbayProductsFn(filters);
-    const data = result.data as any;
-    const products = (data.products || []) as Product[];
+    const empty: ProductSearchResult = { products: [], hasMore: false, totalCount: 0 };
+    const departments = departmentsFor(filters.wardrobeFocus);
+    // No department chosen: nothing from a live feed. eBay has no "for
+    // everyone" rack, and a mixed one is the thing this app must never show.
+    if (departments.length === 0) return empty;
+    if (ebayStatus === 'off' && Date.now() < ebayRetryAt) return empty;
 
-    // Browse honours keyword, price and condition; colour, size and brand
-    // filters have to land here or they would silently do nothing.
-    const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+    try {
+      const perDepartment = await Promise.all(departments.map(d => this.searchDepartment(filters, d)));
+      // Interleaved, so "both" does not read as one department's page.
+      const products: Product[] = [];
+      const longest = Math.max(0, ...perDepartment.map(p => p.length));
+      for (let i = 0; i < longest; i++) perDepartment.forEach(list => list[i] && products.push(list[i]));
+      if (products.length > 0) ebayStatus = 'live';
+      else if (ebayStatus === 'off') ebayStatus = 'unknown';
 
-    return {
-      products: refined,
-      hasMore: !!data.hasMore,
-      totalCount: typeof data.totalCount === 'number' ? data.totalCount : null,
-    };
+      const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+      return { products: refined, hasMore: false, totalCount: refined.length };
+    } catch (error: any) {
+      // Not set up yet (no keys) is expected until the keys are added: stop
+      // asking for a while instead of slowing every page with a doomed call.
+      const unconfigured = String(error?.code || '').includes('failed-precondition');
+      rememberEbayOff(Date.now() + (unconfigured ? EBAY_RETRY_UNCONFIGURED_MS : EBAY_RETRY_FAILED_MS));
+      if (!unconfigured) console.error('eBay search failed', error);
+      return empty;
+    }
   }
 
   /** Browse search is the only surface we use; detail views come from the
@@ -809,6 +893,15 @@ export function curatedCatalogNotice(): string | null {
   // eBay's notice asks for FTC-style disclosure wherever its links appear, so
   // both eBay-bearing modes say plainly that eBay pays a commission too. The
   // Amazon sentence stays verbatim - its operating agreement requires it.
+  // The eBay sentences appear only once eBay listings are actually on the
+  // page - before that this is the curated catalogue and says so.
+  if (provider === 'starter' && !ebayIsLive()) {
+    return (
+      'Picks curated by us; photos are representative, not exact product shots, prices are a ' +
+      'guide to what the piece typically costs, and each one links to a matching search on Amazon ' +
+      'rather than a specific in-stock item. As an Amazon Associate we earn from qualifying purchases.'
+    );
+  }
   if (provider === 'starter') {
     return (
       'A mix of picks curated by us (representative photos, linking to matching Amazon ' +
@@ -925,7 +1018,9 @@ export function activeProviderName(): MarketplaceProvider {
  */
 export function offersLiveSecondhand(): boolean {
   const provider = effectiveProvider();
-  return provider === 'ebay' || provider === 'starter';
+  // Only while eBay listings are really arriving - the filter over a feed
+  // that is not answering would open an empty page.
+  return (provider === 'ebay' || provider === 'starter') && ebayIsLive();
 }
 
 /**

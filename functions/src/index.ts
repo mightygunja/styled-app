@@ -3215,9 +3215,9 @@ Return ONLY valid JSON: { "issue": "", "confidence": "", "seen": "" }`,
  *   EBAY_CLIENT_ID / EBAY_CLIENT_SECRET - an eBay developer keyset
  *   EBAY_CAMPAIGN_ID - the EPN campaign id
  *
- * With the campaign id sent in X-EBAY-C-ENDUSERCTX, the itemWebUrl eBay
- * returns is already affiliatized - the client uses it verbatim and never
- * re-wraps. Secondhand comes back honestly labelled, which is what makes
+ * With the campaign id sent in X-EBAY-C-ENDUSERCTX, eBay returns a tracked
+ * link (itemAffiliateWebUrl) for each listing - the client uses it verbatim
+ * and never re-wraps. Secondhand comes back honestly labelled, which is what makes
  * Shop's secondhand filter real instead of aspirational.
  */
 
@@ -3253,6 +3253,32 @@ async function getEbayToken(clientId: string, clientSecret: string): Promise<str
  */
 const EBAY_FASHION_CATEGORY = '11450';
 
+/** Plural shop words for a browse with no search typed: "women's tops". */
+const EBAY_CATEGORY_WORDS: Record<string, string> = {
+  tops: 'tops',
+  bottoms: 'pants',
+  dresses: 'dresses',
+  outerwear: 'jackets',
+  shoes: 'shoes',
+  accessories: 'accessories',
+  bags: 'bags',
+};
+
+/** Identical searches inside this window are answered from memory, not from eBay. */
+const EBAY_CACHE_MS = 20 * 60 * 1000;
+const ebaySearchCache = new Map<string, { at: number; value: any }>();
+
+/**
+ * Live eBay listings for ONE department.
+ *
+ * `department` ('women' | 'men') is required: the app never shows a listing
+ * to both departments, so there is no search without one - a request that
+ * omits it gets an empty answer, not the whole marketplace. The department
+ * word leads the query ("women's suede jacket"), fixed-price listings only,
+ * and every listing is returned with eBay's own category path
+ * (`categoryNames`) so the client can refuse anything eBay does not file
+ * under that department (src/services/ebayListing.ts does the refusing).
+ */
 export const searchEbayProducts = functions
   .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
   .https.onCall(async (data, context) => {
@@ -3267,29 +3293,22 @@ export const searchEbayProducts = functions
         );
       }
 
-      const {
-        query,
-        category,
-        condition,
-        minPrice,
-        maxPrice,
-        colors = [],
-        styleArchetypes = [],
-        page = 0,
-        pageSize = 24,
-      } = data || {};
+      const { query, category, condition, minPrice, maxPrice, page = 0, pageSize = 24 } = data || {};
+      const department = data?.department === 'women' || data?.department === 'men' ? data.department : null;
+      if (!department) return { products: [], hasMore: false, totalCount: 0 };
 
-      // A concrete keyword beats an empty search: fall back to the style
-      // brief so profile-led surfaces (Explore, starter looks) get relevant
-      // garments rather than the marketplace firehose.
-      const q =
-        String(query || '').trim() ||
-        [colors[0], styleArchetypes[0], category || 'clothing'].filter(Boolean).join(' ') ||
-        'clothing';
+      // The department leads every query. A typed search keeps its own words;
+      // a browse with nothing typed asks for the category, or clothing.
+      const departmentWord = department === 'men' ? "men's" : "women's";
+      const typed = String(query || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+      const subject = typed || EBAY_CATEGORY_WORDS[String(category || '')] || 'clothing';
+      const alreadySaid = department === 'men' ? /(?<!wo)\bmen'?s\b/i.test(subject) : /\bwomen'?s\b/i.test(subject);
+      const q = alreadySaid ? subject : `${departmentWord} ${subject}`;
 
-      const filters: string[] = [];
+      // One wearable piece at a stated price: no auctions.
+      const filters: string[] = ['buyingOptions:{FIXED_PRICE}'];
       if (condition === 'secondhand') filters.push('conditions:{USED}');
-      else if (condition === 'new') filters.push('conditions:{NEW}');
+      else filters.push('conditions:{NEW}');
       if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
         filters.push(
           `price:[${typeof minPrice === 'number' ? minPrice : ''}..${typeof maxPrice === 'number' ? maxPrice : ''}],priceCurrency:USD`
@@ -3303,15 +3322,20 @@ export const searchEbayProducts = functions
         category_ids: EBAY_FASHION_CATEGORY,
         limit: String(limit),
         offset: String(offset),
+        filter: filters.join(','),
       });
-      if (filters.length) params.set('filter', filters.join(','));
+
+      const cacheKey = params.toString();
+      const cached = ebaySearchCache.get(cacheKey);
+      if (cached && Date.now() - cached.at < EBAY_CACHE_MS) return cached.value;
 
       const token = await getEbayToken(clientId, clientSecret);
       const headers: Record<string, string> = {
         Authorization: `Bearer ${token}`,
         'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
       };
-      // This header is what affiliatizes every itemWebUrl in the response.
+      // With the campaign id in this header eBay adds itemAffiliateWebUrl -
+      // the listing's own page, carrying our tracking - to every result.
       if (campaignId) headers['X-EBAY-C-ENDUSERCTX'] = `affiliateCampaignId=${campaignId}`;
 
       const response = await fetch(
@@ -3328,29 +3352,34 @@ export const searchEbayProducts = functions
       const items = Array.isArray(result.itemSummaries) ? result.itemSummaries : [];
 
       const products = items
-        .filter((item: any) => item?.itemId && item?.title && item?.price?.value && item?.itemWebUrl)
+        .filter((item: any) => item?.itemId && item?.title && item?.price?.value && (item?.itemAffiliateWebUrl || item?.itemWebUrl))
         .map((item: any) => ({
           id: `ebay-${item.itemId}`,
           name: String(item.title),
           brand: String(item.brand || ''),
-          retailer: 'eBay',
-          category: category || 'tops',
           price: Number(item.price.value),
           currency: String(item.price.currency || 'USD'),
           imageUrl: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || '',
           color: item.color ? String(item.color).toLowerCase() : undefined,
-          sourceUrl: String(item.itemWebUrl),
-          inStock: true,
-          condition:
-            item.condition && !/new/i.test(String(item.condition)) ? 'secondhand' : 'new',
+          // The tracked link when eBay supplies one; the plain listing otherwise.
+          sourceUrl: String(item.itemAffiliateWebUrl || item.itemWebUrl),
+          condition: item.condition && !/new/i.test(String(item.condition)) ? 'secondhand' : 'new',
+          // eBay's own filing, every level - what the department check reads.
+          categoryNames: Array.isArray(item.categories)
+            ? item.categories.map((c: any) => String(c?.categoryName || '')).filter(Boolean)
+            : [],
         }))
         .filter((p: any) => p.imageUrl);
 
-      return {
+      const value = {
         products,
+        department,
         hasMore: typeof result.total === 'number' ? offset + limit < result.total : items.length === limit,
         totalCount: typeof result.total === 'number' ? result.total : null,
       };
+      if (ebaySearchCache.size > 300) ebaySearchCache.clear();
+      ebaySearchCache.set(cacheKey, { at: Date.now(), value });
+      return value;
     } catch (error: any) {
       if (error instanceof functions.https.HttpsError) throw error;
       console.error('Error searching eBay:', error);

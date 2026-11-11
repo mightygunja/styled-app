@@ -96,6 +96,14 @@ export interface ProductSearchFilters {
    */
   styleArchetypes?: string[];
   silhouettes?: string[];
+
+  /**
+   * Whose wardrobe is being shopped for. A LIVE feed (eBay) is searched per
+   * department and returns nothing at all without this - there is no
+   * "department unknown, show everything". The curated catalogue ignores it:
+   * its rows carry their own department and are filtered by the ranker.
+   */
+  wardrobeFocus?: 'womens' | 'mens' | 'all';
 }
 
 export interface ProductSearchResult {

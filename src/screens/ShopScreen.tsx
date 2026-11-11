@@ -145,6 +145,9 @@ export default function ShopScreen() {
           // palette hits, knows neutrals, and penalizes avoid-list colors.
           styleArchetypes: profile?.styleArchetypes,
           silhouettes: profile?.recommendedSilhouettes?.slice(0, 4),
+          // Live listings are searched per department; without this a live
+          // feed returns nothing (see ebayListing.ts).
+          wardrobeFocus: profile?.wardrobeFocus,
           sort,
           // Deep enough to cover the largest catalogue category (tops, 94):
           // a 60-item page silently cut the tail of every big category — the
@@ -196,7 +199,38 @@ export default function ShopScreen() {
                 (category === 'all' || p.category === category) &&
                 (!needle || `${p.name} ${p.subcategory || ''} ${p.color || ''}`.toLowerCase().includes(needle))
             );
-      const ranked = scoreAndRankProducts([...searchResult.products, ...seeded], profile, closetItems, {
+      // Shopping a trend: its own key pieces are searched live, in this
+      // account's department, so the page shows what can be bought today
+      // and not only what was curated in advance. Skipped while the shopper
+      // is typing their own search, and silent when no live feed answers.
+      const focused = route.params?.trendId ? trendsForUser.find(t => t.id === route.params?.trendId) : undefined;
+      const liveForTrend: typeof searchResult.products = [];
+      if (focused && !needle && !onSaleOnly && profile?.wardrobeFocus) {
+        const searches = trendAnchorSearches(focused, profile.wardrobeFocus, 3);
+        const results = await Promise.all(
+          searches.map(search =>
+            getActiveAdapter()
+              .search({
+                query: search.label,
+                category: category === 'all' ? undefined : category,
+                condition: secondhandOnly ? 'secondhand' : undefined,
+                wardrobeFocus: profile.wardrobeFocus,
+                pageSize: 24,
+              })
+              .then(r => r.products.filter(p => p.id.startsWith('ebay-')))
+              .catch(() => [])
+          )
+        );
+        if (seq !== requestSeq.current) return;
+        const have = new Set(searchResult.products.map(p => p.id));
+        results.flat().forEach(p => {
+          if (!have.has(p.id)) {
+            have.add(p.id);
+            liveForTrend.push(p);
+          }
+        });
+      }
+      const ranked = scoreAndRankProducts([...searchResult.products, ...seeded, ...liveForTrend], profile, closetItems, {
         signals,
         weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
         trends: trendsForUser,
@@ -221,7 +255,7 @@ export default function ShopScreen() {
       if (seq === requestSeq.current) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, category, secondhandOnly, onSaleOnly, sort]);
+  }, [debouncedQuery, category, secondhandOnly, onSaleOnly, sort, route.params?.trendId]);
 
   useEffect(() => {
     load();

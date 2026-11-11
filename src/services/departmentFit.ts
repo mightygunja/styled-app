@@ -134,6 +134,28 @@ function names(text: string, patterns: RegExp[]): boolean {
   return patterns.some(pattern => pattern.test(lower));
 }
 
+/**
+ * A seller's own words for a department. Narrower than the garment lists
+ * above: these are the plain labels people put in a listing title.
+ */
+const SAYS_WOMEN = /\b(?:wom[ae]n(?:'?s)?|ladies|lady(?:'s)?|female|maternity|misses)\b/;
+const SAYS_MEN = /(?<!wo)\bm[ae]n(?:'?s)?\b|\bmale\b|\bgentlem[ae]n(?:'?s)?\b|\bguys?\b/;
+
+/**
+ * Whether a listing title is consistent with the department it is being
+ * shown under. Used for live listings, where the words were written by a
+ * seller and nobody at 33 Trends has read them: a title that labels itself
+ * for the other department, or names one of its garments, does not fit -
+ * including a women's piece that calls itself "menswear-inspired". Refusing
+ * a few good listings is the price of never showing a wrong one.
+ */
+export function titleFitsDepartment(title: string, department: 'women' | 'men'): boolean {
+  const text = (title || '').toLowerCase().replace(/[’`]/g, "'");
+  const [saysOther, namesOther] =
+    department === 'men' ? [SAYS_WOMEN.test(text), namesWomenswear(text)] : [SAYS_MEN.test(text), namesMenswear(text)];
+  return !saysOther && !namesOther;
+}
+
 /** True when the text names a womenswear-only garment. */
 export function namesWomenswear(text: string): boolean {
   return names(text, WOMENSWEAR_ONLY);
