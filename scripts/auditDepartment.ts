@@ -184,9 +184,7 @@ check(trendFitsFocus(desk, 'mens') && trendFitsFocus(desk, 'womens'), 'a trend w
 const deskForMen = trendForFocus(desk, 'mens');
 check(deskForMen.entryPiece === 'balloon trousers in olive', `the way in keeps the half that fits ("${deskForMen.entryPiece}")`);
 check(deskForMen.summary === 'Balloon shapes from the waist down.' && deskForMen.stylingNote === 'Keep the top half narrow.', `sentences about the other department's pieces are dropped whole ("${deskForMen.summary}" / "${deskForMen.stylingNote}")`);
-// (The long, fluid layer left this list on 2026-11-11: menswear now has its own pieces for it -
-// djellabas and long robes - and its own wording.)
-['Boho, sharpened', 'Sheer layering'].forEach(name => {
+['Boho, sharpened', 'Sheer layering', 'The long, fluid layer'].forEach(name => {
   const trend = SEED_TRENDS.find(t => t.name === name)!;
   check(!trendFitsFocus(trend, 'mens') && trendFitsFocus(trend, 'womens'), `"${name}" is womenswear: shown to womens, not to mens`);
 });
@@ -244,6 +242,25 @@ const walk = (dir: string) => {
 };
 walk(path.join(__dirname, '../src'));
 check(handRolled.length === 0, `department is compared by hand in: ${handRolled.join(', ')}`);
+
+// ---- Shared pieces: product-only photographs, each one looked at ----
+// A piece is shown to BOTH departments only when its photograph shows the
+// product and nothing else - no person, hand, leg or foot (the rule is on
+// UNISEX_IDS in mockProductCatalog.ts). A script cannot see a photo, so the
+// reviewed set is written down here: a new shared id fails this check until
+// someone has looked at its photo and added it. Reviewed 2026-11-11 on
+// contact sheets of the whole catalogue (596 photos, by department).
+console.log('# Shared pieces');
+const REVIEWED_PRODUCT_ONLY = new Set([
+  't002', 't041', 't053', 't060', 'b035', 'o003', 'o034', 's002', 's004', 's011', 's017', 's018', 's025', 'a013',
+  'a015', 'a016', 'a020', 'a025', 'a033', 'a034', 'a042', 'a051', 'a055', 's051', 'a057', 'a061', 'a064', 'a067',
+  'a070', 's053', 's054', 's055', 't110', 'a112', 'a113', 'a115', 's118', 's120', 'b116', 'a122', 's128', 'a141',
+  'a148', 'a152', 'a161', 'a168', 's136', 's137', 's138',
+]);
+const sharedIds = MOCK_CATALOG.filter(p => p.department === 'unisex').map(p => p.id.replace('p-', ''));
+const unreviewed = sharedIds.filter(id => !REVIEWED_PRODUCT_ONLY.has(id));
+check(unreviewed.length === 0, `shared pieces whose photo has not been reviewed as product-only: ${unreviewed.join(', ')}`);
+check(sharedIds.length <= REVIEWED_PRODUCT_ONLY.size, 'no more shared pieces than reviewed ones');
 
 console.log(`\n${checks} checks.`);
 if (failures) {

@@ -230,7 +230,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   mt025: '1727835523545-70ee992b5763',
   mt027: '1627686011747-74adda3d2343',
   o001: '1539533018447-63fcce2678e3',
-  o002: '1495105787522-5334e3ffa0ef',
   o003: '1611308725032-74f0a551d018',
   o004: '1551028719-00167b16eac5',
   o005: '1548883354-d056ab7b441f',
@@ -387,7 +386,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   s054: '1606107557195-0e29a4b5b4aa',
   s055: '1747691875590-14db938e42d4',
   mo030: '1643622782660-30dedcd8d75a',
-  mo031: '1614079290101-0c2181ac8ea3',
   mt063: '1793055840883-65ac35599c2e',
   mt064: '1740442535162-fc915d5403f2',
   mt065: '1654182598948-17ef2fe3563f',
@@ -404,7 +402,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   mb103: '1741915313755-208c59c21165',
   mb104: '1540704751673-44f9dfd188c0',
   mb105: '1724452143135-62a94ab35472',
-  mb106: '1687276154823-66f9cba2e484',
   mb107: '1670855822901-5786604e9c40',
   b101: '1767631338127-8cd80ee2f9df',
   b102: '1673180608353-63292b332e84',
@@ -449,7 +446,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   a108: '1598532163257-ae3c6b2524b6',
   a109: '1763056531605-4e75d78e5016',
   a110: '1664151101806-b5ce45e37fb1',
-  a111: '1771237873540-4e4f4d5b0def',
   s105: '1605445175147-8d2340ea9065',
   s106: '1689193504554-358af52b681a',
   o102: '1771580425745-3badc9e07af6',
@@ -476,7 +472,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   ms105: '1779040619806-b6261ed20890',
   t112: '1625910513390-a9661b6930ae',
   t113: '1599670998806-8bb8f159a25f',
-  t114: '1660587607804-9890f432f089',
   s111: '1761659760447-8d7eb5cd309a',
   mt108: '1610901157620-340856d0a50f',
   t115: '1580331451062-99ff652288d7',
@@ -612,9 +607,6 @@ const VERIFIED_PHOTOS: Record<string, string> = {
   d112: '1622080159549-11537bf939e6',
   d113: '1629200468267-b926a7675ce2',
   d114: '1753192108400-7e73fb581d69',
-  mo125: '1762782777495-9d297f3d9d3d',
-  mo126: '1780601247169-687a1c24b84d',
-  mo127: '1648329008114-bce0ec0b5950',
   t129: '1790435236428-a8159a4c784d',
   t130: '1790440933408-621d243c8553',
   s134: '1777980722937-f3f87cd0e226',
@@ -689,6 +681,15 @@ const MENS_SIZE_RANGES: Partial<Record<ItemCategory, string[]>> = {
  * heritage workwear, sneakers, caps. They pass every wardrobe focus, so a
  * menswear profile still sees the Carhartt chore coat and the Salomons.
  */
+/**
+ * THE RULE FOR A SHARED PIECE (2026-11-11): the photograph shows the product
+ * and nothing else - no person, no hand, no leg, no foot. A piece that is
+ * worn or held in its photo belongs to ONE department, the one the person
+ * reads as, however neutral the garment. Twenty pieces were moved out of
+ * this set on that date for showing a body. scripts/auditDepartment.ts
+ * holds the reviewed list: adding an id here fails the audit until the
+ * photo has been looked at and the id added there too.
+ */
 const UNISEX_IDS = new Set([
   // 2026-11-10 department sweep (every photo viewed against whose screen it
   // appears on). A cross-department photo shows the piece alone, or a person
@@ -697,12 +698,12 @@ const UNISEX_IDS = new Set([
   // boots) is womenswear; a032, b041 and o005 (a man's hand and build in
   // frame) are menswear - see MENS_IDS.
   'a013', 'a015', 'a016', 'a020', 'a025', 'a033', 'a034', 'a042', 'a057', 'a061', 'a064', 'a067', 'a051', 'a055',
-  'b029', 'b030', 'b035',
-  'o003', 'o025', 'o034', 'o035',
-  's002', 's004', 's009', 's011', 's017', 's018', 's025', 's051',
-  't002', 't004', 't041', 't053', 't060',
+  'b035',
+  'o003', 'o034',
+  's002', 's004', 's011', 's017', 's018', 's025', 's051',
+  't002', 't041', 't053', 't060',
   'a070', 's053', 's054', 's055',
-  's101', 's104', 's105', 's111', 'a102', 't110', 'a112', 'a113', 'a114', 'a115', 's112', 's118', 's119', 's120', 'b116', 'a122', 'a123', 'a124', 'a130', 's128', 'a141', 'a148', 'a150', 'a152', 'a161', 't135', 'a165', 'a168', 's136', 's137', 's138',
+  't110', 'a112', 'a113', 'a115', 's118', 's120', 'b116', 'a122', 's128', 'a141', 'a148', 'a152', 'a161', 'a168', 's136', 's137', 's138',
 ]);
 
 /**
@@ -848,7 +849,6 @@ const ROWS: Row[] = [
 
   // ---- OUTERWEAR ----
   ['o001', 'Wool Wrap Coat', 'Massimo Dutti', 'Massimo Dutti', 'outerwear', 'wool overcoat', 'camel', 289, 0, 'classic formal winter'],
-  ['o002', 'Denim Trucker Jacket', "Levi's", "Levi's", 'outerwear', 'denim trucker jacket', 'light denim', 79, 0, 'casual denim everyday'],
   ['o003', 'Packable Rain Anorak', 'Patagonia', 'REI', 'outerwear', 'rain jacket', 'black', 149, 0, 'outdoor utility travel'],
   ['o004', 'Leather Moto Jacket', 'AllSaints', 'AllSaints', 'outerwear', 'leather moto jacket', 'black', 398, 0, 'streetwear edgy leather'],
   ['o005', 'Waxed Field Jacket', 'Barbour', 'Barbour', 'outerwear', 'waxed field jacket', 'olive', 425, 0, 'barn heritage waxed'],
@@ -1130,7 +1130,6 @@ const ROWS: Row[] = [
   ['s054', 'Training Shoes', 'Nike', 'Nike', 'shoes', 'training shoes', 'volt green', 120, 0, 'performance gym athletic'],
   ['s055', 'Air Cushion Sneakers', 'Nike', 'Nike', 'shoes', 'retro sneakers', 'white green', 150, 0, 'sporty retro streetwear'],
   ['mo030', 'Track Jacket', 'Fila', 'Fila', 'outerwear', 'track jacket', 'red', 80, 0, 'sporty retro athleisure'],
-  ['mo031', 'Down Puffer Jacket', 'Patagonia', 'Patagonia', 'outerwear', 'puffer jacket', 'olive', 279, 0, 'outdoor warm winter'],
   ['mt063', 'Half-Zip Sweatshirt', 'COS', 'COS', 'tops', 'half-zip sweatshirt', 'white', 99, 0, 'minimal clean modern'],
   ['mt064', 'Knit Quarter-Zip Sweater', 'Reiss', 'Reiss', 'tops', 'quarter-zip sweater', 'taupe', 158, 0, 'smart-casual classic knit'],
   ['mt065', 'Relaxed Viscose Shirt', 'COS', 'COS', 'tops', 'viscose shirt', 'black', 89, 0, 'minimal sleek relaxed'],
@@ -1149,7 +1148,6 @@ const ROWS: Row[] = [
   ['mb103', 'Pleated Straight Trousers', 'Todd Snyder', 'Todd Snyder', 'bottoms', 'pleated trousers', 'navy', 198, 0, 'classic heritage relaxed'],
   ['mb104', 'Pleated Tapered Trousers', 'Arket', 'Arket', 'bottoms', 'pleated trousers', 'olive', 119, 0, 'tailored minimal relaxed'],
   ['mb105', 'Wide-Leg Tailored Trousers', 'COS', 'COS', 'bottoms', 'wide-leg trousers', 'black', 150, 0, 'tailored minimal polished'],
-  ['mb106', 'Wide-Leg Cropped Trousers', 'Uniqlo', 'Uniqlo', 'bottoms', 'wide-leg trousers', 'black', 59.9, 0, 'minimal relaxed modern'],
   ['mb107', 'Wide-Leg Suit Trousers', 'Mango', 'Mango', 'bottoms', 'wide-leg trousers', 'slate grey', 99.9, 0, 'tailored polished fluid'],
   ['b101', 'High-Waist Pleated Trousers', 'Mango', 'Mango', 'bottoms', 'pleated trousers wide-leg', 'black', 79.9, 0, 'tailored polished minimal'],
   ['b102', 'Pleated Tapered Trousers', 'Massimo Dutti', 'Massimo Dutti', 'bottoms', 'pleated trousers', 'cream', 119, 0, 'tailored polished classic'],
@@ -1194,7 +1192,6 @@ const ROWS: Row[] = [
   ['a108', 'Woven Leather Tote', 'Mango', 'Mango', 'accessories', 'woven leather tote woven bag', 'cognac', 159, 0, 'artisan polished everyday'],
   ['a109', 'Patterned Woven Basket Bag', 'Sezane', 'Sezane', 'accessories', 'basket bag woven bag', 'natural white', 110, 0, 'bohemian resort artisan'],
   ['a110', 'Wax Print Ring-Handle Tote', 'Etsy', 'Etsy', 'accessories', 'wax print tote', 'multi print', 64, 0, 'bold print artisan statement'],
-  ['a111', 'Round Raffia Crossbody', 'Anthropologie', 'Anthropologie', 'accessories', 'raffia bag woven bag', 'natural pink', 78, 0, 'bohemian artisan resort'],
   ['s105', 'Two-Strap Leather Sandals', 'Arket', 'Arket', 'shoes', 'leather sandal', 'brown', 99, 0, 'relaxed everyday summer'],
   ['s106', 'Strappy Leather Sandals', 'Mango', 'Mango', 'shoes', 'leather sandal', 'black', 69.9, 0, 'minimal summer delicate'],
   ['o102', 'Fringe Leather Jacket', 'AllSaints', 'AllSaints', 'outerwear', 'fringe jacket', 'black', 599, 0, 'edgy western statement'],
@@ -1221,7 +1218,6 @@ const ROWS: Row[] = [
   ['ms105', 'Horsebit Leather Loafers', 'Massimo Dutti', 'Massimo Dutti', 'shoes', 'horsebit loafer', 'black', 179, 0, 'polished smart urban'],
   ['t112', 'Pique Polo Shirt', 'Kotn', 'Kotn', 'tops', 'polo', 'black', 68, 0, 'preppy classic sporty'],
   ['t113', 'Cotton Polo Shirt', 'J.Crew', 'J.Crew', 'tops', 'polo', 'red', 59.5, 0, 'preppy sporty casual'],
-  ['t114', 'Classic Polo Shirt', 'Banana Republic', 'Banana Republic', 'tops', 'polo', 'white', 60, 0, 'preppy classic crisp'],
   ['s111', 'Brushed Suede Penny Loafers', 'Arket', 'Arket', 'shoes', 'suede loafer penny loafer', 'dark brown', 179, 0, 'preppy classic heritage'],
   ['mt108', 'Cable Knit Crewneck Sweater', 'L.L.Bean', 'L.L.Bean', 'tops', 'cable knit sweater', 'forest green', 119, 0, 'heritage classic cozy'],
   ['t115', 'Oversized Cable Knit Sweater', 'Sezane', 'Sezane', 'tops', 'cable knit sweater', 'green', 150, 0, 'cozy classic relaxed'],
@@ -1284,7 +1280,7 @@ const ROWS: Row[] = [
   ['a123', 'Leather Duffle Bag', 'Cuyana', 'Cuyana', 'accessories', 'duffle bag weekender', 'espresso', 398, 0, 'classic heritage travel'],
   ['ma106', 'Leather Weekender', 'Todd Snyder', 'Todd Snyder', 'accessories', 'weekender duffle', 'tan', 448, 0, 'classic heritage travel'],
   ['ma107', 'Leather Barrel Duffle', 'Suitsupply', 'Suitsupply', 'accessories', 'duffle bag', 'cognac', 399, 0, 'classic rugged travel'],
-  ['a124', 'Structured Leather Tote', 'Arket', 'Arket', 'accessories', 'structured bag tote', 'black', 229, 0, 'minimal polished modern'],
+  ['a124', 'Tall Structured Leather Tote', 'Arket', 'Arket', 'accessories', 'structured bag tote', 'black', 229, 0, 'minimal polished modern'],
   ['a126', 'Croc-Embossed Shoulder Bag', 'Mango', 'Mango', 'accessories', 'shoulder bag', 'brown', 79.9, 0, 'classic polished retro'],
   ['a127', 'Slouchy Knot Shoulder Bag', 'Cuyana', 'Cuyana', 'accessories', 'slouchy shoulder bag', 'mint', 198, 0, 'minimal soft modern'],
   ['a128', 'Structured Flap Bag', 'Polène', 'Polène', 'accessories', 'structured bag', 'sage', 390, 0, 'minimal polished elegant'],
@@ -1357,9 +1353,6 @@ const ROWS: Row[] = [
   ['d112', 'Long-Sleeve Column Maxi Dress', 'Zara', 'Zara', 'dresses', 'long-sleeve maxi dress', 'orange red', 129, 0, 'elegant statement evening'],
   ['d113', 'Embroidered Kaftan', 'Etsy', 'Etsy', 'dresses', 'embroidered kaftan', 'ivory gold', 180, 0, 'artisan elegant flowing'],
   ['d114', 'Block Print Kaftan', 'Anthropologie', 'Anthropologie', 'dresses', 'block print kaftan', 'blue white', 128, 0, 'artisan resort bohemian'],
-  ['mo125', 'Striped Djellaba', 'Etsy', 'Etsy', 'outerwear', 'djellaba longline robe', 'rust stripe', 95, 0, 'artisan flowing heritage'],
-  ['mo126', 'Embroidered Djellaba', 'Etsy', 'Etsy', 'outerwear', 'embroidered djellaba longline robe', 'white', 110, 0, 'artisan flowing heritage'],
-  ['mo127', 'Embroidered Agbada', 'Etsy', 'Etsy', 'outerwear', 'embroidered agbada longline robe', 'green', 160, 0, 'artisan statement heritage'],
   ['t129', 'Floral Embroidered Blouse', 'Etnodim', 'Etnodim', 'tops', 'embroidered blouse folk blouse', 'white multi', 150, 0, 'folk artisan statement'],
   ['t130', 'Embroidered Linen Blouse', 'Etnodim', 'Etnodim', 'tops', 'embroidered blouse', 'ecru floral', 135, 0, 'folk artisan romantic'],
   ['s134', 'Embroidered Juttis', 'Fabindia', 'Fabindia', 'shoes', 'jutti embroidered', 'orange', 45, 0, 'artisan festive statement'],
@@ -1490,7 +1483,11 @@ const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
  * Rows without the 'm' prefix whose verified photo is a man wearing the
  * piece - a card must never show a male model in a womenswear rack.
  */
-const MENS_IDS = new Set(['b026', 'b042', 'a032', 'b041', 'o005', 't011']);
+const MENS_IDS = new Set([
+  'b026', 'b042', 'a032', 'b041', 'o005', 't011',
+  // 2026-11-11: were shared; the photo shows a person who reads as a man (or his hand, leg or coat).
+  't004', 'o025', 'b030', 's009', 's104', 's111', 's119', 'a130', 'a165',
+]);
 
 /** Department by id convention: 'm'-prefixed rows (and MENS_IDS) are menswear, UNISEX_IDS pass every focus, everything else is womenswear. */
 function departmentOf(id: string): 'women' | 'men' | 'unisex' {

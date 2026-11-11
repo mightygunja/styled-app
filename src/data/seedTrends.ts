@@ -253,9 +253,18 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-big-soft-bag',
+    // Worded for a menswear reader, in menswear's own bags - a menswear
+    // account is never told about shoulder bags.
+    mens: {
+      summary:
+        'The small bag is over. Big, soft bags in leather and suede - the messenger, the weekender, the tote carried in the hand - are the bag of the moment in Milan, Paris and New York.',
+      stylingNote:
+        'The bag is the volume, so the outfit stays lean: a soft leather messenger or tote over a fitted knit and straight trousers, in place of the backpack. Chocolate or tan over black reads newer.',
+      entryPiece: 'a soft leather messenger or tote in chocolate or tan',
+    },
     name: 'The big, soft bag',
     summary:
-      'The mini bag is over. Slouchy east-west shoulder bags and oversized totes in leather and suede - carried under the arm, not on the crook - are the bag of the moment in Milan, Paris and New York.',
+      'The small bag is over. Big, soft bags in leather and suede - carried under the arm, not on the crook - are the bag of the moment in Milan, Paris and New York. In womenswear that is the slouchy east-west shoulder bag and the oversized tote.',
     region: 'Milan',
     regions: ['Paris', 'New York', 'London', 'Dubai'],
     reach: 'global',
@@ -268,7 +277,7 @@ export const SEED_TRENDS: FashionTrend[] = [
     silhouettes: [],
     archetypes: ['polished', 'minimal', 'classic'],
     stylingNote:
-      'The bag is the volume, so the outfit stays lean: a slouchy shoulder bag over a fitted knit and straight trousers. Chocolate or tan over black reads newer. In menswear the same shift is the soft leather messenger or tote over the backpack.',
+      'The bag is the volume, so the outfit stays lean: a slouchy shoulder bag over a fitted knit and straight trousers. Chocolate or tan over black reads newer.',
     entryPiece: 'a soft leather or suede shoulder bag in chocolate or tan',
     pieces: ['a060', 'a001', 'a005', 'a033', 'a008'],
   }),
@@ -360,15 +369,6 @@ export const SEED_TRENDS: FashionTrend[] = [
   }),
   seed({
     id: 'seed-long-fluid-layer',
-    // Worded for a menswear reader - the default text reads through womenswear.
-    // Menswear carries this trend in its own pieces: the djellaba and the long robe.
-    mens: {
-      summary:
-        'The long line, cut sharp: djellabas, long robes and unlined dusters worn over trousers are the everyday silhouette in Dubai, Istanbul and Marrakesh - and London and Paris have adopted it for the drama.',
-      stylingNote:
-        'The length is the point, so nothing else should be long: a djellaba or a long overshirt over slim or wide trousers, in one colour from collar to hem. A loafer or a leather slipper and one structured bag keep it sharp.',
-      entryPiece: 'a plain or striped djellaba, or a long overshirt worn open over wide trousers',
-    },
     name: 'The long, fluid layer',
     summary:
       'Kaftan cuts, maxi shirt dresses and open dusters worn over trousers: the long line of modest dressing, cut sharp, is now how Dubai, Istanbul and Marrakesh dress - and London and Paris have adopted the silhouette for the drama of it.',
@@ -378,13 +378,13 @@ export const SEED_TRENDS: FashionTrend[] = [
     stage: 'rising',
     season: 'fall',
     year: 2026,
-    keyGarments: ['kaftan', 'maxi shirt dress', 'duster', 'maxi dress', 'long-sleeve maxi', 'abaya', 'tunic', 'longline', 'maxi skirt', 'djellaba', 'longline robe'],
+    keyGarments: ['kaftan', 'maxi shirt dress', 'duster', 'maxi dress', 'long-sleeve maxi', 'abaya', 'tunic', 'longline', 'maxi skirt'],
     keyAccessories: ['mule', 'loafer', 'structured bag', 'top-handle bag', 'headscarf', 'gold chain', 'gold jewellery'],
     keyColors: ['black', 'ecru', 'sand', 'chocolate', 'olive'],
     silhouettes: ['longline', 'flowing', 'oversized', 'wide-leg'],
     archetypes: ['polished', 'romantic', 'minimal'],
     stylingNote:
-      'The length is the point, so nothing else should be long: a floor-length duster over slim or wide trousers and a fitted top, a kaftan dress belted or left to move, a maxi shirt dress open over a co-ord. A mule or loafer and one structured bag keep it sharp. The menswear version is the long overshirt or unlined duster over wide trousers.',
+      'The length is the point, so nothing else should be long: a floor-length duster over slim or wide trousers and a fitted top, a kaftan dress belted or left to move, a maxi shirt dress open over a co-ord. A mule or loafer and one structured bag keep it sharp.',
     entryPiece: 'a long-sleeve maxi shirt dress in black or ecru',
     pieces: ['d033', 's024', 'a066', 'o044', 'd032', 'a068', 'a040', 'd001'],
   }),

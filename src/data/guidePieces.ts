@@ -101,7 +101,7 @@ export const GUIDE_PIECES: Record<string, GuidePieceSet> = {
     title: 'What local dressing looks like as pieces',
     note: 'An embroidered kurta, a kaftan, a Scandinavian raincoat: the same weather answered three ways, which is the point of the guide.',
     women: ['t080', 'd032', 's051', 'o035', 'a011'],
-    men: ['mt025', 'mb010', 's051', 'o035', 'a064'],
+    men: ['mt025', 'mb010', 's051', 'o025', 'a064'],
   },
   GuideFabric: {
     title: 'One piece per fabric the guide covers',
