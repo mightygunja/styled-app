@@ -162,6 +162,12 @@ export default function HomeScreen() {
   // mixed. Rather than guessing, Home asks once - one tap, saved to the
   // profile, and every surface filters to their department from then on.
   const [needsWardrobeFocus, setNeedsWardrobeFocus] = useState(false);
+  // The department this account is SAVED as, shown in plain words under the
+  // greeting with a one-tap "Change". It decides every piece on every
+  // screen, and it used to be invisible: an account saved as Womenswear (or
+  // Both) showed women's pieces with nothing on screen saying why, and the
+  // only way to change it was the eight-step profile editor.
+  const [savedFocus, setSavedFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
   const [savingFocus, setSavingFocus] = useState(false);
   const [savingLook, setSavingLook] = useState(false);
   const [starterMode, setStarterMode] = useState(false);
@@ -203,6 +209,7 @@ export default function HomeScreen() {
     try {
       if (!focus) return;
       await saveWardrobeFocus(getCurrentUserId(), focus);
+      setSavedFocus(focus);
       setNeedsWardrobeFocus(false);
       await loadDressMeToday(occasion);
     } catch (error) {
@@ -308,6 +315,8 @@ export default function HomeScreen() {
           });
           setShowProfilePrompt(prompts.survey);
           setNeedsWardrobeFocus(prompts.department);
+          // Shown only when the profile was really read - never a guess.
+          setSavedFocus(profileKnowledge(matchContext) === 'has' ? matchContext?.wardrobeFocus : undefined);
         });
 
       // Avoid rules are a strong preference for owned clothes, not a veto:
@@ -965,6 +974,22 @@ export default function HomeScreen() {
             </Text>
             {/* Only a real reading earns a weather line - no invented 72°. */}
             {weather && <Text style={styles.heroSubtitle}>{weatherLine(weather)}</Text>}
+            {savedFocus && !needsWardrobeFocus && (
+              <View style={styles.departmentRow}>
+                <Text style={styles.departmentLabel}>
+                  SHOWING{' '}
+                  {savedFocus === 'womens' ? 'WOMENSWEAR' : savedFocus === 'mens' ? 'MENSWEAR' : 'WOMENSWEAR AND MENSWEAR'}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setNeedsWardrobeFocus(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change whose wardrobe is shown"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.departmentChange}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* One-tap department question for accounts whose profile predates
@@ -975,7 +1000,8 @@ export default function HomeScreen() {
               <Text style={styles.focusPromptEyebrow}>ONE QUICK QUESTION</Text>
               <Text style={styles.focusPromptTitle}>Whose wardrobe are we dressing?</Text>
               <Text style={styles.focusPromptLine}>
-                Answer once and every look, trend and shopping pick stays in your department.
+                Every look, trend and shopping pick stays in the department you choose. "Both" shows
+                womenswear and menswear together.
               </Text>
               <View style={styles.focusPromptActions}>
                 {(
@@ -1247,6 +1273,14 @@ const styles = StyleSheet.create({
   profilePromptButtonText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   profilePromptDismiss: { paddingVertical: 12 },
   profilePromptDismissText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.inkMuted },
+  departmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  departmentLabel: { ...textType.eyebrow, fontSize: 10, color: colors.camel },
+  departmentChange: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 12,
+    color: colors.rust,
+    textDecorationLine: 'underline',
+  },
   focusPrompt: {
     marginHorizontal: 20,
     marginBottom: 24,
