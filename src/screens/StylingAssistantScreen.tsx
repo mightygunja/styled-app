@@ -22,6 +22,7 @@ import { closetAPI, getCurrentUserId } from '../services/api';
 import { outfitsService, styleProfileService } from '../services/firestore';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
+import { profileInviteDue, ProfileKnowledge } from '../services/profilePrompts';
 import { Item } from '../types';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -54,6 +55,13 @@ export default function StylingAssistantScreen() {
   const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [styleProfile, setStyleProfile] = useState<PersonalStyleProfile | null>(null);
+  // 'unknown' until the profile has actually been read, and again if the
+  // read fails. The "build your style profile" invitation used to show in
+  // both of those states - so every member saw it flash on opening the tab,
+  // and it stayed for anyone whose read failed.
+  const [profileState, setProfileState] = useState<ProfileKnowledge>('unknown');
+  // Undefined until the closet has been read.
+  const [closetCount, setClosetCount] = useState<number | undefined>(undefined);
   const [outfitPickerOpen, setOutfitPickerOpen] = useState(false);
   const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -64,14 +72,26 @@ export default function StylingAssistantScreen() {
     loadData();
     // Weather and style profile load independently and don't block the chat becoming usable
     getCurrentWeather().then(setWeather);
-    styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => setStyleProfile(null));
+    styleProfileService
+      .getStyleProfile(getCurrentUserId())
+      .then(profile => {
+        setStyleProfile(profile);
+        setProfileState(profile ? 'has' : 'none');
+      })
+      .catch(() => setStyleProfile(null));
   }, []);
 
   // The chat tab stays mounted. A profile saved elsewhere is re-read on the
   // next focus so the stylist is briefed with the current archetypes, not
   // the ones from when the tab first opened. A failed re-read keeps the old one.
   useProfileRevisionReload(() => {
-    styleProfileService.getStyleProfile(getCurrentUserId()).then(setStyleProfile).catch(() => undefined);
+    styleProfileService
+      .getStyleProfile(getCurrentUserId())
+      .then(profile => {
+        setStyleProfile(profile);
+        setProfileState(profile ? 'has' : 'none');
+      })
+      .catch(() => undefined);
   });
 
   const loadData = async () => {
@@ -102,6 +122,7 @@ export default function StylingAssistantScreen() {
         style: item.style,
       }));
       setClosetItems(items);
+      setClosetCount(items.length);
       setQuickSuggestions(suggestions);
 
       if (history.length > 0) {
@@ -357,7 +378,10 @@ export default function StylingAssistantScreen() {
               {weather ? ' + live weather + time of day' : ' + time of day'}
             </Text>
           </View>
-        ) : (
+        ) : profileInviteDue(profileState, closetCount) ? (
+          // Only a confirmed-new account: no profile on the server and no
+          // clothes in the closet. Never while loading, never after a failed
+          // read, never a member who has already built a closet.
           <TouchableOpacity
             style={styles.contextStripPrompt}
             onPress={() => navigation.navigate('StyleProfileBuilder')}
@@ -366,7 +390,7 @@ export default function StylingAssistantScreen() {
               Build your style profile for sharper picks →
             </Text>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         {/* Get My Outfit */}
         <View style={styles.outfitCard}>

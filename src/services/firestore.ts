@@ -3,6 +3,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocFromServer,
+  getDocsFromServer,
   addDoc,
   setDoc,
   updateDoc,
@@ -17,7 +19,8 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { createSessionCache } from './sessionCache';
+import { createSessionCache, uncached } from './sessionCache';
+import { readConfirmed, UnconfirmedReadError } from './confirmedRead';
 import { ClosetItem, Look, TrendPalette, Stylist, StylingSession, StylistReview, SessionType } from '../types';
 import { PersonalStyleProfile } from '../models/personalStyleProfile';
 import { Product } from '../models/product';
@@ -90,7 +93,11 @@ export const closetService = {
         where('userId', '==', userId),
         orderBy('createdAt', 'desc')
       );
-      const snapshot = await getDocs(q);
+      // An answer from the local copy is an EMPTY closet for anyone who has
+      // not loaded theirs this session (see confirmedRead.ts). That is a
+      // failed read, not a member with no clothes.
+      const { snapshot, confirmed } = await readConfirmed(() => getDocs(q), () => getDocsFromServer(q));
+      if (!confirmed || !snapshot) throw new UnconfirmedReadError('the closet');
       return snapshot.docs.map(doc => ({ id: doc.id, ...closetDates(doc.data()) } as ClosetItem));
     });
   },
@@ -103,7 +110,10 @@ export const closetService = {
       if (found) return found;
     }
     const docRef = doc(db, 'closetItems', itemId);
-    const docSnap = await getDoc(docRef);
+    const { snapshot: docSnap, confirmed } = await readConfirmed(() => getDoc(docRef), () => getDocFromServer(docRef));
+    // Unconfirmed, the local copy holds at most the fields of a pending
+    // write - not the piece.
+    if (!confirmed || !docSnap) throw new UnconfirmedReadError('the piece');
     if (!docSnap.exists()) throw new Error('Item not found');
     return { id: docSnap.id, ...closetDates(docSnap.data()) } as ClosetItem;
   },
@@ -356,6 +366,9 @@ export const shopMyClosetService = {
  * reused for a few minutes, and saving the profile drops it. A failed read
  * is never cached (it rejects, as before), so callers that fall back on
  * failure behave exactly as they did.
+ *
+ * `null` means the SERVER said this account has no profile. An answer that
+ * could not be confirmed is a failed read (see confirmedRead.ts).
  */
 const PROFILE_TTL_MS = 5 * 60 * 1000;
 const profileCache = createSessionCache<PersonalStyleProfile | null>({
@@ -383,10 +396,20 @@ export const styleProfileService = {
   // `styleDNA` field as a fallback so profiles saved before the rename still load.
   getStyleProfile: async (userId: string): Promise<PersonalStyleProfile | null> =>
     profileCache.get(userId, async () => {
-      const docSnap = await getDoc(doc(db, 'users', userId));
-      if (!docSnap.exists()) return null;
-      const data = docSnap.data();
-      return (data.styleProfile as PersonalStyleProfile) || (data.styleDNA as PersonalStyleProfile) || null;
+      const docRef = doc(db, 'users', userId);
+      const { snapshot, confirmed } = await readConfirmed(() => getDoc(docRef), () => getDocFromServer(docRef));
+      const data = snapshot?.exists() ? snapshot.data() : undefined;
+      const profile =
+        (data?.styleProfile as PersonalStyleProfile) || (data?.styleDNA as PersonalStyleProfile) || null;
+      if (confirmed) return profile;
+      // Not confirmed by the server. A profile that IS in the local copy is
+      // real (this session read or wrote it) - use it, but do not keep it.
+      if (profile) return uncached(profile);
+      // No profile in an unconfirmed answer means nothing: the local copy of
+      // the user document is routinely just the fields of a pending write.
+      // Reporting "no profile" here re-offered the survey to members who had
+      // taken it, and let a save replace their real profile with a blank one.
+      throw new UnconfirmedReadError('the style profile');
     }),
 
   // Save/overwrite a user's Style Profile

@@ -6,7 +6,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styleProfileService } from './firestore';
-import { BODY_TYPE_GUIDES } from '../models/personalStyleProfile';
+import { BODY_TYPE_GUIDES, PersonalStyleProfile } from '../models/personalStyleProfile';
 
 export interface ProfileMatchContext {
   recommendedColors?: string[];
@@ -27,9 +27,13 @@ export interface ProfileMatchContext {
   /** Whose wardrobe: womenswear, menswear, or both. Absent reads as 'all'. */
   wardrobeFocus?: 'womens' | 'mens' | 'all';
   /**
-   * True when the profile could NOT be read and this context carries only the
-   * last department we successfully loaded for this user. Every taste field
-   * is absent; `wardrobeFocus` is the remembered one.
+   * True when the profile could NOT be read. Every taste field is absent and
+   * `wardrobeFocus` is the last department successfully loaded for this user
+   * (absent when there is none remembered).
+   *
+   * A failed read ALWAYS comes back as a context carrying this flag, never
+   * as `undefined`: `undefined` means the server confirmed the account has
+   * no profile, and only that may prompt anyone (see profilePrompts.ts).
    */
   profileReadFailed?: boolean;
 }
@@ -88,9 +92,39 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
   } catch (error) {
     console.error('Error loading style profile context:', error);
     // Read ERROR (not "no profile"): fall back to the last department we know
-    // for this user so the gate stays closed. With nothing remembered there is
-    // nothing safe to assert, so the old `undefined` stands.
+    // for this user so the gate stays closed. With nothing remembered the
+    // context carries no department - but it still says the read FAILED, so
+    // no screen mistakes this for an account that has never been asked.
     const remembered = await recallWardrobeFocus(userId);
-    return remembered ? { wardrobeFocus: remembered, profileReadFailed: true } : undefined;
+    return remembered ? { wardrobeFocus: remembered, profileReadFailed: true } : { profileReadFailed: true };
   }
+}
+
+/**
+ * Saves the one-tap department answer.
+ *
+ * Read-modify-write: the answer is laid over the saved profile, so nothing
+ * else in it changes. An account with no profile gets a minimal one carrying
+ * only the answer - empty taste fields read as "no signal" to every engine,
+ * so nothing about the member is invented.
+ *
+ * Throws when the profile cannot be read (getStyleProfile rejects on an
+ * unconfirmed read), which is what stops a blank profile being written over
+ * a real one that simply did not load.
+ */
+export async function saveWardrobeFocus(userId: string, focus: Focus): Promise<void> {
+  const profile = await styleProfileService.getStyleProfile(userId);
+  const next: PersonalStyleProfile = profile
+    ? { ...profile, wardrobeFocus: focus }
+    : {
+        lifestyleWeights: { work: 0.25, casual: 0.35, social: 0.25, travel: 0.15 },
+        styleArchetypes: [],
+        avoidRules: [],
+        colorProfile: { primary: [], secondary: [], stretch: [] },
+        fitPreferences: {},
+        guidanceLevel: 'guided',
+        wardrobeFocus: focus,
+      };
+  await styleProfileService.saveStyleProfile(userId, next);
+  rememberWardrobeFocus(userId, focus);
 }

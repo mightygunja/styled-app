@@ -27,7 +27,8 @@ import {
   offersLiveSecondhand,
   reportsSalePrices,
 } from '../services/affiliateNetwork';
-import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
+import { departmentQuestionDue, profileKnowledge, ProfileKnowledge } from '../services/profilePrompts';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
 import { ItemCategory, Item } from '../types';
@@ -107,6 +108,11 @@ export default function ShopScreen() {
   // Undefined until the profile says otherwise: an account that has not
   // chosen is shown cross-department pieces only, never a mixed rack.
   const [wardrobeFocus, setWardrobeFocus] = useState<'womens' | 'mens' | 'all' | undefined>(undefined);
+  // Whether the profile was actually read. The department question below is
+  // asked only on a confirmed answer of "not chosen" - never because the
+  // read failed, which says nothing about the member.
+  const [profileState, setProfileState] = useState<ProfileKnowledge>('unknown');
+  const [savingFocus, setSavingFocus] = useState(false);
   const [allTrends, setAllTrends] = useState<FashionTrend[]>([]);
   // "Shopping the trend" focus, set when a trend surface sent the user here.
   // Filters and orders the grid to pieces that actually carry the trend.
@@ -124,6 +130,7 @@ export default function ShopScreen() {
       const profile = await buildProfileMatchContext(userId);
       if (seq !== requestSeq.current) return;
       setWardrobeFocus(profile?.wardrobeFocus);
+      setProfileState(profileKnowledge(profile));
 
       const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
@@ -322,6 +329,26 @@ export default function ShopScreen() {
     }
   }, [wardrobeFocus, category, loading]);
 
+  /**
+   * One tap answers the department question right here. Saving the profile
+   * bumps the profile revision, which reloads this screen (and every other
+   * mounted one) against the new department.
+   */
+  const chooseWardrobeFocus = async (focus: 'womens' | 'mens' | 'all') => {
+    if (savingFocus) return;
+    setSavingFocus(true);
+    try {
+      await saveWardrobeFocus(getCurrentUserId(), focus);
+      setWardrobeFocus(focus);
+      loadRef.current();
+    } catch (error) {
+      console.error('Could not save wardrobe focus:', error);
+      Alert.alert('Could not save that', 'Check your connection and try again.');
+    } finally {
+      setSavingFocus(false);
+    }
+  };
+
   const listHeader = (
     <View>
       <View style={styles.titleBlock}>
@@ -335,21 +362,37 @@ export default function ShopScreen() {
         )}
 
         {/* An account that has not said whose wardrobe it is sees only
-            pieces that are for everyone. Say so, and offer the one tap that
-            opens the rest - never a mixed rack in the meantime. */}
-        {!loading && wardrobeFocus === undefined && (
-          <TouchableOpacity
-            style={styles.focusNote}
-            onPress={() => navigation.navigate('StyleProfileBuilder')}
-            accessibilityRole="button"
-            accessibilityLabel="Choose womenswear or menswear in your style profile"
-          >
+            pieces that are for everyone. Say so, and take the answer right
+            here in one tap - it used to send the member to the eight-step
+            profile builder, which is no way to ask one question of someone
+            who already has a closet. Shown only when the profile was read
+            and the answer really is missing. */}
+        {!loading && departmentQuestionDue(profileState, !!wardrobeFocus) && (
+          <View style={styles.focusNote}>
             <Text style={styles.focusNoteText}>
-              Showing pieces for everyone. Tell us whether you wear womenswear, menswear or both to
-              see the full shop.
+              Showing pieces for everyone. Whose wardrobe are we dressing?
             </Text>
-            <Text style={styles.focusNoteLink}>Choose in your style profile →</Text>
-          </TouchableOpacity>
+            <View style={styles.focusChoices}>
+              {(
+                [
+                  { key: 'womens', label: 'Womenswear' },
+                  { key: 'mens', label: 'Menswear' },
+                  { key: 'all', label: 'Both' },
+                ] as Array<{ key: 'womens' | 'mens' | 'all'; label: string }>
+              ).map(option => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[styles.focusChoice, savingFocus && { opacity: 0.5 }]}
+                  disabled={savingFocus}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show me ${option.label}`}
+                  onPress={() => chooseWardrobeFocus(option.key)}
+                >
+                  <Text style={styles.focusChoiceText}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         )}
 
         {/* Trend focus: the user tapped "Find the piece" on a specific trend,
@@ -675,7 +718,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   focusNoteText: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.ink },
-  focusNoteLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco, marginTop: 6 },
+  focusChoices: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  focusChoice: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.full,
+    backgroundColor: colors.rust,
+    paddingVertical: 10,
+  },
+  focusChoiceText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.white },
   anchorSearches: { marginTop: 12 },
   anchorSearchesLabel: { ...textType.eyebrow, fontSize: 9, color: colors.tobacco },
   anchorChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

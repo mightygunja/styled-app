@@ -16,7 +16,10 @@
  *   - a load that fails is never stored, and rejects exactly as an uncached
  *     read would, so callers' error handling is untouched;
  *   - every caller gets its own copy, so nothing one screen does to its data
- *     can reach another's.
+ *     can reach another's;
+ *   - a load can answer with `uncached(value)`: its callers get the value,
+ *     but it is not kept - for an answer good enough to use once and not
+ *     good enough to repeat (see confirmedRead.ts).
  *
  * Pure - no Firebase, no React Native - so scripts/auditSessionCache.ts
  * exercises the real thing.
@@ -24,13 +27,29 @@
 
 export interface SessionCache<T> {
   /** The cached value for `key`, loading it with `load` when there is none. */
-  get(key: string, load: () => Promise<T>): Promise<T>;
+  get(key: string, load: () => Promise<T | Uncached<T>>): Promise<T>;
   /** The cached value if there is a fresh one, without loading. */
   peek(key: string): T | undefined;
   /** Every fresh cached value (copies), for lookups across keys. */
   values(): T[];
   /** Drops everything, and stops any load in the air from being stored. */
   invalidate(): void;
+}
+
+const UNCACHED = Symbol('uncached');
+
+/** A load result its callers receive but the cache does not keep. */
+export interface Uncached<T> {
+  [UNCACHED]: true;
+  value: T;
+}
+
+export function uncached<T>(value: T): Uncached<T> {
+  return { [UNCACHED]: true, value };
+}
+
+function isUncached<T>(result: T | Uncached<T>): result is Uncached<T> {
+  return typeof result === 'object' && result !== null && (result as any)[UNCACHED] === true;
 }
 
 export function createSessionCache<T>(options: {
@@ -58,9 +77,10 @@ export function createSessionCache<T>(options: {
       let pending = inFlight.get(key);
       if (!pending) {
         const startedIn = epoch;
-        pending = load().then(value => {
-          if (startedIn === epoch) entries.set(key, { at: now(), value });
-          return value;
+        pending = load().then(result => {
+          if (isUncached(result)) return result.value;
+          if (startedIn === epoch) entries.set(key, { at: now(), value: result });
+          return result;
         });
         inFlight.set(key, pending);
         const settle = () => {

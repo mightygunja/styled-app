@@ -152,6 +152,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // A different account (or none) must never be served the last one's
       // closet or profile from the session caches.
       invalidateUserDataCaches();
+      // The first-run survey belongs to the account that was just created.
+      // Signing out ends it: without this the flag survived, and the next
+      // account signed in on this launch - an established one - was walked
+      // through the survey as if it were new. (Sign-up sets the flag while
+      // still signed out, but no signed-out event fires between that and
+      // the new account arriving, so this cannot clear a real first run.)
+      if (!user) setIsNewUser(false);
       setUser(user);
       setLoading(false);
       // One presence write per session, so Admin > Members can tell a

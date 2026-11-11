@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
-import { outfitsService, styleProfileService, invalidateUserDataCaches } from '../services/firestore';
+import { outfitsService, invalidateUserDataCaches } from '../services/firestore';
 import { WardrobeFocus } from '../models/personalStyleProfile';
 import { aiStyleService, StyleProfile } from '../services/aiStyleService';
 import { getStyleVoice } from '../services/styleVoice';
@@ -32,7 +32,8 @@ import {
   DailyOutfit,
   HOME_OCCASIONS,
 } from '../services/dailyOutfitService';
-import { buildProfileMatchContext } from '../services/profileMatchContext';
+import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
+import { homePrompts, profileKnowledge } from '../services/profilePrompts';
 import { profileSignature } from '../services/profileEvents';
 import { discoveryService } from '../services/discoveryService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
@@ -200,24 +201,8 @@ export default function HomeScreen() {
     if (savingFocus) return;
     setSavingFocus(true);
     try {
-      const userId = getCurrentUserId();
-      const profile = await styleProfileService.getStyleProfile(userId);
-      if (profile) {
-        await styleProfileService.saveStyleProfile(userId, { ...profile, wardrobeFocus: focus });
-      } else {
-        // Survey-dismissers have no profile to write onto. Save a minimal
-        // one carrying only their answer - empty taste fields read as "no
-        // signal" to every engine, so nothing about them is invented.
-        await styleProfileService.saveStyleProfile(userId, {
-          lifestyleWeights: { work: 0.25, casual: 0.35, social: 0.25, travel: 0.15 },
-          styleArchetypes: [],
-          avoidRules: [],
-          colorProfile: { primary: [], secondary: [], stretch: [] },
-          fitPreferences: {},
-          guidanceLevel: 'guided',
-          wardrobeFocus: focus,
-        });
-      }
+      if (!focus) return;
+      await saveWardrobeFocus(getCurrentUserId(), focus);
       setNeedsWardrobeFocus(false);
       await loadDressMeToday(occasion);
     } catch (error) {
@@ -236,6 +221,8 @@ export default function HomeScreen() {
       if (!showProfilePrompt) return;
       buildProfileMatchContext(getCurrentUserId())
         .then(context => {
+          // A profile now exists (the offer was taken), or it could not be
+          // re-read (no evidence left to keep asking on).
           if (context) setShowProfilePrompt(false);
         })
         .catch(() => {});
@@ -301,24 +288,26 @@ export default function HomeScreen() {
       // the end of the function; the curation calls below fill in the look
       // card behind an already-usable page.
       setLoading(false);
-      // No saved profile at all means this account predates the survey -
-      // offer it once, unless the user has already said not now.
+      // What Home may ask, decided in one place (profilePrompts.ts): the
+      // survey only for a confirmed-new, empty account; the one-tap
+      // department question only when it is confirmed unanswered; nothing
+      // at all when the profile could not be read. An account that has taken
+      // the survey, or already has clothes in its closet, is never offered
+      // the survey here. The closet count is real - a closet that could not
+      // be confirmed fails the load above instead of arriving empty.
       AsyncStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY)
-        .then(dismissed => {
-          const surveyOffered = !dismissed && !matchContext;
-          setShowProfilePrompt(surveyOffered);
-          // The department question, for whoever hasn't answered it through
-          // any door: profiles that predate the question, and users who
-          // permanently dismissed the survey (they have no profile at all,
-          // so nothing else will ever ask them). Never alongside the survey
-          // offer - the survey's first step IS this question.
-          setNeedsWardrobeFocus(
-            matchContext ? !matchContext.wardrobeFocus : !!dismissed
-          );
-        })
-        .catch(() => {
-          setShowProfilePrompt(false);
-          setNeedsWardrobeFocus(!!matchContext && !matchContext.wardrobeFocus);
+        .then(dismissed => !!dismissed)
+        // The flag could not be read: do not risk re-offering what was declined.
+        .catch(() => true)
+        .then(surveyDismissed => {
+          const prompts = homePrompts({
+            profile: profileKnowledge(matchContext),
+            hasWardrobeFocus: !!matchContext?.wardrobeFocus,
+            closetCount: items.length,
+            surveyDismissed,
+          });
+          setShowProfilePrompt(prompts.survey);
+          setNeedsWardrobeFocus(prompts.department);
         });
 
       // Avoid rules are a strong preference for owned clothes, not a veto:
@@ -1011,9 +1000,10 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* One-time offer of the survey to accounts that predate it. Only
-              renders when no style profile exists, and "Not now" dismisses it
-              permanently - a prompt that nags stops being an offer. */}
+          {/* One-time offer of the survey to an account that skipped it at
+              sign-up. Only renders when the server confirms there is no
+              style profile AND the closet is empty, and "Not now" dismisses
+              it permanently - a prompt that nags stops being an offer. */}
           {showProfilePrompt && (
             <View style={styles.profilePrompt}>
               <Text style={styles.profilePromptEyebrow}>TWO MINUTES</Text>
