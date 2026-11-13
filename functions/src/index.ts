@@ -3430,14 +3430,22 @@ async function spendChannel3Search(limit: number): Promise<boolean> {
   });
 }
 
-/** The photo to show: the product alone on a clean ground when Channel3 has one. */
+/** Shots that do not show the piece as a whole. */
+const CHANNEL3_POOR_SHOTS = new Set(['detail', 'size_chart', 'packaging', 'scale_reference', 'product_information']);
+
+/**
+ * The photo to show: the retailer's own main photo, unless it is a close-up,
+ * a size chart or the box. Checked against real answers (2026-11-13):
+ * `cleaned_url` is framed tight to the product, and the app's 4:5 card then
+ * cuts the ends off shoes and the shoulders off jackets, so the original is
+ * used.
+ */
 function channel3Image(images: any[]): string {
-  const list = Array.isArray(images) ? images : [];
-  const cleaned = list.find(i => i?.cleaned_url);
-  if (cleaned) return String(cleaned.cleaned_url);
+  const list = (Array.isArray(images) ? images : []).filter(i => i?.url);
+  const whole = list.filter(i => !CHANNEL3_POOR_SHOTS.has(String(i.shot_type)));
   const pick =
-    list.find(i => i?.shot_type === 'hero') || list.find(i => i?.is_main_image) || list[0];
-  return pick?.url ? String(pick.url) : '';
+    whole.find(i => i.is_main_image) || whole.find(i => i.shot_type === 'hero') || whole[0] || list[0];
+  return pick ? String(pick.url) : '';
 }
 
 export const searchChannel3Products = functions
@@ -3460,7 +3468,7 @@ export const searchChannel3Products = functions
       const subject = typed || EBAY_CATEGORY_WORDS[String(category || '')] || 'clothing';
       const filters: Record<string, any> = {
         gender: department === 'men' ? 'male' : 'female',
-        age: 'adult',
+        age: ['adult'],
         availability: ['InStock'],
       };
       if (typeof minPrice === 'number' || typeof maxPrice === 'number') {

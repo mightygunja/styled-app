@@ -56,9 +56,15 @@ export const CHANNEL3_GENDER: Record<ListingDepartment, 'female' | 'male'> = { w
 
 const https = (url: string | undefined) => /^https:\/\/[a-z0-9.-]+\//i.test(url || '');
 
-/** "www.nordstrom.com" -> "nordstrom.com": what the Shop button names. */
+/**
+ * "www.nordstrom.com" -> "nordstrom.com", "us.sunspel.com" -> "sunspel.com":
+ * what the Shop button names. Only a storefront prefix is dropped; a country
+ * ending ("next.co.uk", "oakandfort.ca") is part of which store it is and stays.
+ */
 function storeName(domain: string | undefined): string {
-  return String(domain || '').trim().toLowerCase().replace(/^www\./, '');
+  const host = String(domain || '').trim().toLowerCase();
+  const labels = host.split('.');
+  return labels.length > 2 && /^(www|us|shop|store|global|en)$/.test(labels[0]) ? labels.slice(1).join('.') : host;
 }
 
 /**

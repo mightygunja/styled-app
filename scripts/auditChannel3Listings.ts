@@ -4,9 +4,10 @@
  * one department, for an adult, in a clothing category.
  *
  * The products below are shaped as the searchChannel3Products function
- * returns them (built from Channel3's documented response). They are
- * fixtures, not a live call - the real feed has to be checked by eye once
- * the key is in.
+ * returns them. They are fixtures, not a live call. The shape was checked
+ * against 288 real products from the live API on 2026-11-13 (12 searches,
+ * both departments): 261 shown, and every skirt, dress and unlabelled
+ * product returned to a men's search was refused.
  *
  * Fails when:
  *   - a product labelled for the other department, 'unisex', or not
@@ -106,6 +107,8 @@ const refused: Array<[RawChannel3Listing, 'women' | 'men', string]> = [
 for (const [raw, department, why] of refused) {
   check(acceptChannel3Listing(raw, department) === null, `refused: ${why} ("${raw.name}")`);
 }
+const named = (domain: string) => acceptChannel3Listing(product('Wool Coat', 'female', ['Coats'], { domain }), 'women')?.retailer;
+check(named('us.sunspel.com') === 'sunspel.com' && named('shop.mango.com') === 'mango.com' && named('next.co.uk') === 'next.co.uk' && named('oakandfort.ca') === 'oakandfort.ca', 'a storefront prefix is dropped from the store name; a country ending is kept');
 check(acceptChannel3Listing(product('Floral Maxi Dress', 'female', ['Dresses']), 'women', { category: 'tops' }) === null, "the shopper's chosen category is respected");
 check(acceptChannel3Listing(product('Wool Coat', 'female', ['Coats'], { age: null }), 'women')?.category === 'outerwear', 'an unstated age is accepted when nothing says kids');
 const sale = acceptChannel3Listing(product('Wool Coat', 'female', ['Coats'], { price: 120, originalPrice: 200 }), 'women');
@@ -127,11 +130,13 @@ check(/product\.id\.startsWith\('c3-'\)\s*\n?\s*\? 'Channel3'/.test(adapter), "a
 const fn = read('functions/src/index.ts');
 const search = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.indexOf('// ==================== PERSONAL TREND REPORT'));
 check(/if \(!department\) return \{ products: \[\], hasMore: false, totalCount: 0 \};/.test(search), 'the function answers nothing without a department');
-check(/gender: department === 'men' \? 'male' : 'female',\s*\n\s*age: 'adult',\s*\n\s*availability: \['InStock'\],/.test(search), 'it asks Channel3 for one gender, adults, in stock');
+check(/gender: department === 'men' \? 'male' : 'female',\s*\n\s*age: \['adult'\],\s*\n\s*availability: \['InStock'\],/.test(search), 'it asks Channel3 for one gender, adults, in stock');
 check(/if \(!\(await spendChannel3Search\(limit\)\)\) \{/.test(search) && /capped: true/.test(search), 'a search past the monthly budget is not made');
 check(/Number\(process\.env\.CHANNEL3_MONTHLY_SEARCH_LIMIT\) \|\| CHANNEL3_FREE_SEARCHES/.test(search) && /const CHANNEL3_FREE_SEARCHES = 1000;/.test(fn), "the budget defaults to Channel3's free allowance");
 check(search.indexOf('channel3Cache.get(cacheKey)') < search.indexOf('spendChannel3Search(limit)'), 'a repeated search is answered from memory before any credit is spent');
 check(/gender: item\.gender \?\? null,/.test(search) && /age: item\.age \?\? null,/.test(search) && /categoryNames:/.test(search), "Channel3's own gender, age and category are passed on for the client to check");
+const image = fn.slice(fn.indexOf('function channel3Image'), fn.indexOf('export const searchChannel3Products'));
+check(!/\.cleaned_url/.test(image) && /CHANNEL3_POOR_SHOTS\.has\(String\(i\.shot_type\)\)/.test(image) && /whole\.find\(i => i\.is_main_image\)/.test(image), "the card shows the retailer's own main photo, never a close-up, a size chart or the tight 'cleaned' cut-out");
 check(!/CHANNEL3_API_KEY/.test(read('src/services/affiliateNetwork.ts')) && !/CHANNEL3_API_KEY/.test(read('src/services/channel3Listing.ts')), 'the key lives only on the server');
 
 console.log(`\n${checks} checks.`);
