@@ -53,6 +53,11 @@ export function isStandIn(product: Product): boolean {
   return /^https:\/\/images\.unsplash\.com\//i.test(product.imageUrl || '');
 }
 
+/** True for a product that came from a live feed (its id says which). */
+export function isLiveListing(product: Pick<Product, 'id'>): boolean {
+  return /^(?:c3|ebay)-/.test(product.id);
+}
+
 /**
  * The list with each well-stocked category's stand-ins thinned to its first
  * `keep` (the list arrives ranked, so those are its best) and dealt back in

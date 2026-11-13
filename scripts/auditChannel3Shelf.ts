@@ -60,6 +60,10 @@ import {
 import { carriesPiece, composeLiveRail, mergeRail, LIVE_RAIL_ENOUGH } from '../src/services/trendLiveRail';
 import { trendAnchors, trendAnchorSearches } from '../src/services/trendSeeds';
 import { starterPool, poolHasStandIns, STARTER_CORE } from '../src/services/starterPool';
+import { piecePhrase, railPhrases, withRealPieces } from '../src/services/publicRealPieces';
+import { publicPhrases, publicPhrasesSource } from './buildPublicPhrases';
+import { PUBLIC_PHRASES } from '../functions/src/publicPhrases';
+import { isLiveListing } from '../src/services/shopShelf';
 import { acceptChannel3Listing } from '../src/services/channel3Listing';
 import { colorFromDescription } from '../src/services/colorName';
 import { REAL_ENOUGH, STAND_INS_KEPT, STAND_IN_EVERY, isStandIn, preferRealProducts } from '../src/services/shopShelf';
@@ -338,6 +342,41 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check(/if \(Object\.values\(pools\)\.some\(candidates => candidates\.length > 0\)\) return pools;/.test(starterFn) && /preferReal: false/.test(starterFn), 'if no look can be finished from real products, the catalogue composes one - Home is never empty');
   check(/ranked\.filter\(\(\{ product \}\) => !product\.department \|\| product\.department === 'unisex'\)/.test(starterFn), 'an account with no department still gets cross-department pieces only');
 
+  console.log('# The logged-out pages');
+  const curatedPiece = (id: string, name: string, subcategory: string, color: string): Product => ({ ...card(id, 'tops', false), name, subcategory, color });
+  const railOf = [
+    curatedPiece('p-o014', 'Classic Trench Coat', 'trench coat', 'tan'),
+    curatedPiece('p-t017', 'Burgundy Cable Sweater', 'burgundy sweater', 'burgundy'),
+    curatedPiece('p-s007', 'Suede Tassel Loafers', 'loafers', 'beige'),
+    curatedPiece('p-x', 'Mystery Piece', '', 'tan'),
+  ];
+  check(piecePhrase(railOf[0]) === 'trench coat' && piecePhrase(railOf[3]) === null && railPhrases([...railOf, railOf[0]]).join() === 'trench coat,burgundy sweater,loafers', "a curated piece is looked up under what the catalogue files it as - the curator's words, each once");
+  const realOf = (id: string, name: string, subcategory: string, color?: string): Product => ({ ...card(id, 'tops', true), name, subcategory, color });
+  const answers = {
+    'trench coat': [realOf('c3-a', 'Quilted Field Jacket', 'jackets'), realOf('c3-b', 'Cotton Trench Coat', 'trench coats')],
+    'burgundy sweater': [realOf('c3-c', 'Cable Knit Sweater', 'sweaters', 'navy'), realOf('c3-d', 'Cable Knit Sweater', 'sweaters', 'burgundy')],
+    loafers: [realOf('c3-b', 'Cotton Trench Coat', 'trench coats'), realOf('c3-e', 'Penny Loafers', 'loafers')],
+  };
+  const swapped = withRealPieces(railOf, answers).map(p => p.id);
+  check(swapped.join() === 'c3-b,c3-d,c3-e,p-x', `each piece is replaced by a real product of the SAME piece - a field jacket is not a trench coat, a navy sweater is not a burgundy one (got ${swapped.join()})`);
+  check(withRealPieces(railOf, {}).map(p => p.id).join() === railOf.map(p => p.id).join() && withRealPieces(railOf, { loafers: [] }).length === railOf.length, 'a piece the feed has no product for keeps its curated card: the rail never loses a piece or its order');
+  check(withRealPieces([railOf[2], railOf[2]], { loafers: [realOf('c3-e', 'Penny Loafers', 'loafers')] }).map(p => p.id).join() === 'c3-e,p-s007', 'no real product is used twice on a rail');
+  check(isLiveListing({ id: 'c3-1' }) && isLiveListing({ id: 'ebay-1' }) && !isLiveListing({ id: 'p-t001' }), 'a live listing is told by its id');
+  // The list the server holds must be the one the pages ask from.
+  const phraseList = publicPhrases();
+  check(JSON.stringify(phraseList.women) === JSON.stringify(PUBLIC_PHRASES.women) && JSON.stringify(phraseList.men) === JSON.stringify(PUBLIC_PHRASES.men) && read('functions/src/publicPhrases.ts') === publicPhrasesSource().replace(/\r\n/g, '\n'), 'functions/src/publicPhrases.ts is up to date (run: npx tsx scripts/buildPublicPhrases.ts)');
+  check(phraseList.women.length > 40 && phraseList.men.length > 40 && phraseList.women.includes('trench coat') && phraseList.men.includes('penny loafers') && !phraseList.men.some(p => /skirt|blouse|gown|dress$/.test(p)) && [...phraseList.women, ...phraseList.men].every(p => keptQuery(p) === p), "the list covers the guides' and built-in trends' pieces per department, cleaned as the server cleans them");
+  const guidePage = read('src/screens/GuideScreens.tsx');
+  check(/const found = useLivePieces\(railPhrases\(curated\), focus\);\s*\n\s*const shown = withRealPieces\(curated, found\);/.test(guidePage), "a guide swaps real products in for its curated pieces, in the reader's department");
+  const publicTrends = read('src/screens/TrendsPublicScreen.tsx');
+  check(/const found = useLivePieces\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\), focus\);/.test(publicTrends) && /focus === 'womens' \? mergeRail\(live, curatedWomen, 8\) : curatedWomen/.test(publicTrends) && /focus === 'mens' \? mergeRail\(live, curatedMen, 8\) : curatedMen/.test(publicTrends), "the public trend page shows real pieces for the department on screen, and never one department's on the other's rail");
+  const hook = read('src/hooks/useLivePieces.ts');
+  check(/if \(wanted\.length === 0 \|\| isPrerendering\(\)\) return;/.test(hook) && /window\.__PRERENDER__ = true;/.test(read('scripts/prerender/snapshot.mjs')), 'the static snapshot of a public page is never taken with live products in it');
+  const publicCard = read('src/components/PublicPieces.tsx');
+  check(/!isLiveListing\(product\) && product\.price/.test(publicCard), 'a public card shows no price for a live product');
+  const linkFn = read('src/services/affiliateNetwork.ts');
+  check(/if \(isLiveListing\(product\)\) return isRealShopUrl\(product\.sourceUrl\) \? product\.sourceUrl : null;/.test(linkFn), "a live product's public link is its own tracked link, never an Amazon search for something like it");
+
   console.log('# Kept searches (trend pieces)');
   check(keptQuery('  Track   JACKET ') === 'track jacket' && keptQuery("Men's <b>suede</b> bomber!!") === "men's b suede b bomber" && keptQuery('x') === null && keptQuery(null) === null && (keptQuery('a'.repeat(200)) || '').length === 60, 'a phrase is cleaned before it is searched or stored');
   check(keptDocId('men', 'track jacket') === 'men-track-jacket' && keptDocId('women', "wide-leg trousers") === 'women-wide-leg-trousers' && keptDocId('men', 'track jacket') !== keptDocId('women', 'track jacket'), 'each department keeps its own record of a phrase');
@@ -354,7 +393,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   w = world();
   later = keptFirst.idsAt + KEPT_IDS_MAX_AGE_MS + 1;
   await refreshKept(keptFirst, 'men', 'track jacket', { ...w.deps, now: () => later++ });
-  check(w.log.searches.length === 1, 'after a fortnight the phrase is searched again');
+  check(w.log.searches.length === 1, 'after thirty days the phrase is searched again');
   // A phrase the named retailers barely stock is widened to every store, once.
   const thin = world();
   let thinCalls = 0;
@@ -369,7 +408,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   const again = world();
   let soon = empty.productsAt + KEPT_SNAPSHOT_MAX_AGE_MS + 1;
   const stillEmpty = await refreshKept(empty, 'men', 'babouche', { ...again.deps, now: () => soon++ });
-  check(again.log.searches.length === 0 && again.log.reads.length === 0 && !!stillEmpty && stillEmpty.productsAt > empty.productsAt, 'and is not searched again until the fortnight is up');
+  check(again.log.searches.length === 0 && again.log.reads.length === 0 && !!stillEmpty && stillEmpty.productsAt > empty.productsAt, 'and is not searched again until the thirty days are up');
   w = world({ search: false });
   check((await refreshKept(null, 'men', 'track jacket', w.deps)) === null, 'with the search budget spent and nothing kept, there is no answer (the page keeps its curated pieces)');
 
@@ -380,6 +419,9 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   const keptFn = fn.slice(fn.indexOf('export const searchChannel3Kept'), fn.indexOf('// ==================== PERSONAL TREND REPORT'));
   check(/if \(!department\) return \{ results: \{\}, pending: 0 \};/.test(keptFn) && /\.slice\(0, KEPT_QUERIES_PER_CALL\)/.test(keptFn) && /keptQuery\(q\)/.test(keptFn), 'the trend-pieces function answers nothing without a department, and cleans and caps what it is asked');
   check(/if \(keptFresh\(kept, started\)\) results\[queries\[index\]\] = /.test(keptFn) && keptFn.indexOf('keptFresh(kept, started)') < keptFn.indexOf('refreshKept('), 'fresh pieces are answered before anything is refreshed');
+  check(/const signedIn = !!context\.auth;/.test(keptFn) && /if \(!signedIn && !mayOpen\.has\(String\(body\?\.query \|\| ''\)\)\) return null;/.test(keptFn) && /const mayOpen = new Set\(PUBLIC_PHRASES\[department\]\);/.test(keptFn), "a visitor without an account can cause a search only for the public pages' own phrases");
+  const typedSearch = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.indexOf('const channel3ProductMemory'));
+  check(typedSearch.indexOf('if (!context.auth) return { products: [], department, hasMore: false, totalCount: 0 };') > typedSearch.indexOf('browseShelves(') && typedSearch.indexOf('if (!context.auth) return') < typedSearch.indexOf('channel3Search(apiKey, body)'), 'a typed (paid) search needs a signed-in member; the shelves, which cost nothing, do not');
   check(/if \(Date\.now\(\) - started > KEPT_TIME_ALLOWED_MS\) \{/.test(keptFn) && /channel3Search\(apiKey, body\)/.test(keptFn), 'refreshing stops when its time is up, and every search it makes is counted against the monthly budget');
   const trendsPage = read('src/screens/TrendInsightsScreen.tsx');
   check(/const allPieces = Array\.from\(new Set\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\)\)\);/.test(trendsPage) && /await liveTrendPieces\(missing, profile\?\.wardrobeFocus\);/.test(trendsPage) && /scoreAndRankProducts\(found\[piece\] \|\| \[\], profile, closetItems, \{ trends: \[remix\.trend\] \}\)/.test(trendsPage), "the Trends page asks for every trend's pieces in one request, in the member's department, and ranks them against the member's profile and closet");

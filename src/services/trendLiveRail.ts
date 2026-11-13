@@ -31,9 +31,13 @@ const words = (text: string) =>
 /** "boots" and "boot", "jackets" and "jacket" are the same word here. */
 const stem = (word: string) => (word.length > 3 ? word.replace(/(?:es|s)$/, '') : word);
 
-/** Whether a product is the piece: every word of the piece is in its name or shelf name. */
-export function carriesPiece(product: Pick<Product, 'name' | 'subcategory'>, piece: string): boolean {
-  const have = new Set(words(`${product.name} ${product.subcategory || ''}`).map(stem));
+/**
+ * Whether a product is the piece: every word of the piece is in its name,
+ * its shelf name or its stated colour ("burgundy sweater" is a sweater whose
+ * colour is burgundy, wherever the feed says so).
+ */
+export function carriesPiece(product: Pick<Product, 'name' | 'subcategory' | 'color'>, piece: string): boolean {
+  const have = new Set(words(`${product.name} ${product.subcategory || ''} ${product.color || ''}`).map(stem));
   const need = words(piece).map(stem);
   return need.length > 0 && need.every(word => have.has(word));
 }

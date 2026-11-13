@@ -43,6 +43,7 @@ import {
   sortProducts,
 } from '../models/product';
 import { MOCK_CATALOG, BALANCED_CATALOG } from '../data/mockProductCatalog';
+import { isLiveListing } from './shopShelf';
 import { amazonSearchPhrase, amazonSearchUrl } from './amazonSearch';
 
 // Trend surfaces import the phrase search from here, as they always have.
@@ -365,6 +366,9 @@ class AmazonAssociatesAdapter extends MockCatalogAdapter {
  * shows the piece without a link rather than a link that lies.
  */
 export function staticShopUrl(product: Product): string | null {
+  // A live listing carries its own tracked link to that exact product; it is
+  // never turned into an Amazon search for something like it.
+  if (isLiveListing(product)) return isRealShopUrl(product.sourceUrl) ? product.sourceUrl : null;
   const provider = effectiveProvider();
   if (provider === 'amazon' || provider === 'starter') return amazonOutboundUrl(product);
   return null;

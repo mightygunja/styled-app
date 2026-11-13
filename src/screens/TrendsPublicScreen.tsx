@@ -19,6 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
 import BackButton from '../components/BackButton';
 import PublicPieces, { FocusToggle, PublicFocus } from '../components/PublicPieces';
+import { useLivePieces } from '../hooks/useLivePieces';
+import { trendAnchors } from '../services/trendSeeds';
+import { composeLiveRail, mergeRail } from '../services/trendLiveRail';
 import PublicFooter from '../components/PublicFooter';
 import SiteLink from '../components/SiteLink';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +30,9 @@ import { piecesForTrend } from '../services/trendLooks';
 import { FashionTrend } from '../models/fashionTrend';
 import { curatedCatalogNotice } from '../services/affiliateNetwork';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
+
+/** Key pieces per trend looked up live, as on the signed-in trend page. */
+const PUBLIC_LIVE_PIECES = 2;
 
 const STAGE_LABEL: Record<FashionTrend['stage'], string> = {
   emerging: 'Emerging',
@@ -48,6 +54,15 @@ export default function TrendsPublicScreen() {
       .catch(() => { if (!cancelled) setTrends([]); });
     return () => { cancelled = true; };
   }, []);
+
+  // Real products for each trend's own key pieces, in the department the
+  // reader has chosen - the same pieces a member's trend rail shows. The
+  // page draws with the curated pieces first; these replace them on arrival.
+  const piecesByTrend = React.useMemo(
+    () => new Map((trends || []).map(trend => [trend.id, trendAnchors(trend, focus, PUBLIC_LIVE_PIECES)] as const)),
+    [trends, focus]
+  );
+  const found = useLivePieces(Array.from(piecesByTrend.values()).flat(), focus);
 
   const notice = curatedCatalogNotice();
 
@@ -94,8 +109,14 @@ export default function TrendsPublicScreen() {
           <Text style={styles.intro}>The report could not be loaded. Try again in a moment.</Text>
         ) : (
           trends.map(trend => {
-            const women = piecesForTrend(trend, 'womens', { limit: 8 });
-            const men = piecesForTrend(trend, 'mens', { limit: 8 });
+            const live = composeLiveRail(
+              (piecesByTrend.get(trend.id) || []).map(piece => ({ piece, products: found[piece] || [] })),
+              8
+            );
+            const curatedWomen = piecesForTrend(trend, 'womens', { limit: 8 });
+            const curatedMen = piecesForTrend(trend, 'mens', { limit: 8 });
+            const women = focus === 'womens' ? mergeRail(live, curatedWomen, 8) : curatedWomen;
+            const men = focus === 'mens' ? mergeRail(live, curatedMen, 8) : curatedMen;
             return (
               <View key={trend.id} style={styles.trend}>
                 <Text style={styles.stage}>

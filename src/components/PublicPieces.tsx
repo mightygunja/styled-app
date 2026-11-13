@@ -20,6 +20,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Linking } fr
 import { Product } from '../models/product';
 import { BALANCED_CATALOG } from '../data/mockProductCatalog';
 import { staticShopUrl, shopDestination, curatedCatalogNotice } from '../services/affiliateNetwork';
+import { isLiveListing } from '../services/shopShelf';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
 export type PublicFocus = 'womens' | 'mens';
@@ -61,8 +62,12 @@ export function PieceCard({ product }: { product: Product }) {
         <View style={styles.photo} />
       )}
       <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
+      {/* A live product's price comes from a snapshot that can be hours
+          old, so it is left to the store's own page. */}
       <Text style={styles.meta} numberOfLines={1}>
-        {[product.brand, product.price ? `$${product.price.toFixed(0)}` : null].filter(Boolean).join('  ·  ')}
+        {[product.brand, !isLiveListing(product) && product.price ? `$${product.price.toFixed(0)}` : null]
+          .filter(Boolean)
+          .join('  ·  ')}
       </Text>
       <ShopLink product={product} />
     </View>
@@ -103,6 +108,8 @@ interface Props {
   onFocusChange?: (f: PublicFocus) => void;
   /** Whether to print the catalogue/affiliate disclosure under this rail. */
   disclosure?: boolean;
+  /** Show the department switch even though the focus is held by the page (a page with one rail that needs to know the focus). */
+  toggle?: boolean;
 }
 
 export default function PublicPieces({
@@ -114,6 +121,7 @@ export default function PublicPieces({
   focus,
   onFocusChange,
   disclosure = true,
+  toggle,
 }: Props) {
   const [ownFocus, setOwnFocus] = useState<PublicFocus>('womens');
   const current = focus ?? ownFocus;
@@ -127,7 +135,7 @@ export default function PublicPieces({
       <Text style={styles.eyebrow}>{eyebrow}</Text>
       {!!title && <Text style={styles.title}>{title}</Text>}
       {!!note && <Text style={styles.note}>{note}</Text>}
-      {focus === undefined && <FocusToggle focus={current} onChange={setFocus} />}
+      {(toggle ?? focus === undefined) && <FocusToggle focus={current} onChange={setFocus} />}
       {pieces.length > 0 ? (
         <View style={styles.grid}>
           {pieces.map(p => <PieceCard key={p.id} product={p} />)}

@@ -463,7 +463,7 @@ export function shelfRows(shelves: Shelf[], limit: number): Channel3Row[] {
  * ("track jacket", "chelsea boot"). Searching for them on every visit would
  * cost a credit per piece per visit; the pieces a trend names do not change
  * from one visit to the next. So each (department, phrase) is searched once,
- * its product ids kept for two weeks, and its snapshot re-read by id (free)
+ * its product ids kept for thirty days, and its snapshot re-read by id (free)
  * when it has aged - the same bargain as the shelves, for a phrase instead
  * of a category.
  *
@@ -473,7 +473,7 @@ export function shelfRows(shelves: Shelf[], limit: number): Channel3Row[] {
  */
 export const KEPT_VERSION = 1;
 export const KEPT_SIZE = 18;
-export const KEPT_IDS_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+export const KEPT_IDS_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const KEPT_SNAPSHOT_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 /** Fewer than this from the named retailers and the search is widened to every store. */
 export const KEPT_THIN = 6;

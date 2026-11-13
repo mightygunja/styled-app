@@ -106,6 +106,12 @@ async function main() {
     // what a first-time visitor gets.
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
+    // The snapshot is the page as built: its curated pieces and their links.
+    // Real products are swapped in later, in the reader's browser, and must
+    // never be baked into static HTML (src/hooks/useLivePieces.ts reads this).
+    await page.addInitScript(() => {
+      window.__PRERENDER__ = true;
+    });
     try {
       // Not `networkidle`: a logged-out page still opens a Firestore stream
       // that never goes quiet. Wait for real content, then for it to stop

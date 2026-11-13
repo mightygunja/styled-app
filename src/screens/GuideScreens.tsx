@@ -19,7 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandWordmark from '../components/BrandWordmark';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../contexts/AuthContext';
-import PublicPieces, { resolvePieces } from '../components/PublicPieces';
+import PublicPieces, { resolvePieces, PublicFocus } from '../components/PublicPieces';
+import { useLivePieces } from '../hooks/useLivePieces';
+import { railPhrases, withRealPieces } from '../services/publicRealPieces';
+import { GuidePieceSet } from '../data/guidePieces';
 import PublicFooter from '../components/PublicFooter';
 import SiteLink from '../components/SiteLink';
 import { GUIDE_PIECES } from '../data/guidePieces';
@@ -28,6 +31,33 @@ import { colors, fonts, type as textType, spacing, radius } from '../theme/desig
 import { GUIDES, GuideMeta } from '../data/guides';
 export { GUIDES };
 export type { GuideMeta };
+
+/**
+ * The guide's rail. It draws with the curated pieces (that is what the
+ * static page and a crawler get), then each piece is swapped for a real
+ * product of that same piece from the live feed, in the department the
+ * reader has chosen - see publicRealPieces.ts. A piece the feed has no
+ * product for stays as it was.
+ */
+function GuideRail({ set }: { set: GuidePieceSet }) {
+  const [focus, setFocus] = React.useState<PublicFocus>('womens');
+  const women = React.useMemo(() => resolvePieces(set.women), [set]);
+  const men = React.useMemo(() => resolvePieces(set.men), [set]);
+  const curated = focus === 'womens' ? women : men;
+  const found = useLivePieces(railPhrases(curated), focus);
+  const shown = withRealPieces(curated, found);
+  return (
+    <PublicPieces
+      title={set.title}
+      note={set.note}
+      women={focus === 'womens' ? shown : women}
+      men={focus === 'mens' ? shown : men}
+      focus={focus}
+      onFocusChange={setFocus}
+      toggle
+    />
+  );
+}
 
 function GuidePage({
   route,
@@ -69,14 +99,7 @@ function GuidePage({
         <Text style={styles.intro}>{intro}</Text>
         {children}
 
-        {pieces && (
-          <PublicPieces
-            title={pieces.title}
-            note={pieces.note}
-            women={resolvePieces(pieces.women)}
-            men={resolvePieces(pieces.men)}
-          />
-        )}
+        {pieces && <GuideRail set={pieces} />}
 
         {/* The pitch, after the substance - the advice above works without
             the app; the app just does it automatically. */}

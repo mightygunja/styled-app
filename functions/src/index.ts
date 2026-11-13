@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
 import OpenAI, { toFile } from 'openai';
 import { TREND_VOCABULARY } from './trendVocabulary';
+import { PUBLIC_PHRASES } from './publicPhrases';
 import {
   CHANNEL3_API,
   Channel3Department,
@@ -3694,6 +3695,11 @@ export const searchChannel3Products = functions
         if (browse) return browse;
       }
 
+      // From here on the answer costs a credit. The Shop, where searches are
+      // typed, is for signed-in members; a request with no account behind it
+      // gets the shelves above and nothing that is paid for.
+      if (!context.auth) return { products: [], department, hasMore: false, totalCount: 0 };
+
       const subject = typed || EBAY_CATEGORY_WORDS[String(category || '')] || 'clothing';
       const filters: Record<string, any> = channel3Filters(department);
       if (priced) {
@@ -3771,7 +3777,7 @@ export const getChannel3Product = functions
  * Real products for a trend's key pieces: one call for a whole page of
  * trends. `queries` are garment phrases ("track jacket", "chelsea boot");
  * each is answered from its kept record (functions/src/channel3.ts), which
- * costs a credit to find once a fortnight and nothing to read. Records that
+ * costs a credit to find once a month and nothing to read. Records that
  * need refreshing are refreshed here, a few at a time, until the time
  * allowed runs out; whatever is not ready is simply absent from the answer
  * and will be there on the next visit.
@@ -3814,8 +3820,17 @@ export const searchChannel3Kept = functions
         else stale.push({ query: queries[index], index, previous: kept });
       });
 
+      // Who may cause a search (a credit). A signed-in member: any piece of
+      // any trend on their page. A visitor without an account (the public
+      // guides and trend page, and anyone who finds this address): only the
+      // phrases those pages are built to ask for. Everything else is answered
+      // from what is already kept - re-read by id, which is free - or not at
+      // all. A stranger cannot spend the month's searches.
+      const signedIn = !!context.auth;
+      const mayOpen = new Set(PUBLIC_PHRASES[department]);
       const deps = {
         search: async (body: Record<string, any>) => {
+          if (!signedIn && !mayOpen.has(String(body?.query || ''))) return null;
           try {
             const result = await channel3Search(apiKey, body);
             return result && Array.isArray(result.products) ? (result.products as any[]) : null;

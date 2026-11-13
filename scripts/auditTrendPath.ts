@@ -244,7 +244,8 @@ const signals = read('src/services/shopperSignals.ts');
 check(/advancePath\(signals\.trendPath, evidenceLevel\(pathEvidence\(signals, trendsWorn\)\), Date\.now\(\)\)/.test(signals), 'the stored step only ever moves through advancePath');
 const report = read('src/screens/TrendInsightsScreen.tsx');
 check(/const RAIL_LIMIT = 10;/.test(report) && /trendRemixService\.trendPathView\(remixes, focus\)/.test(report) && /YOUR NEXT STEP/.test(report) && /remix\.matchReasons/.test(report), 'the Trend Report shows ten pieces a trend, the path, the next step and why a trend matches');
-check(/limit: 8 \}\);\s*\n\s*const men = piecesForTrend\(trend, 'mens', \{ limit: 8 \}\)/.test(read('src/screens/TrendsPublicScreen.tsx')), 'the public trend page shows eight pieces a trend');
+const publicTrendPage = read('src/screens/TrendsPublicScreen.tsx');
+check(/const curatedWomen = piecesForTrend\(trend, 'womens', \{ limit: 8 \}\);\s*\n\s*const curatedMen = piecesForTrend\(trend, 'mens', \{ limit: 8 \}\);/.test(publicTrendPage) && /mergeRail\(live, curatedWomen, 8\)/.test(publicTrendPage) && /mergeRail\(live, curatedMen, 8\)/.test(publicTrendPage), 'the public trend page shows eight pieces a trend, curated or real');
 
 console.log(`\n${checks} checks.`);
 if (failures) {
