@@ -256,6 +256,8 @@ const REVIEWED_PRODUCT_ONLY = new Set([
   'a015', 'a016', 'a020', 'a025', 'a033', 'a034', 'a042', 'a051', 'a055', 's051', 'a057', 'a061', 'a064', 'a067',
   'a070', 's053', 's054', 's055', 't110', 'a112', 'a113', 'a115', 's118', 's120', 'b116', 'a122', 's128', 'a141',
   'a148', 'a152', 'a161', 'a168', 's136', 's137', 's138',
+  // TideWe (2026-11-13): merchant product shots, product alone.
+  'a181', 'o131', 'o132',
 ]);
 const sharedIds = MOCK_CATALOG.filter(p => p.department === 'unisex').map(p => p.id.replace('p-', ''));
 const unreviewed = sharedIds.filter(id => !REVIEWED_PRODUCT_ONLY.has(id));

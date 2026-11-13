@@ -31,7 +31,7 @@ const awinId = /const AWIN_AFFILIATE_ID = '(\d+)'/.exec(network)?.[1] ?? '';
 const merchantBlock = /const AWIN_MERCHANTS[^=]*=\s*\{([\s\S]*?)\n\};/.exec(network)?.[1] ?? '';
 const awinMerchants = new Map<string, string>();
 for (const m of merchantBlock.matchAll(/^\s*(?:'([^']+)'|([A-Za-z]+)):\s*'(\d+)'/gm)) awinMerchants.set(m[1] || m[2], m[3]);
-const MERCHANT_HOSTS: Record<string, string> = { Otra: 'otraeyewear.com', WANAYOU: 'wanayou.com' };
+const MERCHANT_HOSTS: Record<string, string> = { Otra: 'otraeyewear.com', WANAYOU: 'wanayou.com', TideWe: 'tidewe.com' };
 
 let failures = 0;
 const fail = (message: string) => {

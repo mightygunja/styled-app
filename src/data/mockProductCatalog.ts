@@ -47,6 +47,10 @@ const RETAILER_SEARCH: Record<string, (query: string) => string> = {
   // results). Links must live on wanayou.com so the Awin deeplink layer
   // (merchant id 127939 in affiliateNetwork.ts) has a merchant URL to wrap.
   WANAYOU: q => `https://wanayou.com/search?q=${encodeURIComponent(q)}`,
+  // Verified in-browser 2026-11-13 ("heated vest" -> a page of product results).
+  // Links must live on tidewe.com so the Awin deeplink layer (merchant id
+  // 78182 in affiliateNetwork.ts) has a merchant URL to wrap.
+  TideWe: q => `https://www.tidewe.com/search?q=${encodeURIComponent(q)}`,
 };
 
 function link(retailer: string, brand: string, name: string): string {
@@ -704,6 +708,8 @@ const UNISEX_IDS = new Set([
   't002', 't041', 't053', 't060',
   'a070', 's053', 's054', 's055',
   't110', 'a112', 'a113', 'a115', 's118', 's120', 'b116', 'a122', 's128', 'a141', 'a148', 'a152', 'a161', 'a168', 's136', 's137', 's138',
+  // TideWe pieces the merchant sells to both; product-only photos.
+  'a181', 'o131', 'o132',
 ]);
 
 /**
@@ -1405,6 +1411,22 @@ const ROWS: Row[] = [
   ['s138', 'Burgundy Suede Trainers', 'Puma', 'Puma', 'shoes', 'burgundy sneakers retro trainer', 'burgundy', 75, 0, 'sporty retro casual'],
   ['t136', 'Burgundy Hoodie Set', 'Aritzia', 'Aritzia', 'tops', 'hoodie set', 'burgundy', 150, 0, 'relaxed sporty cozy'],
   ['ma113', 'Patterned Silk Tie', 'Suitsupply', 'Suitsupply', 'accessories', 'silk tie', 'lilac', 59, 0, 'classic heritage retro'],
+  // TideWe - Awin merchant 78182 (joined 2026-11-13). Hunting and outdoor gear;
+  // only the everyday-wearable, in-stock pieces are listed (no blinds, waders,
+  // optics or bundles). Real titles, prices and product photos from the
+  // merchant's own pages, each photo viewed: every one shows the product alone.
+  // Department is the merchant's own ("Women's", "for Men", "Men's & Women's").
+  ['t141', 'MerinoCore Half-Zip Merino Base Layer', 'TideWe', 'TideWe', 'tops', 'merino base layer', 'olive', 59.99, 0, 'outdoor merino layered'],
+  ['o121', 'TimberShade Pro Lightweight Camo Jacket', 'TideWe', 'TideWe', 'outerwear', 'softshell jacket', 'camo', 99.99, 0, 'outdoor camo technical'],
+  ['o122', "ThermShift Women's Heated Vest", 'TideWe', 'TideWe', 'outerwear', 'heated vest', 'camo', 108, 0, 'outdoor heated technical'],
+  ['mt121', 'Merino 200 Quarter-Zip Base Layer', 'TideWe', 'TideWe', 'tops', 'merino base layer', 'camo', 64.99, 0, 'outdoor merino layered'],
+  ['mt122', 'Merino 150 Crew Base Layer', 'TideWe', 'TideWe', 'tops', 'merino base layer', 'camo', 49.99, 0, 'outdoor merino layered'],
+  ['mo131', 'Soft Shell Heated Jacket with Detachable Hood', 'TideWe', 'TideWe', 'outerwear', 'heated jacket', 'camo', 109.99, 0, 'outdoor heated technical'],
+  ['mo132', "ThermShift Men's Heated Vest", 'TideWe', 'TideWe', 'outerwear', 'heated vest', 'camo', 118, 0, 'outdoor heated technical'],
+  ['ma121', 'Insulated Heated Gloves', 'TideWe', 'TideWe', 'accessories', 'heated gloves', 'camo brown', 69.99, 0, 'outdoor heated technical'],
+  ['a181', 'Blaze Orange Logo Beanie', 'TideWe', 'TideWe', 'accessories', 'beanie', 'blaze orange', 16.99, 0, 'outdoor casual winter'],
+  ['o131', 'Waterproof Rain Suit (Jacket and Pants)', 'TideWe', 'TideWe', 'outerwear', 'rain suit', 'black', 29.99, 0, 'outdoor rain technical'],
+  ['o132', 'Heated Fleece Jacket with Battery Pack', 'TideWe', 'TideWe', 'outerwear', 'heated jacket', 'camo', 89.99, 0, 'outdoor heated technical'],
 ];
 
 /**
@@ -1476,6 +1498,51 @@ const EXACT_ITEMS: Record<string, { imageUrl: string; sourceUrl: string }> = {
   t079: {
     imageUrl: 'https://cdn.shopify.com/s/files/1/0765/7514/6305/files/long_sleeve_athletic_shirts_for_women.jpg?v=1777448536&width=600',
     sourceUrl: 'https://wanayou.com/products/seamless-workout-shirts-for-women-long-sleeve-light-blue',
+  },
+  // TideWe - every page fetched (200, in stock) and every photo viewed on 2026-11-13.
+  t141: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/PNG_858f492b-ba4e-487e-ac0a-10979adb075d.png?v=1788861319&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/womens-merino-wool-hunting-base-layer',
+  },
+  o121: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/2_9f759968-bbf6-4ee9-a868-8a9ef2a1b5cb.png?v=1788857164&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/womens-whitetail-hunting-mid-layer-jacket',
+  },
+  o122: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/AB.png?v=1790650678&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/tidewe-women-s-lightweight-heated-vest-with-battery-pack-for-hunting-hiking',
+  },
+  mt121: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/0_08a62892-6187-4ad0-aba0-f782d5313e3e.png?v=1758605864&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/merino-200-wool-hunting-base-layer-for-men',
+  },
+  mt122: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/6_4cb37d2d-69ab-475d-968c-4243b1c527c0.png?v=1758534866&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/merino-150-hunting-wool-base-layer-for-men',
+  },
+  mo131: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/JTC001-G2.png?v=1789547840&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/mens-soft-shell-heated-jacket-with-detachable-hood',
+  },
+  mo132: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/653fa1ae66350f17911133f298d04761_fd0da284-cb0b-444c-8799-f0184c0de0d4.png?v=1790072657&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/thermshift-mens-heated-vest',
+  },
+  ma121: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/16.1_HG003.png?v=1753950715&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/heated-hunting-gloves',
+  },
+  a181: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/HT002_-1.png?v=1755656663&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/blaze-orange-logo-hunting-beanie',
+  },
+  o131: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/1.2.png?v=1758512079&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/tidewe-rain-suit-waterproof-breathable-lightweight-rain-coat-pant',
+  },
+  o132: {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0138/3956/4858/files/f6fdd8a6d3fb9fe636be7bfbeee08f50_e8db6f51-dcaa-4021-95d4-3b43a87a03b2.png?v=1789461942&width=600',
+    sourceUrl: 'https://www.tidewe.com/products/tidewe-men-s-heated-jacket-fleece-with-battery-pack-rechargeable-coat-for-hunting-black-camo',
   },
 };
 
