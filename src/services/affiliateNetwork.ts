@@ -597,6 +597,7 @@ class EbayPartnerNetworkAdapter implements AffiliateNetworkAdapter {
 
 const searchChannel3ProductsFn = httpsCallable(functions, 'searchChannel3Products');
 const getChannel3ProductFn = httpsCallable(functions, 'getChannel3Product');
+const searchChannel3KeptFn = httpsCallable(functions, 'searchChannel3Kept');
 
 /** Same three states, and the same manners, as the eBay feed above. */
 let channel3Status: EbayStatus = 'unknown';
@@ -665,7 +666,7 @@ function announceLiveProducts() {
 }
 
 /** Every ResilientAdapter built, so a late answer can clear their search caches. */
-const resilientAdapters: Array<{ forgetSearches: () => void }> = [];
+const resilientAdapters: Array<{ forgetSearches: () => void; remember: (products: Product[]) => void }> = [];
 
 /**
  * Channel3: one product API over many retailers, with tracked buy links.
@@ -787,6 +788,74 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
   }
 
   private woken = false;
+
+  /**
+   * Real products for a page of trend pieces ("track jacket", "chelsea
+   * boot"), by piece, for this member's department(s). One call per
+   * department covers every piece asked for; the server answers from kept
+   * records, so asking costs no credit once a piece has been found.
+   *
+   * Every product goes through the same acceptance rule as a search result
+   * and is remembered, so the product page can open and re-read it. Nothing
+   * is thrown: no department, a feed that is off, slow or not deployed all
+   * give an empty answer and the page keeps its curated pieces.
+   */
+  async trendPieces(
+    pieces: string[],
+    wardrobeFocus: ProductSearchFilters['wardrobeFocus'],
+    waitMs: number
+  ): Promise<Record<string, Product[]>> {
+    const out: Record<string, Product[]> = {};
+    const departments = departmentsFor(wardrobeFocus);
+    const queries = Array.from(new Set(pieces.map(p => p.toLowerCase().trim()).filter(Boolean)));
+    if (departments.length === 0 || queries.length === 0) return out;
+    if (channel3Status === 'off' && Date.now() < channel3RetryAt) return out;
+
+    const perDepartment = await Promise.all(
+      departments.map(async department => {
+        try {
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const waitedEnough = new Promise<null>(resolve => {
+            timer = setTimeout(() => resolve(null), waitMs);
+          });
+          const result = await Promise.race([searchChannel3KeptFn({ department, queries }), waitedEnough]);
+          if (timer) clearTimeout(timer);
+          const results = ((result as any)?.data?.results || {}) as Record<string, RawChannel3Listing[]>;
+          const accepted: Record<string, Product[]> = {};
+          Object.keys(results).forEach(query => {
+            accepted[query] = (results[query] || [])
+              .map(listing => acceptChannel3Listing(listing, department))
+              .filter((product): product is Product => product !== null);
+            accepted[query].forEach(product => this.shownUnder.set(product.id, department));
+          });
+          return accepted;
+        } catch (error: any) {
+          // An older server without this function, or a feed that is not set
+          // up: no live pieces, and no reason to switch the Shop's feed off.
+          if (!/not-found|failed-precondition/.test(String(error?.code || ''))) {
+            console.error('Channel3 trend pieces failed', error);
+          }
+          return {} as Record<string, Product[]>;
+        }
+      })
+    );
+
+    // Both departments ("all"): each piece's products dealt out in turn.
+    queries.forEach(query => {
+      const lists = perDepartment.map(answer => answer[query] || []);
+      const merged: Product[] = [];
+      const longest = Math.max(0, ...lists.map(list => list.length));
+      for (let i = 0; i < longest; i++) lists.forEach(list => list[i] && merged.push(list[i]));
+      if (merged.length > 0) out[query] = merged;
+    });
+    const found = Object.values(out).flat();
+    if (found.length > 0) {
+      channel3Status = 'live';
+      // The product page finds a product through the adapters' index.
+      resilientAdapters.forEach(adapter => adapter.remember(found));
+    }
+    return out;
+  }
 
   /**
    * A live product, re-read now (free at Channel3). The Shop's browse view
@@ -1002,6 +1071,11 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
     this.cache.clear();
   }
 
+  /** Adds products that did not come through a search (a trend's live pieces) to the index the product page reads. */
+  remember(products: Product[]) {
+    this.index(products);
+  }
+
   private index(products: Product[]) {
     products.forEach(p => this.productIndex.set(p.id, p));
     // Bound the index so a long browsing session cannot grow it without limit.
@@ -1088,6 +1162,22 @@ const skimlinksAdapter = new SkimlinksAdapter();
 const amazonAdapter = new AmazonAssociatesAdapter();
 const ebayAdapter = new EbayPartnerNetworkAdapter();
 const channel3Adapter = new Channel3Adapter();
+
+/**
+ * Real products for the pieces a trend names, by piece (see
+ * Channel3Adapter.trendPieces). Empty wherever Channel3 is not part of the
+ * provider in use. `waitMs` is how long the caller is willing to hold: a
+ * trend page fills its rails in after it has drawn, so it can wait far
+ * longer than a search can.
+ */
+export function liveTrendPieces(
+  pieces: string[],
+  wardrobeFocus: ProductSearchFilters['wardrobeFocus'],
+  waitMs: number = 25000
+): Promise<Record<string, Product[]>> {
+  if (effectiveProvider() !== 'starter') return Promise.resolve({});
+  return channel3Adapter.trendPieces(pieces, wardrobeFocus, waitMs);
+}
 
 const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
   mock: new ResilientAdapter(new MockCatalogAdapter()),

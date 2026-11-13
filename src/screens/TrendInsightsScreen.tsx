@@ -62,7 +62,11 @@ import {
   formatDestination,
 } from '../services/weatherService';
 import { getStyleLocation, setStyleLocation } from '../services/styleLocationService';
-import { amazonSearchUrl, curatedCatalogNotice } from '../services/affiliateNetwork';
+import { amazonSearchUrl, curatedCatalogNotice, liveTrendPieces } from '../services/affiliateNetwork';
+import { trendAnchors } from '../services/trendSeeds';
+import { composeLiveRail, mergeRail } from '../services/trendLiveRail';
+import { scoreAndRankProducts } from '../services/marketplaceMatchingService';
+import { isStandIn } from '../services/shopShelf';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -70,10 +74,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 /** How many trends the report shows. The pool is larger; the rest ranks below the fold of attention. */
 const MAX_REPORT = 14;
 const RAIL_LIMIT = 10;
+/** Key pieces per trend that are looked up live (two reads as a look and keeps a page of trends to one request). */
+const LIVE_PIECES_PER_TREND = 2;
 
 export default function TrendInsightsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [remixes, setRemixes] = useState<TrendRemix[]>([]);
+  // Real products for each trend's key pieces, by trend id. Empty until the
+  // live feed answers (and whenever it is off): the curated pieces show then.
+  const [liveRails, setLiveRails] = useState<Map<string, Product[]>>(new Map());
   const [tags, setTags] = useState<TrendingTag[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [place, setPlace] = useState<string | null>(null);
@@ -155,6 +164,31 @@ export default function TrendInsightsScreen() {
       setRemixes(deterministic);
       setTags(trending);
       loadedOnceRef.current = true;
+
+      // Real products for each trend's own key pieces, in this member's
+      // department, ranked against their profile and closet. The report is
+      // already on screen; each rail fills in when its products arrive.
+      const railTrends = deterministic.slice(0, MAX_REPORT);
+      const piecesByTrend = new Map(
+        railTrends.map(remix => [remix.trend.id, trendAnchors(remix.trend, profile?.wardrobeFocus, LIVE_PIECES_PER_TREND)] as const)
+      );
+      liveTrendPieces(Array.from(new Set(Array.from(piecesByTrend.values()).flat())), profile?.wardrobeFocus)
+        .then(found => {
+          if (loadIdRef.current !== loadId) return;
+          const rails = new Map<string, Product[]>();
+          railTrends.forEach(remix => {
+            const perPiece = (piecesByTrend.get(remix.trend.id) || []).map(piece => ({
+              piece,
+              products: scoreAndRankProducts(found[piece] || [], profile, closetItems, { trends: [remix.trend] }).map(
+                matched => matched.product
+              ),
+            }));
+            const rail = composeLiveRail(perPiece, RAIL_LIMIT);
+            if (rail.length > 0) rails.set(remix.trend.id, rail);
+          });
+          setLiveRails(rails);
+        })
+        .catch(() => {});
 
       // Second phase: the AI stylist's per-user read, upgraded in place once
       // it lands (day-cached, so revisits don't re-spend the model call).
@@ -472,7 +506,9 @@ export default function TrendInsightsScreen() {
                 : remix.gapLine;
             const gap = gapFor(remix);
             const shopLabel = gap ? 'Find it on Amazon' : 'Go deeper in Shop';
-            const rail = trendLooks.get(trend.id) ?? [];
+            // Real products for the trend's pieces when there are enough of
+            // them; otherwise whatever is real first, then the curated pieces.
+            const rail = mergeRail(liveRails.get(trend.id) ?? [], trendLooks.get(trend.id) ?? [], RAIL_LIMIT);
             const otherPlaces = (trend.regions ?? []).filter(r => r !== trend.region).slice(0, 3);
             return (
               <View key={trend.id} style={styles.trendCard}>
@@ -555,6 +591,13 @@ export default function TrendInsightsScreen() {
                           <Text style={styles.lookName} numberOfLines={1}>
                             {product.name}
                           </Text>
+                          {/* A real product says where it is sold; a curated
+                              stand-in has no one store to name. */}
+                          {!isStandIn(product) && !!product.retailer && (
+                            <Text style={styles.lookStore} numberOfLines={1}>
+                              {product.retailer}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -785,6 +828,7 @@ const styles = StyleSheet.create({
   },
   lookKind: { ...textType.eyebrow, fontSize: 8, color: colors.camel, marginTop: 5 },
   lookName: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.inkMuted, marginTop: 2 },
+  lookStore: { fontFamily: fonts.sans, fontSize: 9.5, color: colors.camel, marginTop: 1 },
 
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: spacing.md },
   shopAction: {

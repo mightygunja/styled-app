@@ -26,6 +26,7 @@ import {
   amazonSearchUrl,
   offersLiveSecondhand,
   onLiveProductsArrived,
+  liveTrendPieces,
   reportsSalePrices,
 } from '../services/affiliateNetwork';
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
@@ -47,12 +48,16 @@ import { shopperSignals } from '../services/shopperSignals';
 import { affiliateImpressions } from '../services/affiliateImpressions';
 import { getCurrentWeather } from '../services/weatherService';
 import { getPublishedTrends } from '../services/trendService';
-import { allSeedProducts, isSeedOf, trendAnchorSearches } from '../services/trendSeeds';
+import { allSeedProducts, isSeedOf, trendAnchorSearches, trendAnchors } from '../services/trendSeeds';
+import { carriesPiece } from '../services/trendLiveRail';
 import { trendsForFocus } from '../services/trendLooks';
 import { womenswearContentVisible } from '../services/departmentFit';
 import { FashionTrend, trendTextMatch, TrendMatchKind } from '../models/fashionTrend';
 import { useGridColumns, padToColumns, isGridSpacer, gridItemWidth } from '../theme/responsive';
 import { useProfileRevisionReload } from '../hooks/useProfileRevisionReload';
+
+/** Key pieces of a trend looked up live when the Shop is opened on that trend (the Trends page uses the same two). */
+const TREND_LIVE_PIECES = 2;
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
   { value: 'match', label: 'Best match' },
@@ -216,24 +221,39 @@ export default function ShopScreen() {
       const focused = route.params?.trendId ? trendsForUser.find(t => t.id === route.params?.trendId) : undefined;
       const liveForTrend: typeof searchResult.products = [];
       if (focused && !needle && !onSaleOnly && profile?.wardrobeFocus) {
-        const searches = trendAnchorSearches(focused, profile.wardrobeFocus, 3);
-        const results = await Promise.all(
-          searches.map(search =>
-            getActiveAdapter()
-              .search({
-                query: search.label,
-                category: category === 'all' ? undefined : category,
-                condition: secondhandOnly ? 'secondhand' : undefined,
-                wardrobeFocus: profile.wardrobeFocus,
-                pageSize: 24,
-              })
-              .then(r => r.products.filter(p => p.id.startsWith('ebay-') || p.id.startsWith('c3-')))
-              .catch(() => [])
-          )
-        );
+        // The same real pieces the trend's own rail shows on the Trends page:
+        // found once per piece and kept on the server, so opening a trend
+        // here costs no search. Held for a few seconds at most.
+        const pieces = trendAnchors(focused, profile.wardrobeFocus, TREND_LIVE_PIECES);
+        const keptPieces = secondhandOnly
+          ? Promise.resolve({} as Record<string, typeof searchResult.products>)
+          : liveTrendPieces(pieces, profile.wardrobeFocus, 4000).catch(() => ({} as Record<string, typeof searchResult.products>));
+        // eBay has no kept pieces: when it is live, the trend's pieces are
+        // searched there as before.
+        const searches = offersLiveSecondhand() ? trendAnchorSearches(focused, profile.wardrobeFocus, 3) : [];
+        const [kept, results] = await Promise.all([
+          keptPieces,
+          Promise.all(
+            searches.map(search =>
+              getActiveAdapter()
+                .search({
+                  query: search.label,
+                  category: category === 'all' ? undefined : category,
+                  condition: secondhandOnly ? 'secondhand' : undefined,
+                  wardrobeFocus: profile.wardrobeFocus,
+                  pageSize: 24,
+                })
+                .then(r => r.products.filter(p => p.id.startsWith('ebay-')))
+                .catch(() => [])
+            )
+          ),
+        ]);
         if (seq !== requestSeq.current) return;
         const have = new Set(searchResult.products.map(p => p.id));
-        results.flat().forEach(p => {
+        const fromKept = pieces.flatMap(piece =>
+          (kept[piece] || []).filter(p => carriesPiece(p, piece) && (category === 'all' || p.category === category))
+        );
+        [...fromKept, ...results.flat()].forEach(p => {
           if (!have.has(p.id)) {
             have.add(p.id);
             liveForTrend.push(p);

@@ -201,14 +201,19 @@ export interface TrendAnchorSearch {
  * the shopper's department. This is what makes a trend published a minute
  * ago shoppable before anyone has seeded it: its own key pieces, searched.
  */
-export function trendAnchorSearches(
+/**
+ * The pieces a trend itself names, as plain phrases ("suede bomber",
+ * "chelsea boot"), in the order a look reads: garments and accessories in
+ * turn. Left out: words that describe a piece without being one, pieces
+ * that are not this department's, and a phrase a longer one already covers.
+ */
+export function trendAnchors(
   trend: Pick<FashionTrend, 'keyGarments' | 'keyAccessories'>,
   focus: 'womens' | 'mens' | 'all' | undefined,
   limit: number = 6
-): TrendAnchorSearch[] {
-  const qualifier = searchQualifier(focus);
+): string[] {
   const seen = new Set<string>();
-  const out: TrendAnchorSearch[] = [];
+  const out: string[] = [];
   // Garments and accessories alternate, so six chips still read as a look.
   const garments = trend.keyGarments.map(w => w.toLowerCase().trim()).filter(Boolean);
   const accessories = (trend.keyAccessories || []).map(w => w.toLowerCase().trim()).filter(Boolean);
@@ -226,12 +231,23 @@ export function trendAnchorSearches(
     // Skip an anchor a longer one already covers ("suede" under "suede jacket").
     if (ordered.some(other => other !== anchor && other.includes(anchor) && other.length > anchor.length)) continue;
     seen.add(anchor);
-    const alreadyQualified = /\b(wo)?men'?s\b/.test(anchor);
-    const label = `${alreadyQualified ? '' : qualifier}${anchor}`;
-    out.push({ label, url: amazonSearchUrl(label) });
+    out.push(anchor);
     if (out.length >= limit) break;
   }
   return out;
+}
+
+export function trendAnchorSearches(
+  trend: Pick<FashionTrend, 'keyGarments' | 'keyAccessories'>,
+  focus: 'womens' | 'mens' | 'all' | undefined,
+  limit: number = 6
+): TrendAnchorSearch[] {
+  const qualifier = searchQualifier(focus);
+  return trendAnchors(trend, focus, limit).map(anchor => {
+    const alreadyQualified = /\b(wo)?men'?s\b/.test(anchor);
+    const label = `${alreadyQualified ? '' : qualifier}${anchor}`;
+    return { label, url: amazonSearchUrl(label) };
+  });
 }
 
 export const trendSeeds = {

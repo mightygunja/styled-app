@@ -47,7 +47,18 @@ import {
   shelfRows,
   shelfServable,
   shelfStale,
+  KEPT_IDS_MAX_AGE_MS,
+  KEPT_SIZE,
+  KEPT_SNAPSHOT_MAX_AGE_MS,
+  KEPT_VERSION,
+  KeptSearch,
+  keptDocId,
+  keptFresh,
+  keptQuery,
+  refreshKept,
 } from '../functions/src/channel3';
+import { carriesPiece, composeLiveRail, mergeRail, LIVE_RAIL_ENOUGH } from '../src/services/trendLiveRail';
+import { trendAnchors, trendAnchorSearches } from '../src/services/trendSeeds';
 import { acceptChannel3Listing } from '../src/services/channel3Listing';
 import { colorFromDescription } from '../src/services/colorName';
 import { REAL_ENOUGH, STAND_INS_KEPT, STAND_IN_EVERY, isStandIn, preferRealProducts } from '../src/services/shopShelf';
@@ -279,8 +290,70 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   const asSorted = preferRealProducts(priced, p => p, { spread: false }).items.map(p => p.id);
   check(asSorted.join() === priced.filter(p => p.id !== 'p-t3' && p.id !== 'p-t2').map(p => p.id).join(), `under a shopper's own sort the kept pieces stay where that sort put them (got ${asSorted.slice(0, 6).join()})`);
 
+  console.log("# A trend's rail, from real products");
+  const trend = { keyGarments: ['track jacket', 'suede', 'pleated skirt', 'retro sneaker'], keyAccessories: ['bucket hat', 'crew socks'] };
+  check(trendAnchors(trend, 'mens', 2).join() === 'track jacket,bucket hat' && trendAnchors(trend, 'womens', 6).includes('pleated skirt') && !trendAnchors(trend, 'mens', 6).includes('pleated skirt') && !trendAnchors(trend, 'womens', 6).includes('suede'), "a trend's pieces are its own named garments and accessories, in turn - never a bare fabric, never the other department's");
+  check(trendAnchorSearches(trend, 'mens', 1)[0].label === "men's track jacket" && /amazon\./.test(trendAnchorSearches(trend, 'mens', 1)[0].url), 'the Amazon search for a piece still names the department (the live search does not: its gender filter does)');
+  const live = (id: string, name: string, subcategory: string, brand = 'Brand'): Product => ({ ...card(id, 'outerwear', true), name, subcategory, brand });
+  check(carriesPiece(live('1', 'Adicolor Classics Track Jacket', 'track jackets'), 'track jacket') && carriesPiece(live('2', 'Leather Chelsea Boots', 'boots'), 'chelsea boot') && carriesPiece(live('3', 'Wide-Leg Wool Trousers', 'trousers'), 'wide-leg trousers'), 'a product whose name says the piece is the piece (boots/boot, wide-leg trousers)');
+  check(!carriesPiece(live('4', 'Zip Fleece Jacket', 'jackets'), 'track jacket') && !carriesPiece(live('5', 'Track Pants', 'joggers'), 'track jacket') && !carriesPiece(live('6', 'Anything', ''), ''), "a feed's similar item is not the piece (a fleece jacket is not a track jacket)");
+  const jackets = [live('j1', 'Track Jacket One', ''), live('j2', 'Track Jacket Two', ''), live('jx', 'Fleece Jacket', ''), live('j3', 'Track Jacket Three', '')];
+  const hats = [live('h1', 'Bucket Hat One', ''), live('h2', 'Bucket Hat One', ''), live('j1', 'Track Jacket One', '')];
+  const rail = composeLiveRail([{ piece: 'track jacket', products: jackets }, { piece: 'bucket hat', products: hats }], 10).map(p => p.id);
+  check(rail.join() === 'j1,h1,j2,j3', `the rail deals the pieces out in turn, keeps the member's ranking within a piece, and shows each product (and each brand's same-named product) once (got ${rail.join()})`);
+  check(composeLiveRail([{ piece: 'track jacket', products: jackets }], 2).length === 2 && composeLiveRail([], 10).length === 0, 'the rail stops at its limit and is empty when nothing was found');
+  const curatedRail = [card('p-o1', 'outerwear', false), card('p-o2', 'outerwear', false)];
+  check(mergeRail(jackets.slice(0, LIVE_RAIL_ENOUGH), curatedRail, 10).every(p => !isStandIn(p)), `a rail with ${LIVE_RAIL_ENOUGH} real pieces shows only real pieces`);
+  check(mergeRail(jackets.slice(0, 1), curatedRail, 10).map(p => p.id).join() === 'j1,p-o1,p-o2' && mergeRail([], curatedRail, 10).length === 2, 'a rail short of real pieces shows them first and the curated pieces after - never an empty rail where there was one');
+
+  console.log('# Kept searches (trend pieces)');
+  check(keptQuery('  Track   JACKET ') === 'track jacket' && keptQuery("Men's <b>suede</b> bomber!!") === "men's b suede b bomber" && keptQuery('x') === null && keptQuery(null) === null && (keptQuery('a'.repeat(200)) || '').length === 60, 'a phrase is cleaned before it is searched or stored');
+  check(keptDocId('men', 'track jacket') === 'men-track-jacket' && keptDocId('women', "wide-leg trousers") === 'women-wide-leg-trousers' && keptDocId('men', 'track jacket') !== keptDocId('women', 'track jacket'), 'each department keeps its own record of a phrase');
+  w = world();
+  const keptFirst = (await refreshKept(null, 'men', 'track jacket', w.deps)) as KeptSearch;
+  check(w.log.searches.length === 1 && w.log.searches[0].query === 'track jacket' && w.log.searches[0].filters.gender === 'male' && w.log.searches[0].filters.website_ids === SHELF_RETAILERS && keptFirst.products.length === KEPT_SIZE && keptFirst.version === KEPT_VERSION, `a phrase is searched once, for one gender, at the named retailers, and ${KEPT_SIZE} products are kept`);
+  check(keptFresh(keptFirst, keptFirst.productsAt + 1000) && !keptFresh(keptFirst, keptFirst.productsAt + KEPT_SNAPSHOT_MAX_AGE_MS + 1) && !keptFresh(null, NOW) && !keptFresh({ ...keptFirst, version: KEPT_VERSION - 1 }, keptFirst.productsAt), 'a kept search is answered as it stands for twelve hours');
+  w = world();
+  check((await refreshKept(keptFirst, 'men', 'track jacket', { ...w.deps, now: () => keptFirst.productsAt + 1000 })) === keptFirst && w.log.searches.length + w.log.reads.length === 0, 'a fresh kept search costs nothing: no search, no read');
+  w = world();
+  let later = keptFirst.productsAt + KEPT_SNAPSHOT_MAX_AGE_MS + 1;
+  const keptReread = await refreshKept(keptFirst, 'men', 'track jacket', { ...w.deps, now: () => later++ });
+  check(w.log.searches.length === 0 && w.log.reads.length === keptFirst.ids.length && !!keptReread && keptReread.idsAt === keptFirst.idsAt && keptReread.productsAt > keptFirst.productsAt, 'an aged one is re-read by id - free - and not searched again');
+  w = world();
+  later = keptFirst.idsAt + KEPT_IDS_MAX_AGE_MS + 1;
+  await refreshKept(keptFirst, 'men', 'track jacket', { ...w.deps, now: () => later++ });
+  check(w.log.searches.length === 1, 'after a fortnight the phrase is searched again');
+  // A phrase the named retailers barely stock is widened to every store, once.
+  const thin = world();
+  let thinCalls = 0;
+  const thinDeps = { ...thin.deps, search: async (body: any) => { thinCalls += 1; thin.log.searches.push(body); return body.filters.website_ids ? [rawFor('n1')] : [rawFor('n1'), rawFor('o1'), rawFor('o2')]; } };
+  const widened = (await refreshKept(null, 'women', 'babouche', thinDeps)) as KeptSearch;
+  check(thinCalls === 2 && !thin.log.searches[1].filters.website_ids && widened.products.map(r => r.id).join() === 'c3-n1,c3-o1,c3-o2', 'a phrase the named retailers barely stock is widened to every store, once, and nothing is listed twice');
+  // Nothing found is remembered too.
+  const none = world();
+  const noneDeps = { ...none.deps, search: async (body: any) => { none.log.searches.push(body); return []; } };
+  const empty = (await refreshKept(null, 'men', 'babouche', noneDeps)) as KeptSearch;
+  check(!!empty && empty.products.length === 0 && keptFresh(empty, empty.productsAt + 1000), '"nothing found" is kept too, so the next visit does not pay to learn it again');
+  const again = world();
+  let soon = empty.productsAt + KEPT_SNAPSHOT_MAX_AGE_MS + 1;
+  const stillEmpty = await refreshKept(empty, 'men', 'babouche', { ...again.deps, now: () => soon++ });
+  check(again.log.searches.length === 0 && again.log.reads.length === 0 && !!stillEmpty && stillEmpty.productsAt > empty.productsAt, 'and is not searched again until the fortnight is up');
+  w = world({ search: false });
+  check((await refreshKept(null, 'men', 'track jacket', w.deps)) === null, 'with the search budget spent and nothing kept, there is no answer (the page keeps its curated pieces)');
+
   console.log('# Wiring');
   const fn = read('functions/src/index.ts');
+  const keptFn = fn.slice(fn.indexOf('export const searchChannel3Kept'), fn.indexOf('// ==================== PERSONAL TREND REPORT'));
+  check(/if \(!department\) return \{ results: \{\}, pending: 0 \};/.test(keptFn) && /\.slice\(0, KEPT_QUERIES_PER_CALL\)/.test(keptFn) && /keptQuery\(q\)/.test(keptFn), 'the trend-pieces function answers nothing without a department, and cleans and caps what it is asked');
+  check(/if \(keptFresh\(kept, started\)\) results\[queries\[index\]\] = /.test(keptFn) && keptFn.indexOf('keptFresh(kept, started)') < keptFn.indexOf('refreshKept('), 'fresh pieces are answered before anything is refreshed');
+  check(/if \(Date\.now\(\) - started > KEPT_TIME_ALLOWED_MS\) \{/.test(keptFn) && /channel3Search\(apiKey, body\)/.test(keptFn), 'refreshing stops when its time is up, and every search it makes is counted against the monthly budget');
+  const trendsPage = read('src/screens/TrendInsightsScreen.tsx');
+  check(/liveTrendPieces\(Array\.from\(new Set\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\)\)\), profile\?\.wardrobeFocus\)/.test(trendsPage) && /scoreAndRankProducts\(found\[piece\] \|\| \[\], profile, closetItems, \{ trends: \[remix\.trend\] \}\)/.test(trendsPage), "the Trends page asks for every trend's pieces in one request, in the member's department, and ranks them against the member's profile and closet");
+  check(/const rail = mergeRail\(liveRails\.get\(trend\.id\) \?\? \[\], trendLooks\.get\(trend\.id\) \?\? \[\], RAIL_LIMIT\);/.test(trendsPage), "each trend's rail shows its real pieces");
+  check(!/\$\{product\.price|product\.price/.test(trendsPage.slice(trendsPage.indexOf('THE LOOK, IN PIECES'), trendsPage.indexOf('styles.actionRow'))), 'a rail card shows no price (the snapshot may be hours old; the product page re-reads it)');
+  const trendAdapter = read('src/services/affiliateNetwork.ts');
+  const piecesFn = trendAdapter.slice(trendAdapter.indexOf('async trendPieces('), trendAdapter.indexOf('/**', trendAdapter.indexOf('async trendPieces(') + 20) > 0 ? trendAdapter.indexOf('async getById(productId: string): Promise<Product | null> {\n    if (!productId.startsWith') : undefined);
+  check(/if \(departments\.length === 0 \|\| queries\.length === 0\) return out;/.test(piecesFn) && /\.map\(listing => acceptChannel3Listing\(listing, department\)\)/.test(piecesFn) && /this\.shownUnder\.set\(product\.id, department\)/.test(piecesFn) && /adapter\.remember\(found\)/.test(piecesFn), "trend pieces go through the same acceptance rule, per department, and can be opened on the product page");
   const search = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.indexOf('const channel3ProductMemory'));
   check(search.indexOf('browseShelves(') > -1 && search.indexOf('browseShelves(') < search.indexOf('channel3Search(apiKey, body)') && /if \(!typed && !priced && condition !== 'secondhand'\)/.test(search), 'a browse is answered from the shelves before any search is made');
   const browse = fn.slice(fn.indexOf('async function browseShelves'), fn.indexOf('export const searchChannel3Products'));

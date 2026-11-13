@@ -455,3 +455,116 @@ export function shelfRows(shelves: Shelf[], limit: number): Channel3Row[] {
     .filter(row => (seen.has(row.id) ? false : (seen.add(row.id), true)))
     .slice(0, Math.max(1, limit));
 }
+
+// ==================== Kept searches (a trend's key pieces) ====================
+
+/**
+ * A trend page shows real products for each of the trend's key pieces
+ * ("track jacket", "chelsea boot"). Searching for them on every visit would
+ * cost a credit per piece per visit; the pieces a trend names do not change
+ * from one visit to the next. So each (department, phrase) is searched once,
+ * its product ids kept for two weeks, and its snapshot re-read by id (free)
+ * when it has aged - the same bargain as the shelves, for a phrase instead
+ * of a category.
+ *
+ * The rail shows a photo, a name and a store - never a price - and the
+ * product page re-reads the product when it is opened, so a snapshot may be
+ * up to twelve hours old here.
+ */
+export const KEPT_VERSION = 1;
+export const KEPT_SIZE = 18;
+export const KEPT_IDS_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+export const KEPT_SNAPSHOT_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+/** Fewer than this from the named retailers and the search is widened to every store. */
+export const KEPT_THIN = 6;
+
+export interface KeptSearch {
+  department: Channel3Department;
+  query: string;
+  ids: string[];
+  idsAt: number;
+  products: Channel3Row[];
+  productsAt: number;
+  version: number;
+}
+
+/** A phrase as it is searched and stored: lower case, plain characters, at most 60 long. Null when nothing usable is left. */
+export function keptQuery(raw: any): string | null {
+  const query = String(raw || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9 '&-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60)
+    .trim();
+  return query.length >= 3 ? query : null;
+}
+
+export const keptDocId = (department: Channel3Department, query: string) =>
+  `${department}-${query.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
+
+/**
+ * Whether a kept search can be answered as it stands. An empty answer counts:
+ * "nothing found for this phrase" is worth remembering too, or every visit
+ * would pay to learn it again.
+ */
+export function keptFresh(kept: KeptSearch | null | undefined, now: number): boolean {
+  return !!kept && kept.version === KEPT_VERSION && Array.isArray(kept.products) && now - kept.productsAt < KEPT_SNAPSHOT_MAX_AGE_MS;
+}
+
+/**
+ * Brings one kept search up to date. Returns `previous` when it is still
+ * fresh, a new record when it was refreshed, and null when it could not be
+ * (no search budget and nothing kept).
+ */
+export async function refreshKept(
+  previous: KeptSearch | null,
+  department: Channel3Department,
+  query: string,
+  deps: ShelfDeps
+): Promise<KeptSearch | null> {
+  const now = deps.now();
+  if (previous && keptFresh(previous, now)) return previous;
+
+  const reread = async (ids: string[]) =>
+    (
+      await inBatches(ids, 6, async id => {
+        const item = await deps.product(id);
+        return item ? mapChannel3Product(item) : null;
+      })
+    ).filter((r): r is Channel3Row => r !== null);
+
+  const idsFresh = !!previous && previous.version === KEPT_VERSION && now - previous.idsAt < KEPT_IDS_MAX_AGE_MS;
+  if (idsFresh && previous) {
+    // Nothing was found last time, and that is still recent: nothing to re-read.
+    if (previous.ids.length === 0) return { ...previous, productsAt: deps.now() };
+    const rows = await reread(previous.ids);
+    if (rows.length * 2 >= previous.ids.length) return { ...previous, products: payingFirst(rows), productsAt: deps.now() };
+  }
+
+  const ask = async (retailersOnly: boolean) => {
+    const items = await deps.search({
+      query,
+      filters: { ...channel3Filters(department), ...(retailersOnly ? { website_ids: SHELF_RETAILERS } : {}) },
+      limit: 30,
+    });
+    return items ? items.map(item => mapChannel3Product(item)).filter((r): r is Channel3Row => r !== null) : null;
+  };
+  const named = await ask(true);
+  if (named) {
+    // A phrase the named retailers barely stock is widened to every store, once.
+    const wider = named.length < KEPT_THIN ? await ask(false) : null;
+    const seen = new Set<string>();
+    const rows = [...named, ...(wider || [])].filter(row => (seen.has(row.id) ? false : (seen.add(row.id), true)));
+    const kept = payingFirst(rows).slice(0, KEPT_SIZE);
+    const at = deps.now();
+    return { department, query, ids: kept.map(r => r.id.replace(/^c3-/, '')), idsAt: at, products: kept, productsAt: at, version: KEPT_VERSION };
+  }
+
+  // No search available. Ids already kept are still good ids: re-read them.
+  if (previous && previous.ids.length > 0) {
+    const rows = await reread(previous.ids);
+    if (rows.length > 0) return { ...previous, products: payingFirst(rows), productsAt: deps.now() };
+  }
+  return null;
+}

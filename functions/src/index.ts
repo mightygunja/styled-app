@@ -10,7 +10,12 @@ import {
   Channel3Row,
   ShelfCategory,
   Shelf,
+  KeptSearch,
   SHELF_DEPARTMENTS,
+  keptDocId,
+  keptFresh,
+  keptQuery,
+  refreshKept,
   channel3Filters,
   mapChannel3Product,
   refreshShelf,
@@ -3758,6 +3763,93 @@ export const getChannel3Product = functions
       return value;
     } catch (error: any) {
       console.error('Error reading Channel3 product:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+/**
+ * Real products for a trend's key pieces: one call for a whole page of
+ * trends. `queries` are garment phrases ("track jacket", "chelsea boot");
+ * each is answered from its kept record (functions/src/channel3.ts), which
+ * costs a credit to find once a fortnight and nothing to read. Records that
+ * need refreshing are refreshed here, a few at a time, until the time
+ * allowed runs out; whatever is not ready is simply absent from the answer
+ * and will be there on the next visit.
+ */
+const KEPT_QUERIES_PER_CALL = 40;
+const KEPT_TIME_ALLOWED_MS = 20 * 1000;
+
+export const searchChannel3Kept = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    const apiKey = process.env.CHANNEL3_API_KEY || '';
+    if (!apiKey) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Channel3 is not configured (CHANNEL3_API_KEY in functions/.env).'
+      );
+    }
+    const department: Channel3Department | null =
+      data?.department === 'women' || data?.department === 'men' ? data.department : null;
+    if (!department) return { results: {}, pending: 0 };
+
+    const started = Date.now();
+    const queries = Array.from(
+      new Set(
+        (Array.isArray(data?.queries) ? data.queries : [])
+          .map((q: any) => keptQuery(q))
+          .filter((q: string | null): q is string => !!q)
+      )
+    ).slice(0, KEPT_QUERIES_PER_CALL) as string[];
+    if (queries.length === 0) return { results: {}, pending: 0 };
+
+    try {
+      const refs = queries.map(q => db.collection('channel3Kept').doc(keptDocId(department, q)));
+      const snaps = await db.getAll(...refs);
+      const results: Record<string, Channel3Row[]> = {};
+      const stale: Array<{ query: string; index: number; previous: KeptSearch | null }> = [];
+      snaps.forEach((snap, index) => {
+        const kept = snap.exists ? (snap.data() as KeptSearch) : null;
+        if (keptFresh(kept, started)) results[queries[index]] = (kept as KeptSearch).products;
+        else stale.push({ query: queries[index], index, previous: kept });
+      });
+
+      const deps = {
+        search: async (body: Record<string, any>) => {
+          try {
+            const result = await channel3Search(apiKey, body);
+            return result && Array.isArray(result.products) ? (result.products as any[]) : null;
+          } catch {
+            return null;
+          }
+        },
+        product: (id: string) => channel3ProductById(apiKey, id).catch(() => null),
+        now: () => Date.now(),
+      };
+      // Three at a time: quick enough for a page of trends, slow enough for
+      // Channel3's ten-a-second limit.
+      let pending = 0;
+      for (let i = 0; i < stale.length; i += 3) {
+        if (Date.now() - started > KEPT_TIME_ALLOWED_MS) {
+          pending = stale.length - i;
+          break;
+        }
+        await Promise.all(
+          stale.slice(i, i + 3).map(async entry => {
+            try {
+              const next = await refreshKept(entry.previous, department, entry.query, deps);
+              if (!next) return;
+              if (next !== entry.previous) await refs[entry.index].set(next);
+              results[entry.query] = next.products;
+            } catch (error) {
+              console.error(`Channel3 kept search "${entry.query}" failed:`, error);
+            }
+          })
+        );
+      }
+      return { results, department, pending };
+    } catch (error: any) {
+      console.error('Error reading Channel3 kept searches:', error);
       throw new functions.https.HttpsError('internal', error.message);
     }
   });
