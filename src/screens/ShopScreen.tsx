@@ -27,12 +27,14 @@ import {
   offersLiveSecondhand,
   onLiveProductsArrived,
   liveTrendPieces,
+  shopDestination,
   reportsSalePrices,
 } from '../services/affiliateNetwork';
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
 import { departmentQuestionDue, profileKnowledge, ProfileKnowledge } from '../services/profilePrompts';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { preferRealProducts } from '../services/shopShelf';
+import { openAtStore } from '../services/openAtStore';
 import {
   MatchedProduct,
   isOnSale,
@@ -446,6 +448,20 @@ export default function ShopScreen() {
     }
   };
 
+  const openDetails = (item: MatchedProduct) =>
+    navigation.navigate('ProductDetail', {
+      productId: item.product.id,
+      surface: 'shop',
+      reason: item.headline,
+    });
+  // Straight to the store; the product page only when the store cannot be
+  // opened (sold out, or the browser refused the new tab).
+  const shopCard = (item: MatchedProduct) => {
+    openAtStore(item.product.id, { surface: 'shop', reason: item.headline }).then(opened => {
+      if (!opened) openDetails(item);
+    });
+  };
+
   const listHeader = (
     <View>
       <View style={styles.titleBlock}>
@@ -686,13 +702,13 @@ export default function ShopScreen() {
             <TouchableOpacity
               style={[styles.card, { width: gridItemWidth(gridColumns) }]}
               activeOpacity={0.85}
-              onPress={() =>
-                navigation.navigate('ProductDetail', {
-                  productId: item.product.id,
-                  surface: 'shop',
-                  reason: item.headline,
-                })
-              }
+              // A tap goes straight to the store (openAtStore.ts). The page
+              // with the reasons, the outfit count and Save is the "Details"
+              // link at the foot of the card - and where a tap lands if the
+              // store cannot be opened.
+              accessibilityRole="link"
+              accessibilityLabel={`Shop ${item.product.name} at ${shopDestination(item.product) || 'its store'}`}
+              onPress={() => shopCard(item)}
             >
               <View style={styles.cardImageWrap}>
                 <Image source={{ uri: item.product.imageUrl }} style={styles.cardImage} resizeMode="cover" />
@@ -727,6 +743,19 @@ export default function ShopScreen() {
               {item.concerns[0] && (
                 <Text style={styles.cardConcern} numberOfLines={1}>{item.concerns[0]}</Text>
               )}
+              <View style={styles.cardFooter}>
+                <Text style={styles.cardStore} numberOfLines={1}>
+                  {shopDestination(item.product) || 'Shop'} ↗
+                </Text>
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Details and save: ${item.product.name}`}
+                  onPress={() => openDetails(item)}
+                >
+                  <Text style={styles.cardDetails}>Details</Text>
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
           )}
         />
@@ -746,6 +775,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.page,
     paddingTop: spacing.sm,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  cardStore: {
+    flex: 1,
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    color: colors.rust,
+    marginRight: 8,
+  },
+  cardDetails: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.inkMuted,
+    textDecorationLine: 'underline',
   },
   wishlistButton: {
     borderRadius: radius.full,

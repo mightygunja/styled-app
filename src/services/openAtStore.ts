@@ -1,8 +1,9 @@
 /**
  * One tap on a product, straight to its store.
  *
- * For surfaces where the piece is the point and a page of details in between
- * is in the way (Home's starter looks). The product is re-read first - a
+ * For every product card: the Shop grid, the trend rails, Home's starter
+ * looks. The owner's call (2026-11-13): a tap on a product goes to the store,
+ * not to a page of details first. The product is re-read first - a
  * live product's price, stock and buy link are refreshed when it is opened,
  * exactly as the product page does - and then the store opens:
  *
@@ -23,6 +24,7 @@ import { activeProviderName, getActiveAdapter } from './affiliateNetwork';
 import { affiliateClicksService, AffiliateSurface } from './firestore';
 import { getCurrentUserId } from './api';
 import { shopperSignals } from './shopperSignals';
+import { resolveSeedProduct } from './trendService';
 
 export async function openAtStore(
   productId: string,
@@ -43,7 +45,8 @@ export async function openAtStore(
 
   try {
     const adapter = getActiveAdapter();
-    const product = await adapter.getById(productId);
+    // A trend's seeded pieces live on the trend, not in the catalogue.
+    const product = (await adapter.getById(productId)) ?? (await resolveSeedProduct(productId));
     if (!product || product.inStock === false) return giveUp();
     const url = await adapter.wrapLink(product);
     if (!url) return giveUp();

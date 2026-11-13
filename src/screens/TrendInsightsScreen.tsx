@@ -67,6 +67,7 @@ import { trendAnchors } from '../services/trendSeeds';
 import { composeLiveRail, mergeRail } from '../services/trendLiveRail';
 import { scoreAndRankProducts } from '../services/marketplaceMatchingService';
 import { isStandIn } from '../services/shopShelf';
+import { openAtStore } from '../services/openAtStore';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -331,6 +332,14 @@ export default function TrendInsightsScreen() {
     });
   };
 
+  // A piece on a trend's rail goes straight to its store (openAtStore.ts);
+  // the product page only when the store cannot be opened.
+  const shopPiece = (productId: string, reason: string) => {
+    openAtStore(productId, { surface: 'shop', reason }).then(opened => {
+      if (!opened) navigation.navigate('ProductDetail', { productId, surface: 'shop' });
+    });
+  };
+
   const dismissTrend = (remix: TrendRemix) => {
     shopperSignals.recordTrendDismiss(remix.trend.id).catch(() => {});
     setDismissed(current => new Set(current).add(remix.trend.id));
@@ -393,7 +402,7 @@ export default function TrendInsightsScreen() {
                 accessibilityLabel={`Your next step: ${path.next.piece.name}, from ${path.next.trend.name}`}
                 onPress={() => {
                   shopperSignals.recordTrendTap(path.next!.trend.id).catch(() => {});
-                  navigation.navigate('ProductDetail', { productId: path.next!.piece.id, surface: 'shop' });
+                  shopPiece(path.next!.piece.id, `next step: ${path.next!.trend.name}`);
                 }}
               >
                 <Image source={{ uri: path.next.piece.imageUrl }} style={styles.pathNextImage} resizeMode="cover" />
@@ -590,14 +599,9 @@ export default function TrendInsightsScreen() {
                           key={product.id}
                           style={styles.lookCard}
                           activeOpacity={0.85}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${trend.name} look: ${product.name}`}
-                          onPress={() =>
-                            navigation.navigate('ProductDetail', {
-                              productId: product.id,
-                              surface: 'shop',
-                            })
-                          }
+                          accessibilityRole="link"
+                          accessibilityLabel={`${trend.name} look: shop ${product.name} at its store`}
+                          onPress={() => shopPiece(product.id, `trend: ${trend.name}`)}
                         >
                           <Image
                             source={{ uri: product.imageUrl }}

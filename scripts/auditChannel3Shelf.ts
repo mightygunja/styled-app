@@ -416,11 +416,18 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   // One tap on a starter-look piece goes to its store.
   const opener = read('src/services/openAtStore.ts');
   check(opener.indexOf("window.open('', '_blank')") > -1 && opener.indexOf("window.open('', '_blank')") < opener.indexOf('await adapter.getById(productId)'), 'the new tab is opened inside the tap, before anything is waited for (a tab opened later is blocked as a pop-up)');
-  check(/const product = await adapter\.getById\(productId\);\s*\n\s*if \(!product \|\| product\.inStock === false\) return giveUp\(\);/.test(opener) && /tab\.opener = null;\s*\n\s*tab\.location\.href = url;/.test(opener), 'the product is re-read first, a sold-out piece is not sent to its store, and the store cannot reach back into the app');
+  check(/const product = \(await adapter\.getById\(productId\)\) \?\? \(await resolveSeedProduct\(productId\)\);\s*\n\s*if \(!product \|\| product\.inStock === false\) return giveUp\(\);/.test(opener) && /tab\.opener = null;\s*\n\s*tab\.location\.href = url;/.test(opener), 'the product is re-read first, a sold-out piece is not sent to its store, and the store cannot reach back into the app');
   check(/if \(onWeb && !tab\) return false;/.test(opener) && /affiliateClicksService\s*\n\s*\.record\(getCurrentUserId\(\), product, \{/.test(opener), 'a refused tab falls back to the product page, and an opened store is recorded as a click');
   const homeScreen = read('src/screens/HomeScreen.tsx');
   check(/onPress=\{\(\) => \(starterMode \? shopPiece\(item\.id, 'starter look'\) : toggleSwap\(\)\)\}/.test(homeScreen) && /onPress=\{\(\) => shopPiece\(item\.id, 'taste rail'\)\}/.test(homeScreen), "on Home a starter-look piece and a taste-rail piece open their store; a piece from the member's own closet still swaps");
   check(/if \(!opened\) navigation\.navigate\('ProductDetail', \{ productId, surface: 'shop' \}\);/.test(homeScreen) && /accessibilityLabel=\{`Swap the \$\{item\.name \|\| item\.category\}`\}\s*\n\s*onPress=\{toggleSwap\}/.test(homeScreen), 'a tap is never dead (the product page is the fallback), and the swap badge still swaps');
+  // ...and so does a Shop card and a trend-rail card.
+  const shopCards = read('src/screens/ShopScreen.tsx');
+  check(/onPress=\{\(\) => shopCard\(item\)\}/.test(shopCards) && /openAtStore\(item\.product\.id, \{ surface: 'shop', reason: item\.headline \}\)\.then\(opened => \{\s*\n\s*if \(!opened\) openDetails\(item\);/.test(shopCards), 'a Shop card opens its store; the product page is the fallback');
+  check(/onPress=\{\(\) => openDetails\(item\)\}/.test(shopCards) && /<Text style=\{styles\.cardDetails\}>Details<\/Text>/.test(shopCards) && /\{shopDestination\(item\.product\) \|\| 'Shop'\} ↗/.test(shopCards), 'each Shop card names the store it opens and keeps a Details link to the page with the reasons and Save');
+  const trendCards = read('src/screens/TrendInsightsScreen.tsx');
+  check(/onPress=\{\(\) => shopPiece\(product\.id, `trend: \$\{trend\.name\}`\)\}/.test(trendCards) && /shopPiece\(path\.next!\.piece\.id, `next step: \$\{path\.next!\.trend\.name\}`\);/.test(trendCards) && !/navigate\('ProductDetail', \{\s*\n\s*productId: product\.id,/.test(trendCards), "a piece on a trend's rail, and the trend path's next step, open their store");
+  check(/\(await adapter\.getById\(productId\)\) \?\? \(await resolveSeedProduct\(productId\)\)/.test(opener), "a trend's own seeded pieces can be opened at their store too");
   const scorer = read('src/services/marketplaceMatchingService.ts');
   check(/const strength = \{ garment: 3, silhouette: 2, color: 1 \} as const;/.test(scorer) && /if \(kind === 'garment'\) break;/.test(scorer), 'a product is credited to the trend that names it as a piece before one that only shares its cut');
   const fn = read('functions/src/index.ts');
