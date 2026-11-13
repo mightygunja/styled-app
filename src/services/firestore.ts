@@ -867,6 +867,7 @@ export type AffiliateSurface =
   | 'wishlist'
   | 'look-detail'
   | 'shopping-assistant'
+  | 'home'
   | 'unknown';
 
 export interface AffiliateClickDoc {

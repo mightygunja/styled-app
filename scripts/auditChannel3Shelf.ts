@@ -413,6 +413,14 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check((await refreshKept(null, 'men', 'track jacket', w.deps)) === null, 'with the search budget spent and nothing kept, there is no answer (the page keeps its curated pieces)');
 
   console.log('# Wiring');
+  // One tap on a starter-look piece goes to its store.
+  const opener = read('src/services/openAtStore.ts');
+  check(opener.indexOf("window.open('', '_blank')") > -1 && opener.indexOf("window.open('', '_blank')") < opener.indexOf('await adapter.getById(productId)'), 'the new tab is opened inside the tap, before anything is waited for (a tab opened later is blocked as a pop-up)');
+  check(/const product = await adapter\.getById\(productId\);\s*\n\s*if \(!product \|\| product\.inStock === false\) return giveUp\(\);/.test(opener) && /tab\.opener = null;\s*\n\s*tab\.location\.href = url;/.test(opener), 'the product is re-read first, a sold-out piece is not sent to its store, and the store cannot reach back into the app');
+  check(/if \(onWeb && !tab\) return false;/.test(opener) && /affiliateClicksService\s*\n\s*\.record\(getCurrentUserId\(\), product, \{/.test(opener), 'a refused tab falls back to the product page, and an opened store is recorded as a click');
+  const homeScreen = read('src/screens/HomeScreen.tsx');
+  check(/onPress=\{\(\) => \(starterMode \? shopPiece\(item\.id, 'starter look'\) : toggleSwap\(\)\)\}/.test(homeScreen) && /onPress=\{\(\) => shopPiece\(item\.id, 'taste rail'\)\}/.test(homeScreen), "on Home a starter-look piece and a taste-rail piece open their store; a piece from the member's own closet still swaps");
+  check(/if \(!opened\) navigation\.navigate\('ProductDetail', \{ productId, surface: 'shop' \}\);/.test(homeScreen) && /accessibilityLabel=\{`Swap the \$\{item\.name \|\| item\.category\}`\}\s*\n\s*onPress=\{toggleSwap\}/.test(homeScreen), 'a tap is never dead (the product page is the fallback), and the swap badge still swaps');
   const scorer = read('src/services/marketplaceMatchingService.ts');
   check(/const strength = \{ garment: 3, silhouette: 2, color: 1 \} as const;/.test(scorer) && /if \(kind === 'garment'\) break;/.test(scorer), 'a product is credited to the trend that names it as a piece before one that only shares its cut');
   const fn = read('functions/src/index.ts');

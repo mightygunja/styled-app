@@ -34,6 +34,7 @@ import {
 } from '../services/dailyOutfitService';
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
 import { homePrompts, profileKnowledge } from '../services/profilePrompts';
+import { openAtStore } from '../services/openAtStore';
 import { profileSignature } from '../services/profileEvents';
 import { discoveryService } from '../services/discoveryService';
 import { getCurrentWeather, CurrentWeather } from '../services/weatherService';
@@ -612,6 +613,15 @@ export default function HomeScreen() {
     );
   }
 
+  // One tap, straight to the store (openAtStore.ts). If the store cannot be
+  // opened - the piece has sold out, or the browser refused the new tab -
+  // the product page opens instead, which can say why. Never a dead tap.
+  const shopPiece = (productId: string, reason: 'starter look' | 'taste rail') => {
+    openAtStore(productId, { surface: 'home', reason }).then(opened => {
+      if (!opened) navigation.navigate('ProductDetail', { productId, surface: 'shop' });
+    });
+  };
+
   const lookImagesBlock = look ? (
     <View style={styles.lookCard}>
       {look.items[0]?.imageUrl && (
@@ -634,6 +644,7 @@ export default function HomeScreen() {
                 ? `$${(price / wears).toFixed(2)}/wear`
                 : `$${price.toFixed(2)}`;
           const isSwapping = swapTargetId === item.id;
+          const toggleSwap = () => setSwapTargetId(isSwapping ? null : item.id);
           return (
             <TouchableOpacity
               key={item.id}
@@ -642,9 +653,17 @@ export default function HomeScreen() {
               // The role is what makes this real on web: without it the
               // element never enters the accessibility tree, so keyboard
               // activation and assistive tech treat it as decoration.
-              accessibilityRole="button"
-              accessibilityLabel={`Swap the ${item.name || item.category}`}
-              onPress={() => setSwapTargetId(isSwapping ? null : item.id)}
+              // A starter look is made of shop products, so a tap on one
+              // goes to its store; the badge in the corner swaps it. A look
+              // from the member's own closet has nowhere to go, so the whole
+              // tile swaps, as before.
+              accessibilityRole={starterMode ? 'link' : 'button'}
+              accessibilityLabel={
+                starterMode
+                  ? `Shop the ${item.name || item.category} at its store`
+                  : `Swap the ${item.name || item.category}`
+              }
+              onPress={() => (starterMode ? shopPiece(item.id, 'starter look') : toggleSwap())}
             >
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="cover" />
@@ -653,9 +672,21 @@ export default function HomeScreen() {
                   <Text style={styles.thumbPlaceholderText}>{item.category}</Text>
                 </View>
               )}
-              <View style={[styles.swapBadge, isSwapping && styles.swapBadgeActive]}>
-                <Ionicons name="swap-horizontal" size={12} color={isSwapping ? colors.bone : colors.ink} />
-              </View>
+              {starterMode ? (
+                <TouchableOpacity
+                  style={[styles.swapBadge, isSwapping && styles.swapBadgeActive]}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Swap the ${item.name || item.category}`}
+                  onPress={toggleSwap}
+                >
+                  <Ionicons name="swap-horizontal" size={12} color={isSwapping ? colors.bone : colors.ink} />
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.swapBadge, isSwapping && styles.swapBadgeActive]}>
+                  <Ionicons name="swap-horizontal" size={12} color={isSwapping ? colors.bone : colors.ink} />
+                </View>
+              )}
               <View style={styles.thumbMeta}>
                 <Text style={styles.thumbName} numberOfLines={1}>{item.name}</Text>
                 {!!priceLabel && <Text style={styles.thumbPrice}>{priceLabel}</Text>}
@@ -825,9 +856,9 @@ export default function HomeScreen() {
               key={item.id}
               style={styles.starterRailCard}
               activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={`View ${item.name}`}
-              onPress={() => navigation.navigate('ProductDetail', { productId: item.id, surface: 'shop' })}
+              accessibilityRole="link"
+              accessibilityLabel={`Shop ${item.name} at its store`}
+              onPress={() => shopPiece(item.id, 'taste rail')}
             >
               <Image source={{ uri: item.imageUrl }} style={styles.starterRailImage} resizeMode="cover" />
               <Text style={styles.starterRailName} numberOfLines={1}>{item.name}</Text>
@@ -1107,7 +1138,8 @@ export default function HomeScreen() {
               <Text style={styles.starterEyebrow}>STARTING YOU OFF</Text>
               <Text style={styles.starterLine}>
                 Your closet is empty, so these looks are composed from the shop and matched to your
-                style profile. Add your own pieces and I dress you from your wardrobe instead.
+                style profile. Tap a piece to open it at its store. Add your own pieces and I dress
+                you from your wardrobe instead.
               </Text>
             </View>
           )}
