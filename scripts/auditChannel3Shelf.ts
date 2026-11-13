@@ -59,6 +59,7 @@ import {
 } from '../functions/src/channel3';
 import { carriesPiece, composeLiveRail, mergeRail, LIVE_RAIL_ENOUGH } from '../src/services/trendLiveRail';
 import { trendAnchors, trendAnchorSearches } from '../src/services/trendSeeds';
+import { starterPool, poolHasStandIns, STARTER_CORE } from '../src/services/starterPool';
 import { acceptChannel3Listing } from '../src/services/channel3Listing';
 import { colorFromDescription } from '../src/services/colorName';
 import { REAL_ENOUGH, STAND_INS_KEPT, STAND_IN_EVERY, isStandIn, preferRealProducts } from '../src/services/shopShelf';
@@ -306,6 +307,37 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check(mergeRail(jackets.slice(0, LIVE_RAIL_ENOUGH), curatedRail, 10).every(p => !isStandIn(p)), `a rail with ${LIVE_RAIL_ENOUGH} real pieces shows only real pieces`);
   check(mergeRail(jackets.slice(0, 1), curatedRail, 10).map(p => p.id).join() === 'j1,p-o1,p-o2' && mergeRail([], curatedRail, 10).length === 2, 'a rail short of real pieces shows them first and the curated pieces after - never an empty rail where there was one');
 
+  console.log("# Home's starter looks, from real products");
+  const piece = (id: string, category: string, real: boolean, color?: string, name = id): Product => ({ ...card(id, category, real), name, color });
+  const isBag = (p: Product) => /bag|tote/i.test(p.name);
+  const realRack = [
+    ...Array.from({ length: 12 }, (_, i) => piece(`c3-top${i}`, 'tops', true, i % 2 ? 'navy' : undefined)),
+    ...Array.from({ length: 8 }, (_, i) => piece(`c3-bot${i}`, 'bottoms', true, 'black')),
+    ...Array.from({ length: 6 }, (_, i) => piece(`c3-shoe${i}`, 'shoes', true, 'brown')),
+    ...Array.from({ length: 6 }, (_, i) => piece(`c3-acc${i}`, 'accessories', true, 'tan', i < 3 ? `tote bag ${i}` : `belt ${i}`)),
+  ];
+  const curatedRack = [
+    ...Array.from({ length: 10 }, (_, i) => piece(`p-t${i}`, 'tops', false, 'white')),
+    ...Array.from({ length: 6 }, (_, i) => piece(`p-b${i}`, 'bottoms', false, 'grey')),
+    ...Array.from({ length: 4 }, (_, i) => piece(`p-d${i}`, 'dresses', false, 'red')),
+  ];
+  // Curated pieces out-rank live ones (they carry hand-written style words), as on real data.
+  const starter = starterPool([...curatedRack, ...realRack], isBag);
+  check(starter.filter(p => ['tops', 'bottoms', 'shoes', 'accessories'].includes(p.category)).every(p => !isStandIn(p)), 'where the feed has real products for a category, the starter pool takes only real ones');
+  check(starter.filter(p => p.category === 'dresses').length === 4 && poolHasStandIns(starter), 'a category the feed has nothing for keeps its curated pieces (no category is lost)');
+  const firstTops = starter.filter(p => p.category === 'tops').slice(0, 6);
+  check(firstTops.every(p => !!p.color), 'real pieces whose colour is known come first: the outfit engine composes by colour');
+  check(starter.length <= STARTER_CORE + 10 && starter.some(p => p.category === 'shoes') && starter.some(p => isBag(p)) && starter.some(p => p.category === 'accessories' && !isBag(p)), 'the pool arrives with shoes, a bag and an accessory to finish a look');
+  const noFeed = starterPool(curatedRack, isBag);
+  check(noFeed.length === curatedRack.length && noFeed.every(isStandIn) && noFeed[0].id === 'p-t0', 'with no live feed the starter pool is the catalogue, in its ranked order, as before');
+  check(starterPool([...curatedRack, ...realRack], isBag, { preferReal: false })[0].id === 'p-t0', 'the catalogue-first pool is still there for the engine to fall back on');
+  const discovery = read('src/services/discoveryService.ts');
+  const starterFn = discovery.slice(discovery.indexOf('export async function buildStarterPools'), discovery.indexOf('const REAL_POOL_WORTH_HAVING'));
+  check(/if \(!profile\?\.wardrobeFocus\) return \[\];/.test(starterFn) && /\.search\(\{ wardrobeFocus: profile\.wardrobeFocus, pageSize: 160 \}\)/.test(starterFn), "Home asks the live feed only once the member's department is known");
+  check(/await liveProductsStillComing\(7000\)/.test(starterFn), 'a feed waking from idle is waited for, briefly, before starter looks fall back to stand-ins');
+  check(/if \(Object\.values\(pools\)\.some\(candidates => candidates\.length > 0\)\) return pools;/.test(starterFn) && /preferReal: false/.test(starterFn), 'if no look can be finished from real products, the catalogue composes one - Home is never empty');
+  check(/ranked\.filter\(\(\{ product \}\) => !product\.department \|\| product\.department === 'unisex'\)/.test(starterFn), 'an account with no department still gets cross-department pieces only');
+
   console.log('# Kept searches (trend pieces)');
   check(keptQuery('  Track   JACKET ') === 'track jacket' && keptQuery("Men's <b>suede</b> bomber!!") === "men's b suede b bomber" && keptQuery('x') === null && keptQuery(null) === null && (keptQuery('a'.repeat(200)) || '').length === 60, 'a phrase is cleaned before it is searched or stored');
   check(keptDocId('men', 'track jacket') === 'men-track-jacket' && keptDocId('women', "wide-leg trousers") === 'women-wide-leg-trousers' && keptDocId('men', 'track jacket') !== keptDocId('women', 'track jacket'), 'each department keeps its own record of a phrase');
@@ -342,13 +374,18 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check((await refreshKept(null, 'men', 'track jacket', w.deps)) === null, 'with the search budget spent and nothing kept, there is no answer (the page keeps its curated pieces)');
 
   console.log('# Wiring');
+  const scorer = read('src/services/marketplaceMatchingService.ts');
+  check(/const strength = \{ garment: 3, silhouette: 2, color: 1 \} as const;/.test(scorer) && /if \(kind === 'garment'\) break;/.test(scorer), 'a product is credited to the trend that names it as a piece before one that only shares its cut');
   const fn = read('functions/src/index.ts');
   const keptFn = fn.slice(fn.indexOf('export const searchChannel3Kept'), fn.indexOf('// ==================== PERSONAL TREND REPORT'));
   check(/if \(!department\) return \{ results: \{\}, pending: 0 \};/.test(keptFn) && /\.slice\(0, KEPT_QUERIES_PER_CALL\)/.test(keptFn) && /keptQuery\(q\)/.test(keptFn), 'the trend-pieces function answers nothing without a department, and cleans and caps what it is asked');
   check(/if \(keptFresh\(kept, started\)\) results\[queries\[index\]\] = /.test(keptFn) && keptFn.indexOf('keptFresh(kept, started)') < keptFn.indexOf('refreshKept('), 'fresh pieces are answered before anything is refreshed');
   check(/if \(Date\.now\(\) - started > KEPT_TIME_ALLOWED_MS\) \{/.test(keptFn) && /channel3Search\(apiKey, body\)/.test(keptFn), 'refreshing stops when its time is up, and every search it makes is counted against the monthly budget');
   const trendsPage = read('src/screens/TrendInsightsScreen.tsx');
-  check(/liveTrendPieces\(Array\.from\(new Set\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\)\)\), profile\?\.wardrobeFocus\)/.test(trendsPage) && /scoreAndRankProducts\(found\[piece\] \|\| \[\], profile, closetItems, \{ trends: \[remix\.trend\] \}\)/.test(trendsPage), "the Trends page asks for every trend's pieces in one request, in the member's department, and ranks them against the member's profile and closet");
+  check(/const allPieces = Array\.from\(new Set\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\)\)\);/.test(trendsPage) && /await liveTrendPieces\(missing, profile\?\.wardrobeFocus\);/.test(trendsPage) && /scoreAndRankProducts\(found\[piece\] \|\| \[\], profile, closetItems, \{ trends: \[remix\.trend\] \}\)/.test(trendsPage), "the Trends page asks for every trend's pieces in one request, in the member's department, and ranks them against the member's profile and closet");
+  check(/const hasLivePieces = \(liveRails\.get\(trend\.id\)\?\.length \?\? 0\) > 0;\s*\n\s*const amazonFirst = !!gap && !hasLivePieces;/.test(trendsPage) && /onPress=\{\(\) => \(amazonFirst \? searchAmazon\(remix\) : browseTrend\(remix\)\)\}/.test(trendsPage), "a trend with real pieces leads with the Shop that shows them; Amazon leads only when there are none");
+  check(/'Also on Amazon'/.test(trendsPage) && /onPress=\{\(\) => \(amazonFirst \? browseTrend\(remix\) : searchAmazon\(remix\)\)\}/.test(trendsPage), 'the Amazon search stays on every trend that names a missing piece, as the second choice');
+  check(/if \(Object\.keys\(found\)\.length > before\) await fillRails\(round \+ 1\);/.test(trendsPage) && /const missing = allPieces\.filter\(piece => !\(piece in found\)\);/.test(trendsPage), 'pieces the server had not reached are asked for again, while each answer brings something new');
   check(/const rail = mergeRail\(liveRails\.get\(trend\.id\) \?\? \[\], trendLooks\.get\(trend\.id\) \?\? \[\], RAIL_LIMIT\);/.test(trendsPage), "each trend's rail shows its real pieces");
   check(!/\$\{product\.price|product\.price/.test(trendsPage.slice(trendsPage.indexOf('THE LOOK, IN PIECES'), trendsPage.indexOf('styles.actionRow'))), 'a rail card shows no price (the snapshot may be hours old; the product page re-reads it)');
   const trendAdapter = read('src/services/affiliateNetwork.ts');

@@ -26,7 +26,9 @@ import { functions } from '../config/firebase';
 import { Item, Season } from '../types';
 import { Product, MatchedProduct } from '../models/product';
 import { isBagProduct, trendsForFocus } from './trendLooks';
-import { getActiveAdapter } from './affiliateNetwork';
+import { getActiveAdapter, liveProductsStillComing } from './affiliateNetwork';
+import { isStandIn } from './shopShelf';
+import { starterPool } from './starterPool';
 import { buildProfileMatchContext, ProfileMatchContext } from './profileMatchContext';
 import { scoreAndRankProducts } from './marketplaceMatchingService';
 import { computeOutfitUnlock, colorsWork, roleForCategory, GarmentRole } from './outfitUnlock';
@@ -445,7 +447,7 @@ export async function loadDiscovery(
 export async function buildStarterPools(
   profile: ProfileMatchContext | undefined
 ): Promise<Record<OccasionKey, OutfitCandidate[]>> {
-  const result = await getActiveAdapter()
+  const curatedSearch = getActiveAdapter()
     .search({
       colors: profile?.recommendedColors?.slice(0, 6),
       styleArchetypes: profile?.styleArchetypes,
@@ -457,9 +459,37 @@ export async function buildStarterPools(
     })
     .catch(() => ({ products: [] as Product[] }));
 
+  // Real products for the same looks: the live feed's shelves for this
+  // member's department. Asked for without the palette - colours is a hard
+  // filter, and scoring already puts palette pieces first - and only once a
+  // department is known, because a live product is never cross-department.
+  const liveSearch = async (): Promise<Product[]> => {
+    if (!profile?.wardrobeFocus) return [];
+    const ask = () =>
+      getActiveAdapter()
+        .search({ wardrobeFocus: profile.wardrobeFocus, pageSize: 160 })
+        // Retail products only. An eBay listing is one seller's one item,
+        // secondhand as often as not: fine to browse in the Shop, not a
+        // piece to build a new member's first look around.
+        .then(r => r.products.filter(product => !isStandIn(product) && !product.id.startsWith('ebay-')))
+        .catch(() => [] as Product[]);
+    const first = await ask();
+    // A feed waking from idle answers after the search has stopped waiting.
+    // These looks are the first thing a new member sees, so they are worth a
+    // few seconds more; when nothing is on its way this returns at once.
+    if (first.length < REAL_POOL_WORTH_HAVING && (await liveProductsStillComing(7000))) return ask();
+    return first;
+  };
+
+  const [result, live] = await Promise.all([curatedSearch, liveSearch()]);
+  const seenIds = new Set<string>();
+  const candidates = [...live, ...result.products].filter(product =>
+    seenIds.has(product.id) ? false : (seenIds.add(product.id), true)
+  );
+
   // Empty closet means the unlock signals stay silent, but profile fit and
   // avoid-rule preferences still order the pool.
-  const ranked = scoreAndRankProducts(result.products, profile, [], {});
+  const ranked = scoreAndRankProducts(candidates, profile, [], {});
 
   // With no declared wardrobe focus there is nothing safe to assume about
   // department, and a mixed rack is the one thing this surface must never
@@ -473,38 +503,35 @@ export async function buildStarterPools(
       ? ranked
       : ranked.filter(({ product }) => !product.department || product.department === 'unisex');
 
-  // The top of the ranking is garments (the profile scorers reward tops and
-  // trousers most), so the finishing categories are topped up explicitly:
-  // a starter look should arrive with shoes, a bag and one accessory, the
-  // same as a look built from a real closet.
-  const core = safeRanked.slice(0, 40);
-  const topUp = (predicate: (p: Product) => boolean, minimum: number) => {
-    const have = core.filter(({ product }) => predicate(product)).length;
-    if (have >= minimum) return;
-    safeRanked
-      .filter(entry => !core.includes(entry) && predicate(entry.product))
-      .slice(0, minimum - have)
-      .forEach(entry => core.push(entry));
-  };
-  topUp(p => p.category === 'shoes', 4);
-  topUp(p => (p.category === 'accessories' || p.category === 'bags') && isBagProduct(p), 3);
-  topUp(p => (p.category === 'accessories' || p.category === 'bags') && !isBagProduct(p), 3);
+  const toItems = (products: Product[]): Item[] =>
+    products.map(product => ({
+      id: product.id,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      category: product.category,
+      color: product.color,
+      brand: product.brand,
+      price: product.price,
+      subcategory: product.subcategory,
+      style: product.styleTags?.[0],
+      tags: product.styleTags,
+    }));
 
-  const pool: Item[] = core.map(({ product }) => ({
-    id: product.id,
-    name: product.name,
-    imageUrl: product.imageUrl,
-    category: product.category,
-    color: product.color,
-    brand: product.brand,
-    price: product.price,
-    subcategory: product.subcategory,
-    style: product.styleTags?.[0],
-    tags: product.styleTags,
-  }));
-
-  return buildAllOccasions(pool, {});
+  // Real products wherever the feed has them, stand-ins only where it does
+  // not (starterPool.ts). The top of the ranking is garments, so the pool is
+  // topped up to arrive with shoes, a bag and one accessory - the same as a
+  // look built from a real closet.
+  const rankedProducts = safeRanked.map(({ product }) => product);
+  const pools = buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct)), {});
+  if (Object.values(pools).some(candidates => candidates.length > 0)) return pools;
+  // The engine could not finish a single look from that pool (a thin feed
+  // can leave it short of a colour or a category it needs). A composed look
+  // from the catalogue beats an empty Home.
+  return buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct, { preferReal: false })), {});
 }
+
+/** Fewer live products than this and a late answer is worth waiting for. */
+const REAL_POOL_WORTH_HAVING = 30;
 
 export const discoveryService = {
   loadDiscovery,

@@ -273,11 +273,16 @@ export function scoreProduct(
   for (const trend of env.trends || []) {
     const kind = trendTextMatch(trend, haystack, productColor);
     if (!kind) continue;
-    // Keep the strongest hit: an anchor match beats a colour match.
-    if (!matchedTrend || (matchedTrendKind === 'color' && kind !== 'color')) {
+    // Keep the strongest hit: a piece the trend names beats a cut it shares
+    // with the trend, which beats a colour. The search used to stop at the
+    // first cut match, so wide-leg trousers with a relaxed fit were credited
+    // to whichever earlier trend also lists "relaxed" (seen on real
+    // products: "Right inside The barn jacket" on a pair of trousers).
+    const strength = { garment: 3, silhouette: 2, color: 1 } as const;
+    if (!matchedTrend || !matchedTrendKind || strength[kind] > strength[matchedTrendKind]) {
       matchedTrend = trend;
       matchedTrendKind = kind;
-      if (kind !== 'color') break;
+      if (kind === 'garment') break;
     }
   }
   if (matchedTrend && matchedTrendKind) {

@@ -76,6 +76,8 @@ const MAX_REPORT = 14;
 const RAIL_LIMIT = 10;
 /** Key pieces per trend that are looked up live (two reads as a look and keeps a page of trends to one request). */
 const LIVE_PIECES_PER_TREND = 2;
+/** Times the page asks for trend pieces the server had not reached yet. */
+const LIVE_RAIL_ROUNDS = 4;
 
 export default function TrendInsightsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -172,23 +174,33 @@ export default function TrendInsightsScreen() {
       const piecesByTrend = new Map(
         railTrends.map(remix => [remix.trend.id, trendAnchors(remix.trend, profile?.wardrobeFocus, LIVE_PIECES_PER_TREND)] as const)
       );
-      liveTrendPieces(Array.from(new Set(Array.from(piecesByTrend.values()).flat())), profile?.wardrobeFocus)
-        .then(found => {
-          if (loadIdRef.current !== loadId) return;
-          const rails = new Map<string, Product[]>();
-          railTrends.forEach(remix => {
-            const perPiece = (piecesByTrend.get(remix.trend.id) || []).map(piece => ({
-              piece,
-              products: scoreAndRankProducts(found[piece] || [], profile, closetItems, { trends: [remix.trend] }).map(
-                matched => matched.product
-              ),
-            }));
-            const rail = composeLiveRail(perPiece, RAIL_LIMIT);
-            if (rail.length > 0) rails.set(remix.trend.id, rail);
-          });
-          setLiveRails(rails);
-        })
-        .catch(() => {});
+      const allPieces = Array.from(new Set(Array.from(piecesByTrend.values()).flat()));
+      const found: Record<string, Product[]> = {};
+      const fillRails = async (round: number): Promise<void> => {
+        const missing = allPieces.filter(piece => !(piece in found));
+        if (missing.length === 0 || round > LIVE_RAIL_ROUNDS) return;
+        const answer = await liveTrendPieces(missing, profile?.wardrobeFocus);
+        if (loadIdRef.current !== loadId) return;
+        const before = Object.keys(found).length;
+        Object.assign(found, answer);
+        const rails = new Map<string, Product[]>();
+        railTrends.forEach(remix => {
+          const perPiece = (piecesByTrend.get(remix.trend.id) || []).map(piece => ({
+            piece,
+            products: scoreAndRankProducts(found[piece] || [], profile, closetItems, { trends: [remix.trend] }).map(
+              matched => matched.product
+            ),
+          }));
+          const rail = composeLiveRail(perPiece, RAIL_LIMIT);
+          if (rail.length > 0) rails.set(remix.trend.id, rail);
+        });
+        setLiveRails(rails);
+        // Pieces nobody has asked for before are found a few at a time; the
+        // server answers with what it reached. Ask again for the rest, as
+        // long as each answer brings something new.
+        if (Object.keys(found).length > before) await fillRails(round + 1);
+      };
+      fillRails(1).catch(() => {});
 
       // Second phase: the AI stylist's per-user read, upgraded in place once
       // it lands (day-cached, so revisits don't re-spend the model call).
@@ -292,12 +304,12 @@ export default function TrendInsightsScreen() {
   };
 
   /**
-   * Primary action. When the report names a specific missing piece, "Find
-   * the piece" means exactly that: a tagged Amazon search for the piece
-   * itself - all of Amazon's inventory, not the app's bounded catalogue.
-   * With no gap (they're already in the trend), it deepens in-app instead.
+   * The Amazon search for the piece the report says is missing: a tagged
+   * search of all of Amazon's inventory. It was the primary action while the
+   * app had only its curated catalogue to offer; with real pieces on the
+   * rail it is the second choice, after the Shop that shows them.
    */
-  const shopTrend = (remix: TrendRemix) => {
+  const searchAmazon = (remix: TrendRemix) => {
     shopperSignals.recordTrendTap(remix.trend.id).catch(() => {});
     const gap = gapFor(remix);
     if (gap) {
@@ -505,7 +517,14 @@ export default function TrendInsightsScreen() {
                 ? anchorLine(remix)
                 : remix.gapLine;
             const gap = gapFor(remix);
-            const shopLabel = gap ? 'Find it on Amazon' : 'Go deeper in Shop';
+            // With real pieces on the rail, the main button opens them: the
+            // Shop on this trend, real products first, each going to its own
+            // retailer. A generic Amazon search is then the lesser offer and
+            // sits beside it as a link. Without real pieces (feed off, or
+            // nothing found for this trend) Amazon stays the way to the piece.
+            const hasLivePieces = (liveRails.get(trend.id)?.length ?? 0) > 0;
+            const amazonFirst = !!gap && !hasLivePieces;
+            const shopLabel = amazonFirst ? 'Find it on Amazon' : hasLivePieces ? 'Shop this trend' : 'Go deeper in Shop';
             // Real products for the trend's pieces when there are enough of
             // them; otherwise whatever is real first, then the curated pieces.
             const rail = mergeRail(liveRails.get(trend.id) ?? [], trendLooks.get(trend.id) ?? [], RAIL_LIMIT);
@@ -609,18 +628,20 @@ export default function TrendInsightsScreen() {
                     style={styles.shopAction}
                     accessibilityRole="button"
                     accessibilityLabel={`Shop the ${trend.name} trend`}
-                    onPress={() => shopTrend(remix)}
+                    onPress={() => (amazonFirst ? searchAmazon(remix) : browseTrend(remix))}
                   >
                     <Text style={styles.shopActionText}>{shopLabel}</Text>
                   </TouchableOpacity>
                   {!!gap && (
                     <TouchableOpacity
                       style={styles.dismissAction}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Browse ${trend.name} in Shop`}
-                      onPress={() => browseTrend(remix)}
+                      accessibilityRole={amazonFirst ? 'button' : 'link'}
+                      accessibilityLabel={
+                        amazonFirst ? `Browse ${trend.name} in Shop` : `Search Amazon for the ${trend.name} piece`
+                      }
+                      onPress={() => (amazonFirst ? browseTrend(remix) : searchAmazon(remix))}
                     >
-                      <Text style={styles.browseActionText}>Browse in Shop</Text>
+                      <Text style={styles.browseActionText}>{amazonFirst ? 'Browse in Shop' : 'Also on Amazon'}</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity

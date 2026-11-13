@@ -171,7 +171,11 @@ check(!/category: category \|\| 'tops'/.test(search), 'the function no longer fi
 
 const discovery = read('src/services/discoveryService.ts');
 const searches = discovery.match(/\.search\(\{[\s\S]*?\}\)/g) || [];
-check(searches.length >= 3 && searches.every(call => !/wardrobeFocus/.test(call)), 'composed looks and gap picks are built from the curated catalogue only (no live listings in an outfit)');
+// Starter looks may use live RETAIL products (owner's call, 2026-11-13); that
+// one search names the department and drops every eBay listing. Every other
+// search here stays on the curated catalogue.
+const liveCalls = searches.filter(call => /wardrobeFocus/.test(call));
+check(searches.length >= 4 && liveCalls.length === 1 && /\.search\(\{ wardrobeFocus: profile\.wardrobeFocus, pageSize: 160 \}\)\s*\n(?:\s*\/\/[^\n]*\n)*\s*\.then\(r => r\.products\.filter\(product => !isStandIn\(product\) && !product\.id\.startsWith\('ebay-'\)\)\)/.test(discovery), 'no eBay listing is ever a piece of a composed look, and gap picks are built from the curated catalogue only');
 check(/wardrobeFocus: profile\?\.wardrobeFocus,/.test(read('src/screens/ShopScreen.tsx')), 'Shop searches the live feed for the account\'s own department');
 
 console.log(`\n${checks} checks.`);

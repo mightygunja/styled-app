@@ -789,6 +789,11 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
 
   private woken = false;
 
+  /** Whether an answer is still on its way (see searchDepartment). */
+  pending(): boolean {
+    return this.inFlight.size > 0;
+  }
+
   /**
    * Real products for a page of trend pieces ("track jacket", "chelsea
    * boot"), by piece, for this member's department(s). One call per
@@ -840,13 +845,17 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
       })
     );
 
-    // Both departments ("all"): each piece's products dealt out in turn.
+    // Both departments ("all"): each piece's products dealt out in turn. A
+    // piece the server answered with nothing is still in the answer (as an
+    // empty list): the caller can tell "nothing found" from "not reached
+    // yet", and asks again only for the second.
     queries.forEach(query => {
+      if (!perDepartment.some(answer => query in answer)) return;
       const lists = perDepartment.map(answer => answer[query] || []);
       const merged: Product[] = [];
       const longest = Math.max(0, ...lists.map(list => list.length));
       for (let i = 0; i < longest; i++) lists.forEach(list => list[i] && merged.push(list[i]));
-      if (merged.length > 0) out[query] = merged;
+      out[query] = merged;
     });
     const found = Object.values(out).flat();
     if (found.length > 0) {
@@ -1162,6 +1171,29 @@ const skimlinksAdapter = new SkimlinksAdapter();
 const amazonAdapter = new AmazonAssociatesAdapter();
 const ebayAdapter = new EbayPartnerNetworkAdapter();
 const channel3Adapter = new Channel3Adapter();
+
+/**
+ * For a surface that would rather wait a little than show stand-ins: when a
+ * live answer is still on its way, resolves true as soon as it lands, or
+ * false once `waitMs` has passed. Resolves false at once when nothing is on
+ * its way (feed off, no department, already answered), so a surface with
+ * nothing to wait for is never held up.
+ */
+export function liveProductsStillComing(waitMs: number): Promise<boolean> {
+  if (effectiveProvider() !== 'starter' || !channel3Adapter.pending()) return Promise.resolve(false);
+  return new Promise(resolve => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = onLiveProductsArrived(() => {
+      if (timer) clearTimeout(timer);
+      stop();
+      resolve(true);
+    });
+    timer = setTimeout(() => {
+      stop();
+      resolve(false);
+    }, waitMs);
+  });
+}
 
 /**
  * Real products for the pieces a trend names, by piece (see
