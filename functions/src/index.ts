@@ -3387,6 +3387,158 @@ export const searchEbayProducts = functions
     }
   });
 
+// ==================== CHANNEL3 ====================
+
+/**
+ * Channel3 product search (docs: channel3.ai/docs) - live products from many
+ * retailers, each with its own gender label, category, photo and a tracked
+ * buy link. Channel3 keeps half of the commission it collects.
+ *
+ * Credentials live in functions/.env:
+ *   CHANNEL3_API_KEY               - from the Channel3 dashboard
+ *   CHANNEL3_MONTHLY_SEARCH_LIMIT  - optional; searches allowed per calendar
+ *                                    month. Defaults to 1000, Channel3's free
+ *                                    allowance, so nothing is billed unless
+ *                                    this is raised on purpose. Each search
+ *                                    past the free 1000 costs $0.007.
+ *
+ * `department` ('women' | 'men') is required, exactly as for eBay: the app
+ * never shows a live product to both departments, so there is no search
+ * without one. It becomes Channel3's `gender` filter, with `age: adult` and
+ * in-stock only. Each product is returned with Channel3's own gender, age
+ * and category so the client can refuse anything that does not match
+ * (src/services/channel3Listing.ts does the refusing).
+ */
+const CHANNEL3_SEARCH_URL = 'https://api.trychannel3.com/v1/search';
+const CHANNEL3_FREE_SEARCHES = 1000;
+const CHANNEL3_CACHE_MS = 20 * 60 * 1000;
+const channel3Cache = new Map<string, { at: number; value: any }>();
+
+/**
+ * Counts one search against this month's budget. False when the budget is
+ * spent - the caller then answers with nothing instead of running up a bill.
+ */
+async function spendChannel3Search(limit: number): Promise<boolean> {
+  const month = new Date().toISOString().slice(0, 7);
+  const ref = db.collection('integrationUsage').doc(`channel3-${month}`);
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    const used = Number(snap.data()?.searches) || 0;
+    if (used >= limit) return false;
+    tx.set(ref, { searches: used + 1, limit, updatedAt: new Date().toISOString() }, { merge: true });
+    return true;
+  });
+}
+
+/** The photo to show: the product alone on a clean ground when Channel3 has one. */
+function channel3Image(images: any[]): string {
+  const list = Array.isArray(images) ? images : [];
+  const cleaned = list.find(i => i?.cleaned_url);
+  if (cleaned) return String(cleaned.cleaned_url);
+  const pick =
+    list.find(i => i?.shot_type === 'hero') || list.find(i => i?.is_main_image) || list[0];
+  return pick?.url ? String(pick.url) : '';
+}
+
+export const searchChannel3Products = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 30, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    try {
+      const apiKey = process.env.CHANNEL3_API_KEY || '';
+      if (!apiKey) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Channel3 is not configured (CHANNEL3_API_KEY in functions/.env).'
+        );
+      }
+
+      const { query, category, condition, minPrice, maxPrice, pageSize = 24 } = data || {};
+      const department = data?.department === 'women' || data?.department === 'men' ? data.department : null;
+      if (!department) return { products: [], hasMore: false, totalCount: 0 };
+
+      const typed = String(query || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+      const subject = typed || EBAY_CATEGORY_WORDS[String(category || '')] || 'clothing';
+      const filters: Record<string, any> = {
+        gender: department === 'men' ? 'male' : 'female',
+        age: 'adult',
+        availability: ['InStock'],
+      };
+      if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
+        filters.price = {
+          ...(typeof minPrice === 'number' ? { min_price: minPrice } : {}),
+          ...(typeof maxPrice === 'number' ? { max_price: maxPrice } : {}),
+        };
+      }
+      const body = { query: subject, filters, limit: Math.min(30, Math.max(1, Number(pageSize) || 24)) };
+
+      const cacheKey = JSON.stringify([body, condition || '']);
+      const cached = channel3Cache.get(cacheKey);
+      if (cached && Date.now() - cached.at < CHANNEL3_CACHE_MS) return cached.value;
+
+      const limit = Math.max(0, Number(process.env.CHANNEL3_MONTHLY_SEARCH_LIMIT) || CHANNEL3_FREE_SEARCHES);
+      if (!(await spendChannel3Search(limit))) {
+        console.log(`Channel3: monthly search limit of ${limit} reached; answering with nothing`);
+        return { products: [], hasMore: false, totalCount: 0, capped: true };
+      }
+
+      const response = await fetch(CHANNEL3_SEARCH_URL, {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Channel3 search failed', response.status, text.slice(0, 300));
+        throw new functions.https.HttpsError('internal', `Channel3 search failed: ${response.status}`);
+      }
+      const result = (await response.json()) as any;
+      const items = Array.isArray(result.products) ? result.products : [];
+      const wantUsed = condition === 'secondhand';
+
+      const products = items
+        .map((item: any) => {
+          const offers = (Array.isArray(item?.offers) ? item.offers : []).filter(
+            (o: any) =>
+              o?.url && o?.domain && o?.availability === 'InStock' && wantUsed === /used|refurbished/i.test(String(o?.condition || ''))
+          );
+          // The offer that pays, when there is one; otherwise the first in stock.
+          const offer = offers.find((o: any) => Number(o.max_commission_rate) > 0) || offers[0];
+          if (!item?.id || !item?.title || !offer) return null;
+          // The docs show the amount under either name.
+          const amount = Number(offer.price?.price ?? offer.price?.amount);
+          const pathNames = Array.isArray(item.category?.path)
+            ? item.category.path.map((n: any) => String(n?.title || n?.name || n || ''))
+            : String(item.category?.path || '').split(/\s*[>/]\s*/);
+          return {
+            id: `c3-${item.id}`,
+            name: String(item.title),
+            brand: String(item.brands?.[0]?.name || ''),
+            gender: item.gender ?? null,
+            age: item.age ?? null,
+            // Leaf first: the piece, then where it sits.
+            categoryNames: [String(item.category?.title || ''), ...pathNames.reverse()].filter(Boolean),
+            imageUrl: channel3Image(item.images),
+            price: amount,
+            originalPrice: Number(offer.price?.compare_at_price) || null,
+            currency: String(offer.price?.currency || 'USD'),
+            sourceUrl: String(offer.url),
+            domain: String(offer.domain),
+            condition: offer.condition ?? null,
+          };
+        })
+        .filter((p: any) => p && p.imageUrl && p.price > 0);
+
+      const value = { products, department, hasMore: !!result.next_page_token, totalCount: products.length };
+      if (channel3Cache.size > 300) channel3Cache.clear();
+      channel3Cache.set(cacheKey, { at: Date.now(), value });
+      return value;
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error searching Channel3:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
 // ==================== PERSONAL TREND REPORT ====================
 
 /**

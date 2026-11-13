@@ -217,7 +217,7 @@ export default function ShopScreen() {
                 wardrobeFocus: profile.wardrobeFocus,
                 pageSize: 24,
               })
-              .then(r => r.products.filter(p => p.id.startsWith('ebay-')))
+              .then(r => r.products.filter(p => p.id.startsWith('ebay-') || p.id.startsWith('c3-')))
               .catch(() => [])
           )
         );

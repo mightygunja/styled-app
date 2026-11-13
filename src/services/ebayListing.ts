@@ -44,8 +44,8 @@ export interface RawEbayListing {
 
 export type ListingDepartment = 'women' | 'men';
 
-const KIDS = /\b(?:kids?|boys?|girls?|toddlers?|bab(?:y|ies)|infants?|youth|juniors?|newborns?|child(?:ren)?(?:'s)?)\b/;
-const NOT_ONE_PIECE =
+export const KIDS = /\b(?:kids?|boys?|girls?|toddlers?|bab(?:y|ies)|infants?|youth|juniors?|newborns?|child(?:ren)?(?:'s)?)\b/;
+export const NOT_ONE_PIECE =
   /\b(?:lots?|bundles?|wholesale|bulk|costumes?|cosplay|halloween|sewing pattern|pattern only|replacement|repair kit|fabric by|patch(?:es)?|dolls?|mannequins?|hangers?)\b/;
 
 const lower = (text: string) => (text || '').toLowerCase().replace(/[’`]/g, "'");

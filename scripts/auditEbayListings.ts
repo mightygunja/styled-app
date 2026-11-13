@@ -152,7 +152,13 @@ check(/const departments = departmentsFor\(filters\.wardrobeFocus\);[\s\S]*?if \
 check(/\.map\(listing => acceptListing\(listing, department, \{ category: filters\.category \}\)\)/.test(ebay) && !/as Product\[\]/.test(ebay), 'every listing goes through acceptListing; none is passed along as it came');
 check(/searchEbayProductsFn\(\{ \.\.\.rest, department \}\)/.test(ebay), 'each call to the function names one department');
 check(/if \(ebayStatus === 'off' && Date\.now\(\) < ebayRetryAt\) return empty;/.test(ebay) && /EBAY_TIMEOUT_MS/.test(ebay), 'a feed that is not answering is left alone, and a slow one cannot hold the page');
-check(/const EBAY_APPROVED_FOR_MOBILE_APPS = false;/.test(adapter) && /if \(usesEbay && Platform\.OS !== 'web' && !EBAY_APPROVED_FOR_MOBILE_APPS\) return 'amazon';/.test(adapter), 'eBay stays off in the iPhone app until eBay approves it');
+check(
+  /const EBAY_APPROVED_FOR_MOBILE_APPS = false;/.test(adapter) &&
+    /const EBAY_ALLOWED_HERE = Platform\.OS === 'web' \|\| EBAY_APPROVED_FOR_MOBILE_APPS;/.test(adapter) &&
+    /\.\.\.\(EBAY_ALLOWED_HERE \? \[\{ name: 'eBay', adapter: ebayAdapter \}\] : \[\]\)/.test(adapter) &&
+    /if \(MARKETPLACE_PROVIDER === 'ebay' && !EBAY_ALLOWED_HERE\) return 'amazon';/.test(adapter),
+  'eBay stays off in the iPhone app until eBay approves it'
+);
 check(/if \(provider === 'starter' && !ebayIsLive\(\)\) \{/.test(adapter), 'the page says "live eBay listings" only once they are on it');
 check(/return \(provider === 'ebay' \|\| provider === 'starter'\) && ebayIsLive\(\);/.test(adapter), 'the Secondhand filter appears only while eBay is answering');
 

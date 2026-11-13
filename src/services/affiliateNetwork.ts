@@ -32,6 +32,7 @@
 
 import { Platform } from 'react-native';
 import { acceptListing, departmentsFor, ListingDepartment, RawEbayListing } from './ebayListing';
+import { acceptChannel3Listing, RawChannel3Listing } from './channel3Listing';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import {
@@ -96,10 +97,17 @@ const MARKETPLACE_PROVIDER: MarketplaceProvider = 'starter';
  */
 const EBAY_APPROVED_FOR_MOBILE_APPS = false;
 
-/** The provider actually in force on this platform - see the ePN note above. */
+/** Whether eBay listings may appear on this platform - see the ePN note above. */
+const EBAY_ALLOWED_HERE = Platform.OS === 'web' || EBAY_APPROVED_FOR_MOBILE_APPS;
+
+/**
+ * The provider actually in force on this platform. The eBay-only provider
+ * falls back to the curated catalogue where eBay is not allowed; 'starter'
+ * stays 'starter' everywhere and simply runs without its eBay member there
+ * (see the adapters table), so Channel3 can serve the app as well as the web.
+ */
 function effectiveProvider(): MarketplaceProvider {
-  const usesEbay = MARKETPLACE_PROVIDER === 'starter' || MARKETPLACE_PROVIDER === 'ebay';
-  if (usesEbay && Platform.OS !== 'web' && !EBAY_APPROVED_FOR_MOBILE_APPS) return 'amazon';
+  if (MARKETPLACE_PROVIDER === 'ebay' && !EBAY_ALLOWED_HERE) return 'amazon';
   return MARKETPLACE_PROVIDER;
 }
 
@@ -587,6 +595,110 @@ class EbayPartnerNetworkAdapter implements AffiliateNetworkAdapter {
   }
 }
 
+const searchChannel3ProductsFn = httpsCallable(functions, 'searchChannel3Products');
+
+/** Same three states, and the same manners, as the eBay feed above. */
+let channel3Status: EbayStatus = 'unknown';
+let channel3RetryAt = 0;
+const CHANNEL3_RETRY_KEY = 'channel3:retryAt';
+try {
+  const stored = typeof localStorage !== 'undefined' ? Number(localStorage.getItem(CHANNEL3_RETRY_KEY)) : 0;
+  if (stored > Date.now()) {
+    channel3Status = 'off';
+    channel3RetryAt = stored;
+  }
+} catch {
+  /* no storage (the app): the session-only memory still applies */
+}
+
+function rememberChannel3Off(until: number) {
+  channel3Status = 'off';
+  channel3RetryAt = until;
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(CHANNEL3_RETRY_KEY, String(until));
+  } catch {
+    /* session-only */
+  }
+}
+
+/** True once a search has returned live Channel3 products this session. */
+export function channel3IsLive(): boolean {
+  return channel3Status === 'live';
+}
+
+/**
+ * Channel3: one product API over many retailers, with tracked buy links.
+ *
+ * The Cloud Function holds the key, asks Channel3 for ONE department at a
+ * time (its `gender` filter) and enforces the monthly search budget. Every
+ * product then goes through acceptChannel3Listing (channel3Listing.ts),
+ * which shows it only when Channel3's own gender label is exactly the
+ * department searched, it is an adult's piece, its title agrees and it
+ * lands in a clothing category. An account that has not chosen a
+ * department gets no live products at all.
+ *
+ * Buy links arrive already tracked, so wrapLink is a pass-through.
+ */
+class Channel3Adapter implements AffiliateNetworkAdapter {
+  private async searchDepartment(filters: ProductSearchFilters, department: ListingDepartment): Promise<Product[]> {
+    const { wardrobeFocus, ...rest } = filters;
+    const call = searchChannel3ProductsFn({ ...rest, department });
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Channel3 search timed out')),
+        channel3Status === 'live' ? EBAY_TIMEOUT_MS : EBAY_FIRST_TIMEOUT_MS
+      )
+    );
+    const result = await Promise.race([call, timeout]);
+    const listings = (((result as any).data || {}).products || []) as RawChannel3Listing[];
+    return listings
+      .map(listing => acceptChannel3Listing(listing, department, { category: filters.category }))
+      .filter((product): product is Product => product !== null);
+  }
+
+  async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
+    const empty: ProductSearchResult = { products: [], hasMore: false, totalCount: 0 };
+    const departments = departmentsFor(filters.wardrobeFocus);
+    // No department chosen: nothing from a live feed.
+    if (departments.length === 0) return empty;
+    if (channel3Status === 'off' && Date.now() < channel3RetryAt) return empty;
+
+    try {
+      const perDepartment = await Promise.all(departments.map(d => this.searchDepartment(filters, d)));
+      const products: Product[] = [];
+      const longest = Math.max(0, ...perDepartment.map(p => p.length));
+      for (let i = 0; i < longest; i++) perDepartment.forEach(list => list[i] && products.push(list[i]));
+      if (products.length > 0) channel3Status = 'live';
+      else if (channel3Status === 'off') channel3Status = 'unknown';
+
+      const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
+      return { products: refined, hasMore: false, totalCount: refined.length };
+    } catch (error: any) {
+      const unconfigured = String(error?.code || '').includes('failed-precondition');
+      rememberChannel3Off(Date.now() + (unconfigured ? EBAY_RETRY_UNCONFIGURED_MS : EBAY_RETRY_FAILED_MS));
+      if (!unconfigured) console.error('Channel3 search failed', error);
+      return empty;
+    }
+  }
+
+  /** Detail views come from the ResilientAdapter's session index. */
+  async getById(): Promise<Product | null> {
+    return null;
+  }
+
+  async getByIds(): Promise<Product[]> {
+    return [];
+  }
+
+  async wrapLink(product: Product): Promise<string> {
+    return product.sourceUrl;
+  }
+
+  async getFacets() {
+    return { brands: [], retailers: [] };
+  }
+}
+
 const searchRakutenProductsFn = httpsCallable(functions, 'searchRakutenProducts');
 
 class RakutenAdvertisingAdapter implements AffiliateNetworkAdapter {
@@ -710,7 +822,9 @@ class CompositeAdapter implements AffiliateNetworkAdapter {
         ? 'Skimlinks'
         : product.id.startsWith('ebay-')
           ? 'eBay'
-          : this.members.some(m => m.name === 'Amazon')
+          : product.id.startsWith('c3-')
+            ? 'Channel3'
+            : this.members.some(m => m.name === 'Amazon')
             ? 'Amazon'
             : 'Sovrn';
     const member = this.members.find(m => m.name === origin) || this.members[0];
@@ -838,17 +952,20 @@ const rakutenAdapter = new RakutenAdvertisingAdapter();
 const skimlinksAdapter = new SkimlinksAdapter();
 const amazonAdapter = new AmazonAssociatesAdapter();
 const ebayAdapter = new EbayPartnerNetworkAdapter();
+const channel3Adapter = new Channel3Adapter();
 
 const adapters: Record<MarketplaceProvider, AffiliateNetworkAdapter> = {
   mock: new ResilientAdapter(new MockCatalogAdapter()),
   amazon: new ResilientAdapter(amazonAdapter),
   ebay: new ResilientAdapter(ebayAdapter),
-  // The low-barrier pair together: curated Amazon picks plus live eBay
-  // inventory (which also lights up the secondhand filter for real).
+  // The curated picks plus the live feeds: Channel3 everywhere, eBay only
+  // where eBay allows it (the website, until ePN approves the app). Each
+  // live member is silent until its keys are deployed.
   starter: new ResilientAdapter(
     new CompositeAdapter([
       { name: 'Amazon', adapter: amazonAdapter },
-      { name: 'eBay', adapter: ebayAdapter },
+      { name: 'Channel3', adapter: channel3Adapter },
+      ...(EBAY_ALLOWED_HERE ? [{ name: 'eBay', adapter: ebayAdapter }] : []),
     ])
   ),
   sovrn: new ResilientAdapter(sovrnAdapter),
@@ -876,6 +993,14 @@ export function isMockProvider(): boolean {
  * Under Amazon it also carries the disclosure wording Amazon's operating
  * agreement requires wherever its links appear.
  */
+/**
+ * Shown wherever Channel3 products appear. The first sentence is the
+ * disclosure Channel3's terms require, word for word, near the links.
+ */
+const CHANNEL3_NOTICE =
+  'We may earn a commission when you buy through links on this page. Live listings from retail ' +
+  'partners show the retailer\'s own photo and price and open that exact product. ';
+
 export function curatedCatalogNotice(): string | null {
   const provider = effectiveProvider();
   if (provider === 'mock') {
@@ -898,6 +1023,7 @@ export function curatedCatalogNotice(): string | null {
   // page - before that this is the curated catalogue and says so.
   if (provider === 'starter' && !ebayIsLive()) {
     return (
+      (channel3IsLive() ? CHANNEL3_NOTICE : '') +
       'Picks curated by us; photos are representative, not exact product shots, prices are a ' +
       'guide to what the piece typically costs, and each one links to a matching search on Amazon ' +
       'rather than a specific in-stock item. As an Amazon Associate we earn from qualifying purchases.'
@@ -905,6 +1031,7 @@ export function curatedCatalogNotice(): string | null {
   }
   if (provider === 'starter') {
     return (
+      (channel3IsLive() ? CHANNEL3_NOTICE : '') +
       'A mix of picks curated by us (representative photos, linking to matching Amazon ' +
       'searches) and live eBay listings, which you buy on eBay. We earn a commission from eBay ' +
       'on purchases made through those listings. As an Amazon Associate we earn from ' +
@@ -999,6 +1126,8 @@ export function productFromListing(
  */
 export function shopDestination(product: Product): string | null {
   if (product.id.startsWith('ebay-')) return 'eBay';
+  // A Channel3 product opens at the store its offer is from.
+  if (product.id.startsWith('c3-')) return product.retailer || null;
   const provider = effectiveProvider();
   if (provider === 'amazon' || provider === 'starter') {
     return merchantDeeplink(product) ? product.retailer : 'Amazon';
