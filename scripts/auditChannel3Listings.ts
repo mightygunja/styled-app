@@ -18,7 +18,9 @@
  *   - an accepted product lacks a department, a category, a photo, a price,
  *     a store or an https buy link;
  *   - the feed could be searched without a department, could spend past
- *     the monthly budget, or could appear without its required disclosure.
+ *     the monthly budget, or could appear without its required disclosure;
+ *   - a price or discount sort the shopper chose is not the order shown
+ *     (scoring re-ranks by match, so the Shop must re-apply it afterwards).
  *
  * Run:  npx tsx scripts/auditChannel3Listings.ts
  */
@@ -27,7 +29,8 @@ import fs from 'fs';
 import path from 'path';
 import { acceptChannel3Listing, CHANNEL3_GENDER, RawChannel3Listing } from '../src/services/channel3Listing';
 import { departmentVisible } from '../src/services/departmentFit';
-import { payingStoresFirst } from '../src/models/product';
+import { payingStoresFirst, orderMatchedForSort, isShopperSort, discountPercent } from '../src/models/product';
+import { channel3Filters, channel3Photo, mapChannel3Product } from '../functions/src/channel3';
 
 let failures = 0;
 let checks = 0;
@@ -54,6 +57,11 @@ const product = (name: string, gender: string | null, categoryNames: string[], e
   sourceUrl: 'https://www.buy.trychannel3.com/abc123',
   domain: 'www.nordstrom.com',
   condition: 'new',
+  // A product-only photo and nobody named in any photo: the photo rules
+  // (scripts/auditChannel3Shelf.ts) pass, so these fixtures test the rest.
+  shot: 'hero',
+  people: [],
+  imageWho: null,
   ...extra,
 });
 
@@ -130,11 +138,52 @@ const ordered = payingStoresFirst(mixed, p => p).map(p => p.name);
 check(ordered.join(',') === 'Curated Coat,B,D,A,C', `paying stores and curated picks lead, unpaid stores follow, each group in its own order (got ${ordered.join(',')})`);
 check(payingStoresFirst([] as typeof mixed, p => p).length === 0 && mixed.map(p => p.name).join(',') === 'A,Curated Coat,B,C,D', 'the original list is left untouched');
 const shop = read('src/screens/ShopScreen.tsx');
-check(/const ranked = sort === 'match' \? payingStoresFirst\(scored, m => m\.product\) : scored;/.test(shop), 'the Shop lists paying stores first in its default order');
+check(/const ranked = sort === 'match' \? payingStoresFirst\(scored, m => m\.product\) : orderMatchedForSort\(scored, sort\);/.test(shop), 'the Shop lists paying stores first in its default order, and in the chosen order otherwise');
 check(/a\.order - b\.order \|\|\s*Number\(a\.m\.product\.paysCommission === false\) - Number\(b\.m\.product\.paysCommission === false\) \|\|\s*b\.m\.matchScore - a\.m\.matchScore/.test(shop), 'under a trend, paying stores lead within each kind of match');
 check(/Stores that ' \+\s*\n\s*'pay us a commission are listed ahead of stores that do not\. /.test(read('src/services/affiliateNetwork.ts')), 'the page says paying stores are listed first');
 const fnText = read('functions/src/index.ts');
-check(/commissionRate: rate\(offer\),/.test(fnText) && /offers\.reduce\(\(best: any, o: any\) => \(rate\(o\) > rate\(best\) \? o : best\), offers\[0\]\)/.test(fnText), "the function picks the best-paying offer and passes its rate on");
+const twoOffers = mapChannel3Product({
+  id: 'x1', title: 'Wool Coat', gender: 'female', images: [{ url: 'https://cdn.trychannel3.com/a', is_main_image: true, shot_type: 'hero' }],
+  offers: [
+    { url: 'https://buy.trychannel3.com/a', domain: 'a.com', price: { price: 100 }, availability: 'InStock', max_commission_rate: 0 },
+    { url: 'https://buy.trychannel3.com/b', domain: 'b.com', price: { price: 110 }, availability: 'InStock', max_commission_rate: 0.07 },
+    { url: 'https://buy.trychannel3.com/c', domain: 'c.com', price: { price: 90 }, availability: 'OutOfStock', max_commission_rate: 0.2 },
+  ],
+});
+check(twoOffers?.domain === 'b.com' && twoOffers.commissionRate === 0.07 && twoOffers.price === 110, "the function picks the best-paying in-stock offer and passes its rate on");
+
+console.log("# The shopper's sort");
+// Scored as the Shop receives them from scoreAndRankProducts: best match
+// first, which is NOT price order. An unpaid store sits in the middle, and
+// two pieces share a price.
+const scoredCoat = (name: string, price: number, matchScore: number, extra: Partial<RawChannel3Listing> = {}) => ({
+  product: acceptChannel3Listing(product(name, 'female', ['Coats'], { price, ...extra }), 'women')!,
+  matchScore,
+});
+const byMatch = [
+  scoredCoat('P70', 70, 95),
+  scoredCoat('P35', 35, 90, { commissionRate: 0 }),
+  scoredCoat('P50-weak', 50, 60),
+  scoredCoat('P320', 320, 85, { originalPrice: 400 }),
+  scoredCoat('P50-strong', 50, 80, { originalPrice: 100 }),
+  scoredCoat('P36', 36, 40, { originalPrice: 40 }),
+].sort((a, b) => b.matchScore - a.matchScore);
+const names = (list: typeof byMatch) => list.map(m => m.product.name).join(',');
+const before = names(byMatch);
+const rising = orderMatchedForSort(byMatch, 'price-low');
+const falling = orderMatchedForSort(byMatch, 'price-high');
+const deepest = orderMatchedForSort(byMatch, 'discount');
+const neverRises = (values: number[]) => values.every((v, i) => i === 0 || values[i - 1] >= v);
+const neverFalls = (values: number[]) => values.every((v, i) => i === 0 || values[i - 1] <= v);
+check(neverFalls(rising.map(m => m.product.price)) && names(rising) === 'P35,P36,P50-strong,P50-weak,P70,P320', `"Price ↑" lists cheapest first, the better match first at the same price (got ${names(rising)})`);
+check(neverRises(falling.map(m => m.product.price)) && names(falling) === 'P320,P70,P50-strong,P50-weak,P36,P35', `"Price ↓" lists dearest first, the better match first at the same price (got ${names(falling)})`);
+check(neverRises(deepest.map(m => discountPercent(m.product) ?? 0)) && names(deepest) === 'P50-strong,P320,P36,P70,P35,P50-weak', `"Biggest discount" lists the deepest cut first, then full-price pieces by match (got ${names(deepest)})`);
+check(rising.length === byMatch.length && names(byMatch) === before, 'no piece is dropped and the scored list is left untouched');
+check(orderMatchedForSort(byMatch, 'match') === byMatch && orderMatchedForSort(byMatch, undefined) === byMatch && orderMatchedForSort(byMatch, 'newest') === byMatch, 'the default match order is passed through unchanged');
+check(isShopperSort('price-low') && isShopperSort('price-high') && isShopperSort('discount') && !isShopperSort('match') && !isShopperSort('newest') && !isShopperSort(undefined), 'only the price and discount chips count as a chosen order');
+check(shop.indexOf('const scored = scoreAndRankProducts(') > 0 && shop.indexOf('const scored = scoreAndRankProducts(') < shop.indexOf('orderMatchedForSort(scored, sort)'), 'the chosen order is applied after scoring, which re-ranks by match');
+check(/if \(isShopperSort\(sort\)\) return orderMatchedForSort\(carrying\.map\(x => x\.m\), sort\);\s*\n\s*return carrying\s*\n/.test(shop) && /\}, \[products, focusTrend, route\.params\?\.trendGap, sort\]\);/.test(shop), 'under a trend, a chosen price order wins over the trend order');
+check(/\.sort\(\(a, b\) => b\.matchScore - a\.matchScore\);\s*\n\}/.test(read('src/services/marketplaceMatchingService.ts')), 'scoring itself still ranks by match for every other caller');
 
 console.log('# Wiring');
 const adapter = read('src/services/affiliateNetwork.ts');
@@ -149,13 +198,25 @@ check(/product\.id\.startsWith\('c3-'\)\s*\n?\s*\? 'Channel3'/.test(adapter), "a
 const fn = read('functions/src/index.ts');
 const search = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.indexOf('// ==================== PERSONAL TREND REPORT'));
 check(/if \(!department\) return \{ products: \[\], hasMore: false, totalCount: 0 \};/.test(search), 'the function answers nothing without a department');
-check(/gender: department === 'men' \? 'male' : 'female',\s*\n\s*age: \['adult'\],\s*\n\s*availability: \['InStock'\],/.test(search), 'it asks Channel3 for one gender, adults, in stock');
-check(/if \(!\(await spendChannel3Search\(limit\)\)\) \{/.test(search) && /capped: true/.test(search), 'a search past the monthly budget is not made');
-check(/Number\(process\.env\.CHANNEL3_MONTHLY_SEARCH_LIMIT\) \|\| CHANNEL3_FREE_SEARCHES/.test(search) && /const CHANNEL3_FREE_SEARCHES = 1000;/.test(fn), "the budget defaults to Channel3's free allowance");
-check(search.indexOf('channel3Cache.get(cacheKey)') < search.indexOf('spendChannel3Search(limit)'), 'a repeated search is answered from memory before any credit is spent');
-check(/gender: item\.gender \?\? null,/.test(search) && /age: item\.age \?\? null,/.test(search) && /categoryNames:/.test(search), "Channel3's own gender, age and category are passed on for the client to check");
-const image = fn.slice(fn.indexOf('function channel3Image'), fn.indexOf('export const searchChannel3Products'));
-check(!/\.cleaned_url/.test(image) && /CHANNEL3_POOR_SHOTS\.has\(String\(i\.shot_type\)\)/.test(image) && /whole\.find\(i => i\.is_main_image\)/.test(image), "the card shows the retailer's own main photo, never a close-up, a size chart or the tight 'cleaned' cut-out");
+check(JSON.stringify(channel3Filters('men')) === JSON.stringify({ gender: 'male', age: ['adult'], availability: ['InStock'] }) && channel3Filters('women').gender === 'female' && /const filters: Record<string, any> = channel3Filters\(department\);/.test(search), 'it asks Channel3 for one gender, adults (as a list), in stock');
+const budget = fn.slice(fn.indexOf('async function channel3Search'), fn.indexOf('async function channel3ProductById'));
+check(budget.indexOf('if (!(await spendChannel3Search(limit)))') > -1 && budget.indexOf('if (!(await spendChannel3Search(limit)))') < budget.indexOf('fetch(') && /if \(!result\) return \{ products: \[\], hasMore: false, totalCount: 0, capped: true \};/.test(search), 'a search past the monthly budget is not made');
+check(/Number\(process\.env\.CHANNEL3_MONTHLY_SEARCH_LIMIT\) \|\| CHANNEL3_FREE_SEARCHES/.test(fn) && /const CHANNEL3_FREE_SEARCHES = 1000;/.test(fn), "the budget defaults to Channel3's free allowance");
+check(search.indexOf('channel3Cache.get(cacheKey)') > -1 && search.indexOf('channel3Cache.get(cacheKey)') < search.indexOf('channel3Search(apiKey, body)'), 'a repeated search is answered from memory before any credit is spent');
+const passed = mapChannel3Product({
+  id: 'x2', title: 'Linen Shirt', gender: 'male', age: 'adult',
+  category: { title: 'Shirts', path: [{ title: 'Clothing' }, { title: 'Shirts & Tops' }, { title: 'Shirts' }] },
+  images: [{ url: 'https://cdn.trychannel3.com/a', is_main_image: true, shot_type: 'hero' }],
+  offers: [{ url: 'https://buy.trychannel3.com/a', domain: 'a.com', price: { price: 100 }, availability: 'InStock' }],
+});
+check(passed?.gender === 'male' && passed.age === 'adult' && passed.categoryNames.join('>') === 'Shirts>Shirts>Shirts & Tops>Clothing' && passed.id === 'c3-x2', "Channel3's own gender, age and category are passed on for the client to check");
+const photoPick = channel3Photo([
+  { url: 'https://cdn.trychannel3.com/detail', cleaned_url: 'https://cdn.trychannel3.com/cleaned/detail', is_main_image: true, shot_type: 'detail' },
+  { url: 'https://cdn.trychannel3.com/chart', shot_type: 'size_chart' },
+  { url: 'https://cdn.trychannel3.com/model', cleaned_url: 'https://cdn.trychannel3.com/cleaned/model', shot_type: 'on_model', alt_text: 'Man wearing a linen shirt.' },
+  { url: 'https://cdn.trychannel3.com/hero', shot_type: 'hero' },
+]);
+check(photoPick.url === 'https://cdn.trychannel3.com/hero' && !/cleaned/.test(photoPick.url), "the card shows the retailer's own photo of the whole piece, never a close-up, a size chart or the tight 'cleaned' cut-out");
 check(!/CHANNEL3_API_KEY/.test(read('src/services/affiliateNetwork.ts')) && !/CHANNEL3_API_KEY/.test(read('src/services/channel3Listing.ts')), 'the key lives only on the server');
 
 console.log(`\n${checks} checks.`);

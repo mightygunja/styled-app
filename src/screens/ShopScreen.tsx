@@ -30,7 +30,16 @@ import {
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
 import { departmentQuestionDue, profileKnowledge, ProfileKnowledge } from '../services/profilePrompts';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
-import { MatchedProduct, isOnSale, discountPercent, ProductSort, payingStoresFirst } from '../models/product';
+import { preferRealProducts } from '../services/shopShelf';
+import {
+  MatchedProduct,
+  isOnSale,
+  discountPercent,
+  ProductSort,
+  payingStoresFirst,
+  isShopperSort,
+  orderMatchedForSort,
+} from '../models/product';
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { shopperSignals } from '../services/shopperSignals';
@@ -238,17 +247,21 @@ export default function ShopScreen() {
       // Stores that pay a commission come first; a live product whose store
       // pays nothing goes after them. Match order is kept within each group,
       // and the page's notice says this is done. A shopper who asked for
-      // price order gets what they asked for instead.
-      const ranked = sort === 'match' ? payingStoresFirst(scored, m => m.product) : scored;
+      // price order gets what they asked for instead: scoring has just
+      // re-ranked by match, so the chosen order is put back here.
+      const ranked = sort === 'match' ? payingStoresFirst(scored, m => m.product) : orderMatchedForSort(scored, sort);
 
       // Only the first screenful counts as seen. Recording the whole result set
       // would decay products the user never actually scrolled to.
-      shopperSignals.recordImpressions(ranked.slice(0, 12).map(r => r.product.id));
+      // "Seen" means what the grid will actually show first: stand-ins that
+      // real products replace (shopShelf.ts) were never on screen.
+      const firstScreen = preferRealProducts(ranked, m => m.product).items.slice(0, 12);
+      shopperSignals.recordImpressions(firstScreen.map(r => r.product.id));
       // Same first-screenful rule, counted centrally so tap-through has a
       // denominator. Counts only - no product or user identity leaves here.
       affiliateImpressions.recordImpressions(
         'shop',
-        ranked.slice(0, 12).map(r => r.product.price || 0)
+        firstScreen.map(r => r.product.price || 0)
       );
       setProducts(ranked);
       setFailed(false);
@@ -318,7 +331,7 @@ export default function ShopScreen() {
       .toLowerCase()
       .split(/[^a-z-]+/)
       .filter(t => t.length > 3);
-    return products
+    const carrying = products
       .map(m => {
         const haystack = [m.product.name, m.product.subcategory, ...(m.product.styleTags || [])]
           .filter(Boolean)
@@ -331,7 +344,11 @@ export default function ShopScreen() {
         const fillsGap = gapTokens.length > 0 && gapTokens.some(t => haystack.includes(t));
         return { m, order: fillsGap ? 0 : ownSeed ? 0.5 : kindOrder[kind] };
       })
-      .filter((x): x is { m: MatchedProduct; order: number } => x !== null)
+      .filter((x): x is { m: MatchedProduct; order: number } => x !== null);
+    // A shopper who asked for price order gets it under a trend too: the
+    // trend still decides WHICH pieces show, the chip decides their order.
+    if (isShopperSort(sort)) return orderMatchedForSort(carrying.map(x => x.m), sort);
+    return carrying
       // Within each kind of trend match, paying stores still lead.
       .sort(
         (a, b) =>
@@ -340,17 +357,26 @@ export default function ShopScreen() {
           b.m.matchScore - a.m.matchScore
       )
       .map(x => x.m);
-  }, [products, focusTrend, route.params?.trendGap]);
+  }, [products, focusTrend, route.params?.trendGap, sort]);
 
   const focusAnchorSearches = useMemo(
     () => (focusTrend ? trendAnchorSearches(focusTrend, wardrobeFocus) : []),
     [focusTrend, wardrobeFocus]
   );
 
-  const visibleProducts = useMemo(
-    () => (matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered),
-    [trendFiltered, matchedOnly]
-  );
+  // Real products before stand-ins: a category with enough real products
+  // shows only those (see shopShelf.ts). Applied last, to the list about to
+  // be shown, so the trend and match filters cannot empty a category by
+  // losing its curated pieces before its real ones were counted.
+  const shelf = useMemo(() => {
+    const matched = matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered;
+    return preferRealProducts(matched, m => m.product);
+  }, [trendFiltered, matchedOnly]);
+  const visibleProducts = shelf.items;
+  // The notice describes what is on the page: with no stand-in left, the
+  // sentences about representative photos are dropped. An empty grid keeps
+  // the full notice.
+  const shopNotice = curatedCatalogNotice({ stockCards: shelf.standInsLeft || shelf.items.length === 0 });
 
   // A menswear focus never sees a dress - departmentAllowed drops the whole
   // category, so offering the chip would guarantee an empty grid. Hide it
@@ -402,9 +428,7 @@ export default function ShopScreen() {
         <Text style={styles.subtitle}>
           Ranked against your color season, body & fit profile, style archetypes, and what's already in your closet.
         </Text>
-        {!!curatedCatalogNotice() && (
-          <Text style={styles.devNotice}>{curatedCatalogNotice()}</Text>
-        )}
+        {!!shopNotice && <Text style={styles.devNotice}>{shopNotice}</Text>}
 
         {/* An account that has not said whose wardrobe it is sees only
             pieces that are for everyone. Say so, and take the answer right

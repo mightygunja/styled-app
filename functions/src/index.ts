@@ -4,6 +4,22 @@ import * as crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
 import OpenAI, { toFile } from 'openai';
 import { TREND_VOCABULARY } from './trendVocabulary';
+import {
+  CHANNEL3_API,
+  Channel3Department,
+  Channel3Row,
+  ShelfCategory,
+  Shelf,
+  SHELF_DEPARTMENTS,
+  channel3Filters,
+  mapChannel3Product,
+  refreshShelf,
+  shelfCategories,
+  shelfDocId,
+  shelfRows,
+  shelfServable,
+  shelfStale,
+} from './channel3';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -3408,8 +3424,9 @@ export const searchEbayProducts = functions
  * in-stock only. Each product is returned with Channel3's own gender, age
  * and category so the client can refuse anything that does not match
  * (src/services/channel3Listing.ts does the refusing).
+ *
+ * The mapping and the browse shelves live in functions/src/channel3.ts.
  */
-const CHANNEL3_SEARCH_URL = 'https://api.trychannel3.com/v1/search';
 const CHANNEL3_FREE_SEARCHES = 1000;
 const CHANNEL3_CACHE_MS = 20 * 60 * 1000;
 const channel3Cache = new Map<string, { at: number; value: any }>();
@@ -3430,22 +3447,216 @@ async function spendChannel3Search(limit: number): Promise<boolean> {
   });
 }
 
-/** Shots that do not show the piece as a whole. */
-const CHANNEL3_POOR_SHOTS = new Set(['detail', 'size_chart', 'packaging', 'scale_reference', 'product_information']);
+const channel3SearchLimit = () =>
+  Math.max(0, Number(process.env.CHANNEL3_MONTHLY_SEARCH_LIMIT) || CHANNEL3_FREE_SEARCHES);
 
 /**
- * The photo to show: the retailer's own main photo, unless it is a close-up,
- * a size chart or the box. Checked against real answers (2026-11-13):
- * `cleaned_url` is framed tight to the product, and the app's 4:5 card then
- * cuts the ends off shoes and the shoulders off jackets, so the original is
- * used.
+ * One budgeted search. Null when the month's budget is spent; throws when
+ * Channel3 answers with an error.
  */
-function channel3Image(images: any[]): string {
-  const list = (Array.isArray(images) ? images : []).filter(i => i?.url);
-  const whole = list.filter(i => !CHANNEL3_POOR_SHOTS.has(String(i.shot_type)));
-  const pick =
-    whole.find(i => i.is_main_image) || whole.find(i => i.shot_type === 'hero') || whole[0] || list[0];
-  return pick ? String(pick.url) : '';
+async function channel3Search(apiKey: string, body: Record<string, any>): Promise<any | null> {
+  const limit = channel3SearchLimit();
+  if (!(await spendChannel3Search(limit))) {
+    console.log(`Channel3: monthly search limit of ${limit} reached; answering with nothing`);
+    return null;
+  }
+  const response = await fetch(`${CHANNEL3_API}/search`, {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('Channel3 search failed', response.status, text.slice(0, 300));
+    throw new Error(`Channel3 search failed: ${response.status}`);
+  }
+  return (await response.json()) as any;
+}
+
+/**
+ * One product by id. Free: Channel3 does not charge for this, and it is how
+ * prices, stock and buy links are kept current. Null when the product has
+ * gone or the call failed. Waits out one "slow down" answer.
+ */
+async function channel3ProductById(apiKey: string, id: string): Promise<any | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const response = await fetch(`${CHANNEL3_API}/products/${encodeURIComponent(id)}`, {
+      headers: { 'x-api-key': apiKey },
+    });
+    if (response.status === 429 && attempt === 0) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      continue;
+    }
+    if (!response.ok) return null;
+    return (await response.json()) as any;
+  }
+  return null;
+}
+
+// ---- Shelves: what the Shop browses (see functions/src/channel3.ts) ----
+
+const shelfRef = (department: Channel3Department, category: ShelfCategory) =>
+  db.collection('channel3Shelves').doc(shelfDocId(department, category));
+
+/** Shelves read in the last few minutes, so a busy Shop does not re-read them. */
+const SHELF_MEMORY_MS = 5 * 60 * 1000;
+const shelfMemory = new Map<string, { at: number; shelf: Shelf | null }>();
+
+async function readShelf(department: Channel3Department, category: ShelfCategory): Promise<Shelf | null> {
+  const key = shelfDocId(department, category);
+  const held = shelfMemory.get(key);
+  if (held && Date.now() - held.at < SHELF_MEMORY_MS) return held.shelf;
+  const snap = await shelfRef(department, category).get();
+  const shelf = snap.exists ? (snap.data() as Shelf) : null;
+  // A missing shelf is not remembered: it is about to be stocked, and the
+  // next browse should find it.
+  if (shelf) shelfMemory.set(key, { at: Date.now(), shelf });
+  return shelf;
+}
+
+/**
+ * Brings every shelf up to date: restocks by search the ones whose ids have
+ * aged (credits, about 33 a week for all of them) and re-reads the rest by
+ * id (free). A shelf that is still fresh costs nothing. One shelf failing
+ * never stops the others.
+ */
+async function refreshChannel3ShelvesNow(): Promise<{ refreshed: number; kept: number; failed: number }> {
+  const apiKey = process.env.CHANNEL3_API_KEY || '';
+  if (!apiKey) throw new Error('Channel3 is not configured (CHANNEL3_API_KEY in functions/.env).');
+  const deps = {
+    search: async (body: Record<string, any>) => {
+      try {
+        const result = await channel3Search(apiKey, body);
+        return result && Array.isArray(result.products) ? (result.products as any[]) : null;
+      } catch {
+        return null;
+      }
+    },
+    product: (id: string) => channel3ProductById(apiKey, id).catch(() => null),
+    now: () => Date.now(),
+  };
+  let refreshed = 0;
+  let kept = 0;
+  let failed = 0;
+  // One run at a time: the timer and a shopper's request can arrive together,
+  // and two runs restocking the same empty shelves would pay for every search
+  // twice. The lease outlasts the longest run and is handed back at the end.
+  const lease = db.collection('integrationUsage').doc('channel3-shelf-run');
+  const mine = await db.runTransaction(async tx => {
+    const snap = await tx.get(lease);
+    if ((Number(snap.data()?.until) || 0) > Date.now()) return false;
+    tx.set(lease, { until: Date.now() + 10 * 60 * 1000 });
+    return true;
+  });
+  if (!mine) return { refreshed, kept, failed };
+  try {
+    await refreshEveryShelf(deps, counts => {
+      refreshed = counts.refreshed;
+      kept = counts.kept;
+      failed = counts.failed;
+    });
+  } finally {
+    await lease.set({ until: 0 }).catch(() => undefined);
+  }
+  return { refreshed, kept, failed };
+}
+
+async function refreshEveryShelf(
+  deps: Parameters<typeof refreshShelf>[3],
+  report: (counts: { refreshed: number; kept: number; failed: number }) => void
+): Promise<void> {
+  let refreshed = 0;
+  let kept = 0;
+  let failed = 0;
+  for (const department of SHELF_DEPARTMENTS) {
+    for (const category of shelfCategories(department)) {
+      try {
+        const snap = await shelfRef(department, category).get();
+        const previous = snap.exists ? (snap.data() as Shelf) : null;
+        const next = await refreshShelf(previous, department, category, deps);
+        if (next && next !== previous) {
+          await shelfRef(department, category).set(next);
+          shelfMemory.delete(shelfDocId(department, category));
+          refreshed += 1;
+        } else {
+          kept += 1;
+        }
+      } catch (error) {
+        failed += 1;
+        console.error(`Channel3 shelf ${department}/${category} failed:`, error);
+      }
+      report({ refreshed, kept, failed });
+    }
+  }
+}
+
+/** Keeps the shelves fresh whether or not anyone is browsing. */
+export const refreshChannel3Shelves = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 540 })
+  .pubsub.schedule('every 4 hours')
+  .timeZone('America/Chicago')
+  .onRun(async () => {
+    try {
+      const result = await refreshChannel3ShelvesNow();
+      console.log(`Channel3 shelves: ${result.refreshed} refreshed, ${result.kept} still fresh, ${result.failed} failed`);
+    } catch (error) {
+      // A failed run leaves the last shelves in place.
+      console.error('Channel3 shelf refresh failed:', error);
+    }
+  });
+
+/**
+ * The same run, started by the Shop itself: a browse that finds a shelf
+ * missing or aged writes channel3ShelfRequests/refresh, and this fills the
+ * shelves in its own time while that shopper is answered with what there is.
+ * It is what stocks the shelves the first time, straight after a deploy.
+ */
+export const refreshChannel3ShelvesOnRequest = functions
+  .runWith({ memory: '512MB', timeoutSeconds: 540 })
+  .firestore.document('channel3ShelfRequests/{id}')
+  .onWrite(async change => {
+    if (!change.after.exists) return;
+    try {
+      const result = await refreshChannel3ShelvesNow();
+      console.log(`Channel3 shelves (on request): ${result.refreshed} refreshed, ${result.kept} still fresh, ${result.failed} failed`);
+    } catch (error) {
+      console.error('Channel3 shelf refresh (on request) failed:', error);
+    }
+  });
+
+/** At most one request every ten minutes per server instance, and per document. */
+const SHELF_REQUEST_GAP_MS = 10 * 60 * 1000;
+let shelfRequestedAt = 0;
+
+async function requestShelfRefresh(): Promise<void> {
+  if (Date.now() - shelfRequestedAt < SHELF_REQUEST_GAP_MS) return;
+  shelfRequestedAt = Date.now();
+  try {
+    const ref = db.collection('channel3ShelfRequests').doc('refresh');
+    const snap = await ref.get();
+    const last = Number(snap.data()?.requestedAt) || 0;
+    if (Date.now() - last < SHELF_REQUEST_GAP_MS) return;
+    await ref.set({ requestedAt: Date.now() });
+  } catch (error) {
+    console.error('Channel3 shelf refresh could not be requested:', error);
+  }
+}
+
+/**
+ * The shelves for a browse: one category's, or all of the department's.
+ * Null when none can be shown, so the caller falls back to a live search.
+ * Asks for a refresh whenever a shelf it wanted was missing or had aged.
+ */
+async function browseShelves(department: Channel3Department, category: string, limit: number): Promise<any | null> {
+  const wanted = shelfCategories(department).filter(c => !category || c === category);
+  if (wanted.length === 0) return null;
+  const shelves = await Promise.all(wanted.map(c => readShelf(department, c)));
+  const now = Date.now();
+  if (shelves.some(shelf => shelfStale(shelf, now))) await requestShelfRefresh();
+  const servable = shelves.filter((shelf): shelf is Shelf => shelfServable(shelf, now));
+  if (servable.length === 0) return null;
+  const products = shelfRows(servable, limit);
+  return { products, department, hasMore: false, totalCount: products.length, shelf: true };
 }
 
 export const searchChannel3Products = functions
@@ -3465,13 +3676,22 @@ export const searchChannel3Products = functions
       if (!department) return { products: [], hasMore: false, totalCount: 0 };
 
       const typed = String(query || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+      const priced = typeof minPrice === 'number' || typeof maxPrice === 'number';
+
+      // Browsing (nothing typed): answered from the shelves, which cost no
+      // credit to read. Typed searches, price ranges and secondhand go live.
+      if (!typed && !priced && condition !== 'secondhand') {
+        const browse = await browseShelves(
+          department,
+          String(category || ''),
+          Math.min(300, Math.max(24, Number(pageSize) || 24))
+        );
+        if (browse) return browse;
+      }
+
       const subject = typed || EBAY_CATEGORY_WORDS[String(category || '')] || 'clothing';
-      const filters: Record<string, any> = {
-        gender: department === 'men' ? 'male' : 'female',
-        age: ['adult'],
-        availability: ['InStock'],
-      };
-      if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
+      const filters: Record<string, any> = channel3Filters(department);
+      if (priced) {
         filters.price = {
           ...(typeof minPrice === 'number' ? { min_price: minPrice } : {}),
           ...(typeof maxPrice === 'number' ? { max_price: maxPrice } : {}),
@@ -3483,61 +3703,18 @@ export const searchChannel3Products = functions
       const cached = channel3Cache.get(cacheKey);
       if (cached && Date.now() - cached.at < CHANNEL3_CACHE_MS) return cached.value;
 
-      const limit = Math.max(0, Number(process.env.CHANNEL3_MONTHLY_SEARCH_LIMIT) || CHANNEL3_FREE_SEARCHES);
-      if (!(await spendChannel3Search(limit))) {
-        console.log(`Channel3: monthly search limit of ${limit} reached; answering with nothing`);
-        return { products: [], hasMore: false, totalCount: 0, capped: true };
+      let result: any;
+      try {
+        result = await channel3Search(apiKey, body);
+      } catch (error: any) {
+        throw new functions.https.HttpsError('internal', error.message);
       }
+      if (!result) return { products: [], hasMore: false, totalCount: 0, capped: true };
 
-      const response = await fetch(CHANNEL3_SEARCH_URL, {
-        method: 'POST',
-        headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        const text = await response.text();
-        console.error('Channel3 search failed', response.status, text.slice(0, 300));
-        throw new functions.https.HttpsError('internal', `Channel3 search failed: ${response.status}`);
-      }
-      const result = (await response.json()) as any;
       const items = Array.isArray(result.products) ? result.products : [];
-      const wantUsed = condition === 'secondhand';
-
       const products = items
-        .map((item: any) => {
-          const offers = (Array.isArray(item?.offers) ? item.offers : []).filter(
-            (o: any) =>
-              o?.url && o?.domain && o?.availability === 'InStock' && wantUsed === /used|refurbished/i.test(String(o?.condition || ''))
-          );
-          // The offer that pays the most, when one pays; otherwise the first in stock.
-          const rate = (o: any) => Number(o?.max_commission_rate) || 0;
-          const offer = offers.reduce((best: any, o: any) => (rate(o) > rate(best) ? o : best), offers[0]);
-          if (!item?.id || !item?.title || !offer) return null;
-          // The docs show the amount under either name.
-          const amount = Number(offer.price?.price ?? offer.price?.amount);
-          const pathNames = Array.isArray(item.category?.path)
-            ? item.category.path.map((n: any) => String(n?.title || n?.name || n || ''))
-            : String(item.category?.path || '').split(/\s*[>/]\s*/);
-          return {
-            id: `c3-${item.id}`,
-            name: String(item.title),
-            brand: String(item.brands?.[0]?.name || ''),
-            gender: item.gender ?? null,
-            age: item.age ?? null,
-            // Leaf first: the piece, then where it sits.
-            categoryNames: [String(item.category?.title || ''), ...pathNames.reverse()].filter(Boolean),
-            imageUrl: channel3Image(item.images),
-            price: amount,
-            originalPrice: Number(offer.price?.compare_at_price) || null,
-            currency: String(offer.price?.currency || 'USD'),
-            sourceUrl: String(offer.url),
-            domain: String(offer.domain),
-            condition: offer.condition ?? null,
-            // 0 = this store pays nothing on this product; the Shop lists those last.
-            commissionRate: rate(offer),
-          };
-        })
-        .filter((p: any) => p && p.imageUrl && p.price > 0);
+        .map((item: any) => mapChannel3Product(item, { wantUsed: condition === 'secondhand' }))
+        .filter((row: Channel3Row | null): row is Channel3Row => row !== null);
 
       const value = { products, department, hasMore: !!result.next_page_token, totalCount: products.length };
       if (channel3Cache.size > 300) channel3Cache.clear();
@@ -3546,6 +3723,41 @@ export const searchChannel3Products = functions
     } catch (error: any) {
       if (error instanceof functions.https.HttpsError) throw error;
       console.error('Error searching Channel3:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+/**
+ * One Channel3 product, re-read now. Free. The product page calls this when
+ * a shopper opens a live product, so the price, the stock and the buy link
+ * they see are current and not the shelf's snapshot from earlier in the day
+ * (Channel3: "always refresh before showing to users"). An out-of-stock
+ * product comes back marked so, never dropped silently.
+ */
+const channel3ProductMemory = new Map<string, { at: number; value: any }>();
+
+export const getChannel3Product = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 20, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    const apiKey = process.env.CHANNEL3_API_KEY || '';
+    if (!apiKey) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Channel3 is not configured (CHANNEL3_API_KEY in functions/.env).'
+      );
+    }
+    const id = String(data?.id || '').replace(/^c3-/, '');
+    if (!/^[A-Za-z0-9_-]{3,40}$/.test(id)) return { product: null };
+    const held = channel3ProductMemory.get(id);
+    if (held && Date.now() - held.at < 5 * 60 * 1000) return held.value;
+    try {
+      const item = await channel3ProductById(apiKey, id);
+      const value = { product: item ? mapChannel3Product(item, { anyAvailability: true }) : null };
+      if (channel3ProductMemory.size > 500) channel3ProductMemory.clear();
+      channel3ProductMemory.set(id, { at: Date.now(), value });
+      return value;
+    } catch (error: any) {
+      console.error('Error reading Channel3 product:', error);
       throw new functions.https.HttpsError('internal', error.message);
     }
   });

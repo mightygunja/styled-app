@@ -33,6 +33,7 @@ import {
 import { shopperSignals } from '../services/shopperSignals';
 import { resolveSeedProduct } from '../services/trendService';
 import { scoreProduct, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
+import { isStandIn } from '../services/shopShelf';
 import { wishlistService, affiliateClicksService } from '../services/firestore';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { findSimilarOwnedItems } from '../models/storeCheck';
@@ -336,8 +337,11 @@ export default function ProductDetailScreen() {
               its links appear, and the shop button below is one - and the
               same line owns up that the photo above is representative, not
               the SKU, before the user compares it to the landing page. */}
-          {!!curatedCatalogNotice() && (
-            <Text style={styles.catalogNotice}>{curatedCatalogNotice()}</Text>
+          {/* A real product (live listing, or a partner piece with the
+              merchant's own photo) is not described as a representative
+              photo and an Amazon search - that is someone else's card. */}
+          {!!curatedCatalogNotice({ stockCards: isStandIn(product) }) && (
+            <Text style={styles.catalogNotice}>{curatedCatalogNotice({ stockCards: isStandIn(product) })}</Text>
           )}
 
           {(budget || (wearForecast && wearForecast.verdict !== 'unknown')) && (

@@ -46,7 +46,7 @@ export type ListingDepartment = 'women' | 'men';
 
 export const KIDS = /\b(?:kids?|boys?|girls?|toddlers?|bab(?:y|ies)|infants?|youth|juniors?|newborns?|child(?:ren)?(?:'s)?)\b/;
 export const NOT_ONE_PIECE =
-  /\b(?:lots?|bundles?|wholesale|bulk|costumes?|cosplay|halloween|sewing pattern|pattern only|replacement|repair kit|fabric by|patch(?:es)?|dolls?|mannequins?|hangers?)\b/;
+  /\b(?:lots?|bundles?|wholesale|bulk|(?:\d+|two|three|four|five|six)[\s-]?packs?|pack of (?:\d+|two|three|four|five|six)|multi-?packs?|gift sets?|costumes?|cosplay|halloween|sewing pattern|pattern only|replacement|repair kit|fabric by|patch(?:es)?|dolls?|mannequins?|hangers?)\b/;
 
 const lower = (text: string) => (text || '').toLowerCase().replace(/[’`]/g, "'");
 

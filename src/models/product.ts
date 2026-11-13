@@ -186,6 +186,38 @@ export function sortProducts(products: Product[], sort?: ProductSort): Product[]
   }
 }
 
+/** The orders a shopper picks by hand: everything except the default match
+ *  ranking ('newest' has no chip and is left to the caller, as in sortProducts). */
+export type ShopperSort = 'price-low' | 'price-high' | 'discount';
+
+export function isShopperSort(sort?: ProductSort): sort is ShopperSort {
+  return sort === 'price-low' || sort === 'price-high' || sort === 'discount';
+}
+
+/**
+ * Puts scored products in the order the shopper asked for. Scoring ranks by
+ * match, which undoes the provider's price order, so the Shop applies this
+ * AFTER scoring. Price (or discount) decides; equal prices fall back to the
+ * better match, and what is still equal keeps its incoming order. Same keys
+ * as sortProducts. Any other sort returns the list untouched - match ranking
+ * stays the caller's job. Never mutates the input.
+ */
+export function orderMatchedForSort<T extends { product: Product; matchScore: number }>(
+  items: T[],
+  sort?: ProductSort
+): T[] {
+  if (!isShopperSort(sort)) return items;
+  const price = (item: T) => (Number.isFinite(item.product.price) ? item.product.price : 0);
+  const discount = (item: T) => discountPercent(item.product) ?? 0;
+  const primary: (a: T, b: T) => number =
+    sort === 'price-low'
+      ? (a, b) => price(a) - price(b)
+      : sort === 'price-high'
+        ? (a, b) => price(b) - price(a)
+        : (a, b) => discount(b) - discount(a);
+  return [...items].sort((a, b) => primary(a, b) || b.matchScore - a.matchScore);
+}
+
 /** A product ranked against a user's style profile - what ShopScreen actually renders. */
 export interface MatchedProduct {
   product: Product;

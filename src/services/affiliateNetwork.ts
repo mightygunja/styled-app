@@ -596,6 +596,7 @@ class EbayPartnerNetworkAdapter implements AffiliateNetworkAdapter {
 }
 
 const searchChannel3ProductsFn = httpsCallable(functions, 'searchChannel3Products');
+const getChannel3ProductFn = httpsCallable(functions, 'getChannel3Product');
 
 /** Same three states, and the same manners, as the eBay feed above. */
 let channel3Status: EbayStatus = 'unknown';
@@ -651,10 +652,22 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
     );
     const result = await Promise.race([call, timeout]);
     const listings = (((result as any).data || {}).products || []) as RawChannel3Listing[];
-    return listings
+    const products = listings
       .map(listing => acceptChannel3Listing(listing, department, { category: filters.category }))
       .filter((product): product is Product => product !== null);
+    // Remembered so the product page can re-read one of these by id and
+    // hold it to the same department it was shown under.
+    products.forEach(product => this.shownUnder.set(product.id, department));
+    if (this.shownUnder.size > 1500) {
+      Array.from(this.shownUnder.keys())
+        .slice(0, this.shownUnder.size - 1500)
+        .forEach(id => this.shownUnder.delete(id));
+    }
+    return products;
   }
+
+  /** Which department each product was shown under this session. */
+  private shownUnder = new Map<string, ListingDepartment>();
 
   async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
     const empty: ProductSearchResult = { products: [], hasMore: false, totalCount: 0 };
@@ -681,9 +694,30 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
     }
   }
 
-  /** Detail views come from the ResilientAdapter's session index. */
-  async getById(): Promise<Product | null> {
-    return null;
+  /**
+   * A live product, re-read now (free at Channel3). The Shop's browse view
+   * shows a snapshot that can be a few hours old; a shopper who opens a
+   * product gets its current price, stock and buy link, as Channel3's rules
+   * ask ("always refresh before showing to users"). The re-read goes through
+   * the same acceptance rule, under the department the product was shown
+   * under. Anything short of a clean answer - not shown this session, feed
+   * off, slow, refused - returns null, and the ResilientAdapter falls back to
+   * the copy the shopper tapped.
+   */
+  async getById(productId: string): Promise<Product | null> {
+    if (!productId.startsWith('c3-')) return null;
+    const department = this.shownUnder.get(productId);
+    if (!department || channel3Status !== 'live') return null;
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Channel3 product read timed out')), EBAY_TIMEOUT_MS)
+      );
+      const result = await Promise.race([getChannel3ProductFn({ id: productId }), timeout]);
+      const raw = ((result as any).data || {}).product as RawChannel3Listing | null;
+      return raw ? acceptChannel3Listing(raw, department) : null;
+    } catch {
+      return null;
+    }
   }
 
   async getByIds(): Promise<Product[]> {
@@ -1002,8 +1036,22 @@ const CHANNEL3_NOTICE =
   'partners show the retailer\'s own photo and price and open that exact product. Stores that ' +
   'pay us a commission are listed ahead of stores that do not. ';
 
-export function curatedCatalogNotice(): string | null {
+/**
+ * `stockCards: false` is the Shop saying that nothing on screen is a curated
+ * pick with a representative photo - every card is a real product. The
+ * sentences about representative photos and Amazon searches would then be
+ * describing cards that are not there, so they are left out.
+ */
+export function curatedCatalogNotice(options: { stockCards?: boolean } = {}): string | null {
   const provider = effectiveProvider();
+  if (options.stockCards === false && provider === 'starter' && channel3IsLive()) {
+    return (
+      CHANNEL3_NOTICE +
+      (ebayIsLive()
+        ? 'Live eBay listings are bought on eBay, and we earn a commission from eBay on purchases made through them.'
+        : '')
+    ).trim();
+  }
   if (provider === 'mock') {
     return (
       'Showing a sample catalogue with representative photos, not exact product shots. Connect ' +

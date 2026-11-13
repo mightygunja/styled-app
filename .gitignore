@@ -73,3 +73,6 @@ functions/.runtimeconfig.json
 # real account holder by first name. scripts/generateSplashHero.py replaces
 # the name on the way into assets/splash-hero.png, which is what ships.
 assets/Splash image.jpeg
+
+# Local build of functions/src for scripts/tryChannel3Shelves.cjs
+.shelf-build/

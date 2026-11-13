@@ -66,7 +66,7 @@ export function inferSeasons(product: Product): Season[] {
     SEASON_KEYWORDS[season].some(kw =>
       // "rain" must start a word: as a bare substring it sits inside
       // "trainer", which made every trainer a spring-only shoe.
-      kw === 'rain' ? /rain/.test(haystack) : haystack.includes(kw)
+      kw === 'rain' ? /\brain/.test(haystack) : haystack.includes(kw)
     )
   );
 
