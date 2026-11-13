@@ -5,7 +5,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styleProfileService } from './firestore';
+import { closetService, styleProfileService } from './firestore';
+import { departmentFromCloset, departmentFromProfile } from './departmentInference';
 import { BODY_TYPE_GUIDES, PersonalStyleProfile } from '../models/personalStyleProfile';
 
 export interface ProfileMatchContext {
@@ -69,11 +70,53 @@ async function recallWardrobeFocus(userId: string): Promise<Focus | undefined> {
   }
 }
 
+/**
+ * The department of an account whose saved profile does not state one, read
+ * off what the member has already told us (departmentInference.ts): the body
+ * type in their profile, the department this device last loaded for them, or
+ * the clothes in their closet. Undefined when none of those settles it - and
+ * only then may a screen ask.
+ *
+ * A settled answer is SAVED to the profile, once, so every screen and every
+ * later session reads it as the member's own. Home shows it with a "Change"
+ * link beside it, so an answer read off a closet is one tap to correct.
+ */
+const settling = new Map<string, Promise<Focus | undefined>>();
+
+function settleWardrobeFocus(userId: string, savedProfile: PersonalStyleProfile | null): Promise<Focus | undefined> {
+  const inFlight = settling.get(userId);
+  if (inFlight) return inFlight;
+  const work = (async (): Promise<Focus | undefined> => {
+    let focus: Focus | undefined = departmentFromProfile(savedProfile)?.focus;
+    if (!focus) focus = await recallWardrobeFocus(userId);
+    if (!focus) {
+      try {
+        focus = departmentFromCloset(await closetService.getAll(userId))?.focus;
+      } catch {
+        // The closet could not be read: no evidence, so no answer from it.
+      }
+    }
+    if (!focus) return undefined;
+    // Saved in the background; this read does not wait for the write, and a
+    // failed write only means it is settled again on the next load.
+    saveWardrobeFocus(userId, focus).catch(error => console.error('Could not save the settled department:', error));
+    return focus;
+  })().finally(() => settling.delete(userId));
+  settling.set(userId, work);
+  return work;
+}
+
 export async function buildProfileMatchContext(userId: string): Promise<ProfileMatchContext | undefined> {
   try {
     const savedProfile = await styleProfileService.getStyleProfile(userId);
-    if (!savedProfile) return undefined;
-    rememberWardrobeFocus(userId, savedProfile.wardrobeFocus);
+    if (!savedProfile) {
+      // No profile, but a closet can still say whose wardrobe this is - and a
+      // member who has built one is never asked what it already shows.
+      const settled = await settleWardrobeFocus(userId, null);
+      return settled ? { wardrobeFocus: settled } : undefined;
+    }
+    const wardrobeFocus = savedProfile.wardrobeFocus ?? (await settleWardrobeFocus(userId, savedProfile));
+    rememberWardrobeFocus(userId, wardrobeFocus);
     const bodyGuide = savedProfile.bodyAnalysis ? BODY_TYPE_GUIDES[savedProfile.bodyAnalysis.bodyType] : null;
     return {
       recommendedColors: savedProfile.colorAnalysis?.palette.map(s => s.name),
@@ -87,7 +130,7 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
       categoryGuidance: savedProfile.bodyAnalysis?.categoryGuidance as
         | Record<string, string[]>
         | undefined,
-      wardrobeFocus: savedProfile.wardrobeFocus,
+      wardrobeFocus,
     };
   } catch (error) {
     console.error('Error loading style profile context:', error);

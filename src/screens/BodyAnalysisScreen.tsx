@@ -15,6 +15,7 @@ import { colors, fonts, type as textType, spacing, radius } from '../theme/desig
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { bodyAnalysisAPI, PhotoBodyEstimate } from '../services/firebaseApi';
 import { styleProfileService } from '../services/firestore';
+import { departmentFromProfile } from '../services/departmentInference';
 import {
   BodyType,
   BODY_TYPE_GUIDES,
@@ -250,8 +251,13 @@ export default function BodyAnalysisScreen() {
         result.photoConfirmed = photoEstimate.bodyType === bodyType;
       }
 
+      // A body type belongs to one department's set. A profile that does not
+      // yet say whose wardrobe this is has just been told, so it is saved
+      // with the answer instead of leaving Home to ask for it.
+      const settled = base.wardrobeFocus ?? departmentFromProfile({ bodyAnalysis: result })?.focus;
       await styleProfileService.saveStyleProfile(userId, {
         ...base,
+        ...(settled ? { wardrobeFocus: settled } : {}),
         fitPreferences: {
           highlight: result.highlight,
           downplay: result.downplay,

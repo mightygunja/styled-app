@@ -201,7 +201,14 @@ export default function StyleProfileBuilderScreen() {
     });
   };
 
+  // The questionnaire cannot be finished without the department: it is the
+  // first step, and the one answer every other screen depends on. A profile
+  // saved without it left Home asking a member who had "done the
+  // questionnaire" whose wardrobe this was.
+  const departmentMissing = !styleProfile.wardrobeFocus;
+
   const handleNext = () => {
+    if (currentStep === 'wardrobe' && departmentMissing) return;
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1]);
     }
@@ -218,6 +225,11 @@ export default function StyleProfileBuilderScreen() {
   const handleSave = async () => {
     // Never write over a profile that could not be read.
     if (loadError) return;
+    if (departmentMissing) {
+      setCurrentStep('wardrobe');
+      showToast('Choose whose wardrobe this is first', 'error');
+      return;
+    }
     // The split is already whole (see lifestyleSplit); normalising stays as a
     // safety net so nothing that does not sum to 1 can ever be written.
     const normalizedProfile: PersonalStyleProfile = {
@@ -825,8 +837,15 @@ export default function StyleProfileBuilderScreen() {
       <View style={styles.footer}>
         {currentStep !== 'review' ? (
           <>
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-              <Text style={styles.nextButtonText}>Next</Text>
+            <TouchableOpacity
+              style={[styles.nextButton, currentStep === 'wardrobe' && departmentMissing && styles.saveButtonDisabled]}
+              onPress={handleNext}
+              disabled={currentStep === 'wardrobe' && departmentMissing}
+              accessibilityState={{ disabled: currentStep === 'wardrobe' && departmentMissing }}
+            >
+              <Text style={styles.nextButtonText}>
+                {currentStep === 'wardrobe' && departmentMissing ? 'Choose one to continue' : 'Next'}
+              </Text>
             </TouchableOpacity>
             {hasExisting && (
               <TouchableOpacity

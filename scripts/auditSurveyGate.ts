@@ -42,6 +42,7 @@ import {
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
+import { departmentFromCloset, departmentFromProfile, inferDepartment } from '../src/services/departmentInference';
 import { readConfirmed, UnconfirmedReadError } from '../src/services/confirmedRead';
 import { createSessionCache, uncached } from '../src/services/sessionCache';
 import {
@@ -209,6 +210,30 @@ const snap = (tag: string, fromCache: boolean): Snap => ({ metadata: { fromCache
   }
 
   // ---- 5. Wiring ----
+  console.log('# The department is not asked for twice');
+  const quiz = (bodyType: string) => ({ bodyAnalysis: { bodyType } });
+  check(departmentFromProfile(quiz('hourglass'))?.focus === 'womens' && departmentFromProfile(quiz('pear'))?.focus === 'womens', 'a womenswear body type in the questionnaire settles the department');
+  check(departmentFromProfile(quiz('mTrapezoid'))?.focus === 'mens' && departmentFromProfile(quiz('mOval'))?.focus === 'mens', 'a menswear body type settles it too');
+  check(departmentFromProfile({ fitPreferences: { highlight: ['shoulders', 'bust'], downplay: ['hips'] } })?.focus === 'womens', 'so do the fit areas a womenswear body type leaves behind ("bust")');
+  check(departmentFromProfile({ fitPreferences: { highlight: ['shoulders', 'chest'], downplay: ['waist'] } }) === undefined && departmentFromProfile({}) === undefined && departmentFromProfile(null) === undefined && departmentFromProfile(quiz('somethingElse')) === undefined, 'areas both departments share, or no body type at all, settle nothing');
+  const closetOf = (...names: Array<[string, string]>) => names.map(([name, category]) => ({ name, category }));
+  check(departmentFromCloset(closetOf(['Straight Jeans', 'bottoms'], ['Floral Wrap Dress', 'dresses']))?.focus === 'womens', 'one dress in the closet settles it');
+  check(departmentFromCloset(closetOf(['White Tee', 'tops'], ['Pleated Midi Skirt', 'bottoms']))?.focus === 'womens' && departmentFromCloset(closetOf(['Silk Blouse', 'tops']))?.focus === 'womens', 'so does a skirt or a blouse');
+  check(departmentFromCloset(closetOf(['Straight Jeans', 'bottoms'], ["Men's Oxford Shirt", 'tops']))?.focus === 'mens', "so does a piece that says men's");
+  check(departmentFromCloset(closetOf(['Straight Jeans', 'bottoms'], ['White Tee', 'tops'], ['Leather Sneakers', 'shoes'])) === undefined && departmentFromCloset([]) === undefined && departmentFromCloset(null) === undefined, 'jeans, tees and trainers settle nothing');
+  check(departmentFromCloset(closetOf(['Pleated Midi Skirt', 'bottoms'], ["Men's Oxford Shirt", 'tops'])) === undefined, 'a closet that points both ways settles nothing: that member is asked');
+  check(inferDepartment(quiz('mRectangle'), closetOf(['Floral Wrap Dress', 'dresses']))?.focus === 'mens', "the questionnaire's own answer outranks the closet");
+  // What Home then does with it: a settled department means no question.
+  check(!homePrompts({ profile: 'has', hasWardrobeFocus: true, closetCount: 4, surveyDismissed: false }).department && homePrompts({ profile: 'has', hasWardrobeFocus: false, closetCount: 4, surveyDismissed: false }).department, 'Home asks only an account with no department at all');
+  const settleSource = read('src/services/profileMatchContext.ts');
+  check(/const wardrobeFocus = savedProfile\.wardrobeFocus \?\? \(await settleWardrobeFocus\(userId, savedProfile\)\);/.test(settleSource), "a saved answer is used as it is; only a profile without one is settled from the member's other answers");
+  check(/let focus: Focus \| undefined = departmentFromProfile\(savedProfile\)\?\.focus;\s*\n\s*if \(!focus\) focus = await recallWardrobeFocus\(userId\);/.test(settleSource) && /departmentFromCloset\(await closetService\.getAll\(userId\)\)\?\.focus/.test(settleSource), 'body type first, then the department this device last loaded, then the closet');
+  check(/saveWardrobeFocus\(userId, focus\)\.catch\(/.test(settleSource), 'a settled department is saved to the profile, so it is never worked out - or asked for - again');
+  check(/const settled = await settleWardrobeFocus\(userId, null\);\s*\n\s*return settled \? \{ wardrobeFocus: settled \} : undefined;/.test(settleSource), 'an account with clothes but no profile is settled from its closet too');
+  const builder = read('src/screens/StyleProfileBuilderScreen.tsx');
+  check(/if \(currentStep === 'wardrobe' && departmentMissing\) return;/.test(builder) && /if \(departmentMissing\) \{\s*\n\s*setCurrentStep\('wardrobe'\);/.test(builder), 'the questionnaire cannot be passed or saved without the department');
+  check(/const settled = base\.wardrobeFocus \?\? departmentFromProfile\(\{ bodyAnalysis: result \}\)\?\.focus;/.test(read('src/screens/BodyAnalysisScreen.tsx')), 'a body-type result saves the department it implies when the profile has none');
+
   console.log('# Wiring');
   const firestore = read('src/services/firestore.ts');
   const closetGetAll = firestore.slice(firestore.indexOf('getAll: async'), firestore.indexOf('getById: async'));
