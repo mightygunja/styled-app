@@ -255,7 +255,7 @@ export default function ShopScreen() {
       // would decay products the user never actually scrolled to.
       // "Seen" means what the grid will actually show first: stand-ins that
       // real products replace (shopShelf.ts) were never on screen.
-      const firstScreen = preferRealProducts(ranked, m => m.product).items.slice(0, 12);
+      const firstScreen = preferRealProducts(ranked, m => m.product, { spread: !isShopperSort(sort) }).items.slice(0, 12);
       shopperSignals.recordImpressions(firstScreen.map(r => r.product.id));
       // Same first-screenful rule, counted centrally so tap-through has a
       // denominator. Counts only - no product or user identity leaves here.
@@ -370,8 +370,9 @@ export default function ShopScreen() {
   // losing its curated pieces before its real ones were counted.
   const shelf = useMemo(() => {
     const matched = matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered;
-    return preferRealProducts(matched, m => m.product);
-  }, [trendFiltered, matchedOnly]);
+    // A shopper's own sort (price, discount) is left exactly as sorted.
+    return preferRealProducts(matched, m => m.product, { spread: !isShopperSort(sort) });
+  }, [trendFiltered, matchedOnly, sort]);
   const visibleProducts = shelf.items;
   // The notice describes what is on the page: with no stand-in left, the
   // sentences about representative photos are dropped. An empty grid keeps

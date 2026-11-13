@@ -18,7 +18,7 @@
  *   - a fresh shelf is refreshed, an aged one is restocked by search when a
  *     free re-read would do, or a search is made past the budget;
  *   - stand-ins are dropped from a category without enough real products,
- *     or kept beside enough of them;
+ *     or more than a few are kept beside enough of them;
  *   - the Shop reads a shelf by spending a credit, or the product page shows
  *     a live product without re-reading it.
  *
@@ -50,7 +50,7 @@ import {
 } from '../functions/src/channel3';
 import { acceptChannel3Listing } from '../src/services/channel3Listing';
 import { colorFromDescription } from '../src/services/colorName';
-import { REAL_ENOUGH, isStandIn, preferRealProducts } from '../src/services/shopShelf';
+import { REAL_ENOUGH, STAND_INS_KEPT, STAND_IN_EVERY, isStandIn, preferRealProducts } from '../src/services/shopShelf';
 import { Product } from '../src/models/product';
 
 let failures = 0;
@@ -254,16 +254,30 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
     sourceUrl: 'https://example.org/p', inStock: true,
   });
   check(isStandIn(card('p-t001', 'tops', false)) && !isStandIn(card('c3-x', 'tops', true)) && !isStandIn({ ...card('p-t141', 'tops', true), imageUrl: 'https://cdn.shopify.com/s/files/1/x.jpg' }), 'a stand-in is a curated piece with a stock photo; live listings and partner pieces with the merchant photo are real');
-  const tops = [...Array.from({ length: REAL_ENOUGH }, (_, i) => card(`c3-t${i}`, 'tops', true)), card('p-t1', 'tops', false), card('p-t2', 'tops', false)];
-  const shoes = [...Array.from({ length: REAL_ENOUGH - 1 }, (_, i) => card(`c3-s${i}`, 'shoes', true)), card('p-s1', 'shoes', false)];
-  const mixed = [tops[6], shoes[5], ...tops.slice(0, 6), ...shoes.slice(0, 5), tops[7]];
+  // Twelve real tops and five curated ones (t1 ranked best, all of them above
+  // every real top, as on real shelves); five real shoes and one curated.
+  const realTops = Array.from({ length: 12 }, (_, i) => card(`c3-t${i}`, 'tops', true));
+  const curatedTops = Array.from({ length: 5 }, (_, i) => card(`p-t${i + 1}`, 'tops', false));
+  const realShoes = Array.from({ length: REAL_ENOUGH - 1 }, (_, i) => card(`c3-s${i}`, 'shoes', true));
+  const mixed = [...curatedTops, card('p-s1', 'shoes', false), ...realTops, ...realShoes];
   const preferred = preferRealProducts(mixed, p => p);
-  check(preferred.items.every(p => p.category !== 'tops' || !isStandIn(p)), `a category with ${REAL_ENOUGH} real products shows only real products`);
-  check(preferred.items.some(p => p.id === 'p-s1') && preferred.standInsLeft, `a category with fewer than ${REAL_ENOUGH} keeps its curated pieces, so it cannot go empty`);
-  check(preferred.items.map(p => p.id).join() === mixed.filter(p => p.id !== 'p-t1' && p.id !== 'p-t2').map(p => p.id).join(), 'order is never changed, only stand-ins removed');
+  const ids = preferred.items.map(p => p.id);
+  const keptTops = preferred.items.filter(p => p.category === 'tops' && isStandIn(p)).map(p => p.id);
+  check(STAND_INS_KEPT >= 2 && STAND_INS_KEPT <= 4 && keptTops.join() === 'p-t1,p-t2,p-t3', `a category with ${REAL_ENOUGH}+ real products keeps only its ${STAND_INS_KEPT} best-ranked Amazon pieces (got ${keptTops.join()})`);
+  check(ids.filter(id => id.startsWith('c3-')).join() === mixed.filter(p => p.id.startsWith('c3-')).map(p => p.id).join(), 'no real product is removed, and real products keep their order');
+  check(ids.includes('p-s1') && ids.indexOf('p-s1') === 0 && preferred.standInsLeft, `a category with fewer than ${REAL_ENOUGH} real products keeps all its curated pieces where they were, so it cannot go empty`);
+  const gaps = keptTops.map(id => ids.indexOf(id));
+  check(gaps[0] === STAND_IN_EVERY && gaps[1] - gaps[0] === STAND_IN_EVERY + 1 && gaps[2] - gaps[1] === STAND_IN_EVERY + 1, `the kept Amazon pieces are dealt in one after every ${STAND_IN_EVERY} other cards, not stacked at the top (positions ${gaps.join()})`);
+  check(preferred.items.slice(0, STAND_IN_EVERY).filter(p => isStandIn(p) && p.category === 'tops').length === 0, 'the first cards of a well-stocked category are real products');
+  const short = preferRealProducts([...curatedTops, ...realTops.slice(0, REAL_ENOUGH)], p => p).items.map(p => p.id);
+  check(short.filter(id => id.startsWith('p-')).length === STAND_INS_KEPT && short.slice(-2).join() === 'p-t2,p-t3', 'on a short list the kept pieces that found no slot go at the end rather than being lost');
   const curatedOnly = [card('p-a', 'tops', false), card('p-b', 'shoes', false)];
-  check(preferRealProducts(curatedOnly, p => p).items.length === 2 && preferRealProducts([], (p: Product) => p).standInsLeft === false, 'with no live feed the catalogue is shown exactly as before');
-  check(preferRealProducts(tops, p => p).standInsLeft === false, 'when every card is real, the page knows it');
+  check(preferRealProducts(curatedOnly, p => p).items.map(p => p.id).join() === 'p-a,p-b' && preferRealProducts([], (p: Product) => p).standInsLeft === false, 'with no live feed the catalogue is shown exactly as before');
+  check(preferRealProducts(realTops, p => p).standInsLeft === false && preferRealProducts([...realTops, curatedTops[0]], p => p).standInsLeft === true, 'the page knows whether an Amazon piece is on it, so the Amazon disclosure shows exactly when one is');
+  check(preferRealProducts([...realTops, ...curatedTops], p => p, { keep: 0 }).items.every(p => !isStandIn(p)), 'keeping none is still possible (the rule, not the code, decides how many)');
+  const priced = [curatedTops[3], realTops[0], curatedTops[0], realTops[1], curatedTops[4], curatedTops[1], ...realTops.slice(2), curatedTops[2]];
+  const asSorted = preferRealProducts(priced, p => p, { spread: false }).items.map(p => p.id);
+  check(asSorted.join() === priced.filter(p => p.id !== 'p-t3' && p.id !== 'p-t2').map(p => p.id).join(), `under a shopper's own sort the kept pieces stay where that sort put them (got ${asSorted.slice(0, 6).join()})`);
 
   console.log('# Wiring');
   const fn = read('functions/src/index.ts');
@@ -284,7 +298,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check(/const department = this\.shownUnder\.get\(productId\);\s*\n\s*if \(!department \|\| channel3Status !== 'live'\) return null;/.test(c3) && /return raw \? acceptChannel3Listing\(raw, department\) : null;/.test(c3), 'a re-read product goes through the same rule, under the department it was shown under');
   check(/if \(options\.stockCards === false && provider === 'starter' && channel3IsLive\(\)\)/.test(adapter), 'the notice drops the stand-in sentences only when no stand-in is on the page');
   const shop = read('src/screens/ShopScreen.tsx');
-  check(/return preferRealProducts\(matched, m => m\.product\);/.test(shop) && /const visibleProducts = shelf\.items;/.test(shop), 'the Shop shows real products in place of stand-ins');
+  check(/return preferRealProducts\(matched, m => m\.product, \{ spread: !isShopperSort\(sort\) \}\);/.test(shop) && /const visibleProducts = shelf\.items;/.test(shop), 'the Shop shows real products in place of stand-ins, and leaves a price sort in price order');
   check(/curatedCatalogNotice\(\{ stockCards: shelf\.standInsLeft \|\| shelf\.items\.length === 0 \}\)/.test(shop), 'the Shop tells the notice whether a stand-in is still on the page');
   const rules = fs.existsSync(path.join(__dirname, '..', 'firestore.rules')) ? read('firestore.rules') : '';
   check(!/channel3Shelves|channel3ShelfRequests/.test(rules), 'the shelves are server-only: no client rule opens them');
