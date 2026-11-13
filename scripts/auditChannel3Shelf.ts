@@ -296,10 +296,21 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   const adapter = read('src/services/affiliateNetwork.ts');
   const c3 = adapter.slice(adapter.indexOf('class Channel3Adapter'), adapter.indexOf('const searchRakutenProductsFn'));
   check(/const department = this\.shownUnder\.get\(productId\);\s*\n\s*if \(!department \|\| channel3Status !== 'live'\) return null;/.test(c3) && /return raw \? acceptChannel3Listing\(raw, department\) : null;/.test(c3), 'a re-read product goes through the same rule, under the department it was shown under');
+  // A function that has been idle takes longer to start than the page will
+  // wait. That used to switch the feed off for two minutes, every visit.
+  const ask = c3.slice(c3.indexOf('private async searchDepartment'), c3.indexOf('private shownUnder'));
+  const slowPath = ask.slice(ask.indexOf("if (first !== 'slow') return first;"));
+  check(/const first = await Promise\.race\(\[answer, waitedEnough\]\);/.test(ask) && !/rememberChannel3Off|channel3Status = 'off'/.test(ask), 'a slow answer does not switch the feed off');
+  check(/this\.arrivedLate\.set\(key, \{ at: Date\.now\(\), products \}\);/.test(slowPath) && /announceLiveProducts\(\);/.test(slowPath) && /\.catch\(error => channel3Failed\(error\)\);\s*\n\s*return \[\];\s*\n\s*\}/.test(slowPath), 'an answer that lands after the wait is kept and announced, and the page is not held for it');
+  check(/const late = this\.arrivedLate\.get\(key\);\s*\n\s*if \(late && Date\.now\(\) - late\.at < CHANNEL3_LATE_ANSWER_KEPT_MS\) return late\.products;/.test(ask), 'asking again finds the late answer already in hand');
+  check(/let answer = this\.inFlight\.get\(key\);\s*\n\s*if \(!answer\) \{/.test(ask), 'the same question is never asked twice while its answer is on the way');
+  check(/\.catch\(error => channel3Failed\(error\)\);/.test(slowPath), 'a call that fails after the wait is still treated as a failure');
+  check(/resilientAdapters\.forEach\(adapter => adapter\.forgetSearches\(\)\);/.test(adapter), 'when live products arrive late, the searches cached without them are dropped');
   check(/if \(options\.stockCards === false && provider === 'starter' && channel3IsLive\(\)\)/.test(adapter), 'the notice drops the stand-in sentences only when no stand-in is on the page');
   const shop = read('src/screens/ShopScreen.tsx');
   check(/return preferRealProducts\(matched, m => m\.product, \{ spread: !isShopperSort\(sort\) \}\);/.test(shop) && /const visibleProducts = shelf\.items;/.test(shop), 'the Shop shows real products in place of stand-ins, and leaves a price sort in price order');
   check(/curatedCatalogNotice\(\{ stockCards: shelf\.standInsLeft \|\| shelf\.items\.length === 0 \}\)/.test(shop), 'the Shop tells the notice whether a stand-in is still on the page');
+  check(/useEffect\(\(\) => onLiveProductsArrived\(\(\) => loadRef\.current\(\)\), \[\]\);/.test(shop), 'the Shop loads again when live products arrive late');
   const rules = fs.existsSync(path.join(__dirname, '..', 'firestore.rules')) ? read('firestore.rules') : '';
   check(!/channel3Shelves|channel3ShelfRequests/.test(rules), 'the shelves are server-only: no client rule opens them');
 

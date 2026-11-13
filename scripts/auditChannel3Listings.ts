@@ -188,7 +188,8 @@ check(/\.sort\(\(a, b\) => b\.matchScore - a\.matchScore\);\s*\n\}/.test(read('s
 console.log('# Wiring');
 const adapter = read('src/services/affiliateNetwork.ts');
 const c3 = adapter.slice(adapter.indexOf('class Channel3Adapter'), adapter.indexOf("const searchRakutenProductsFn"));
-check(/const departments = departmentsFor\(filters\.wardrobeFocus\);[\s\S]*?if \(departments\.length === 0\) return empty;/.test(c3), 'no department chosen = the feed is not searched');
+const noDepartment = c3.slice(c3.indexOf('if (departments.length === 0) {'), c3.indexOf('try {', c3.indexOf('if (departments.length === 0) {')));
+check(/^if \(departments\.length === 0\) \{[\s\S]*?searchChannel3ProductsFn\(\{\}\)[\s\S]*?return empty;\s*\n\s*\}/.test(noDepartment) && !/searchDepartment/.test(noDepartment) && c3.indexOf('if (departments.length === 0) {') < c3.indexOf('departments.map(d => this.searchDepartment(filters, d))'), 'no department chosen = the feed is not searched (the one call made asks for nothing, to wake the function)');
 check(/\.map\(listing => acceptChannel3Listing\(listing, department, \{ category: filters\.category \}\)\)/.test(c3) && !/as Product\[\]/.test(c3), 'every product goes through acceptChannel3Listing');
 check(/searchChannel3ProductsFn\(\{ \.\.\.rest, department \}\)/.test(c3), 'each call names one department');
 check(/if \(channel3Status === 'off' && Date\.now\(\) < channel3RetryAt\) return empty;/.test(c3), 'a feed that is not answering is left alone');

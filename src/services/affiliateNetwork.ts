@@ -627,6 +627,46 @@ export function channel3IsLive(): boolean {
   return channel3Status === 'live';
 }
 
+/** A call that actually failed (not merely slow): leave the feed alone for a while. */
+function channel3Failed(error: any) {
+  const unconfigured = String(error?.code || '').includes('failed-precondition');
+  rememberChannel3Off(Date.now() + (unconfigured ? EBAY_RETRY_UNCONFIGURED_MS : EBAY_RETRY_FAILED_MS));
+  if (!unconfigured) console.error('Channel3 search failed', error);
+}
+
+/** How long an answer that arrived late stays good for the page that asked. */
+const CHANNEL3_LATE_ANSWER_KEPT_MS = 5 * 60 * 1000;
+
+const liveProductListeners = new Set<() => void>();
+
+/**
+ * Called when live products arrive after the page stopped waiting for them.
+ * The Shop subscribes and loads again; the answer is then already in hand.
+ * Returns the unsubscribe.
+ */
+export function onLiveProductsArrived(listener: () => void): () => void {
+  liveProductListeners.add(listener);
+  return () => {
+    liveProductListeners.delete(listener);
+  };
+}
+
+function announceLiveProducts() {
+  // The searches cached while the feed was still on its way hold no live
+  // products; drop them, or asking again would just return the same page.
+  resilientAdapters.forEach(adapter => adapter.forgetSearches());
+  liveProductListeners.forEach(listener => {
+    try {
+      listener();
+    } catch (error) {
+      console.error('Live products listener failed', error);
+    }
+  });
+}
+
+/** Every ResilientAdapter built, so a late answer can clear their search caches. */
+const resilientAdapters: Array<{ forgetSearches: () => void }> = [];
+
 /**
  * Channel3: one product API over many retailers, with tracked buy links.
  *
@@ -641,29 +681,74 @@ export function channel3IsLive(): boolean {
  * Buy links arrive already tracked, so wrapLink is a pass-through.
  */
 class Channel3Adapter implements AffiliateNetworkAdapter {
+  /** Questions already asked and not yet answered: one call each, however often the page asks. */
+  private inFlight = new Map<string, Promise<Product[]>>();
+  /** Answers that came in after the page had stopped waiting for them. */
+  private arrivedLate = new Map<string, { at: number; products: Product[] }>();
+
+  /**
+   * One department's products for one search.
+   *
+   * The page waits only a few seconds, so a slow feed never holds the Shop.
+   * But slow is not broken: a Cloud Function that has not been called for a
+   * while takes longer than that just to start (and always does straight
+   * after a deploy). Giving up on it used to mean the shopper saw no live
+   * products at all, and none on the next visits either, because every
+   * visit met the same cold start. So when the wait runs out the page gets
+   * an empty answer for now and the call carries on; when it lands, it is
+   * kept, the Shop is told (onLiveProductsArrived) and asks again, and this
+   * time the answer is already here.
+   */
   private async searchDepartment(filters: ProductSearchFilters, department: ListingDepartment): Promise<Product[]> {
     const { wardrobeFocus, ...rest } = filters;
-    const call = searchChannel3ProductsFn({ ...rest, department });
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Channel3 search timed out')),
-        channel3Status === 'live' ? EBAY_TIMEOUT_MS : EBAY_FIRST_TIMEOUT_MS
-      )
-    );
-    const result = await Promise.race([call, timeout]);
-    const listings = (((result as any).data || {}).products || []) as RawChannel3Listing[];
-    const products = listings
-      .map(listing => acceptChannel3Listing(listing, department, { category: filters.category }))
-      .filter((product): product is Product => product !== null);
-    // Remembered so the product page can re-read one of these by id and
-    // hold it to the same department it was shown under.
-    products.forEach(product => this.shownUnder.set(product.id, department));
-    if (this.shownUnder.size > 1500) {
-      Array.from(this.shownUnder.keys())
-        .slice(0, this.shownUnder.size - 1500)
-        .forEach(id => this.shownUnder.delete(id));
+    const key = JSON.stringify([department, rest]);
+    const late = this.arrivedLate.get(key);
+    if (late && Date.now() - late.at < CHANNEL3_LATE_ANSWER_KEPT_MS) return late.products;
+
+    let answer = this.inFlight.get(key);
+    if (!answer) {
+      answer = searchChannel3ProductsFn({ ...rest, department }).then(result => {
+        const listings = (((result as any).data || {}).products || []) as RawChannel3Listing[];
+        const products = listings
+          .map(listing => acceptChannel3Listing(listing, department, { category: filters.category }))
+          .filter((product): product is Product => product !== null);
+        // Remembered so the product page can re-read one of these by id and
+        // hold it to the same department it was shown under.
+        products.forEach(product => this.shownUnder.set(product.id, department));
+        if (this.shownUnder.size > 1500) {
+          Array.from(this.shownUnder.keys())
+            .slice(0, this.shownUnder.size - 1500)
+            .forEach(id => this.shownUnder.delete(id));
+        }
+        return products;
+      });
+      this.inFlight.set(key, answer);
+      const done = () => {
+        this.inFlight.delete(key);
+      };
+      answer.then(done, done);
     }
-    return products;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const waitedEnough = new Promise<'slow'>(resolve => {
+      timer = setTimeout(() => resolve('slow'), channel3Status === 'live' ? EBAY_TIMEOUT_MS : EBAY_FIRST_TIMEOUT_MS);
+    });
+    const first = await Promise.race([answer, waitedEnough]);
+    if (timer) clearTimeout(timer);
+    if (first !== 'slow') return first;
+
+    // The page stops waiting; the answer does not stop coming.
+    answer
+      .then(products => {
+        this.arrivedLate.set(key, { at: Date.now(), products });
+        if (this.arrivedLate.size > 24) this.arrivedLate.delete(this.arrivedLate.keys().next().value as string);
+        if (products.length > 0) {
+          channel3Status = 'live';
+          announceLiveProducts();
+        }
+      })
+      .catch(error => channel3Failed(error));
+    return [];
   }
 
   /** Which department each product was shown under this session. */
@@ -672,9 +757,18 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
   async search(filters: ProductSearchFilters): Promise<ProductSearchResult> {
     const empty: ProductSearchResult = { products: [], hasMore: false, totalCount: 0 };
     const departments = departmentsFor(filters.wardrobeFocus);
-    // No department chosen: nothing from a live feed.
-    if (departments.length === 0) return empty;
     if (channel3Status === 'off' && Date.now() < channel3RetryAt) return empty;
+    // No department chosen: nothing from a live feed. Searches that name no
+    // department come from Home, which members reach before the Shop - so
+    // the first of them wakes the function (a call that asks for nothing and
+    // costs nothing), and the Shop's own first call finds it ready.
+    if (departments.length === 0) {
+      if (!this.woken) {
+        this.woken = true;
+        searchChannel3ProductsFn({}).catch(() => undefined);
+      }
+      return empty;
+    }
 
     try {
       const perDepartment = await Promise.all(departments.map(d => this.searchDepartment(filters, d)));
@@ -687,12 +781,12 @@ class Channel3Adapter implements AffiliateNetworkAdapter {
       const refined = sortProducts(applyFiltersLocally(products, filters), filters.sort);
       return { products: refined, hasMore: false, totalCount: refined.length };
     } catch (error: any) {
-      const unconfigured = String(error?.code || '').includes('failed-precondition');
-      rememberChannel3Off(Date.now() + (unconfigured ? EBAY_RETRY_UNCONFIGURED_MS : EBAY_RETRY_FAILED_MS));
-      if (!unconfigured) console.error('Channel3 search failed', error);
+      channel3Failed(error);
       return empty;
     }
   }
+
+  private woken = false;
 
   /**
    * A live product, re-read now (free at Channel3). The Shop's browse view
@@ -899,7 +993,14 @@ class ResilientAdapter implements AffiliateNetworkAdapter {
    */
   private productIndex = new Map<string, Product>();
 
-  constructor(private inner: AffiliateNetworkAdapter) {}
+  constructor(private inner: AffiliateNetworkAdapter) {
+    resilientAdapters.push(this);
+  }
+
+  /** Drops cached searches (not the product index): see announceLiveProducts. */
+  forgetSearches() {
+    this.cache.clear();
+  }
 
   private index(products: Product[]) {
     products.forEach(p => this.productIndex.set(p.id, p));

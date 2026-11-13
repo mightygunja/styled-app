@@ -25,6 +25,7 @@ import {
   curatedCatalogNotice,
   amazonSearchUrl,
   offersLiveSecondhand,
+  onLiveProductsArrived,
   reportsSalePrices,
 } from '../services/affiliateNetwork';
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
@@ -286,6 +287,10 @@ export default function ShopScreen() {
   // is a load that failed.
   const loadRef = useRef(load);
   loadRef.current = load;
+  // Live products that arrive after the page stopped waiting for them (a
+  // feed waking from idle takes longer than the page will hold for) replace
+  // the stand-ins as soon as they land, instead of on some later visit.
+  useEffect(() => onLiveProductsArrived(() => loadRef.current()), []);
   const failedRef = useRef(false);
   failedRef.current = failed;
   useFocusEffect(
