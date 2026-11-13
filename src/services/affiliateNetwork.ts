@@ -999,7 +999,8 @@ export function isMockProvider(): boolean {
  */
 const CHANNEL3_NOTICE =
   'We may earn a commission when you buy through links on this page. Live listings from retail ' +
-  'partners show the retailer\'s own photo and price and open that exact product. ';
+  'partners show the retailer\'s own photo and price and open that exact product. Stores that ' +
+  'pay us a commission are listed ahead of stores that do not. ';
 
 export function curatedCatalogNotice(): string | null {
   const provider = effectiveProvider();

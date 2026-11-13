@@ -3509,8 +3509,9 @@ export const searchChannel3Products = functions
             (o: any) =>
               o?.url && o?.domain && o?.availability === 'InStock' && wantUsed === /used|refurbished/i.test(String(o?.condition || ''))
           );
-          // The offer that pays, when there is one; otherwise the first in stock.
-          const offer = offers.find((o: any) => Number(o.max_commission_rate) > 0) || offers[0];
+          // The offer that pays the most, when one pays; otherwise the first in stock.
+          const rate = (o: any) => Number(o?.max_commission_rate) || 0;
+          const offer = offers.reduce((best: any, o: any) => (rate(o) > rate(best) ? o : best), offers[0]);
           if (!item?.id || !item?.title || !offer) return null;
           // The docs show the amount under either name.
           const amount = Number(offer.price?.price ?? offer.price?.amount);
@@ -3532,6 +3533,8 @@ export const searchChannel3Products = functions
             sourceUrl: String(offer.url),
             domain: String(offer.domain),
             condition: offer.condition ?? null,
+            // 0 = this store pays nothing on this product; the Shop lists those last.
+            commissionRate: rate(offer),
           };
         })
         .filter((p: any) => p && p.imageUrl && p.price > 0);

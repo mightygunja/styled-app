@@ -30,7 +30,7 @@ import {
 import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
 import { departmentQuestionDue, profileKnowledge, ProfileKnowledge } from '../services/profilePrompts';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
-import { MatchedProduct, isOnSale, discountPercent, ProductSort } from '../models/product';
+import { MatchedProduct, isOnSale, discountPercent, ProductSort, payingStoresFirst } from '../models/product';
 import { ItemCategory, Item } from '../types';
 import { closetAPI, getCurrentUserId } from '../services/api';
 import { shopperSignals } from '../services/shopperSignals';
@@ -230,11 +230,16 @@ export default function ShopScreen() {
           }
         });
       }
-      const ranked = scoreAndRankProducts([...searchResult.products, ...seeded, ...liveForTrend], profile, closetItems, {
+      const scored = scoreAndRankProducts([...searchResult.products, ...seeded, ...liveForTrend], profile, closetItems, {
         signals,
         weather: weather ? { condition: weather.condition, temperature: weather.temperature } : undefined,
         trends: trendsForUser,
       });
+      // Stores that pay a commission come first; a live product whose store
+      // pays nothing goes after them. Match order is kept within each group,
+      // and the page's notice says this is done. A shopper who asked for
+      // price order gets what they asked for instead.
+      const ranked = sort === 'match' ? payingStoresFirst(scored, m => m.product) : scored;
 
       // Only the first screenful counts as seen. Recording the whole result set
       // would decay products the user never actually scrolled to.
@@ -327,7 +332,13 @@ export default function ShopScreen() {
         return { m, order: fillsGap ? 0 : ownSeed ? 0.5 : kindOrder[kind] };
       })
       .filter((x): x is { m: MatchedProduct; order: number } => x !== null)
-      .sort((a, b) => a.order - b.order || b.m.matchScore - a.m.matchScore)
+      // Within each kind of trend match, paying stores still lead.
+      .sort(
+        (a, b) =>
+          a.order - b.order ||
+          Number(a.m.product.paysCommission === false) - Number(b.m.product.paysCommission === false) ||
+          b.m.matchScore - a.m.matchScore
+      )
       .map(x => x.m);
   }, [products, focusTrend, route.params?.trendGap]);
 

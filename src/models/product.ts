@@ -48,6 +48,23 @@ export interface Product {
   stockLevel?: 'low' | 'medium' | 'high';
   /** Number of reviews behind `rating`, so a 5.0 from one person isn't trusted. */
   reviewCount?: number;
+  /**
+   * False when a live feed says this store pays no commission on this
+   * product. Absent everywhere else: curated picks and feeds that always pay
+   * are never marked, and an unknown rate is not "unpaid".
+   */
+  paysCommission?: boolean;
+}
+
+/**
+ * Stores that pay a commission first, stores known to pay nothing last. The
+ * order inside each group is kept, so a list ranked by match stays ranked by
+ * match within the paying stores and within the rest. The Shop's notice says
+ * this is done (see CHANNEL3_NOTICE).
+ */
+export function payingStoresFirst<T>(items: T[], productOf: (item: T) => Product): T[] {
+  const unpaid = (item: T) => productOf(item).paysCommission === false;
+  return [...items.filter(item => !unpaid(item)), ...items.filter(unpaid)];
 }
 
 export function isOnSale(product: Product): boolean {

@@ -27,6 +27,7 @@ import fs from 'fs';
 import path from 'path';
 import { acceptChannel3Listing, CHANNEL3_GENDER, RawChannel3Listing } from '../src/services/channel3Listing';
 import { departmentVisible } from '../src/services/departmentFit';
+import { payingStoresFirst } from '../src/models/product';
 
 let failures = 0;
 let checks = 0;
@@ -116,6 +117,24 @@ check(sale?.originalPrice === 200 && sale.price === 120, 'a real sale price is c
 const notSale = acceptChannel3Listing(product('Wool Coat', 'female', ['Coats'], { price: 120, originalPrice: 100 }), 'women');
 check(!!notSale && notSale.originalPrice === undefined, 'a "compare at" price below the price is not shown as a discount');
 check(acceptChannel3Listing(product('Leather Jacket', 'male', ['Jackets'], { condition: 'used' }), 'men')?.condition === 'secondhand', 'a used offer is labelled secondhand');
+
+console.log('# Paying stores first');
+const coat = (name: string, commissionRate?: number | null) =>
+  acceptChannel3Listing(product(name, 'female', ['Coats'], commissionRate === undefined ? {} : { commissionRate }), 'women')!;
+check(coat('Paid Coat', 0.07).paysCommission === true, 'a store that pays is marked as paying');
+check(coat('Unpaid Coat', 0).paysCommission === false, 'a store that pays nothing is marked as unpaid');
+check(coat('Unknown Coat').paysCommission === undefined && coat('Null Coat', null).paysCommission === undefined, 'an unknown rate is not treated as unpaid');
+const curated = { ...coat('Curated Coat'), id: 't001' };
+const mixed = [coat('A', 0), curated, coat('B', 0.05), coat('C', 0), coat('D', 0.1)];
+const ordered = payingStoresFirst(mixed, p => p).map(p => p.name);
+check(ordered.join(',') === 'Curated Coat,B,D,A,C', `paying stores and curated picks lead, unpaid stores follow, each group in its own order (got ${ordered.join(',')})`);
+check(payingStoresFirst([] as typeof mixed, p => p).length === 0 && mixed.map(p => p.name).join(',') === 'A,Curated Coat,B,C,D', 'the original list is left untouched');
+const shop = read('src/screens/ShopScreen.tsx');
+check(/const ranked = sort === 'match' \? payingStoresFirst\(scored, m => m\.product\) : scored;/.test(shop), 'the Shop lists paying stores first in its default order');
+check(/a\.order - b\.order \|\|\s*Number\(a\.m\.product\.paysCommission === false\) - Number\(b\.m\.product\.paysCommission === false\) \|\|\s*b\.m\.matchScore - a\.m\.matchScore/.test(shop), 'under a trend, paying stores lead within each kind of match');
+check(/Stores that ' \+\s*\n\s*'pay us a commission are listed ahead of stores that do not\. /.test(read('src/services/affiliateNetwork.ts')), 'the page says paying stores are listed first');
+const fnText = read('functions/src/index.ts');
+check(/commissionRate: rate\(offer\),/.test(fnText) && /offers\.reduce\(\(best: any, o: any\) => \(rate\(o\) > rate\(best\) \? o : best\), offers\[0\]\)/.test(fnText), "the function picks the best-paying offer and passes its rate on");
 
 console.log('# Wiring');
 const adapter = read('src/services/affiliateNetwork.ts');

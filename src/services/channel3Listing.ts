@@ -49,6 +49,8 @@ export interface RawChannel3Listing {
   /** The store the offer is from, e.g. "nordstrom.com". */
   domain?: string;
   condition?: string | null;
+  /** Channel3's `max_commission_rate` for the chosen offer; 0 = the store pays nothing. */
+  commissionRate?: number | null;
 }
 
 /** The label Channel3 uses for each of the app's departments. */
@@ -112,5 +114,7 @@ export function acceptChannel3Listing(
     inStock: true,
     condition: used ? 'secondhand' : 'new',
     department,
+    // Only stated when Channel3 stated it: an unknown rate is not "unpaid".
+    ...(typeof raw.commissionRate === 'number' ? { paysCommission: raw.commissionRate > 0 } : {}),
   };
 }
