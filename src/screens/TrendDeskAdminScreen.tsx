@@ -213,7 +213,7 @@ export default function TrendDeskAdminScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* The list also refreshes itself every Monday. This runs that same
+        {/* The list also refreshes itself about once a week. This runs that same
             job now: it publishes straight to users, so it is a separate,
             plainly worded button rather than part of "Draft". */}
         <TouchableOpacity
@@ -227,8 +227,9 @@ export default function TrendDeskAdminScreen() {
           </Text>
         </TouchableOpacity>
         <Text style={styles.refreshNote}>
-          Runs by itself every Monday. Only trends the app can show in photographed pieces are
-          published; they are marked AUTO below and retire after eight weeks. Retire any of them here.
+          Runs by itself about once a week, written from what the fashion press has reported in the
+          last three weeks. Nothing here needs doing: trends are published, marked AUTO below, and
+          retire after eight weeks on their own. You can still retire or restore any of them here.
         </Text>
 
         {loading ? (
