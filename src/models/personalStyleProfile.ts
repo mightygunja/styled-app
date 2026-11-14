@@ -1,3 +1,4 @@
+import type { PriceMix } from '../services/priceMix';
 /**
  * Personal Style Profile Model
  *
@@ -490,6 +491,13 @@ export interface PersonalStyleProfile {
    * profiles that predate the question stay valid; absent reads as 'all'.
    */
   wardrobeFocus?: WardrobeFocus;
+
+  /**
+   * The mix of prices this member wants to be shown (services/priceMix.ts).
+   * Optional so profiles that predate the question stay valid; absent means
+   * never asked, and nothing is rearranged.
+   */
+  priceMix?: PriceMix;
 
   /**
    * AI-powered personal color analysis (selfie -> seasonal color type + palette).

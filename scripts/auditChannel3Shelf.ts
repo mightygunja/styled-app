@@ -32,6 +32,7 @@ import {
   Shelf,
   SHELF_DEPARTMENTS,
   SHELF_IDS_MAX_AGE_MS,
+  SHELF_PRICE_BANDS,
   SHELF_QUERIES,
   SHELF_RETAILERS,
   SHELF_SERVE_MAX_AGE_MS,
@@ -40,10 +41,12 @@ import {
   SHELF_VERSION,
   channel3Tags,
   describedPerson,
+  evenByPrice,
   mapChannel3Product,
   photoPeople,
   refreshShelf,
   shelfCategories,
+  shelfPriceTier,
   shelfRows,
   shelfServable,
   shelfStale,
@@ -170,11 +173,11 @@ check(soldOutReread?.inStock === false && acceptChannel3Listing(soldOutReread!, 
 console.log('# Shelves');
 check(SHELF_DEPARTMENTS.join() === 'women,men' && !shelfCategories('men').includes('dresses') && shelfCategories('women').includes('dresses'), 'every category has a shelf; menswear has no dresses shelf');
 const allQueries = SHELF_DEPARTMENTS.flatMap(d => Object.values(SHELF_QUERIES[d]).flat());
-check(allQueries.length <= 36 && allQueries.every(q => !/\b(?:women|men|woman|man|girl|boy)/i.test(q)), `a full restock is ${allQueries.length} searches, and no search words name a department (the gender filter does that)`);
+check(allQueries.length * 3 <= 108 && allQueries.every(q => !/\b(?:women|men|woman|man|girl|boy)/i.test(q)), `a full restock is ${allQueries.length * 3} searches (${allQueries.length} subjects, each in three price bands), and no search words name a department (the gender filter does that)`);
 check(SHELF_RETAILERS.length >= 30 && SHELF_RETAILERS.every(d => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d)) && new Set(SHELF_RETAILERS).size === SHELF_RETAILERS.length, 'shelves are stocked from a list of named retailers');
 
 const NOW = 1_800_000_000_000;
-const rawFor = (id: string, rate = 0.07) => item(id, `Wool Coat ${id}`, 'female', 'Coats', [image('hero', 'Black wool coat.', true)], { offers: [{ url: `https://buy.trychannel3.com/${id}`, domain: 'nordstrom.com', price: { price: 100 }, availability: 'InStock', max_commission_rate: rate }] });
+const rawFor = (id: string, rate = 0.07, price = 100) => item(id, `Wool Coat ${id}`, 'female', 'Coats', [image('hero', 'Black wool coat.', true)], { offers: [{ url: `https://buy.trychannel3.com/${id}`, domain: 'nordstrom.com', price: { price }, availability: 'InStock', max_commission_rate: rate }] });
 const world = (options: { search?: boolean; gone?: string[] } = {}) => {
   const log = { searches: [] as any[], reads: [] as string[] };
   let clock = NOW;
@@ -185,7 +188,10 @@ const world = (options: { search?: boolean; gone?: string[] } = {}) => {
         log.searches.push(body);
         if (options.search === false) return null;
         const n = log.searches.length;
-        return Array.from({ length: 30 }, (_, i) => rawFor(`s${n}-${i}`, i % 3 === 0 ? 0 : 0.07));
+        // Answers honour the price band asked for, as Channel3's do.
+        const band = body?.filters?.price || {};
+        const price = band.max_price ?? (band.min_price ? band.min_price + 50 : 100);
+        return Array.from({ length: 30 }, (_, i) => rawFor(`s${n}-${i}`, i % 3 === 0 ? 0 : 0.07, price));
       },
       product: async (id: string) => {
         log.reads.push(id);
@@ -209,12 +215,24 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   // First stock: searches, and their answers are the snapshot.
   let w = world();
   const first = await refreshShelf(null, 'women', 'outerwear', w.deps);
-  check(!!first && w.log.searches.length === 3 && w.log.reads.length === 0, 'an empty shelf is stocked by its three searches, with no extra reads');
+  check(!!first && w.log.searches.length === 9 && w.log.reads.length === 0, 'an empty shelf is stocked by its three searches in each of three price bands, with no extra reads');
+  const outerwear = SHELF_PRICE_BANDS.outerwear;
+  const bandsAsked = w.log.searches.slice(0, 3).map(b => JSON.stringify(b.filters.price));
+  check(bandsAsked.join() === [JSON.stringify({ max_price: outerwear.low }), JSON.stringify({ min_price: outerwear.low + 0.01, max_price: outerwear.high }), JSON.stringify({ min_price: outerwear.high + 0.01 })].join(), 'each subject is searched once per price band: up to the everyday limit, between the two, and above the investment limit');
+  const tierCount = (rows: Channel3Row[], tier: string) => rows.filter(r => shelfPriceTier('outerwear', r.price) === tier).length;
+  check(!!first && tierCount(first.products, 'low') === SHELF_SIZE / 3 && tierCount(first.products, 'mid') === SHELF_SIZE / 3 && tierCount(first.products, 'high') === SHELF_SIZE / 3, 'a shelf is a third everyday, a third mid-range and a third investment');
+  check(!!first && ['low', 'mid', 'high'].every(tier => tierCount(first.products.slice(0, 9), tier) === 3), 'and any front part of the shelf is even too');
+  const atPrice = (id: string, price: number, rate = 0.07) => mapChannel3Product(rawFor(id, rate, price))!;
+  const lopsided = [...Array.from({ length: 4 }, (_, i) => atPrice(`lo${i}`, 90)), ...Array.from({ length: 40 }, (_, i) => atPrice(`hi${i}`, 900))];
+  const filled = evenByPrice(lopsided, 'outerwear', 30);
+  check(filled.length === 30 && tierCount(filled, 'low') === 4 && tierCount(filled, 'high') === 26, 'a price band that cannot fill its third gives its places to the others');
+  check(evenByPrice([atPrice('free', 900, 0), atPrice('pays', 900)], 'outerwear', 2).map(r => r.id).join() === 'c3-pays,c3-free', 'within a band, stores that pay still come first');
+  check(shelfPriceTier('tops', 60) === 'low' && shelfPriceTier('tops', 60.01) === 'mid' && shelfPriceTier('tops', 160) === 'mid' && shelfPriceTier('tops', 160.01) === 'high', 'a price on a limit belongs to the band below it');
   check(!!first && first.products.length === SHELF_SIZE && first.ids.length === SHELF_SIZE && first.version === SHELF_VERSION, `a shelf holds ${SHELF_SIZE} products`);
   check(w.log.searches.every(b => b.filters.gender === 'female' && b.filters.age.join() === 'adult' && b.filters.website_ids === SHELF_RETAILERS && b.limit === 30), 'every shelf search is for one gender, adults, in stock, from the named retailers');
   // 90 answers, 60 of them from paying stores: the 54 kept are all paying.
   check(!!first && first.products.every(r => r.commissionRate > 0), 'paying stores take the places on a shelf first');
-  check(!!first && new Set(first.products.slice(0, 6).map(r => r.id.split('-')[1])).size === 3, 'every search contributes to the front of the shelf');
+  check(!!first && new Set(first.products.slice(0, 9).map(r => r.id.split('-')[1])).size === 9, 'every search contributes to the front of the shelf');
 
   // Fresh: nothing happens.
   w = world();
@@ -235,27 +253,27 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   // More than half gone: restock by search.
   w = world({ gone: ['a', 'b', 'c'] });
   const restocked = await refreshShelf(aged, 'women', 'outerwear', w.deps);
-  check(w.log.searches.length === 3 && !!restocked && restocked.products.length === SHELF_SIZE, 'a shelf that has lost more than half its products is restocked');
+  check(w.log.searches.length === 9 && !!restocked && restocked.products.length === SHELF_SIZE, 'a shelf that has lost more than half its products is restocked');
 
   // Ids a week old: search.
   w = world();
   const week = shelfOf(['a', 'b'], NOW - SHELF_IDS_MAX_AGE_MS - 1, NOW - SHELF_SNAPSHOT_MAX_AGE_MS - 1);
   await refreshShelf(week, 'women', 'outerwear', w.deps);
-  check(w.log.searches.length === 3, 'after a week a shelf is restocked by search');
+  check(w.log.searches.length === 9, 'after a week a shelf is restocked by search');
 
   // Stocked under an older version: restock even though it is fresh.
   w = world();
   const old = shelfOf(['a', 'b'], NOW - 1000, NOW - 1000, SHELF_VERSION - 1);
   check(shelfStale(old, NOW), 'a shelf stocked under older searches counts as stale');
   await refreshShelf(old, 'women', 'outerwear', w.deps);
-  check(w.log.searches.length === 3, 'a shelf stocked under older searches is restocked at its next refresh');
+  check(w.log.searches.length === 9, 'a shelf stocked under older searches is restocked at its next refresh');
 
-  // Budget spent: old ids are re-read, nothing is lost.
+  // No search answering: old ids are re-read, nothing is lost.
   w = world({ search: false });
   const kept = await refreshShelf(week, 'women', 'outerwear', w.deps);
-  check(!!kept && kept.products.length === 2 && w.log.reads.join() === 'a,b' && kept.idsAt === week.idsAt, 'with the search budget spent, the shelf keeps its products and re-reads them for free');
+  check(!!kept && kept.products.length === 2 && w.log.reads.join() === 'a,b' && kept.idsAt === week.idsAt, 'when no search answers, the shelf keeps its products and re-reads them for free');
   w = world({ search: false });
-  check((await refreshShelf(null, 'women', 'outerwear', w.deps)) === null, 'with the budget spent and nothing on the shelf, there is no shelf (the Shop falls back)');
+  check((await refreshShelf(null, 'women', 'outerwear', w.deps)) === null, 'when no search answers and nothing is on the shelf, there is no shelf (the Shop falls back)');
 
   // Serving.
   check(shelfServable(fresh, NOW) && !shelfServable(shelfOf(['a'], NOW, NOW - SHELF_SERVE_MAX_AGE_MS - 1), NOW) && !shelfServable(null, NOW) && !shelfServable(shelfOf([], NOW, NOW), NOW), 'a shelf is shown only while its snapshot is under twelve hours old and not empty');
@@ -437,7 +455,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check(/const signedIn = !!context\.auth;/.test(keptFn) && /if \(!signedIn && !mayOpen\.has\(String\(body\?\.query \|\| ''\)\)\) return null;/.test(keptFn) && /const mayOpen = new Set\(PUBLIC_PHRASES\[department\]\);/.test(keptFn), "a visitor without an account can cause a search only for the public pages' own phrases");
   const typedSearch = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.indexOf('const channel3ProductMemory'));
   check(typedSearch.indexOf('if (!context.auth) return { products: [], department, hasMore: false, totalCount: 0 };') > typedSearch.indexOf('browseShelves(') && typedSearch.indexOf('if (!context.auth) return') < typedSearch.indexOf('channel3Search(apiKey, body)'), 'a typed (paid) search needs a signed-in member; the shelves, which cost nothing, do not');
-  check(/if \(Date\.now\(\) - started > KEPT_TIME_ALLOWED_MS\) \{/.test(keptFn) && /channel3Search\(apiKey, body\)/.test(keptFn), 'refreshing stops when its time is up, and every search it makes is counted against the monthly budget');
+  check(/if \(Date\.now\(\) - started > KEPT_TIME_ALLOWED_MS\) \{/.test(keptFn) && /channel3Search\(apiKey, body\)/.test(keptFn), 'refreshing stops when its time is up, and every search it makes goes through the one counted search function');
   const trendsPage = read('src/screens/TrendInsightsScreen.tsx');
   check(/const allPieces = Array\.from\(new Set\(Array\.from\(piecesByTrend\.values\(\)\)\.flat\(\)\)\);/.test(trendsPage) && /await liveTrendPieces\(missing, profile\?\.wardrobeFocus\);/.test(trendsPage) && /scoreAndRankProducts\(found\[piece\] \|\| \[\], profile, closetItems, \{ trends: \[remix\.trend\] \}\)/.test(trendsPage), "the Trends page asks for every trend's pieces in one request, in the member's department, and ranks them against the member's profile and closet");
   check(/const hasLivePieces = \(liveRails\.get\(trend\.id\)\?\.length \?\? 0\) > 0;\s*\n\s*const amazonFirst = !!gap && !hasLivePieces;/.test(trendsPage) && /onPress=\{\(\) => \(amazonFirst \? searchAmazon\(remix\) : browseTrend\(remix\)\)\}/.test(trendsPage), "a trend with real pieces leads with the Shop that shows them; Amazon leads only when there are none");
@@ -457,7 +475,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   const run = fn.slice(fn.indexOf('async function refreshChannel3ShelvesNow'), fn.indexOf('async function refreshEveryShelf'));
   check(/if \(\(Number\(snap\.data\(\)\?\.until\) \|\| 0\) > Date\.now\(\)\) return false;/.test(run) && /if \(!mine\) return/.test(run), 'two refresh runs cannot restock the same shelves at once');
   const byId = fn.slice(fn.indexOf('async function channel3ProductById'), fn.indexOf('// ---- Shelves'));
-  check(!/spendChannel3Search/.test(byId) && /\/products\/\$\{encodeURIComponent\(id\)\}/.test(byId), 'a re-read by id is not charged to the search budget');
+  check(!/countChannel3Search/.test(byId) && /\/products\/\$\{encodeURIComponent\(id\)\}/.test(byId), 'a re-read by id is not counted as a search');
   check(/export const getChannel3Product = /.test(fn) && /mapChannel3Product\(item, \{ anyAvailability: true \}\)/.test(fn), 'the product page has a function to re-read one product');
 
   const adapter = read('src/services/affiliateNetwork.ts');
@@ -475,7 +493,7 @@ const shelfOf = (ids: string[], idsAt: number, productsAt: number, version: numb
   check(/resilientAdapters\.forEach\(adapter => adapter\.forgetSearches\(\)\);/.test(adapter), 'when live products arrive late, the searches cached without them are dropped');
   check(/if \(options\.stockCards === false && provider === 'starter' && channel3IsLive\(\)\)/.test(adapter), 'the notice drops the stand-in sentences only when no stand-in is on the page');
   const shop = read('src/screens/ShopScreen.tsx');
-  check(/return preferRealProducts\(matched, m => m\.product, \{ spread: !isShopperSort\(sort\) \}\);/.test(shop) && /const visibleProducts = shelf\.items;/.test(shop), 'the Shop shows real products in place of stand-ins, and leaves a price sort in price order');
+  check(/return preferRealProducts\(mixed, m => m\.product, \{ spread: !isShopperSort\(sort\) \}\);/.test(shop) && /const mixed = focusTrend \|\| isShopperSort\(sort\) \? matched : inPriceMix\(matched, priceMix\);/.test(shop) && /const visibleProducts = shelf\.items;/.test(shop), 'the Shop shows real products in place of stand-ins, and leaves a price sort in price order');
   check(/curatedCatalogNotice\(\{ stockCards: shelf\.standInsLeft \|\| shelf\.items\.length === 0 \}\)/.test(shop), 'the Shop tells the notice whether a stand-in is still on the page');
   check(/useEffect\(\(\) => onLiveProductsArrived\(\(\) => loadRef\.current\(\)\), \[\]\);/.test(shop), 'the Shop loads again when live products arrive late');
   const rules = fs.existsSync(path.join(__dirname, '..', 'firestore.rules')) ? read('firestore.rules') : '';

@@ -182,7 +182,7 @@ check(rising.length === byMatch.length && names(byMatch) === before, 'no piece i
 check(orderMatchedForSort(byMatch, 'match') === byMatch && orderMatchedForSort(byMatch, undefined) === byMatch && orderMatchedForSort(byMatch, 'newest') === byMatch, 'the default match order is passed through unchanged');
 check(isShopperSort('price-low') && isShopperSort('price-high') && isShopperSort('discount') && !isShopperSort('match') && !isShopperSort('newest') && !isShopperSort(undefined), 'only the price and discount chips count as a chosen order');
 check(shop.indexOf('const scored = scoreAndRankProducts(') > 0 && shop.indexOf('const scored = scoreAndRankProducts(') < shop.indexOf('orderMatchedForSort(scored, sort)'), 'the chosen order is applied after scoring, which re-ranks by match');
-check(/if \(isShopperSort\(sort\)\) return orderMatchedForSort\(carrying\.map\(x => x\.m\), sort\);\s*\n\s*return carrying\s*\n/.test(shop) && /\}, \[products, focusTrend, route\.params\?\.trendGap, sort\]\);/.test(shop), 'under a trend, a chosen price order wins over the trend order');
+check(/if \(isShopperSort\(sort\)\) return orderMatchedForSort\(carrying\.map\(x => x\.m\), sort\);\s*\n\s*const ordered = carrying\s*\n/.test(shop) && /\}, \[products, focusTrend, route\.params\?\.trendGap, sort, priceMix\]\);/.test(shop), 'under a trend, a chosen price order wins over the trend order');
 check(/\.sort\(\(a, b\) => b\.matchScore - a\.matchScore\);\s*\n\}/.test(read('src/services/marketplaceMatchingService.ts')), 'scoring itself still ranks by match for every other caller');
 
 console.log('# Wiring');
@@ -201,8 +201,10 @@ const search = fn.slice(fn.indexOf('export const searchChannel3Products'), fn.in
 check(/if \(!department\) return \{ products: \[\], hasMore: false, totalCount: 0 \};/.test(search), 'the function answers nothing without a department');
 check(JSON.stringify(channel3Filters('men')) === JSON.stringify({ gender: 'male', age: ['adult'], availability: ['InStock'] }) && channel3Filters('women').gender === 'female' && /const filters: Record<string, any> = channel3Filters\(department\);/.test(search), 'it asks Channel3 for one gender, adults (as a list), in stock');
 const budget = fn.slice(fn.indexOf('async function channel3Search'), fn.indexOf('async function channel3ProductById'));
-check(budget.indexOf('if (!(await spendChannel3Search(limit)))') > -1 && budget.indexOf('if (!(await spendChannel3Search(limit)))') < budget.indexOf('fetch(') && /if \(!result\) return \{ products: \[\], hasMore: false, totalCount: 0, capped: true \};/.test(search), 'a search past the monthly budget is not made');
-check(/Number\(process\.env\.CHANNEL3_MONTHLY_SEARCH_LIMIT\) \|\| CHANNEL3_FREE_SEARCHES/.test(fn) && /const CHANNEL3_FREE_SEARCHES = 1000;/.test(fn), "the budget defaults to Channel3's free allowance");
+// The owner's call (2026-11-13): no cap on searches. They are still counted.
+check(!/CHANNEL3_MONTHLY_SEARCH_LIMIT|CHANNEL3_FREE_SEARCHES|spendChannel3Search|capped: true/.test(fn), 'there is no monthly cap on searches: none is refused for the number already made');
+check(budget.indexOf('countChannel3Search();') > -1 && budget.indexOf('countChannel3Search();') < budget.indexOf('fetch(') && /FieldValue\.increment\(1\)/.test(fn) && /\.catch\(error => console\.error\('Channel3: could not count a search', error\)\);/.test(fn), 'every search is counted in the month\'s tally, and a count that fails cannot fail the search');
+check(search.indexOf('if (!context.auth) return { products: [], department, hasMore: false, totalCount: 0 };') > -1 && search.indexOf('if (!context.auth) return { products: [], department, hasMore: false, totalCount: 0 };') < search.indexOf('channel3Search(apiKey, body)'), 'with no cap, who may cause a search still holds: a typed search needs a signed-in member');
 check(search.indexOf('channel3Cache.get(cacheKey)') > -1 && search.indexOf('channel3Cache.get(cacheKey)') < search.indexOf('channel3Search(apiKey, body)'), 'a repeated search is answered from memory before any credit is spent');
 const passed = mapChannel3Product({
   id: 'x2', title: 'Linen Shirt', gender: 'male', age: 'adult',

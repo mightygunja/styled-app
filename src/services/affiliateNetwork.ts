@@ -676,7 +676,7 @@ const resilientAdapters: Array<{ forgetSearches: () => void; remember: (products
  * Channel3: one product API over many retailers, with tracked buy links.
  *
  * The Cloud Function holds the key, asks Channel3 for ONE department at a
- * time (its `gender` filter) and enforces the monthly search budget. Every
+ * time (its `gender` filter) and counts the searches made. Every
  * product then goes through acceptChannel3Listing (channel3Listing.ts),
  * which shows it only when Channel3's own gender label is exactly the
  * department searched, it is an adult's piece, its title agrees and it

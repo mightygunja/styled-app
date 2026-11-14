@@ -14,6 +14,9 @@
  *   - a real product whose colour is known goes ahead of one whose colour is
  *     not: the outfit engine composes by colour, and a piece it cannot place
  *     is a wasted slot;
+ *   - a member who has said what mix of prices suits them gets the
+ *     candidates dealt out in that mix first (priceMix.ts), so the pool - and
+ *     so the looks - are priced the way they shop;
  *   - the best forty make the core, topped up so there are always tops,
  *     bottoms, shoes, bags and accessories to finish a look with.
  *
@@ -23,6 +26,7 @@
 
 import { Product } from '../models/product';
 import { isStandIn, preferRealProducts } from './shopShelf';
+import { PriceMix, arrangeWithinGroups } from './priceMix';
 
 export const STARTER_CORE = 40;
 
@@ -38,13 +42,18 @@ const MINIMUMS: Array<[string, number]> = [
 export function starterPool(
   ranked: Product[],
   isBag: (product: Product) => boolean,
-  options: { preferReal?: boolean } = {}
+  options: { preferReal?: boolean; priceMix?: PriceMix } = {}
 ): Product[] {
   const candidates =
     options.preferReal === false ? ranked : preferRealProducts(ranked, p => p, { keep: 0, spread: false }).items;
   // Stand-ins always state a colour; among real products, known colour first.
   const placeable = (product: Product) => isStandIn(product) || !!product.color;
-  const ordered = [...candidates.filter(placeable), ...candidates.filter(p => !placeable(p))];
+  const ordered = arrangeWithinGroups(
+    [...candidates.filter(placeable), ...candidates.filter(p => !placeable(p))],
+    product => (placeable(product) ? 0 : 1),
+    product => product,
+    options.priceMix
+  );
 
   const kind = (product: Product): string => {
     if (product.category === 'accessories' || (product.category as string) === 'bags') {

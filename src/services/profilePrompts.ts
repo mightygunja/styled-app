@@ -5,7 +5,7 @@
  * left to ask - never because a read failed, and never an established
  * account for the survey.
  *
- *   - The SURVEY (five questions) is for a new account. Outside first run it
+ *   - The SURVEY (six questions) is for a new account. Outside first run it
  *     is offered once, on Home, and only to an account the server confirms
  *     has no style profile AND no clothes in its closet. A member who has
  *     taken it, or who has already built a closet, is never asked.
@@ -45,7 +45,7 @@ export interface HomePromptInput {
 }
 
 export interface HomePrompts {
-  /** Offer the five-question survey. */
+  /** Offer the six-question survey. */
   survey: boolean;
   /** Ask the one-tap department question. */
   department: boolean;

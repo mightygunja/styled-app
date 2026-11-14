@@ -59,6 +59,7 @@ export function profileSignature(
         wardrobeFocus?: string;
         avoidRules?: string[];
         colorSeason?: string;
+        priceMix?: string;
       }
     | null
     | undefined
@@ -74,5 +75,8 @@ export function profileSignature(
     (profile?.wardrobeFocus || 'all').toLowerCase(),
     list(profile?.avoidRules),
     (profile?.colorSeason || '').toLowerCase(),
+    // Added only once answered, so a profile without it keeps the signature
+    // it had and no cached look is thrown away by this field existing.
+    ...(profile?.priceMix ? [String(profile.priceMix).toLowerCase()] : []),
   ].join('|');
 }

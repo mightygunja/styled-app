@@ -68,6 +68,7 @@ import { composeLiveRail, mergeRail } from '../services/trendLiveRail';
 import { scoreAndRankProducts } from '../services/marketplaceMatchingService';
 import { isStandIn } from '../services/shopShelf';
 import { openAtStore } from '../services/openAtStore';
+import { arrangeByPriceMix } from '../services/priceMix';
 import { closetAPI, getCurrentUserId } from '../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -188,8 +189,13 @@ export default function TrendInsightsScreen() {
         railTrends.forEach(remix => {
           const perPiece = (piecesByTrend.get(remix.trend.id) || []).map(piece => ({
             piece,
-            products: scoreAndRankProducts(found[piece] || [], profile, closetItems, { trends: [remix.trend] }).map(
-              matched => matched.product
+            // Best match first, then dealt out in the member's mix of prices.
+            products: arrangeByPriceMix(
+              scoreAndRankProducts(found[piece] || [], profile, closetItems, { trends: [remix.trend] }).map(
+                matched => matched.product
+              ),
+              product => product,
+              profile?.priceMix
             ),
           }));
           const rail = composeLiveRail(perPiece, RAIL_LIMIT);

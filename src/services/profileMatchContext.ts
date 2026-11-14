@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { closetService, styleProfileService } from './firestore';
 import { departmentFromCloset, departmentFromProfile } from './departmentInference';
 import { BODY_TYPE_GUIDES, PersonalStyleProfile } from '../models/personalStyleProfile';
+import { PriceMix, isPriceMix } from './priceMix';
 
 export interface ProfileMatchContext {
   recommendedColors?: string[];
@@ -27,6 +28,8 @@ export interface ProfileMatchContext {
   categoryGuidance?: Record<string, string[]>;
   /** Whose wardrobe: womenswear, menswear, or both. Absent reads as 'all'. */
   wardrobeFocus?: 'womens' | 'mens' | 'all';
+  /** The mix of prices asked for (priceMix.ts). Absent until answered. */
+  priceMix?: PriceMix;
   /**
    * True when the profile could NOT be read. Every taste field is absent and
    * `wardrobeFocus` is the last department successfully loaded for this user
@@ -131,6 +134,7 @@ export async function buildProfileMatchContext(userId: string): Promise<ProfileM
         | Record<string, string[]>
         | undefined,
       wardrobeFocus,
+      priceMix: isPriceMix(savedProfile.priceMix) ? savedProfile.priceMix : undefined,
     };
   } catch (error) {
     console.error('Error loading style profile context:', error);
@@ -170,4 +174,26 @@ export async function saveWardrobeFocus(userId: string, focus: Focus): Promise<v
       };
   await styleProfileService.saveStyleProfile(userId, next);
   rememberWardrobeFocus(userId, focus);
+}
+
+/**
+ * Saves the price-mix answer, the same way as the department answer above:
+ * laid over the saved profile so nothing else in it changes, and a minimal
+ * profile for an account that has none. Throws when the profile cannot be
+ * read, so a blank one is never written over a real one.
+ */
+export async function savePriceMix(userId: string, mix: PriceMix): Promise<void> {
+  const profile = await styleProfileService.getStyleProfile(userId);
+  const next: PersonalStyleProfile = profile
+    ? { ...profile, priceMix: mix }
+    : {
+        lifestyleWeights: { work: 0.25, casual: 0.35, social: 0.25, travel: 0.15 },
+        styleArchetypes: [],
+        avoidRules: [],
+        colorProfile: { primary: [], secondary: [], stretch: [] },
+        fitPreferences: {},
+        guidanceLevel: 'guided',
+        priceMix: mix,
+      };
+  await styleProfileService.saveStyleProfile(userId, next);
 }

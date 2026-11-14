@@ -30,7 +30,16 @@ import {
   shopDestination,
   reportsSalePrices,
 } from '../services/affiliateNetwork';
-import { buildProfileMatchContext, saveWardrobeFocus } from '../services/profileMatchContext';
+import { buildProfileMatchContext, savePriceMix, saveWardrobeFocus } from '../services/profileMatchContext';
+import {
+  PRICE_MIX_OPTIONS,
+  PriceMix,
+  arrangeWithinGroups,
+  priceBandExamples,
+  priceMixLabel,
+  priceMixSummary,
+  shapesOrder,
+} from '../services/priceMix';
 import { departmentQuestionDue, profileKnowledge, ProfileKnowledge } from '../services/profilePrompts';
 import { scoreAndRankProducts, MATCH_THRESHOLD } from '../services/marketplaceMatchingService';
 import { preferRealProducts } from '../services/shopShelf';
@@ -70,6 +79,10 @@ const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ShopRouteProp = RouteProp<RootStackParamList, 'Shop'>;
+
+/** Match order dealt out in the member's mix of prices; paying stores still lead. */
+const inPriceMix = (list: MatchedProduct[], mix: PriceMix | undefined) =>
+  arrangeWithinGroups(list, m => (m.product.paysCommission === false ? 1 : 0), m => m.product, mix);
 
 const CATEGORY_FILTERS: { label: string; value: ItemCategory | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -130,6 +143,10 @@ export default function ShopScreen() {
   // read failed, which says nothing about the member.
   const [profileState, setProfileState] = useState<ProfileKnowledge>('unknown');
   const [savingFocus, setSavingFocus] = useState(false);
+  // The mix of prices the member asked to be shown (priceMix.ts). Absent
+  // until they answer; the grid is then in plain match order.
+  const [priceMix, setPriceMix] = useState<PriceMix | undefined>(undefined);
+  const [mixOpen, setMixOpen] = useState(false);
   const [allTrends, setAllTrends] = useState<FashionTrend[]>([]);
   // "Shopping the trend" focus, set when a trend surface sent the user here.
   // Filters and orders the grid to pieces that actually carry the trend.
@@ -148,6 +165,8 @@ export default function ShopScreen() {
       if (seq !== requestSeq.current) return;
       setWardrobeFocus(profile?.wardrobeFocus);
       setProfileState(profileKnowledge(profile));
+      // A failed read says nothing about the answer: keep what is on screen.
+      if (!profile?.profileReadFailed) setPriceMix(profile?.priceMix);
 
       const [searchResult, closetResponse, signals, weather, publishedTrends] = await Promise.all([
         getActiveAdapter().search({
@@ -278,7 +297,9 @@ export default function ShopScreen() {
       // would decay products the user never actually scrolled to.
       // "Seen" means what the grid will actually show first: stand-ins that
       // real products replace (shopShelf.ts) were never on screen.
-      const firstScreen = preferRealProducts(ranked, m => m.product, { spread: !isShopperSort(sort) }).items.slice(0, 12);
+      const firstScreen = preferRealProducts(sort === 'match' ? inPriceMix(ranked, profile?.priceMix) : ranked, m => m.product, {
+        spread: !isShopperSort(sort),
+      }).items.slice(0, 12);
       shopperSignals.recordImpressions(firstScreen.map(r => r.product.id));
       // Same first-screenful rule, counted centrally so tap-through has a
       // denominator. Counts only - no product or user identity leaves here.
@@ -375,16 +396,22 @@ export default function ShopScreen() {
     // A shopper who asked for price order gets it under a trend too: the
     // trend still decides WHICH pieces show, the chip decides their order.
     if (isShopperSort(sort)) return orderMatchedForSort(carrying.map(x => x.m), sort);
-    return carrying
+    const ordered = carrying
       // Within each kind of trend match, paying stores still lead.
       .sort(
         (a, b) =>
           a.order - b.order ||
           Number(a.m.product.paysCommission === false) - Number(b.m.product.paysCommission === false) ||
           b.m.matchScore - a.m.matchScore
-      )
-      .map(x => x.m);
-  }, [products, focusTrend, route.params?.trendGap, sort]);
+      );
+    // ...and inside each of those groups, the member's mix of prices.
+    return arrangeWithinGroups(
+      ordered,
+      x => `${x.order}|${Number(x.m.product.paysCommission === false)}`,
+      x => x.m.product,
+      priceMix
+    ).map(x => x.m);
+  }, [products, focusTrend, route.params?.trendGap, sort, priceMix]);
 
   const focusAnchorSearches = useMemo(
     () => (focusTrend ? trendAnchorSearches(focusTrend, wardrobeFocus) : []),
@@ -397,9 +424,12 @@ export default function ShopScreen() {
   // losing its curated pieces before its real ones were counted.
   const shelf = useMemo(() => {
     const matched = matchedOnly ? trendFiltered.filter(p => p.matchScore >= MATCH_THRESHOLD) : trendFiltered;
-    // A shopper's own sort (price, discount) is left exactly as sorted.
-    return preferRealProducts(matched, m => m.product, { spread: !isShopperSort(sort) });
-  }, [trendFiltered, matchedOnly, sort]);
+    // The member's mix of prices, over the plain match order. A trend focus
+    // has dealt its own groups above; a shopper's own sort (price, discount)
+    // is left exactly as sorted.
+    const mixed = focusTrend || isShopperSort(sort) ? matched : inPriceMix(matched, priceMix);
+    return preferRealProducts(mixed, m => m.product, { spread: !isShopperSort(sort) });
+  }, [trendFiltered, matchedOnly, sort, focusTrend, priceMix]);
   const visibleProducts = shelf.items;
   // The notice describes what is on the page: with no stand-in left, the
   // sentences about representative photos are dropped. An empty grid keeps
@@ -445,6 +475,26 @@ export default function ShopScreen() {
       Alert.alert('Could not save that', 'Check your connection and try again.');
     } finally {
       setSavingFocus(false);
+    }
+  };
+
+  /**
+   * The price-mix answer, changed right here. The grid is re-dealt at once
+   * from what is already loaded; the save follows, and the choice is undone
+   * on screen if it fails.
+   */
+  const choosePriceMix = async (mix: PriceMix) => {
+    const before = priceMix;
+    // Answered: fold the question away so the products are back in view.
+    setMixOpen(false);
+    if (mix === before) return;
+    setPriceMix(mix);
+    try {
+      await savePriceMix(getCurrentUserId(), mix);
+    } catch (error) {
+      console.error('Could not save the price mix:', error);
+      setPriceMix(before);
+      Alert.alert('Could not save that', 'Check your connection and try again.');
     }
   };
 
@@ -618,6 +668,14 @@ export default function ShopScreen() {
           onPress={toggleMatchedOnly}
           style={styles.chipSpacing}
         />
+        {/* Opens the price-mix question below. Lit when an answer is
+            shaping the order of the grid. */}
+        <Chip
+          label={priceMix ? `Prices: ${priceMixLabel(priceMix)}` : 'Set price mix'}
+          active={shapesOrder(priceMix)}
+          onPress={() => setMixOpen(open => !open)}
+          style={styles.chipSpacing}
+        />
         {/* Offered only when the feed can honour them: live resale
             listings for Secondhand, real reported sale prices for On sale. */}
         {offersLiveSecondhand() && (
@@ -647,6 +705,28 @@ export default function ShopScreen() {
           />
         ))}
       </ScrollView>
+
+      {mixOpen && (
+        <View style={styles.mixPanel}>
+          <Text style={styles.mixTitle}>WHAT MIX OF PRICES SUITS YOU?</Text>
+          <View style={styles.mixOptions}>
+            {PRICE_MIX_OPTIONS.map(option => (
+              <Chip
+                key={option.key}
+                label={option.label}
+                active={priceMix === option.key}
+                onPress={() => choosePriceMix(option.key)}
+                style={styles.mixChip}
+              />
+            ))}
+          </View>
+          <Text style={styles.mixNote}>
+            {priceMix ? priceMixSummary(priceMix) : 'Pick one and the shop is dealt out in that mix. Nothing is hidden.'}{' '}
+            {priceBandExamples()}
+            {isShopperSort(sort) ? ' You are sorting by price or discount, so that order is shown as it is.' : ''}
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -937,6 +1017,32 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     marginRight: 8,
     backgroundColor: colors.hair,
+  },
+  // The price-mix question, opened from its chip in the row above.
+  mixPanel: {
+    paddingHorizontal: spacing.page,
+    paddingTop: 6,
+    paddingBottom: 12,
+  },
+  mixTitle: {
+    ...textType.meta,
+    fontSize: 11,
+    color: colors.tobacco,
+    marginBottom: 8,
+  },
+  mixOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  mixChip: {
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  mixNote: {
+    ...textType.meta,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.inkMuted,
   },
   chipSpacing: {
     marginRight: 8,

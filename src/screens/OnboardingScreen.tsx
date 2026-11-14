@@ -12,6 +12,8 @@
  *   body type   -> bodyAnalysis (silhouettes, per-category guidance, keywords)
  *   style words -> styleArchetypes
  *   occasions   -> lifestyleWeights
+ *   price mix   -> priceMix (the proportions Shop, the starter looks and
+ *                  the trend rails are dealt out in - services/priceMix.ts)
  *   never-wears -> avoidRules (a strong steer in every matcher - respected by
  *                  default, crossable only by a named, current trend)
  *
@@ -49,17 +51,19 @@ import {
   PersonalStyleProfile,
   WardrobeFocus,
 } from '../models/personalStyleProfile';
+import { PRICE_MIX_OPTIONS, PriceMix, priceBandExamples } from '../services/priceMix';
 import { colors, fonts, radius, type as textType, spacing } from '../theme/designSystem';
 
-type Step = 'welcome' | 'focus' | 'body' | 'words' | 'occasion' | 'never' | 'reveal';
-const SURVEY_STEPS: Step[] = ['focus', 'body', 'words', 'occasion', 'never'];
+type Step = 'welcome' | 'focus' | 'body' | 'words' | 'occasion' | 'budget' | 'never' | 'reveal';
+const SURVEY_STEPS: Step[] = ['focus', 'body', 'words', 'occasion', 'budget', 'never'];
 /** Where Back goes from each step. Answers are kept in state, so going back loses nothing. */
 const PREVIOUS_STEP: Partial<Record<Step, Step>> = {
   focus: 'welcome',
   body: 'focus',
   words: 'body',
   occasion: 'words',
-  never: 'occasion',
+  budget: 'occasion',
+  never: 'budget',
   reveal: 'never',
 };
 
@@ -158,6 +162,7 @@ export default function OnboardingScreen() {
   const [bodyType, setBodyType] = useState<BodyType | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [occasionIndex, setOccasionIndex] = useState<number | null>(null);
+  const [priceMix, setPriceMix] = useState<PriceMix | null>(null);
   const [nevers, setNevers] = useState<string[]>([]);
   const [finishing, setFinishing] = useState(false);
 
@@ -182,6 +187,7 @@ export default function OnboardingScreen() {
         }
       : {},
     guidanceLevel: 'guided',
+    ...(priceMix ? { priceMix } : {}),
     ...(bodyType ? { bodyAnalysis: buildBodyAnalysisResult(bodyType, 'quiz') } : {}),
   });
 
@@ -544,6 +550,47 @@ export default function OnboardingScreen() {
               variant="primary"
               fullWidth
               disabled={occasionIndex === null}
+              onPress={() => setStep('budget')}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (step === 'budget') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.surveyContent}>
+          {stepHeader('budget')}
+          {progress('budget')}
+          <Text style={styles.eyebrow}>PRICES</Text>
+          <Text style={styles.question}>What mix of prices suits you?</Text>
+          <Text style={styles.questionNote}>
+            The shop and your first looks are dealt out in this mix. Nothing is hidden, and you can
+            change it in the shop at any time. {priceBandExamples()}
+          </Text>
+          {PRICE_MIX_OPTIONS.map(option => (
+            <TouchableOpacity
+              key={option.key}
+              style={[styles.option, priceMix === option.key && styles.optionActive]}
+              onPress={() => setPriceMix(option.key)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ selected: priceMix === option.key }}
+            >
+              <Text style={[styles.optionTitle, priceMix === option.key && styles.optionTitleActive]}>
+                {option.label}
+              </Text>
+              <Text style={styles.optionLine}>{option.line}</Text>
+            </TouchableOpacity>
+          ))}
+          <View style={styles.stepFooter}>
+            <Button
+              title="Continue"
+              variant="primary"
+              fullWidth
+              disabled={priceMix === null}
               onPress={() => setStep('never')}
             />
           </View>
@@ -630,6 +677,14 @@ export default function OnboardingScreen() {
             <View style={styles.revealRow}>
               <Text style={styles.revealKey}>LEANS</Text>
               <Text style={[styles.revealValue, styles.revealValueCaps]}>{OCCASIONS[occasionIndex].label}</Text>
+            </View>
+          )}
+          {priceMix && (
+            <View style={styles.revealRow}>
+              <Text style={styles.revealKey}>PRICES</Text>
+              <Text style={[styles.revealValue, styles.revealValueCaps]}>
+                {PRICE_MIX_OPTIONS.find(o => o.key === priceMix)?.label}
+              </Text>
             </View>
           )}
           {nevers.length > 0 && (

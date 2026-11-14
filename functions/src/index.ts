@@ -3418,11 +3418,12 @@ export const searchEbayProducts = functions
  *
  * Credentials live in functions/.env:
  *   CHANNEL3_API_KEY               - from the Channel3 dashboard
- *   CHANNEL3_MONTHLY_SEARCH_LIMIT  - optional; searches allowed per calendar
- *                                    month. Defaults to 1000, Channel3's free
- *                                    allowance, so nothing is billed unless
- *                                    this is raised on purpose. Each search
- *                                    past the free 1000 costs $0.007.
+ *
+ * There is no cap on searches (the owner's call, 2026-11-13). The first 1000
+ * a month are free; each one after costs $0.007, billed by Channel3. Searches
+ * are still counted, month by month, so the bill is never a surprise - and
+ * the rules about WHO may cause one are unchanged: a typed search needs a
+ * signed-in member, and a visitor can only open the public pages' phrases.
  *
  * `department` ('women' | 'men') is required, exactly as for eBay: the app
  * never shows a live product to both departments, so there is no search
@@ -3433,39 +3434,32 @@ export const searchEbayProducts = functions
  *
  * The mapping and the browse shelves live in functions/src/channel3.ts.
  */
-const CHANNEL3_FREE_SEARCHES = 1000;
 const CHANNEL3_CACHE_MS = 20 * 60 * 1000;
 const channel3Cache = new Map<string, { at: number; value: any }>();
 
 /**
- * Counts one search against this month's budget. False when the budget is
- * spent - the caller then answers with nothing instead of running up a bill.
+ * Adds one search to this month's tally (integrationUsage/channel3-YYYY-MM).
+ * A tally only - nothing is refused on it. Never waited for and never able
+ * to fail a search: a count that could not be written is logged and dropped.
  */
-async function spendChannel3Search(limit: number): Promise<boolean> {
+function countChannel3Search(): void {
   const month = new Date().toISOString().slice(0, 7);
-  const ref = db.collection('integrationUsage').doc(`channel3-${month}`);
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const used = Number(snap.data()?.searches) || 0;
-    if (used >= limit) return false;
-    tx.set(ref, { searches: used + 1, limit, updatedAt: new Date().toISOString() }, { merge: true });
-    return true;
-  });
+  db.collection('integrationUsage')
+    .doc(`channel3-${month}`)
+    .set(
+      {
+        searches: admin.firestore.FieldValue.increment(1),
+        limit: admin.firestore.FieldValue.delete(),
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    )
+    .catch(error => console.error('Channel3: could not count a search', error));
 }
 
-const channel3SearchLimit = () =>
-  Math.max(0, Number(process.env.CHANNEL3_MONTHLY_SEARCH_LIMIT) || CHANNEL3_FREE_SEARCHES);
-
-/**
- * One budgeted search. Null when the month's budget is spent; throws when
- * Channel3 answers with an error.
- */
-async function channel3Search(apiKey: string, body: Record<string, any>): Promise<any | null> {
-  const limit = channel3SearchLimit();
-  if (!(await spendChannel3Search(limit))) {
-    console.log(`Channel3: monthly search limit of ${limit} reached; answering with nothing`);
-    return null;
-  }
+/** One search (a credit). Throws when Channel3 answers with an error. */
+async function channel3Search(apiKey: string, body: Record<string, any>): Promise<any> {
+  countChannel3Search();
   const response = await fetch(`${CHANNEL3_API}/search`, {
     method: 'POST',
     headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
@@ -3522,7 +3516,7 @@ async function readShelf(department: Channel3Department, category: ShelfCategory
 
 /**
  * Brings every shelf up to date: restocks by search the ones whose ids have
- * aged (credits, about 33 a week for all of them) and re-reads the rest by
+ * aged (credits, about 99 a week for all of them) and re-reads the rest by
  * id (free). A shelf that is still fresh costs nothing. One shelf failing
  * never stops the others.
  */
@@ -3720,8 +3714,6 @@ export const searchChannel3Products = functions
       } catch (error: any) {
         throw new functions.https.HttpsError('internal', error.message);
       }
-      if (!result) return { products: [], hasMore: false, totalCount: 0, capped: true };
-
       const items = Array.isArray(result.products) ? result.products : [];
       const products = items
         .map((item: any) => mapChannel3Product(item, { wantUsed: condition === 'secondhand' }))

@@ -522,12 +522,12 @@ export async function buildStarterPools(
   // topped up to arrive with shoes, a bag and one accessory - the same as a
   // look built from a real closet.
   const rankedProducts = safeRanked.map(({ product }) => product);
-  const pools = buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct)), {});
+  const pools = buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct, { priceMix: profile?.priceMix })), {});
   if (Object.values(pools).some(candidates => candidates.length > 0)) return pools;
   // The engine could not finish a single look from that pool (a thin feed
   // can leave it short of a colour or a category it needs). A composed look
   // from the catalogue beats an empty Home.
-  return buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct, { preferReal: false })), {});
+  return buildAllOccasions(toItems(starterPool(rankedProducts, isBagProduct, { preferReal: false, priceMix: profile?.priceMix })), {});
 }
 
 /** Fewer live products than this and a late answer is worth waiting for. */

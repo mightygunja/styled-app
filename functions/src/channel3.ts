@@ -237,8 +237,9 @@ export function channel3Filters(department: Channel3Department): Record<string, 
 
 /**
  * What is searched to stock each shelf. Plain garment words: the department
- * comes from the gender filter, never from the words. Three searches a shelf
- * keeps a full restock (every shelf, both departments) at 33 credits a week.
+ * comes from the gender filter, never from the words. Each is searched once
+ * per price band (SHELF_PRICE_BANDS), so a full restock of every shelf, both
+ * departments, is 99 credits a week.
  */
 export const SHELF_QUERIES: Record<Channel3Department, Partial<Record<ShelfCategory, string[]>>> = {
   women: {
@@ -261,11 +262,69 @@ export const SHELF_QUERIES: Record<Channel3Department, Partial<Record<ShelfCateg
 export const SHELF_DEPARTMENTS: Channel3Department[] = ['women', 'men'];
 
 /**
+ * The three price bands of each shelf, in dollars: everyday is up to `low`,
+ * investment is over `high`, mid-range is between.
+ *
+ * Left to themselves the retailers' own rankings stock a shelf top-heavy -
+ * measured on the first page of the live shelves (2026-11-13): half the
+ * womenswear dresses were over $500, a quarter over $2,600. A member who shops at
+ * everyday prices had almost nothing to be shown. So every shelf is stocked
+ * a third from each band, and the app then arranges what a member sees to
+ * the mix of prices they asked for (src/services/priceMix.ts).
+ *
+ * The same numbers as PRICE_TIERS in src/services/priceMix.ts - the audit
+ * fails if the two ever differ.
+ */
+export const SHELF_PRICE_BANDS: Record<ShelfCategory, { low: number; high: number }> = {
+  tops: { low: 60, high: 160 },
+  bottoms: { low: 80, high: 200 },
+  dresses: { low: 100, high: 280 },
+  outerwear: { low: 150, high: 400 },
+  shoes: { low: 100, high: 280 },
+  accessories: { low: 80, high: 250 },
+};
+
+export type ShelfPriceTier = 'low' | 'mid' | 'high';
+const SHELF_PRICE_TIERS: ShelfPriceTier[] = ['low', 'mid', 'high'];
+
+export function shelfPriceTier(category: ShelfCategory, price: number): ShelfPriceTier {
+  const band = SHELF_PRICE_BANDS[category];
+  return price <= band.low ? 'low' : price <= band.high ? 'mid' : 'high';
+}
+
+/** Channel3's price filter for each band (its limits are inclusive, in dollars). */
+function priceFilters(category: ShelfCategory): Array<Record<string, number>> {
+  const band = SHELF_PRICE_BANDS[category];
+  return [
+    { max_price: band.low },
+    { min_price: band.low + 0.01, max_price: band.high },
+    { min_price: band.high + 0.01 },
+  ];
+}
+
+/**
+ * A shelf of `size` from the rows found: a third from each price band, by
+ * the price each product actually carries (not the band it was searched
+ * under - a product can have several offers). Stores that pay come first
+ * within a band. A band that cannot fill its third gives the places to the
+ * others. The bands are dealt in turn, so any front part of the shelf is
+ * even too.
+ */
+export function evenByPrice(rows: Channel3Row[], category: ShelfCategory, size: number = SHELF_SIZE): Channel3Row[] {
+  const bands: Record<ShelfPriceTier, Channel3Row[]> = { low: [], mid: [], high: [] };
+  payingFirst(rows).forEach(row => bands[shelfPriceTier(category, row.price)].push(row));
+  const share = Math.floor(size / SHELF_PRICE_TIERS.length);
+  const first = interleave(SHELF_PRICE_TIERS.map(tier => bands[tier].slice(0, share)));
+  const spare = interleave(SHELF_PRICE_TIERS.map(tier => bands[tier].slice(share)));
+  return [...first, ...spare].slice(0, size);
+}
+
+/**
  * Bump this whenever SHELF_QUERIES or SHELF_RETAILERS change: a shelf stocked
  * under another version is restocked by search at its next refresh instead
  * of waiting out the week.
  */
-export const SHELF_VERSION = 2;
+export const SHELF_VERSION = 3;
 
 /**
  * The stores the shelves are stocked from. An open search answers with
@@ -313,7 +372,7 @@ export interface Shelf {
 }
 
 export interface ShelfDeps {
-  /** One search (costs a credit). Null when the budget is spent or the call failed. */
+  /** One search (costs a credit). Null when the call failed. */
   search(body: Record<string, any>): Promise<any[] | null>;
   /** One product by Channel3 id (free). Null when it is gone or the call failed. */
   product(id: string): Promise<any | null>;
@@ -363,18 +422,26 @@ async function discover(department: Channel3Department, category: ShelfCategory,
   const queries = SHELF_QUERIES[department][category] || [];
   const answers: Channel3Row[][] = [];
   for (const query of queries) {
-    const items = await deps.search({
-      query,
-      filters: { ...channel3Filters(department), website_ids: SHELF_RETAILERS },
-      limit: 30,
+    // One search per price band, the three together: three requests at once
+    // is well inside Channel3's ten a second.
+    const banded = await Promise.all(
+      priceFilters(category).map(price =>
+        deps.search({
+          query,
+          filters: { ...channel3Filters(department), website_ids: SHELF_RETAILERS, price },
+          limit: 30,
+        })
+      )
+    );
+    banded.forEach(items => {
+      if (!items) return;
+      answers.push(items.map(item => mapChannel3Product(item)).filter((r): r is Channel3Row => r !== null));
     });
-    if (!items) continue;
-    answers.push(items.map(item => mapChannel3Product(item)).filter((r): r is Channel3Row => r !== null));
   }
   if (answers.length === 0) return null;
   const seen = new Set<string>();
   const rows = interleave(answers).filter(row => (seen.has(row.id) ? false : (seen.add(row.id), true)));
-  return payingFirst(rows).slice(0, SHELF_SIZE);
+  return evenByPrice(rows, category);
 }
 
 /**
@@ -385,7 +452,7 @@ async function discover(department: Channel3Department, category: ShelfCategory,
  *   - ids fresh, snapshot aged            -> re-read every product by id (free);
  *   - ids aged or missing                 -> search again (credits); the
  *     search answers ARE a fresh snapshot, so no re-read is needed;
- *   - search unavailable (budget spent)   -> keep the ids we have and re-read.
+ *   - search unavailable                  -> keep the ids we have and re-read.
  *
  * Products that have gone or sold out drop off the shelf; when fewer than
  * half survive a re-read the shelf is restocked by search early.
@@ -515,7 +582,7 @@ export function keptFresh(kept: KeptSearch | null | undefined, now: number): boo
 /**
  * Brings one kept search up to date. Returns `previous` when it is still
  * fresh, a new record when it was refreshed, and null when it could not be
- * (no search budget and nothing kept).
+ * (no search answered and nothing kept).
  */
 export async function refreshKept(
   previous: KeptSearch | null,
