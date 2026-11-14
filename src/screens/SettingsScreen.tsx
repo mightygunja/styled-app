@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import BackButton from '../components/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -20,6 +20,7 @@ import { useTour } from '../tour/Tour';
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<any>();
   const { toast, showToast, hideToast } = useToast();
   // The first-run walkthrough, on request.
   const tour = useTour();
@@ -78,6 +79,23 @@ export default function SettingsScreen() {
         </View>
         <Text style={styles.sectionNote}>
           When this is on, your feed keeps posts from people you follow and your own.
+        </Text>
+
+        <Text style={styles.sectionLabel}>COMMUNITY SAFETY</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={[styles.row, styles.rowLast]}
+            onPress={() => navigation.navigate('BlockedMembers')}
+            accessibilityRole="button"
+            accessibilityLabel="Blocked members"
+          >
+            <Text style={styles.rowLabel}>Blocked members</Text>
+            <Text style={styles.rowAction}>Manage →</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.sectionNote}>
+          Block a member from their profile or one of their posts. Report anything that breaks the community
+          rules from the post, comment, message or profile itself.
         </Text>
 
         <Text style={styles.sectionLabel}>GETTING AROUND</Text>

@@ -21,6 +21,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile } from './userProfileService';
+import { NotAllowedError, assertAllowed, reportKey } from './moderation';
+import { moderationService } from './moderationService';
 
 export type MessageType = 'text' | 'image' | 'outfit' | 'product' | 'look';
 
@@ -77,7 +79,11 @@ class MessagingService {
       orderBy('updatedAt', 'desc')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toConversation(d.id, d.data()));
+    // A conversation with a member this one has blocked is not listed.
+    const { blocked } = await moderationService.state(userId);
+    return snapshot.docs
+      .map(d => toConversation(d.id, d.data()))
+      .filter(conversation => !conversation.participants.some(id => id !== userId && blocked.has(id)));
   }
 
   /**
@@ -105,14 +111,18 @@ class MessagingService {
   /**
    * Get messages in a conversation
    */
-  async getMessages(conversationId: string): Promise<Message[]> {
+  async getMessages(conversationId: string, viewerId?: string): Promise<Message[]> {
     const q = query(
       collection(db, 'messages'),
       where('conversationId', '==', conversationId),
       orderBy('createdAt', 'asc')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toMessage(d.id, d.data()));
+    const messages = snapshot.docs.map(d => toMessage(d.id, d.data()));
+    if (!viewerId) return messages;
+    // A message this member reported is not shown to them again.
+    const { reported } = await moderationService.state(viewerId);
+    return messages.filter(message => message.senderId === viewerId || !reported.has(reportKey('message', message.id)));
   }
 
   /**
@@ -125,6 +135,19 @@ class MessagingService {
     content: string,
     metadata?: any
   ): Promise<Message> {
+    // Refused before anything is saved: language the rules do not allow, and
+    // a message to someone who has blocked the sender (moderation.ts).
+    if (typeof content === 'string') assertAllowed(content);
+    const before = await getDoc(doc(db, 'conversations', conversationId));
+    const others: string[] = before.exists()
+      ? ((before.data().participants || []) as string[]).filter(id => id !== senderId)
+      : [];
+    for (const other of others) {
+      if (await moderationService.isBlockedBy(senderId, other)) {
+        throw new NotAllowedError("This member isn't accepting messages from you.");
+      }
+    }
+
     const now = Timestamp.now();
     const messageData: any = {
       conversationId,

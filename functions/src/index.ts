@@ -5998,3 +5998,182 @@ Return ONLY valid JSON:
       throw new functions.https.HttpsError('internal', error.message);
     }
   });
+
+// ==================== COMMUNITY SAFETY ====================
+
+/**
+ * Reports and what happens to them (src/services/moderation.ts has the rules
+ * a member sees; this is the part only the server may do).
+ *
+ *   - onContentReported: when a third different member reports the same post
+ *     or comment, it is hidden from everyone until an admin has decided.
+ *   - listContentReports / resolveContentReport: the admin queue. "remove"
+ *     deletes the post, comment or message, or disables the member's account;
+ *     "dismiss" keeps it and un-hides it.
+ */
+const REPORTS_TO_HIDE = 3;
+const REPORTED_COLLECTION: Record<string, string> = {
+  post: 'posts',
+  comment: 'postComments',
+  message: 'messages',
+  user: 'userProfiles',
+};
+
+/** Every report still open on one thing. */
+async function openReportsOn(targetType: string, targetId: string) {
+  const snapshot = await db
+    .collection('contentReports')
+    .where('targetType', '==', targetType)
+    .where('targetId', '==', targetId)
+    .get();
+  return snapshot.docs.filter(d => d.data().status === 'open');
+}
+
+export const onContentReported = functions.firestore
+  .document('contentReports/{reportId}')
+  .onCreate(async snapshot => {
+    const report = snapshot.data() || {};
+    const targetType = String(report.targetType || '');
+    const targetId = String(report.targetId || '');
+    // Only public content is hidden by weight of reports; a message or a
+    // member waits for an admin.
+    if (!targetId || (targetType !== 'post' && targetType !== 'comment')) return;
+    try {
+      const open = await openReportsOn(targetType, targetId);
+      const reporters = new Set(open.map(d => String(d.data().reporterId || '')).filter(Boolean));
+      if (reporters.size < REPORTS_TO_HIDE) return;
+      await db
+        .collection(REPORTED_COLLECTION[targetType])
+        .doc(targetId)
+        .update({ hidden: true, hiddenAt: new Date().toISOString() });
+      console.log(`Community: ${targetType} ${targetId} hidden after ${reporters.size} reports`);
+    } catch (error) {
+      // The content may already have been deleted; the reports still stand.
+      console.error('Community: could not act on a report', error);
+    }
+  });
+
+export const listContentReports = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    requireAdmin(context);
+    try {
+      const snapshot = await db.collection('contentReports').where('status', '==', 'open').limit(400).get();
+      // One row per reported thing, however many members reported it.
+      const groups = new Map<string, FirebaseFirestore.QueryDocumentSnapshot[]>();
+      snapshot.docs.forEach(doc => {
+        const key = `${doc.data().targetType}:${doc.data().targetId}`;
+        groups.set(key, [...(groups.get(key) || []), doc]);
+      });
+      const names = new Map<string, string>();
+      const nameOf = async (uid: string): Promise<string> => {
+        if (!uid) return 'Unknown member';
+        if (!names.has(uid)) {
+          const profile = await db.collection('userProfiles').doc(uid).get().catch(() => null);
+          names.set(uid, String(profile?.data()?.displayName || 'Member'));
+        }
+        return names.get(uid) as string;
+      };
+      const reports = await Promise.all(
+        Array.from(groups.values()).map(async docs => {
+          const newest = docs
+            .map(d => d.data())
+            .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+          const targetType = String(newest.targetType);
+          const targetId = String(newest.targetId);
+          const target = await db
+            .collection(REPORTED_COLLECTION[targetType] || 'posts')
+            .doc(targetId)
+            .get()
+            .catch(() => null);
+          const content = target?.data() || {};
+          const ownerId = String(newest.targetOwnerId || content.userId || content.senderId || '');
+          const excerpt =
+            targetType === 'post'
+              ? String(content.caption || '')
+              : targetType === 'comment'
+                ? String(content.text || '')
+                : targetType === 'message'
+                  ? String(content.content || '')
+                  : String(content.bio || '');
+          return {
+            id: docs[0].id,
+            targetType,
+            targetId,
+            targetOwnerId: ownerId,
+            targetOwnerName: await nameOf(ownerId),
+            reason: String(newest.reason || 'other'),
+            note: String(newest.note || ''),
+            reporters: new Set(docs.map(d => String(d.data().reporterId))).size,
+            createdAt: String(newest.createdAt || ''),
+            excerpt: excerpt.slice(0, 600),
+            imageUrl:
+              targetType === 'post' && Array.isArray(content.images) && content.images[0]
+                ? String(content.images[0])
+                : targetType === 'user' && content.profileImageUrl
+                  ? String(content.profileImageUrl)
+                  : null,
+            exists: !!target?.exists,
+            hidden: content.hidden === true,
+          };
+        })
+      );
+      reports.sort((a, b) => b.reporters - a.reporters || b.createdAt.localeCompare(a.createdAt));
+      return { success: true, data: { reports } };
+    } catch (error: any) {
+      console.error('Error listing reports:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });
+
+export const resolveContentReport = functions
+  .runWith({ memory: '256MB', timeoutSeconds: 60, enforceAppCheck: false })
+  .https.onCall(async (data, context) => {
+    const adminId = requireAdmin(context);
+    const reportId = String(data?.reportId || '');
+    const action = data?.action === 'remove' ? 'remove' : data?.action === 'dismiss' ? 'dismiss' : '';
+    if (!reportId || !action) {
+      throw new functions.https.HttpsError('invalid-argument', 'reportId and action (remove or dismiss) are required');
+    }
+    try {
+      const report = await db.collection('contentReports').doc(reportId).get();
+      if (!report.exists) throw new functions.https.HttpsError('not-found', 'That report no longer exists.');
+      const targetType = String(report.data()?.targetType || '');
+      const targetId = String(report.data()?.targetId || '');
+      const collection = REPORTED_COLLECTION[targetType];
+      if (!collection || !targetId) throw new functions.https.HttpsError('failed-precondition', 'That report names nothing.');
+
+      if (action === 'remove') {
+        if (targetType === 'user') {
+          // Suspended, not deleted: they are signed out and cannot sign in.
+          await admin.auth().updateUser(targetId, { disabled: true });
+        } else {
+          await db.collection(collection).doc(targetId).delete();
+        }
+      } else if (targetType === 'post' || targetType === 'comment') {
+        // Kept: anything hidden by weight of reports comes back.
+        await db
+          .collection(collection)
+          .doc(targetId)
+          .update({ hidden: false })
+          .catch(() => undefined);
+      }
+
+      // Every open report on the same thing is closed with the same decision.
+      const open = await openReportsOn(targetType, targetId);
+      const batch = db.batch();
+      open.forEach(doc =>
+        batch.update(doc.ref, {
+          status: action === 'remove' ? 'removed' : 'dismissed',
+          resolvedAt: new Date().toISOString(),
+          resolvedBy: adminId,
+        })
+      );
+      await batch.commit();
+      return { success: true, data: { closed: open.length } };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) throw error;
+      console.error('Error resolving a report:', error);
+      throw new functions.https.HttpsError('internal', error.message);
+    }
+  });

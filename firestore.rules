@@ -186,7 +186,10 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isAuthenticated();
       allow create: if isCreatingOwnResource();
-      allow update: if isResourceOwner() ||
+      // The author may edit their post but never un-hide one hidden after
+      // reports: `hidden` is the server's to set (functions: onContentReported).
+      allow update: if (isResourceOwner() &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hidden', 'hiddenAt'])) ||
         (isAuthenticated() &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'saves', 'shares']));
       allow delete: if isResourceOwner();
@@ -204,7 +207,9 @@ service cloud.firestore {
     match /postComments/{commentId} {
       allow read: if isAuthenticated();
       allow create: if isCreatingOwnResource();
-      allow update, delete: if isResourceOwner();
+      allow update: if isResourceOwner() &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hidden', 'hiddenAt']);
+      allow delete: if isResourceOwner();
     }
 
     // Saved posts - private to the saving user
@@ -554,6 +559,34 @@ service cloud.firestore {
       allow read: if isSessionParticipant(resource.data.sessionId);
       allow create: if isSessionParticipant(request.resource.data.sessionId);
       allow update, delete: if false;
+    }
+
+    // ---- Community safety (src/services/moderation.ts) ----
+
+    // Reports - one per member per thing (the id says so). A member can file
+    // one in their own name and read their own; nobody can change or delete
+    // one. The admin queue reads them through Cloud Functions.
+    match /contentReports/{reportId} {
+      allow create: if isAuthenticated()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.targetType in ['post', 'comment', 'message', 'user']
+        && reportId == request.auth.uid + '_' + request.resource.data.targetType + '_' + request.resource.data.targetId;
+      allow read: if isAuthenticated() && resource.data.reporterId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Blocks - one per pair (the id says so). Only the blocker can make or
+    // undo one. The blocked member may read it, which is how sending a
+    // message learns it is not wanted.
+    match /blocks/{blockId} {
+      allow create: if isAuthenticated()
+        && request.resource.data.blockerId == request.auth.uid
+        && blockId == request.auth.uid + '_' + request.resource.data.blockedId;
+      allow read: if isAuthenticated()
+        && (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.blockerId == request.auth.uid;
+      allow update: if false;
     }
   }
 }

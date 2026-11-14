@@ -38,6 +38,12 @@ const ENTRIES: AdminEntry[] = [
     route: 'AdminMembers',
   },
   {
+    eyebrow: 'COMMUNITY',
+    label: 'Reports',
+    detail: 'Posts, comments, messages and members that other members have reported. Remove or keep each one.',
+    route: 'AdminReports',
+  },
+  {
     eyebrow: 'EDITORIAL',
     label: 'Trend desk',
     detail: 'Draft the trend report with AI, review it, and publish what users see everywhere.',

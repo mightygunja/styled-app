@@ -25,6 +25,8 @@ import {
 import { db } from '../config/firebase';
 import { UserProfile, userProfileService } from './userProfileService';
 import { notificationService } from './notificationService';
+import { assertAllowed, visibleOnly } from './moderation';
+import { moderationService } from './moderationService';
 
 /**
  * Fire-and-forget activity notification. Nothing user-facing may block or
@@ -78,6 +80,8 @@ export interface Post {
   saves: number;
   isLiked?: boolean;
   isSaved?: boolean;
+  /** Set by the server once enough members have reported the post (moderation.ts). */
+  hidden?: boolean;
   createdAt: string;
 }
 
@@ -164,6 +168,16 @@ function toComment(id: string, data: any): Comment {
 
 class SocialFeedService {
   /**
+   * The posts this viewer should be shown: not ones hidden after reports, not
+   * ones by members they blocked, not ones they reported themselves. Their
+   * own posts are always kept (moderation.ts: isVisible).
+   */
+  private async visiblePosts(posts: Post[], viewerId: string): Promise<Post[]> {
+    const state = await moderationService.state(viewerId);
+    return visibleOnly(posts, post => ({ type: 'post', id: post.id, ownerId: post.userId, hidden: post.hidden }), viewerId, state);
+  }
+
+  /**
    * Get feed for user (chronological, public posts only)
    */
   async getFeed(userId: string, page: number = 1, limitCount: number = 10): Promise<Post[]> {
@@ -175,7 +189,10 @@ class SocialFeedService {
     );
     const snapshot = await getDocs(q);
     const start = (page - 1) * limitCount;
-    const pagePosts = snapshot.docs.slice(start, start + limitCount).map(d => toPost(d.id, d.data()));
+    const pagePosts = await this.visiblePosts(
+      snapshot.docs.slice(start, start + limitCount).map(d => toPost(d.id, d.data())),
+      userId
+    );
 
     return Promise.all(
       pagePosts.map(async post => ({
@@ -189,10 +206,12 @@ class SocialFeedService {
   /**
    * Get user posts
    */
-  async getUserPosts(userId: string): Promise<Post[]> {
+  async getUserPosts(userId: string, viewerId?: string): Promise<Post[]> {
     const q = query(collection(db, 'posts'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toPost(d.id, d.data()));
+    const posts = snapshot.docs.map(d => toPost(d.id, d.data()));
+    // Someone else's profile: without what was hidden after reports.
+    return viewerId ? this.visiblePosts(posts, viewerId) : posts;
   }
 
   /**
@@ -206,6 +225,8 @@ class SocialFeedService {
     hashtags: string[],
     privacy: PostPrivacy = 'public'
   ): Promise<Post> {
+    // Refused before anything is saved (moderation.ts: screenText).
+    assertAllowed([caption, ...hashtags].join(' '));
     const data = {
       userId,
       type,
@@ -327,6 +348,7 @@ class SocialFeedService {
    * Add comment
    */
   async addComment(postId: string, userId: string, text: string, parentCommentId?: string): Promise<Comment> {
+    assertAllowed(text);
     const data: any = { postId, userId, text, likes: 0, createdAt: Timestamp.now() };
     if (parentCommentId) data.parentCommentId = parentCommentId;
 
@@ -354,10 +376,19 @@ class SocialFeedService {
   /**
    * Get post comments (top-level, with replies attached)
    */
-  async getPostComments(postId: string): Promise<Comment[]> {
+  async getPostComments(postId: string, viewerId?: string): Promise<Comment[]> {
     const q = query(collection(db, 'postComments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
     const snapshot = await getDocs(q);
-    const allComments = snapshot.docs.map(d => toComment(d.id, d.data()));
+    const everyComment = snapshot.docs.map(d => toComment(d.id, d.data()));
+    // Replies included: a blocked member's reply is not shown under someone else's comment.
+    const allComments = viewerId
+      ? visibleOnly(
+          everyComment,
+          comment => ({ type: 'comment', id: comment.id, ownerId: comment.userId, hidden: (comment as any).hidden }),
+          viewerId,
+          await moderationService.state(viewerId)
+        )
+      : everyComment;
 
     const topLevel = allComments.filter(c => !c.parentCommentId);
     return topLevel.map(comment => ({
@@ -487,7 +518,7 @@ class SocialFeedService {
   /**
    * Search posts by hashtag
    */
-  async searchByHashtag(hashtag: string): Promise<Post[]> {
+  async searchByHashtag(hashtag: string, viewerId?: string): Promise<Post[]> {
     const hashtagForms = (raw: string): string[] => {
       const bare = raw.trim().replace(/^#+/, '');
       return Array.from(new Set([bare, bare.toLowerCase(), `#${bare}`, `#${bare.toLowerCase()}`])).filter(Boolean);
@@ -501,7 +532,8 @@ class SocialFeedService {
       orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toPost(d.id, d.data()));
+    const found = snapshot.docs.map(d => toPost(d.id, d.data()));
+    return viewerId ? this.visiblePosts(found, viewerId) : found;
   }
 
   /**
@@ -513,7 +545,7 @@ class SocialFeedService {
       getDocs(query(collection(db, 'posts'), where('privacy', '==', 'public'))),
     ]);
 
-    let allPosts = publicPostsSnap.docs.map(d => toPost(d.id, d.data()));
+    let allPosts = await this.visiblePosts(publicPostsSnap.docs.map(d => toPost(d.id, d.data())), userId);
 
     if (prefs.mutedUsers.length > 0) {
       allPosts = allPosts.filter(post => !prefs.mutedUsers.includes(post.userId));

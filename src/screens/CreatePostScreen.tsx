@@ -26,6 +26,7 @@ import SuccessAnimation from '../components/SuccessAnimation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { isNotAllowed } from '../services/moderation';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -137,7 +138,8 @@ export default function CreatePostScreen() {
       setShowSuccess(true);
     } catch (error) {
       console.error('Error creating post:', error);
-      showToast('Failed to create post', 'error');
+      // Refused by the language filter: say so, and leave the post to be edited.
+      showToast(isNotAllowed(error) ? error.message : 'Failed to create post', 'error');
     } finally {
       setPosting(false);
     }

@@ -8,6 +8,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile } from './userProfileService';
+import { reportKey } from './moderation';
+import { moderationService } from './moderationService';
 
 export type ChallengeStatus = 'upcoming' | 'active' | 'completed';
 export type ChallengeType = 'daily' | 'weekly' | 'monthly' | 'special';
@@ -96,7 +98,16 @@ class ChallengeService {
     const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data(), createdAt: toIso(d.data().createdAt) } as ChallengeEntry));
     const voteSnap = await getDocs(query(collection(db, 'challengeVotes'), where('userId', '==', currentUserId), where('challengeId', '==', challengeId)));
     const votedEntryIds = new Set(voteSnap.docs.map(d => d.data().entryId));
-    return entries.map(e => ({ ...e, hasVoted: votedEntryIds.has(e.id) }));
+    // An entry is a post: one by a member this viewer blocked, or whose post
+    // they reported, is not shown to them (moderation.ts).
+    const { blocked, reported } = await moderationService.state(currentUserId);
+    return entries
+      .filter(
+        e =>
+          e.userId === currentUserId ||
+          (!blocked.has(e.userId) && !reported.has(reportKey('post', String((e as any).postId || ''))))
+      )
+      .map(e => ({ ...e, hasVoted: votedEntryIds.has(e.id) }));
   }
 
   async submitEntry(challengeId: string, userId: string, postId: string, imageUrl: string, caption: string): Promise<ChallengeEntry> {

@@ -21,6 +21,9 @@ import { RootStackParamList } from '../navigation/types';
 import { messagingService, Message, Conversation } from '../services/messagingService';
 import { userProfileService, UserProfile } from '../services/userProfileService';
 import Toast from '../components/Toast';
+import ReportModal from '../components/ReportModal';
+import { ReportTarget, isNotAllowed } from '../services/moderation';
+import { moderationService } from '../services/moderationService';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
 import { colors, fonts, radius } from '../theme/designSystem';
@@ -40,6 +43,9 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  // What the report sheet is open for: one message, or the other member.
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: string; ownerId: string; subject: string } | null>(null);
+  const [sendingReport, setSendingReport] = useState(false);
   // 'error' = the load threw; 'notFound' = the id isn't one of the user's
   // conversations. Either way the composer is hidden and a retry is offered.
   const [loadState, setLoadState] = useState<'ok' | 'error' | 'notFound'>('ok');
@@ -62,7 +68,7 @@ export default function ChatScreen() {
       setLoadState('ok');
       const [convs, msgs] = await Promise.all([
         messagingService.getConversations(getCurrentUserId()),
-        messagingService.getMessages(conversationId),
+        messagingService.getMessages(conversationId, getCurrentUserId()),
       ]);
 
       const conv = convs.find(c =>c.id === conversationId);
@@ -108,10 +114,58 @@ export default function ChatScreen() {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      showToast('Failed to send message', 'error');
+      // Refused: language the rules do not allow, or the other member has
+      // blocked this one. Say which, and leave the text to be edited.
+      showToast(isNotAllowed(error) ? error.message : 'Failed to send message', 'error');
     } finally {
       setSending(false);
     }
+  };
+
+  const sendReport = async (reason: string) => {
+    if (!reporting || sendingReport) return;
+    setSendingReport(true);
+    try {
+      await moderationService.report(
+        getCurrentUserId(),
+        { type: reporting.type, id: reporting.id, ownerId: reporting.ownerId },
+        reason
+      );
+      // A reported message is not shown to the reporter again.
+      if (reporting.type === 'message') setMessages(current => current.filter(m => m.id !== reporting.id));
+      setReporting(null);
+      showToast('Reported. Thank you - we review every report.', 'success');
+    } catch (error) {
+      console.error('Could not send the report:', error);
+      showToast("Couldn't send the report. Check your connection and try again.", 'error');
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
+  const handleBlock = () => {
+    if (!otherUser) return;
+    const name = otherUser.displayName || 'this member';
+    Alert.alert(
+      `Block ${name}?`,
+      'This conversation will be hidden and they will not be able to message you. You can unblock them in Settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await moderationService.block(getCurrentUserId(), otherUser.userId);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Could not block:', error);
+              showToast("Couldn't block. Check your connection and try again.", 'error');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Long-press on your own bubble asks first - deletion can't be undone.
@@ -152,8 +206,12 @@ export default function ChatScreen() {
         <View style={[styles.messageRow, isOwnMessage && styles.ownMessageRow]}>
           <TouchableOpacity
             style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}
-            onLongPress={() =>isOwnMessage && confirmDeleteMessage(message.id)}
-            accessibilityHint={isOwnMessage ? 'Long-press to delete' : undefined}
+            onLongPress={() =>
+              isOwnMessage
+                ? confirmDeleteMessage(message.id)
+                : setReporting({ type: 'message', id: message.id, ownerId: message.senderId, subject: 'this message' })
+            }
+            accessibilityHint={isOwnMessage ? 'Long-press to delete' : 'Long-press to report'}
           >
             <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
               {message.content}
@@ -252,6 +310,25 @@ export default function ChatScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
         </TouchableOpacity>
 
+        {/* Report or block the other member without leaving the thread.
+            A single message is reported by long-pressing it. */}
+        {!!otherUser && (
+          <View style={styles.safetyRow}>
+            <TouchableOpacity
+              onPress={() =>
+                setReporting({ type: 'user', id: otherUser.userId, ownerId: otherUser.userId, subject: otherUser.displayName || 'this member' })
+              }
+              accessibilityRole="button"
+            >
+              <Text style={styles.safetyLink}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleBlock} accessibilityRole="button">
+              <Text style={styles.safetyLink}>Block</Text>
+            </TouchableOpacity>
+            <Text style={styles.safetyHint}>Long-press a message to report it</Text>
+          </View>
+        )}
+
         {/* Messages */}
         <ScrollView
           ref={scrollViewRef}
@@ -299,6 +376,13 @@ export default function ChatScreen() {
         </View>
       </KeyboardAvoidingView>
 
+      <ReportModal
+        visible={!!reporting}
+        subject={reporting?.subject || 'this'}
+        busy={sendingReport}
+        onChoose={sendReport}
+        onClose={() => setReporting(null)}
+      />
       <Toast
         visible={toast.visible}
         message={toast.message}
@@ -331,6 +415,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hair,
   },
+  safetyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hair,
+  },
+  safetyLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
+  safetyHint: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkFaint, flexShrink: 1, textAlign: 'right', flex: 1 },
   headerAvatar: {
     width: 40,
     height: 40,

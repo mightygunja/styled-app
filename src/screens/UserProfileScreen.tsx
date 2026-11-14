@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -21,6 +22,8 @@ import { messagingService } from '../services/messagingService';
 import { getCurrentUserId } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
+import ReportModal from '../components/ReportModal';
+import { moderationService } from '../services/moderationService';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
 
@@ -40,6 +43,10 @@ export default function UserProfileScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  // Whether the signed-in member has blocked this one, and the report sheet.
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
   // Saved posts load lazily the first time their tab opens. The tab used to
   // render the same grid as Posts, so nothing anyone saved ever surfaced.
@@ -93,15 +100,18 @@ export default function UserProfileScreen() {
           ? { displayName: authUser.displayName, email: authUser.email, photoURL: authUser.photoURL }
           : undefined;
 
-      const [profileData, postsData, followingStatus] = await Promise.all([
+      const [profileData, postsData, followingStatus, blocked] = await Promise.all([
         userProfileService.getUserProfile(userId, realUserInfo),
-        socialFeedService.getUserPosts(userId),
+        socialFeedService.getUserPosts(userId, getCurrentUserId()),
         userProfileService.isFollowing(getCurrentUserId(), userId),
+        moderationService.hasBlocked(getCurrentUserId(), userId),
       ]);
 
       setProfile(profileData);
-      setPosts(postsData);
+      // A blocked member's posts are not shown, here or anywhere.
+      setPosts(blocked ? [] : postsData);
       setIsFollowing(followingStatus);
+      setIsBlocked(blocked);
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoadError(true);
@@ -130,6 +140,59 @@ export default function UserProfileScreen() {
         .catch(() => {});
     } catch (error) {
       showToast('Action failed', 'error');
+    }
+  };
+
+  const handleBlock = () => {
+    const name = profile?.displayName || 'this member';
+    Alert.alert(
+      `Block ${name}?`,
+      'You will no longer see their posts, comments or messages, and they will not be able to message you. You can unblock them here or in Settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await moderationService.block(getCurrentUserId(), userId);
+              setIsBlocked(true);
+              setIsFollowing(false);
+              setPosts([]);
+              showToast(`${name} is blocked`, 'success');
+            } catch (error) {
+              console.error('Could not block:', error);
+              showToast("Couldn't block. Check your connection and try again.", 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnblock = async () => {
+    try {
+      await moderationService.unblock(getCurrentUserId(), userId);
+      setIsBlocked(false);
+      loadProfile();
+    } catch (error) {
+      console.error('Could not unblock:', error);
+      showToast("Couldn't unblock. Check your connection and try again.", 'error');
+    }
+  };
+
+  const sendReport = async (reason: string) => {
+    if (sendingReport) return;
+    setSendingReport(true);
+    try {
+      await moderationService.report(getCurrentUserId(), { type: 'user', id: userId, ownerId: userId }, reason);
+      setReporting(false);
+      showToast('Reported. Thank you - we review every report.', 'success');
+    } catch (error) {
+      console.error('Could not send the report:', error);
+      showToast("Couldn't send the report. Check your connection and try again.", 'error');
+    } finally {
+      setSendingReport(false);
     }
   };
 
@@ -263,6 +326,10 @@ export default function UserProfileScreen() {
             >
               <Text style={styles.secondaryButtonText}>Edit profile</Text>
             </TouchableOpacity>
+          ) : isBlocked ? (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleUnblock}>
+              <Text style={styles.secondaryButtonText}>Unblock</Text>
+            </TouchableOpacity>
           ) : (
             <>
               <TouchableOpacity
@@ -279,6 +346,22 @@ export default function UserProfileScreen() {
             </>
           )}
         </View>
+
+        {/* Every member can report or block any other, from their profile. */}
+        {!isOwnProfile && (
+          <View style={styles.safetyRow}>
+            {isBlocked ? (
+              <Text style={styles.safetyNote}>You have blocked this member. Their posts and messages are hidden.</Text>
+            ) : (
+              <TouchableOpacity onPress={handleBlock} accessibilityRole="button">
+                <Text style={styles.safetyLink}>Block</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => setReporting(true)} accessibilityRole="button">
+              <Text style={styles.safetyLink}>Report</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.tabs}>
           <TouchableOpacity
@@ -343,6 +426,13 @@ export default function UserProfileScreen() {
         )}
       </ScrollView>
 
+      <ReportModal
+        visible={reporting}
+        subject={profile?.displayName || 'this member'}
+        busy={sendingReport}
+        onChoose={sendReport}
+        onClose={() => setReporting(false)}
+      />
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
@@ -393,6 +483,9 @@ const styles = StyleSheet.create({
   tagText: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkMuted },
 
   actionButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  safetyRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.lg, marginTop: spacing.md },
+  safetyLink: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
+  safetyNote: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 18, color: colors.inkMuted, flexShrink: 1 },
   primaryButton: {
     borderRadius: radius.full, flex: 1, backgroundColor: colors.rust, paddingVertical: 14, alignItems: 'center' },
   primaryButtonInline: {

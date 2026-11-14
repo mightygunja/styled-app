@@ -13,7 +13,6 @@ import {
   Dimensions,
   Share,
   Alert,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +23,9 @@ import { RootStackParamList } from '../navigation/types';
 import { socialFeedService, Post, Comment } from '../services/socialFeedService';
 import { userProfileService } from '../services/userProfileService';
 import Toast from '../components/Toast';
+import ReportModal from '../components/ReportModal';
+import { ReportTarget, isNotAllowed, isVisible } from '../services/moderation';
+import { moderationService } from '../services/moderationService';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
 import { colors, fonts, type as textType, spacing, radius } from '../theme/designSystem';
@@ -44,6 +46,9 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [posting, setPosting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
+  // What the report sheet is open for: this post, or one of its comments.
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: string; ownerId: string; subject: string } | null>(null);
+  const [sendingReport, setSendingReport] = useState(false);
   const { toast, showToast, hideToast } = useToast();
   const commentInputRef = useRef<TextInput>(null);
   const [loadError, setLoadError] = useState(false);
@@ -102,7 +107,7 @@ export default function PostDetailScreen() {
   // Comments with their authors attached - replies included, which used to
   // render as "User" with no avatar because only top-level rows were enriched.
   const fetchComments = async (): Promise<Comment[]> => {
-    const postComments = await socialFeedService.getPostComments(postId);
+    const postComments = await socialFeedService.getPostComments(postId, getCurrentUserId());
     const withUser = async (comment: Comment): Promise<Comment> => {
       const user = await userProfileService.getUserProfile(comment.userId);
       return { ...comment, user: user || undefined };
@@ -132,7 +137,17 @@ export default function PostDetailScreen() {
         socialFeedService.isPostSaved(postId, currentUserId),
       ]);
 
-      if (foundPost) {
+      // A post hidden after reports, by a member this one blocked, or that
+      // this member reported, is not opened by its link either.
+      const moderation = await moderationService.state(currentUserId);
+      const shown =
+        !!foundPost &&
+        isVisible(
+          { type: 'post', id: foundPost.id, ownerId: foundPost.userId, hidden: foundPost.hidden },
+          currentUserId,
+          moderation
+        );
+      if (foundPost && shown) {
         const user = await userProfileService.getUserProfile(foundPost.userId);
         setPost({ ...foundPost, isLiked, isSaved, user: user || undefined });
       }
@@ -219,17 +234,65 @@ export default function PostDetailScreen() {
     ]);
   };
 
-  // There is no in-app reports queue yet, so a report is an email to support
-  // with the post id filled in - a real route to a person, not a fake form.
+  // Reports go to the admin queue (moderation.ts). The reporter stops seeing
+  // the thing at once: a reported post closes, a reported comment drops out.
   const handleReportPost = () => {
     if (!post) return;
-    const subject = encodeURIComponent(`Report post ${post.id}`);
-    const body = encodeURIComponent(
-      `Post id: ${post.id}\nLink: https://www.thirtythreetrends.com/post/${post.id}\n\nWhat is wrong with this post?\n`
+    setReporting({ type: 'post', id: post.id, ownerId: post.userId, subject: 'this post' });
+  };
+
+  const handleReportComment = (comment: Comment) => {
+    setReporting({ type: 'comment', id: comment.id, ownerId: comment.userId, subject: 'this comment' });
+  };
+
+  const sendReport = async (reason: string) => {
+    if (!reporting || sendingReport) return;
+    setSendingReport(true);
+    try {
+      await moderationService.report(
+        getCurrentUserId(),
+        { type: reporting.type, id: reporting.id, ownerId: reporting.ownerId },
+        reason
+      );
+      const wasPost = reporting.type === 'post';
+      if (!wasPost) removeCommentLocally(reporting.id);
+      setReporting(null);
+      showToast('Reported. Thank you - we review every report.', 'success');
+      if (wasPost) setTimeout(() => navigation.goBack(), 900);
+    } catch (error) {
+      console.error('Could not send the report:', error);
+      showToast("Couldn't send the report. Check your connection and try again.", 'error');
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
+  // Blocking the author hides everything they post from this member and
+  // stops them messaging. It is undone from Settings > Blocked members.
+  const handleBlockAuthor = () => {
+    if (!post) return;
+    const name = post.user?.displayName || 'this member';
+    Alert.alert(
+      `Block ${name}?`,
+      'You will no longer see their posts, comments or messages, and they will not be able to message you. You can unblock them in Settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await moderationService.block(getCurrentUserId(), post.userId);
+              showToast(`${name} is blocked`, 'success');
+              setTimeout(() => navigation.goBack(), 900);
+            } catch (error) {
+              console.error('Could not block:', error);
+              showToast("Couldn't block. Check your connection and try again.", 'error');
+            }
+          },
+        },
+      ]
     );
-    Linking.openURL(`mailto:support@thirtythreetrends.com?subject=${subject}&body=${body}`).catch(() => {
-      showToast('Email support@thirtythreetrends.com to report this post', 'error');
-    });
   };
 
   const handleAddComment = async () => {
@@ -265,7 +328,8 @@ export default function PostDetailScreen() {
       setCommentText('');
       setReplyingTo(null);
     } catch (error) {
-      showToast('Failed to add comment', 'error');
+      // Refused by the language filter: say so, and leave the text to be edited.
+      showToast(isNotAllowed(error) ? error.message : 'Failed to add comment', 'error');
     } finally {
       setPosting(false);
     }
@@ -347,9 +411,13 @@ export default function PostDetailScreen() {
           <TouchableOpacity onPress={() => setReplyingTo(comment)}>
             <Text style={styles.commentAction}>Reply</Text>
           </TouchableOpacity>
-          {comment.userId === getCurrentUserId() && (
+          {comment.userId === getCurrentUserId() ? (
             <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
               <Text style={styles.commentAction}>Delete</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => handleReportComment(comment)} accessibilityLabel="Report this comment">
+              <Text style={styles.commentAction}>Report</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -515,9 +583,14 @@ export default function PostDetailScreen() {
                   </Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity onPress={handleReportPost}>
-                  <Text style={styles.postManageText}>Report post</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity onPress={handleReportPost}>
+                    <Text style={styles.postManageText}>Report post</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleBlockAuthor} style={styles.postManageNext}>
+                    <Text style={styles.postManageText}>Block {post.user?.displayName || 'member'}</Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
           </View>
@@ -577,6 +650,13 @@ export default function PostDetailScreen() {
         </View>
       </KeyboardAvoidingView>
 
+      <ReportModal
+        visible={!!reporting}
+        subject={reporting?.subject || 'this'}
+        busy={sendingReport}
+        onChoose={sendReport}
+        onClose={() => setReporting(null)}
+      />
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
@@ -634,6 +714,7 @@ const styles = StyleSheet.create({
   actionCount: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkFaint },
   postManageRow: { flexDirection: 'row', marginTop: spacing.md },
   postManageText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.tobacco },
+  postManageNext: { marginLeft: spacing.lg },
 
   commentsSection: { padding: spacing.page, paddingBottom: 40 },
   sectionLabel: { ...textType.eyebrow, marginTop: spacing.section, marginBottom: spacing.md },

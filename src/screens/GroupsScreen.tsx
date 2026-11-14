@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { groupService, Group, GroupEvent } from '../services/groupService';
 import { getCurrentUserId } from '../services/api';
+import { isNotAllowed } from '../services/moderation';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { colors, fonts, radius } from '../theme/designSystem';
@@ -108,7 +109,7 @@ export default function GroupsScreen() {
       await loadData();
     } catch (error) {
       console.error('Error creating group:', error);
-      showToast('Could not create the group', 'error');
+      showToast(isNotAllowed(error) ? error.message : 'Could not create the group', 'error');
     } finally {
       setCreating(false);
     }

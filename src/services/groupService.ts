@@ -7,6 +7,7 @@ import {
   query, where, orderBy, limit, Timestamp, increment, updateDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { assertAllowed } from './moderation';
 
 export type GroupPrivacy = 'public' | 'private';
 export type EventStatus = 'upcoming' | 'ongoing' | 'completed';
@@ -97,6 +98,8 @@ class GroupService {
   }
 
   async createGroup(userId: string, name: string, description: string, category: string, privacy: GroupPrivacy = 'public'): Promise<Group> {
+    // A group's name and description are public words like any post.
+    assertAllowed(`${name} ${description}`);
     const data = {
       name, description, category, privacy,
       members: 1, posts: 0, createdBy: userId, createdAt: Timestamp.now(),

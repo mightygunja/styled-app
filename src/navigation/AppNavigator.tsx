@@ -81,6 +81,8 @@ const StylistApplicationScreen = lazyScreen(() => import('../screens/StylistAppl
 const StylistApplicationsAdminScreen = lazyScreen(() => import('../screens/StylistApplicationsAdminScreen'));
 const AdminScreen = lazyScreen(() => import('../screens/AdminScreen'));
 const AdminMembersScreen = lazyScreen(() => import('../screens/AdminMembersScreen'));
+const AdminReportsScreen = lazyScreen(() => import('../screens/AdminReportsScreen'));
+const BlockedMembersScreen = lazyScreen(() => import('../screens/BlockedMembersScreen'));
 const AffiliateAnalyticsScreen = lazyScreen(() => import('../screens/AffiliateAnalyticsScreen'));
 const TrendDeskAdminScreen = lazyScreen(() => import('../screens/TrendDeskAdminScreen'));
 const SmartOutfitBuilderScreen = lazyScreen(() => import('../screens/SmartOutfitBuilderScreen'));
@@ -404,6 +406,8 @@ const linking = {
       Admin: 'admin',
       AffiliateAnalytics: 'admin/affiliate',
       AdminMembers: 'admin/members',
+      AdminReports: 'admin/reports',
+      BlockedMembers: 'settings/blocked',
       StylistApplicationsAdmin: 'admin/stylists',
       TrendDeskAdmin: 'admin/trends',
       StylistApplication: 'apply',
@@ -460,6 +464,8 @@ const ROUTE_TITLES: Record<string, string> = {
   Admin: 'Admin',
   AffiliateAnalytics: 'Affiliate analytics',
   AdminMembers: 'Members',
+  AdminReports: 'Reports',
+  BlockedMembers: 'Blocked members',
   TrendDeskAdmin: 'Trend desk',
   ClosetAnalytics: 'Closet analytics',
   StylistMarketplace: 'Stylists',
@@ -690,6 +696,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Admin" component={AdminScreen} />
             <Stack.Screen name="AffiliateAnalytics" component={AffiliateAnalyticsScreen} />
             <Stack.Screen name="AdminMembers" component={AdminMembersScreen} />
+            <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
+            <Stack.Screen name="BlockedMembers" component={BlockedMembersScreen} />
             <Stack.Screen name="TrendDeskAdmin" component={TrendDeskAdminScreen} />
             <Stack.Screen name="SmartOutfitBuilder" component={SmartOutfitBuilderScreen} />
             <Stack.Screen name="ClosetAnalytics" component={ClosetAnalyticsScreen} />

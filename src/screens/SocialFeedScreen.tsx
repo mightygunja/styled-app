@@ -25,6 +25,8 @@ import { userSettingsService } from '../services/userSettingsService';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { getCurrentUserId } from '../services/api';
+import { visibleOnly } from '../services/moderation';
+import { moderationService } from '../services/moderationService';
 import { colors, fonts, radius } from '../theme/designSystem';
 
 const { width } = Dimensions.get('window');
@@ -103,6 +105,20 @@ export default function SocialFeedScreen() {
       return feedPosts;
     }
   };
+
+  // A report or a block made anywhere in the app takes the post out of a
+  // feed that is already on screen - no reload, no lost scroll position.
+  useEffect(
+    () =>
+      moderationService.subscribe(async () => {
+        const viewerId = getCurrentUserId();
+        const state = await moderationService.state(viewerId);
+        setPosts(current =>
+          visibleOnly(current, post => ({ type: 'post', id: post.id, ownerId: post.userId, hidden: post.hidden }), viewerId, state)
+        );
+      }),
+    []
+  );
 
   const loadFeed = async () => {
     try {
@@ -222,7 +238,7 @@ export default function SocialFeedScreen() {
       setLoading(true);
       setLoadError(false);
       const userId = getCurrentUserId();
-      const tagPosts = await socialFeedService.searchByHashtag(tag);
+      const tagPosts = await socialFeedService.searchByHashtag(tag, userId);
       // The search matches lower-case tags exactly, but posts published before
       // tags were normalised on write kept their typed case (#OOTD), so the
       // post that was just tapped could be missing from its own tag. Any

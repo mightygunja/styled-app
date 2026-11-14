@@ -271,6 +271,20 @@ export function TermsScreen() {
           rates.
         </P>
       </Section>
+      <Section heading="Community rules">
+        <P>
+          Posts, comments, messages and groups are for talking about clothes and style. There
+          is no tolerance for objectionable content or abusive members: no harassment, hate
+          speech, threats, sexual or violent content, spam or scams. Language that breaks these
+          rules is refused when you try to post it.
+        </P>
+        <P>
+          Any member can report a post, a comment, a message or another member, and can block
+          anyone. We review every report, normally within 24 hours, remove content that breaks
+          these rules and suspend the accounts of people who post it. To reach a person about
+          a report, write to {CONTACT_EMAIL}.
+        </P>
+      </Section>
       <Section heading="Fair use">
         <P>
           Don't abuse the service: no scraping, no reselling access, no uploading content that

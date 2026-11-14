@@ -74,6 +74,8 @@ export type RootStackParamList = {
   StylistApplicationsAdmin: undefined;
   Admin: undefined;
   AdminMembers: undefined;
+  AdminReports: undefined;
+  BlockedMembers: undefined;
   AffiliateAnalytics: undefined;
   TrendDeskAdmin: undefined;
   SmartOutfitBuilder: { sourceItemId?: string } | undefined;
