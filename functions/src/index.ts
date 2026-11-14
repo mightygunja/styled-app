@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
 import OpenAI, { toFile } from 'openai';
-import { TREND_VOCABULARY } from './trendVocabulary';
 import { PUBLIC_PHRASES } from './publicPhrases';
 import {
   CHANNEL3_API,
@@ -26,6 +25,25 @@ import {
   shelfServable,
   shelfStale,
 } from './channel3';
+import {
+  StandingOverride,
+  StandingVerdict,
+  StockCount,
+  TREND_CAPITALS,
+  TREND_FEEDS,
+  TrendReport,
+  TrendSignal,
+  currentTrendSeason,
+  parseFeed,
+  recentSignals,
+  signalSources,
+  standingChanges,
+  trendListDue,
+  trendStockQuestions,
+  withVerifiedPieces,
+  writeTrendReport,
+} from './trendReport';
+import { STANDING_TRENDS } from './standingTrends';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -2589,151 +2607,74 @@ Return ONLY valid JSON:
  * drafts, a human signs off, and nothing reaches users until they do.
  */
 
-const TREND_STAGES = ['emerging', 'rising', 'peak', 'fading'];
-const TREND_SEASONS = ['spring', 'summer', 'fall', 'winter'];
-const TREND_ARCHETYPES = ['minimal', 'polished', 'relaxed', 'edgy', 'classic', 'bohemian', 'romantic', 'sporty'];
-
-function currentTrendSeason(date: Date = new Date()): string {
-  const month = date.getMonth();
-  if (month <= 1 || month === 11) return 'winter';
-  if (month <= 4) return 'spring';
-  if (month <= 7) return 'summer';
-  return 'fall';
-}
-
 /**
- * The pieces a generated trend may name: exactly the ones the app has
- * photographed (functions/src/trendVocabulary.ts, generated from the
- * catalogue by scripts/buildTrendVocabulary.ts). This is what makes a
- * machine-written trend arrive illustrated: it cannot be written in words
- * no product carries.
+ * Reads the public fashion feeds (trendReport.ts: TREND_FEEDS) and returns
+ * the recent items about what people are wearing. A feed that does not
+ * answer in ten seconds is skipped; this never throws - with nothing read,
+ * the report is written from the model's own knowledge and marked so.
  */
-const TREND_VOCAB = new Map(TREND_VOCABULARY.map(v => [v.term, v]));
-const TREND_PIECE_LIST = (['garment', 'shoes', 'finish'] as const)
-  .map(
-    slot =>
-      `${slot === 'garment' ? 'GARMENTS' : slot === 'shoes' ? 'SHOES' : 'BAGS, BELTS, SCARVES, HATS, JEWELLERY'}: ${TREND_VOCABULARY.filter(
-        v => v.slot === slot
-      )
-        .map(v => v.term)
-        .join(', ')}`
-  )
-  .join('\n');
-
-/** A trend needs this many named pieces, and this many photographed ones behind them. */
-const MIN_TREND_PIECES_NAMED = 3;
-const MIN_TREND_PIECES_SHOWN = 6;
-
-/**
- * Keeps only pieces the app can show, and only trends it can illustrate for
- * at least one department. `coverage` records how many photographed pieces
- * stand behind the trend for a womenswear and a menswear reader.
- */
-export function illustratedTrendsOnly(drafts: any[]): any[] {
-  return drafts
-    .map(t => {
-      const named: string[] = [...new Set([...(t.keyGarments || []), ...(t.keyAccessories || [])])].filter(w =>
-        TREND_VOCAB.has(w)
-      );
-      const count = (key: 'women' | 'men') => named.reduce((n, w) => n + TREND_VOCAB.get(w)![key], 0);
-      return {
-        ...t,
-        keyGarments: named.filter(w => TREND_VOCAB.get(w)!.slot === 'garment'),
-        keyAccessories: named.filter(w => TREND_VOCAB.get(w)!.slot !== 'garment'),
-        coverage: { women: count('women'), men: count('men') },
-      };
+async function gatherTrendSignals(): Promise<TrendSignal[]> {
+  const answers = await Promise.all(
+    TREND_FEEDS.map(async feed => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(feed.url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+            Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+          },
+        });
+        if (!response.ok) return [] as TrendSignal[];
+        return parseFeed(await response.text(), feed);
+      } catch {
+        return [] as TrendSignal[];
+      } finally {
+        clearTimeout(timer);
+      }
     })
-    .filter(
-      t =>
-        t.keyGarments.length + t.keyAccessories.length >= MIN_TREND_PIECES_NAMED &&
-        Math.max(t.coverage.women, t.coverage.men) >= MIN_TREND_PIECES_SHOWN
-    );
+  );
+  return recentSignals(([] as TrendSignal[]).concat(...answers), Date.now());
+}
+
+const completeTrendReport = async (prompt: string): Promise<string> => {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 4000,
+    response_format: { type: 'json_object' },
+  });
+  return response.choices[0]?.message?.content || '{}';
+};
+
+/**
+ * The whole report: the feeds are read, the model writes from them, and the
+ * answer is cut to what can be trusted (trendReport.ts). Nothing is saved
+ * here - the caller decides between draft and published.
+ */
+async function writeReport(
+  existingNames: string[],
+  season: string,
+  year: number,
+  count: number
+): Promise<TrendReport & { signals: TrendSignal[] }> {
+  const signals = await gatherTrendSignals();
+  const report = await writeTrendReport(
+    { existingNames, season, year, count, signals, standing: STANDING_TRENDS },
+    completeTrendReport
+  );
+  return { ...report, signals };
 }
 
 /**
- * Writes a trend report with the model and returns only the trends the app
- * can illustrate, none of them repeating a name already on the desk.
- * Nothing is saved here - the caller decides between draft and published.
+ * The report's trends only - what the Trend Desk's "Draft" saves for an
+ * editor. Pieces the app has not photographed are left off a draft: they
+ * are only added once checked against the stores, which the weekly run does.
  */
 async function draftTrends(existingNames: string[], season: string, year: number, count: number): Promise<any[]> {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: `You are the trend editor of 33 Trends, a personal styling app. Draft this cycle's trend report: the directions genuinely moving in fashion right now (${season} ${year}), for a human editor to review before anything is published.
-
-${existingNames.length ? `Already on the desk - do NOT repeat these or near-duplicates of them:\n${existingNames.map(n => `- ${n}`).join('\n')}\n` : ''}
-Draft ${count} trends. For each:
-- Only well-documented, currently-active directions with real editorial and street-style presence. Never invent a micro-trend, a statistic, a brand claim or a percentage. Never invent a garment that does not exist at retail ("3D-printed jacket", "laser-cut shirt") - every key piece must be something a person can buy this week.
-- The app is global. At least 2 of the 6 must be strongest OUTSIDE Europe/North America/East Asia (Marrakesh, Dubai, Lagos, Mumbai, São Paulo, Mexico City, Sydney, Istanbul) and describe how people there actually dress now - not a Western trend relocated. For every trend, say where else it reads naturally (regions) and how far it has travelled (reach).
-- A trend is never only clothes. keyAccessories must name the shoe, bag, belt, jewellery, scarf, hat or eyewear that carries it - the accessory is usually the cheapest way in.
-- The app dresses men and women. Prefer directions that read across departments, write stylingNote so it works for any wardrobe (or gives both readings in one sentence), and choose keyGarments that are department-neutral retail words wherever the trend allows. A genuinely single-department trend is allowed, but the set of 6 must serve both menswear and womenswear readers.
-- region: the city where it is strongest, one of: ${TREND_CAPITALS.join(', ')}. Spread across the world - the point of the report is bringing every reader what is moving where THEY are as well as in the classic capitals.
-- regions: 1-4 further cities from the same list where it is also genuinely strong.
-- reach: "local" (one city's street signal), "regional" (a continent or climate), or "global" (reads everywhere).
-- stage: one of ${TREND_STAGES.join(' | ')}. Be honest - a fading trend marked fading is more useful than flattery.
-- keyGarments: 2-6 lowercase garment words/phrases that actually appear in product names and closet tags (e.g. "wide-leg trousers", "suede jacket"). These drive matching against real wardrobes, so plain retail language only. May be empty for a shoe- or bag-led trend.
-- keyAccessories: 2-6 lowercase shoe / bag / belt / jewellery / scarf / hat / eyewear words in the same plain retail language (e.g. "penny loafer", "suede belt", "east-west shoulder bag", "silk scarf").
-- keyColors: 0-4 lowercase colour words.
-- silhouettes: 0-4 lowercase cut/fit words (e.g. "wide-leg", "oversized", "cropped").
-- archetypes: 1-3 from ${TREND_ARCHETYPES.join(', ')} - the tastes this trend sits nearest.
-- summary: 1-2 sentences, what it is and why now. No hype words.
-- stylingNote: 1-2 sentences of genuinely useful how-to-wear-it advice with a normal wardrobe. Specific, not generic. Never use "flattering", "must-have", "elevate" or "effortless".
-- entryPiece: the single lowest-commitment way in, as a short phrase.
-- name: 2-4 words, editorial, no emoji.
-- keyGarments and keyAccessories must be copied EXACTLY, character for character, from THE PIECES WE CAN SHOW below. They are the only pieces the app has photographed and can link to, so a trend named in any other words would reach the reader with nothing under it. Use at least three of them per trend, and prefer the specific phrase ("suede trucker jacket") over the general one ("leather jacket"). A direction you cannot express in at least three of these pieces is not for this report - choose another.
-
-THE PIECES WE CAN SHOW
-${TREND_PIECE_LIST}
-
-Return ONLY valid JSON:
-{ "trends": [{ "name": "", "summary": "", "region": "", "regions": [], "reach": "", "stage": "", "keyGarments": [], "keyAccessories": [], "keyColors": [], "silhouettes": [], "archetypes": [], "stylingNote": "", "entryPiece": "" }] }`,
-          },
-        ],
-        max_tokens: 3200,
-        response_format: { type: 'json_object' },
-      });
-
-      let content = response.choices[0]?.message?.content || '{}';
-      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const result = JSON.parse(content);
-
-      const asStrings = (value: any, max: number): string[] =>
-        Array.isArray(value)
-          ? value.filter((v: any) => typeof v === 'string' && v.trim()).map((v: string) => v.trim().toLowerCase()).slice(0, max)
-          : [];
-
-      const drafts = (Array.isArray(result.trends) ? result.trends : [])
-        .filter((t: any) => t?.name && t?.summary && TREND_STAGES.includes(t.stage))
-        .slice(0, 8)
-        .map((t: any) => ({
-          name: String(t.name).trim(),
-          summary: String(t.summary).trim(),
-          region: String(t.region || 'Global').trim(),
-          regions: Array.isArray(t.regions)
-            ? t.regions.filter((r: any) => typeof r === 'string' && TREND_CAPITALS.includes(r.trim())).map((r: string) => r.trim()).slice(0, 4)
-            : [],
-          reach: ['local', 'regional', 'global'].includes(t.reach) ? t.reach : 'regional',
-          stage: t.stage,
-          season: TREND_SEASONS.includes(season) ? season : 'fall',
-          year,
-          keyGarments: asStrings(t.keyGarments, 6),
-          keyAccessories: asStrings(t.keyAccessories, 6),
-          keyColors: asStrings(t.keyColors, 4),
-          silhouettes: asStrings(t.silhouettes, 4),
-          archetypes: asStrings(t.archetypes, 3).filter((a: string) => TREND_ARCHETYPES.includes(a)),
-          stylingNote: String(t.stylingNote || '').trim(),
-          entryPiece: String(t.entryPiece || '').trim(),
-          status: 'draft',
-          source: 'ai-draft',
-          createdAt: new Date().toISOString(),
-        }))
-        // A trend the matchers cannot see is not a trend the app can use.
-        .filter((t: any) => t.keyGarments.length > 0 || t.keyAccessories.length > 0 || t.silhouettes.length > 0);
-
-      const taken = new Set(existingNames.map(n => n.trim().toLowerCase()));
-      return illustratedTrendsOnly(drafts).filter(t => !taken.has(t.name.toLowerCase()));
+  const report = await writeReport(existingNames, season, year, count);
+  return report.trends.map(({ newPieces: _unchecked, ...trend }: any) => trend);
 }
 
 /**
@@ -2780,31 +2721,171 @@ export const draftTrendReport = functions
 // ---- The auto-generated trend list ----
 
 /**
- * The trend list writes itself once a week.
+ * The trend list writes itself, with no person in between.
  *
- * Every Monday the generator drafts a fresh set, keeps the trends the app
- * can illustrate with photographed pieces (illustratedTrendsOnly), and
- * publishes them directly - marked `source: 'ai-auto'` so the Trend Desk
- * shows which entries no person wrote. The list stays current by turnover:
- * an auto-published trend is retired after eight weeks, and the list never
- * holds more than MAX_AUTO_TRENDS of them. Trends an editor drafted and
- * published by hand, and the editorial seeds shipped in the app, are never
- * touched. The editor can still retire any of these from the desk.
+ * Every morning the run asks whether the list is due (about a week since
+ * the last one, or never published - trendListDue). When it is:
+ *
+ *   1. the fashion press's feeds are read and the report is written from
+ *      what they have published in the last three weeks (writeReport);
+ *   2. only trends the app can illustrate are kept, and every piece they
+ *      name is asked of the stores (stockTrendPieces) - which both checks a
+ *      newly named piece really is on sale and leaves each trend's rail
+ *      stocked with real products before the first member opens it;
+ *   3. they are published directly, marked `source: 'ai-auto'` with the
+ *      publications behind them, so the Trend Desk shows which entries no
+ *      person wrote and what they were written from;
+ *   4. the trends that ship inside the app are reviewed against the same
+ *      reports, and one that has passed is retired (reviewStandingTrends).
+ *
+ * The list stays current by turnover: an auto-published trend is retired
+ * after eight weeks, and the list never holds more than MAX_AUTO_TRENDS of
+ * them. Trends an editor drafted and published by hand are never touched,
+ * and an editor can still retire or restore anything from the desk - but
+ * nothing waits for one.
  *
  * If the generator returns nothing usable, nothing changes: the current
- * list stands rather than being emptied.
+ * list stands, and the run is tried again the next morning. Every run
+ * leaves a record in `trendRuns`.
  */
 const MAX_AUTO_TRENDS = 10;
 const AUTO_TREND_LIFETIME_MS = 8 * 7 * 24 * 60 * 60 * 1000;
+/** How long the run may spend asking the stores about pieces. */
+const TREND_STOCK_TIME_MS = 4 * 60 * 1000;
 
-async function refreshTrendListNow(): Promise<{ published: number; retired: number }> {
+/**
+ * Asks the stores about every piece the new trends name, in each department
+ * the trend is for, and keeps the answers (channel3Kept) - the same record
+ * a member's Trends page reads, so the rails open stocked. Returns how many
+ * real products stand behind each phrase. With no Channel3 key, or when the
+ * stores do not answer, the count is simply empty: the trends are still
+ * published on the pieces the app has photographed.
+ */
+async function stockTrendPieces(trends: any[]): Promise<Record<string, StockCount>> {
+  const stocked: Record<string, StockCount> = {};
+  const apiKey = process.env.CHANNEL3_API_KEY || '';
+  if (!apiKey) return stocked;
+  const started = Date.now();
+  const deps = {
+    search: async (body: Record<string, any>) => {
+      try {
+        const result = await channel3Search(apiKey, body);
+        return result && Array.isArray(result.products) ? (result.products as any[]) : null;
+      } catch {
+        return null;
+      }
+    },
+    product: (id: string) => channel3ProductById(apiKey, id).catch(() => null),
+    now: () => Date.now(),
+  };
+
+  const asked = ([] as Array<{ department: Channel3Department; phrase: string }>)
+    .concat(...trends.map(trendStockQuestions))
+    .map(question => ({ ...question, query: keptQuery(question.phrase) }))
+    .filter((question): question is { department: Channel3Department; phrase: string; query: string } => !!question.query);
+  const unique = Array.from(new Map(asked.map(q => [`${q.department}|${q.query}`, q])).values());
+  const found = new Map<string, number>();
+  // Three at a time: inside Channel3's ten-a-second limit.
+  for (let i = 0; i < unique.length; i += 3) {
+    if (Date.now() - started > TREND_STOCK_TIME_MS) break;
+    await Promise.all(
+      unique.slice(i, i + 3).map(async question => {
+        try {
+          const ref = db.collection('channel3Kept').doc(keptDocId(question.department, question.query));
+          const snap = await ref.get();
+          const previous = snap.exists ? (snap.data() as KeptSearch) : null;
+          const next = await refreshKept(previous, question.department, question.query, deps);
+          if (!next) return;
+          if (next !== previous) await ref.set(next);
+          found.set(`${question.department}|${question.query}`, next.products.length);
+        } catch (error) {
+          console.error(`Trend list: could not stock "${question.phrase}"`, error);
+        }
+      })
+    );
+  }
+  asked.forEach(question => {
+    const count = stocked[question.phrase] ?? { women: 0, men: 0 };
+    count[question.department] = found.get(`${question.department}|${question.query}`) ?? 0;
+    stocked[question.phrase] = count;
+  });
+  return stocked;
+}
+
+/**
+ * Applies the weekly review of the trends that ship inside the app: one the
+ * reports show has passed - two reviews running - is retired, and one the
+ * review itself retired comes back when it is current again (trendReport.ts:
+ * standingChanges - a few at a time, never below a floor, never over an
+ * editor's decision). Written to the same overrides the Trend Desk writes,
+ * marked `by: 'auto'`.
+ */
+async function reviewStandingTrends(verdicts: StandingVerdict[], now: Date): Promise<{ retired: string[]; restored: string[] }> {
+  if (verdicts.length === 0) return { retired: [], restored: [] };
+  const snapshot = await db.collection(SEED_OVERRIDES).get();
+  const overrides: Record<string, StandingOverride> = {};
+  snapshot.docs.forEach(doc => {
+    overrides[doc.id] = doc.data() as StandingOverride;
+  });
+  const { retire, restore, warn, clear } = standingChanges(verdicts, overrides, STANDING_TRENDS);
+  if (retire.length + restore.length + warn.length + clear.length === 0) return { retired: [], restored: [] };
+  const nameOf = (id: string) => STANDING_TRENDS.find(s => s.id === id)?.name || id;
+  const batch = db.batch();
+  const write = (id: string, status: 'archived' | 'published', strikes: number) =>
+    batch.set(db.collection(SEED_OVERRIDES).doc(id), {
+      status,
+      name: nameOf(id),
+      by: 'auto',
+      strikes,
+      updatedAt: now.toISOString(),
+    });
+  retire.forEach(id => write(id, 'archived', 0));
+  restore.forEach(id => write(id, 'published', 0));
+  // A first "over" is only noted; the trend stays live until a second.
+  warn.forEach(id => write(id, 'published', (Number(overrides[id]?.strikes) || 0) + 1));
+  clear.forEach(id => write(id, 'published', 0));
+  await batch.commit();
+  return { retired: retire, restored: restore };
+}
+
+async function refreshTrendListNow(
+  options: { force?: boolean } = {}
+): Promise<{ published: number; retired: number; skipped?: string }> {
   const season = currentTrendSeason();
   const now = new Date();
   const snapshot = await db.collection('trends').where('status', 'in', ['draft', 'published']).get();
-  const existingNames = snapshot.docs.map(d => String(d.data().name || '')).filter(Boolean);
 
-  const fresh = await draftTrends(existingNames, season, now.getFullYear(), 6);
-  if (fresh.length === 0) return { published: 0, retired: 0 };
+  // Looked at daily, run weekly - or at once when there has never been a list.
+  const lastPublished = Math.max(
+    0,
+    ...snapshot.docs
+      .filter(d => d.data().source === 'ai-auto' && d.data().status === 'published')
+      .map(d => Date.parse(String(d.data().publishedAt || '')) || 0)
+  );
+  if (!options.force && !trendListDue(lastPublished || null, now.getTime())) {
+    return { published: 0, retired: 0, skipped: 'not due' };
+  }
+
+  const existingNames = snapshot.docs.map(d => String(d.data().name || '')).filter(Boolean);
+  const report = await writeReport(existingNames, season, now.getFullYear(), 6);
+  const record = (extra: Record<string, any>) =>
+    db
+      .collection('trendRuns')
+      .add({
+        at: now.toISOString(),
+        grounded: report.grounded,
+        itemsRead: report.signals.length,
+        publications: signalSources(report.signals),
+        ...extra,
+      })
+      .catch(error => console.error('Trend list: could not record the run', error));
+
+  const stocked = report.trends.length ? await stockTrendPieces(report.trends) : {};
+  const fresh = report.trends.map(trend => withVerifiedPieces(trend, stocked));
+  if (fresh.length === 0) {
+    await record({ published: [], retired: 0, note: 'nothing usable came back; the list stands' });
+    return { published: 0, retired: 0 };
+  }
 
   const live = snapshot.docs
     .filter(d => d.data().source === 'ai-auto' && d.data().status === 'published')
@@ -2829,31 +2910,46 @@ async function refreshTrendListNow(): Promise<{ published: number; retired: numb
     })
   );
   await batch.commit();
+
+  // The built-in trends, reviewed against the same reports. A failure here
+  // never undoes the list just published.
+  const standing = await reviewStandingTrends(report.standing, now).catch(error => {
+    console.error('Trend list: the standing review failed', error);
+    return { retired: [] as string[], restored: [] as string[] };
+  });
+  await record({
+    published: fresh.map(trend => ({ name: trend.name, sources: trend.sources, live: trend.live, addedPieces: trend.addedPieces || [] })),
+    retired,
+    standingRetired: standing.retired,
+    standingRestored: standing.restored,
+  });
   return { published: fresh.length, retired };
 }
 
-/** The weekly run. */
+/** Looked at every morning; runs when the list is due (see above). */
 export const refreshTrendList = functions
-  .runWith({ memory: '512MB', timeoutSeconds: 180 })
-  .pubsub.schedule('every monday 06:00')
+  .runWith({ memory: '512MB', timeoutSeconds: 540 })
+  .pubsub.schedule('every day 06:00')
   .timeZone('America/Chicago')
   .onRun(async () => {
     try {
       const result = await refreshTrendListNow();
-      console.log(`Trend list: ${result.published} published, ${result.retired} retired`);
+      console.log(
+        result.skipped ? `Trend list: ${result.skipped}` : `Trend list: ${result.published} published, ${result.retired} retired`
+      );
     } catch (error) {
-      // A failed week leaves last week's list in place.
+      // A failed run leaves the current list in place; tomorrow tries again.
       console.error('Trend list refresh failed:', error);
     }
   });
 
 /** The same run, on demand from the Trend Desk. */
 export const refreshTrendListCall = functions
-  .runWith({ memory: '512MB', timeoutSeconds: 180, enforceAppCheck: false })
+  .runWith({ memory: '512MB', timeoutSeconds: 540, enforceAppCheck: false })
   .https.onCall(async (data, context) => {
     requireAdmin(context);
     try {
-      return { success: true, data: await refreshTrendListNow() };
+      return { success: true, data: await refreshTrendListNow({ force: true }) };
     } catch (error: any) {
       console.error('Error refreshing the trend list:', error);
       throw new functions.https.HttpsError('internal', error.message);
@@ -4065,12 +4161,6 @@ Return ONLY valid JSON:
   });
 
 // ==================== LOCALE STYLE ====================
-
-const TREND_CAPITALS = [
-  'Copenhagen', 'Milan', 'Paris', 'London', 'New York', 'Seoul', 'Tokyo',
-  'Marrakesh', 'Dubai', 'Lagos', 'Mumbai', 'São Paulo', 'Mexico City', 'Sydney',
-  'Istanbul', 'Shanghai', 'Los Angeles', 'Global',
-];
 
 /** Firestore doc key for a place. */
 function localeKey(city: string, region?: string, country?: string): string {

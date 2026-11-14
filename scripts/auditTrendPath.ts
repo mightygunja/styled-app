@@ -232,9 +232,10 @@ for (const v of vocabulary) {
 // ---- 7. Wiring ----
 console.log('# Wiring');
 const fn = read('functions/src/index.ts');
-check(/THE PIECES WE CAN SHOW\n\$\{TREND_PIECE_LIST\}/.test(fn) && /copied EXACTLY, character for character/.test(fn), 'the generator is given the vocabulary and told to copy from it');
-check(/return illustratedTrendsOnly\(drafts\)\.filter/.test(fn), 'whatever the model returns is cut to pieces the app can show');
-check(/source: 'ai-auto'/.test(fn) && /pubsub\.schedule\('every monday 06:00'\)/.test(fn) && /if \(fresh\.length === 0\) return \{ published: 0, retired: 0 \};/.test(fn), 'the weekly run publishes as ai-auto and leaves the list alone when nothing usable comes back');
+const reportFile = fs.readFileSync(path.join(__dirname, '..', 'functions', 'src', 'trendReport.ts'), 'utf8').replace(/\r\n/g, '\n');
+check(/THE PIECES WE CAN SHOW\n\$\{TREND_PIECE_LIST\}/.test(reportFile) && /copied EXACTLY, character for character/.test(reportFile), 'the generator is given the vocabulary and told to copy from it');
+check(/trends: illustratedTrendsOnly\(drafts\)\.filter\(t => !taken\.has\(t\.name\.toLowerCase\(\)\)\),/.test(reportFile), 'whatever the model returns is cut to pieces the app can show');
+check(/source: 'ai-auto'/.test(fn) && /pubsub\.schedule\('every day 06:00'\)/.test(fn) && /trendListDue\(lastPublished \|\| null, now\.getTime\(\)\)/.test(fn) && /if \(fresh\.length === 0\) \{/.test(fn), 'the weekly run (looked at daily) publishes as ai-auto and leaves the list alone when nothing usable comes back');
 check(/const drafts = await draftTrends\(existingNames, season, year, 6\);/.test(fn), 'the desk\'s "Draft" uses the same generator');
 const remix = read('src/services/trendRemixService.ts');
 check(/\.filter\(t => trendIllustrated\(t, focus\)\)/.test(remix), 'the report drops trends it cannot illustrate');
